@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections;
 
+import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -64,7 +65,8 @@ public class WebServiceConnection implements Connection {
         synchronized (state) {
             try {
                 config = new WebServiceConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+                settings = (WebServiceConnectionSettings) config.settings();
                 client = new JerseyClientBuilder().build();
                 name = settings.getName();
                 endpoint = new URL(settings.getEndpoint());
@@ -91,16 +93,16 @@ public class WebServiceConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
 
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(WebServiceConnectionConfig.__CONFIG_PATH)
                         .build();
-                if (client.checkExists().forPath(hpath) == null) {
-                    throw new Exception(String.format("HDFS Settings path not found. [path=%s]", hpath));
+                ZkConfigReader reader = new ZkConfigReader(client, WebServiceConnectionSettings.class);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("WebService Connection settings not found. [path=%s]", zkPath));
                 }
-                byte[] data = client.getData().forPath(hpath);
-                settings = JSONUtils.read(data, WebServiceConnectionSettings.class);
-                Preconditions.checkNotNull(settings);
-                Preconditions.checkState(name.equals(settings.getName()));
+                settings = (WebServiceConnectionSettings) reader.settings();
+                settings.validate();
 
                 this.client = new JerseyClientBuilder().build();
                 this.name = settings.getName();
@@ -209,25 +211,8 @@ public class WebServiceConnection implements Connection {
     public static class WebServiceConnectionConfig extends ConnectionConfig {
         private static final String __CONFIG_PATH = "rest";
 
-        public static class Constants {
-            public static final String CONFIG_URL = "endpoint";
-        }
-
-        private final WebServiceConnectionSettings settings = new WebServiceConnectionSettings();
-
         public WebServiceConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public WebServiceConnectionSettings read() throws ConfigurationException {
-            if (get() == null) {
-                throw new ConfigurationException("WebService connection Configuration not set or is NULL");
-            }
-            settings.setName(get().getString(CONFIG_NAME));
-            checkStringValue(settings.getName(), getClass(), CONFIG_NAME);
-            settings.setEndpoint(get().getString(Constants.CONFIG_URL));
-            checkStringValue(settings.getEndpoint(), getClass(), Constants.CONFIG_URL);
-            return settings;
+            super(config, __CONFIG_PATH, WebServiceConnectionSettings.class);
         }
     }
 }

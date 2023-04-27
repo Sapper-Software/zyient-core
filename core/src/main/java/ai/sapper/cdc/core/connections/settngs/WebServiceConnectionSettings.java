@@ -1,10 +1,13 @@
 package ai.sapper.cdc.core.connections.settngs;
 
+import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.connections.ConnectionConfig;
 import ai.sapper.cdc.core.connections.WebServiceConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -12,7 +15,12 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class WebServiceConnectionSettings extends ConnectionSettings {
-    @Setting(name = WebServiceConnection.WebServiceConnectionConfig.Constants.CONFIG_URL)
+
+    public static class Constants {
+        public static final String CONFIG_URL = "endpoint";
+    }
+
+    @Config(name = Constants.CONFIG_URL)
     private String endpoint;
 
     public WebServiceConnectionSettings() {
@@ -20,10 +28,9 @@ public class WebServiceConnectionSettings extends ConnectionSettings {
         setType(EConnectionType.rest);
     }
 
-    @Override
-    public void validate() throws Exception {
-        ConfigReader.checkStringValue(getName(), getClass(), ConnectionConfig.CONFIG_NAME);
-        ConfigReader.checkStringValue(getEndpoint(), getClass(),
-                WebServiceConnection.WebServiceConnectionConfig.Constants.CONFIG_URL);
+    public WebServiceConnectionSettings(@NonNull ConnectionSettings settings) {
+        super(settings);
+        Preconditions.checkArgument(settings instanceof WebServiceConnectionSettings);
+        this.endpoint = ((WebServiceConnectionSettings) settings).getEndpoint();
     }
 }

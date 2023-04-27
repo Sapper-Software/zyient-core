@@ -40,5 +40,21 @@ public abstract class ConnectionSettings extends Settings {
         connectionClass = settings.connectionClass;
     }
 
-    public abstract void validate() throws Exception;
+    public final void validate() throws Exception {
+        Field[] fields = ReflectionUtils.getAllFields(getClass());
+        if (fields != null) {
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Config.class)) {
+                    Config c = field.getAnnotation(Config.class);
+                    if (c.required()) {
+                        Object v = ReflectionUtils.getFieldValue(this, field);
+                        if (v == null) {
+                            throw new Exception(String.format("[%s] Missing required field. [field=%s]",
+                                    getClass().getCanonicalName(), c.name()));
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

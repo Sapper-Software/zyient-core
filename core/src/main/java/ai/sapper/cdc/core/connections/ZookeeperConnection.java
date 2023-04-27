@@ -107,12 +107,16 @@ public class ZookeeperConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
 
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(ZookeeperConfig.__CONFIG_PATH)
                         .build();
                 ZkConfigReader reader = new ZkConfigReader(client, ZookeeperSettings.class);
-                reader.read(hpath);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("ZooKeeper Connection settings not found. [path=%s]", zkPath));
+                }
                 settings = (ZookeeperSettings) reader.settings();
+                settings.validate();
                 setup();
 
                 state.state(EConnectionState.Initialized);

@@ -5,7 +5,9 @@ import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.connections.ConnectionConfig;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -47,7 +49,16 @@ public class ZookeeperSettings extends ConnectionSettings {
         setType(EConnectionType.zookeeper);
     }
 
-    @Override
-    public void validate() throws Exception {
+    public ZookeeperSettings(@NonNull ConnectionSettings settings) {
+        super(settings);
+        Preconditions.checkArgument(settings instanceof ZookeeperSettings);
+        this.connectionString = ((ZookeeperSettings) settings).getConnectionString();
+        this.authenticationHandler = ((ZookeeperSettings) settings).getAuthenticationHandler();
+        this.namespace = ((ZookeeperSettings) settings).getNamespace();
+        this.retryEnabled = ((ZookeeperSettings) settings).isRetryEnabled();
+        this.retryInterval = ((ZookeeperSettings) settings).getRetryInterval();
+        this.retryCount = ((ZookeeperSettings) settings).getRetryCount();
+        this.connectionTimeout = ((ZookeeperSettings) settings).getConnectionTimeout();
+        this.sessionTimeout = ((ZookeeperSettings) settings).getSessionTimeout();
     }
 }

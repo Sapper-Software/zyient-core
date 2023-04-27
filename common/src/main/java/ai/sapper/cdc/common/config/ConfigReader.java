@@ -8,7 +8,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -48,6 +47,14 @@ public class ConfigReader {
         this.type = type;
     }
 
+    public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                        @NonNull String path,
+                        @NonNull Settings settings) {
+        this.config = config.configurationAt(path);
+        this.type = settings.getClass();
+        this.settings = settings;
+    }
+
     public void read() throws ConfigurationException {
         try {
             Field[] fields = ReflectionUtils.getAllFields(settings.getClass());
@@ -63,6 +70,17 @@ public class ConfigReader {
                             continue;
                         }
                         if (checkIfNodeExists(config, c.name())) {
+                            if (!c.parser().equals(ConfigValueParser.DummyValueParser.class)) {
+                                String value = config.getString(c.name());
+                                ConfigValueParser<?> parser = c.parser().getDeclaredConstructor().newInstance();
+                                Object o = parser.parse(value);
+                                if (o != null) {
+                                    ReflectionUtils.setValue(o, settings, field);
+                                } else if (c.required()) {
+                                    throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
+                                }
+                                continue;
+                            }
                             if (c.type().equals(String.class)) {
                                 ReflectionUtils.setValue(config.getString(c.name()), settings, field);
                             } else if (ReflectionUtils.isBoolean(c.type())) {
@@ -82,7 +100,7 @@ public class ConfigReader {
                                 options.read(config);
                                 ReflectionUtils.setValue(options, settings, field);
                             } else if (c.type().equals(List.class)) {
-                                List<String> values = readList(c.name());
+                                List<String> values = readAsList(c.name(), String.class);
                                 if (values != null) {
                                     ReflectionUtils.setValue(values, settings, field);
                                 }
@@ -138,17 +156,19 @@ public class ConfigReader {
         return null;
     }
 
-    public List<String> readList(@NonNull String path) {
+    public <T> List<T> readAsList(@NonNull String path,
+                                  @NonNull Class<? extends T> type) throws Exception {
+        Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrString(type));
         if (checkIfNodeExists(path, __PARAM_VALUES)) {
             HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(path);
             if (pc != null) {
                 List<HierarchicalConfiguration<ImmutableNode>> pl = pc.configurationsAt(__PARAM_VALUE);
                 if (pl != null && !pl.isEmpty()) {
-                    List<String> values = new ArrayList<>(pl.size());
+                    List<T> values = createListType(type);
                     for (HierarchicalConfiguration<ImmutableNode> p : pl) {
                         String value = p.getString(__PARAM_VALUE);
                         if (!Strings.isNullOrEmpty(value)) {
-                            values.add(value);
+                            addToList(value, values, type);
                         }
                     }
                     return values;
@@ -158,7 +178,53 @@ public class ConfigReader {
         return null;
     }
 
-    public Map<String, String> readParameters()  {
+    @SuppressWarnings("unchecked")
+    private <T> void addToList(String value, List<T> list, Class<? extends T> type) throws Exception {
+        if (type.equals(String.class)) {
+            list.add((T) value);
+        } else if (ReflectionUtils.isShort(type)) {
+            Short s = Short.parseShort(value);
+            list.add((T) s);
+        } else if (ReflectionUtils.isInt(type)) {
+            Integer s = Integer.parseInt(value);
+            list.add((T) s);
+        } else if (ReflectionUtils.isLong(type)) {
+            Long s = Long.parseLong(value);
+            list.add((T) s);
+        } else if (ReflectionUtils.isFloat(type)) {
+            Float s = Float.parseFloat(value);
+            list.add((T) s);
+        } else if (ReflectionUtils.isDouble(type)) {
+            Double s = Double.parseDouble(value);
+            list.add((T) s);
+        } else if (type.equals(Class.class)) {
+            Class<?> cls = Class.forName(value);
+            list.add((T) cls);
+        }
+        throw new Exception(String.format("List type not supported. [type=%s]", type.getCanonicalName()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> List<T> createListType(Class<? extends T> type) throws Exception {
+        if (ReflectionUtils.isShort(type)) {
+            return (List<T>) new ArrayList<Short>();
+        } else if (ReflectionUtils.isInt(type)) {
+            return (List<T>) new ArrayList<Integer>();
+        } else if (ReflectionUtils.isLong(type)) {
+            return (List<T>) new ArrayList<Long>();
+        } else if (ReflectionUtils.isFloat(type)) {
+            return (List<T>) new ArrayList<Float>();
+        } else if (ReflectionUtils.isDouble(type)) {
+            return (List<T>) new ArrayList<Double>();
+        } else if (type.equals(String.class)) {
+            return (List<T>) new ArrayList<String>();
+        } else if (type.equals(Class.class)) {
+            return (List<T>) new ArrayList<Class>();
+        }
+        throw new Exception(String.format("List type not supported. [type=%s]", type.getCanonicalName()));
+    }
+
+    public Map<String, String> readParameters() {
         if (checkIfNodeExists((String) null, __NODE_PARAMETERS)) {
             HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(__NODE_PARAMETERS);
             if (pc != null) {

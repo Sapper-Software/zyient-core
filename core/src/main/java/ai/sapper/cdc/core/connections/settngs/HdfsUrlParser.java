@@ -1,11 +1,11 @@
 package ai.sapper.cdc.core.connections.settngs;
 
+import ai.sapper.cdc.common.config.ConfigValueParser;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-public class HdfsUrlParser implements SettingParser<String[][]> {
-    @Override
+public class HdfsUrlParser  implements ConfigValueParser<String[][]> {
     public String[][] parse(@NonNull String value) throws Exception {
         String[][] r = new String[2][2];
         String[] nns = value.split(";");
@@ -32,12 +32,10 @@ public class HdfsUrlParser implements SettingParser<String[][]> {
         return r;
     }
 
-    @Override
-    public String serialize(@NonNull Object source) throws Exception {
-        String[][] value = (String[][]) source;
+    public String serialize(@NonNull String[][] source) throws Exception {
         StringBuilder builder = new StringBuilder();
         boolean first = true;
-        for (String[] nn : value) {
+        for (String[] nn : source) {
             if (first) first = false;
             else {
                 builder.append(";");

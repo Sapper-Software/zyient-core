@@ -16,13 +16,13 @@ public abstract class Settings {
     public static final String CONFIG_PARAMS = "parameters";
 
     @Config(name = CONFIG_PARAMS, required = false, type = Map.class)
-    private Map<String, String> properties;
+    private Map<String, String> parameters;
 
     public Settings() {
 
     }
 
     public Settings(@NonNull Settings source) {
-        this.properties = source.getProperties();
+        this.parameters = source.parameters;
     }
 }

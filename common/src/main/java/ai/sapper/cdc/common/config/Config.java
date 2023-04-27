@@ -13,5 +13,8 @@ public @interface Config {
     boolean required() default true;
 
     Class<?> type() default String.class;
+
     boolean autoUpdate() default false;
+
+    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
 }

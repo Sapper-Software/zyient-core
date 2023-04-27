@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections.hadoop;
 
+import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -60,7 +61,8 @@ public class HdfsHAConnection extends HdfsConnection {
                 }
                 state.clear(EConnectionState.Unknown);
                 config = new HdfsHAConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+                settings = (HdfsConnectionSettings.HdfsBaseSettings) config.settings();
 
                 setupHadoopConfig();
 
@@ -109,16 +111,13 @@ public class HdfsHAConnection extends HdfsConnection {
                 state.clear(EConnectionState.Unknown);
 
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(HdfsHAConfig.__CONFIG_PATH)
                         .build();
-                if (client.checkExists().forPath(hpath) == null) {
-                    throw new Exception(String.format("HDFS Settings path not found. [path=%s]", hpath));
-                }
-                byte[] data = client.getData().forPath(hpath);
-                settings = JSONUtils.read(data, HdfsConnectionSettings.HdfsHASettings.class);
-                Preconditions.checkNotNull(settings);
-                Preconditions.checkState(name.equals(settings.getName()));
+                ZkConfigReader reader = new ZkConfigReader(client, HdfsConnectionSettings.HdfsHASettings.class);
+                reader.read(zkPath);
+                settings = (HdfsConnectionSettings.HdfsBaseSettings) reader.settings();
+                settings.validate();
 
                 setupHadoopConfig();
 
@@ -200,43 +199,9 @@ public class HdfsHAConnection extends HdfsConnection {
     public static final class HdfsHAConfig extends HdfsConfig {
         private static final String __CONFIG_PATH = "hdfs_ha";
 
-        public static class Constants {
-            public static final String DFS_NAME_SERVICES = "nameservice";
-            public static final String DFS_FAILOVER_PROVIDER = "failoverProvider";
-            public static final String DFS_NAME_NODES = "namenodes";
-        }
 
         public HdfsHAConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, new HdfsConnectionSettings.HdfsHASettings());
-        }
-
-        @Override
-        public HdfsConnectionSettings.HdfsBaseSettings read() throws ConfigurationException {
-            if (get() == null) {
-                throw new ConfigurationException("HDFS Configuration not drt or is NULL");
-            }
-            try {
-                HdfsConnectionSettings.HdfsHASettings settings = (HdfsConnectionSettings.HdfsHASettings) settings();
-                settings.setName(get().getString(ConnectionConfig.CONFIG_NAME));
-                settings.setNameService(get().getString(Constants.DFS_NAME_SERVICES));
-                settings.setFailoverProvider(get().getString(Constants.DFS_FAILOVER_PROVIDER));
-                String nn = get().getString(Constants.DFS_NAME_NODES);
-                checkStringValue(nn, getClass(), Constants.DFS_NAME_NODES);
-                HdfsUrlParser parser = new HdfsUrlParser();
-                settings.setNameNodeAddresses(parser.parse(nn));
-                if (checkIfNodeExists((String) null, HdfsConfig.Constants.CONN_SECURITY_ENABLED))
-                    settings.setSecurityEnabled(get().getBoolean(HdfsConfig.Constants.CONN_SECURITY_ENABLED));
-                if (checkIfNodeExists((String) null, HdfsConfig.Constants.CONN_ADMIN_CLIENT_ENABLED))
-                    settings.setAdminEnabled(get().getBoolean(HdfsConfig.Constants.CONN_ADMIN_CLIENT_ENABLED));
-
-                settings.setParameters(readParameters());
-
-                settings.validate();
-
-                return settings;
-            } catch (Throwable t) {
-                throw new ConfigurationException("Error processing HDFS configuration.", t);
-            }
+            super(config, __CONFIG_PATH, HdfsConnectionSettings.HdfsHASettings.class);
         }
     }
 }

@@ -102,10 +102,7 @@ public class JdbcConnection extends DbConnection {
     public static class JdbcConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "jdbc";
 
-        public static class Constants {
-            public static final String CONFIG_DRIVER = "driver";
-            public static final String CONFIG_DIALECT = "dialect";
-        }
+
 
         private JdbcConnectionSettings settings;
 

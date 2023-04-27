@@ -1,6 +1,8 @@
 package ai.sapper.cdc.core.connections.kafka;
 
+import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.messaging.MessagingError;
 import com.google.common.base.Preconditions;
@@ -62,9 +64,10 @@ public class KafkaAdminHelper implements Closeable {
         try {
             adminConfig = new KafkaAdminConfig(config);
             adminConfig.read();
+            KafkaAdminSettings settings = (KafkaAdminSettings) adminConfig.settings();
 
             Properties props = new Properties();
-            props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, adminConfig.bootstrapServers);
+            props.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, settings.bootstrapServers);
 
             kafkaAdmin = AdminClient.create(props);
         } catch (Exception e) {
@@ -205,21 +208,20 @@ public class KafkaAdminHelper implements Closeable {
         return false;
     }
 
-    public static class KafkaAdminConfig extends ConfigReader {
-        public static final String __CONFIG_PATH = "admin";
+    @Getter
+    @Setter
+    public static class KafkaAdminSettings extends Settings {
         public static final String CONFIG_BOOTSTRAP = "servers";
 
+        @Config(name = CONFIG_BOOTSTRAP)
         private String bootstrapServers;
+    }
+
+    public static class KafkaAdminConfig extends ConfigReader {
+        public static final String __CONFIG_PATH = "admin";
 
         public KafkaAdminConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public void read() throws ConfigurationException {
-            bootstrapServers = config().getString(CONFIG_BOOTSTRAP);
-            if (Strings.isNullOrEmpty(bootstrapServers)) {
-                throw new ConfigurationException(String.format("Kafka Admin Configuration Error: missing [%s]", CONFIG_BOOTSTRAP));
-            }
+            super(config, __CONFIG_PATH, KafkaAdminSettings.class);
         }
     }
 }

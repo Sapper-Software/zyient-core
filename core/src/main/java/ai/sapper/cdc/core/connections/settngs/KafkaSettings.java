@@ -1,6 +1,8 @@
 package ai.sapper.cdc.core.connections.settngs;
 
+import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.ConfigValueParser;
 import ai.sapper.cdc.core.connections.ConnectionConfig;
 import ai.sapper.cdc.core.connections.kafka.KafkaConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -21,15 +23,23 @@ import java.util.Properties;
         property = "@class")
 public class KafkaSettings extends ConnectionSettings {
     public static final String PROP_CLIENT_ID = "client.id";
+    public static class Constants {
+        public static final String CONFIG_MODE = "mode";
+        public static final String CONFIG_FILE_CONFIG = "config";
+        public static final String CONFIG_PRODUCER_CONFIG = String.format("producer.%s", CONFIG_FILE_CONFIG);
+        public static final String CONFIG_CONSUMER = "consumer";
+        public static final String CONFIG_PARTITIONS = "partitions";
+        public static final String CONFIG_TOPIC = "topic";
+    }
 
-    @Setting(name = "configPath")
+    @Config(name = "configPath")
     private String configPath;
     private Properties properties;
-    @Setting(name = KafkaConnection.KafkaConfig.Constants.CONFIG_MODE, required = false)
+    @Config(name = Constants.CONFIG_MODE, required = false)
     private KafkaConnection.EKafkaClientMode mode = KafkaConnection.EKafkaClientMode.Producer;
-    @Setting(name = KafkaConnection.KafkaConfig.Constants.CONFIG_TOPIC, required = false)
+    @Config(name = Constants.CONFIG_TOPIC, required = false)
     private String topic;
-    @Setting(name = KafkaConnection.KafkaConfig.Constants.CONFIG_PARTITIONS, required = false, parser = KafkaPartitionsParser.class)
+    @Config(name = Constants.CONFIG_PARTITIONS, required = false, type = List.class, parser = KafkaPartitionsParser.class)
     private List<Integer> partitions;
 
     public KafkaSettings() {
@@ -61,19 +71,5 @@ public class KafkaSettings extends ConnectionSettings {
             return properties.getProperty(PROP_CLIENT_ID);
         }
         return null;
-    }
-
-    @Override
-    public void validate() throws Exception {
-        ConfigReader.checkStringValue(getName(), getClass(), ConnectionConfig.CONFIG_NAME);
-        if (getProperties() != null) {
-            File configFile = ConfigReader.readFileNode(configPath);
-            if (configFile == null || !configFile.exists()) {
-                throw new ConfigurationException(String.format("Kafka Configuration Error: missing [%s]",
-                        KafkaConnection.KafkaConfig.Constants.CONFIG_FILE_CONFIG));
-            }
-            setProperties(new Properties());
-            getProperties().load(new FileInputStream(configFile));
-        }
     }
 }

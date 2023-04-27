@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections.settngs;
 
+import ai.sapper.cdc.common.config.ConfigValueParser;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import com.google.common.base.Strings;
 import lombok.NonNull;
@@ -7,8 +8,7 @@ import lombok.NonNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public class KafkaPartitionsParser implements SettingParser<List<Integer>> {
-    @Override
+public class KafkaPartitionsParser implements ConfigValueParser<List<Integer>> {
     public List<Integer> parse(@NonNull String value) throws Exception {
         List<Integer> partitions = new ArrayList<>();
         if (!Strings.isNullOrEmpty(value)) {
@@ -30,12 +30,10 @@ public class KafkaPartitionsParser implements SettingParser<List<Integer>> {
         return partitions;
     }
 
-    @Override
-    public String serialize(@NonNull Object source) throws Exception {
-        List<Integer> value = (List<Integer>) source;
+    public String serialize(@NonNull List<Integer> source) throws Exception {
         StringBuilder builder = new StringBuilder();
         boolean first = true;
-        for (int v : value) {
+        for (int v : source) {
             if (first) first = false;
             else {
                 builder.append(";");

@@ -1,6 +1,8 @@
 package ai.sapper.cdc.core.connections.hadoop;
 
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -11,11 +13,13 @@ import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.EConnectionType;
 import ai.sapper.cdc.core.connections.settngs.HdfsConnectionSettings;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -56,12 +60,6 @@ public class HdfsConnection implements Connection {
         return settings().getName();
     }
 
-    /**
-     * @param xmlConfig
-     * @return
-     * @throws ConnectionError
-     */
-    @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
         synchronized (state) {
@@ -70,8 +68,8 @@ public class HdfsConnection implements Connection {
                     close();
                 }
                 state.clear(EConnectionState.Unknown);
-                config = new HdfsConfig(xmlConfig);
-                settings = config.read();
+                config = new HdfsConfig(xmlConfig, HdfsConnectionSettings.HdfsSettings.class);
+                config.read();
 
                 setupHadoopConfig();
 
@@ -109,16 +107,14 @@ public class HdfsConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
 
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(HdfsConfig.__CONFIG_PATH)
                         .build();
-                if (client.checkExists().forPath(hpath) == null) {
-                    throw new Exception(String.format("HDFS Settings path not found. [path=%s]", hpath));
-                }
-                byte[] data = client.getData().forPath(hpath);
-                settings = JSONUtils.read(data, HdfsConnectionSettings.HdfsSettings.class);
-                Preconditions.checkNotNull(settings);
-                Preconditions.checkState(name.equals(settings.getName()));
+                ZkConfigReader reader = new ZkConfigReader(client, HdfsConnectionSettings.HdfsSettings.class);
+                reader.read(zkPath);
+                settings = (HdfsConnectionSettings.HdfsBaseSettings) reader.settings();
+                settings.validate();
+
                 setupHadoopConfig();
 
                 state.state(EConnectionState.Initialized);
@@ -149,9 +145,14 @@ public class HdfsConnection implements Connection {
     }
 
     protected void enableSecurity(Configuration conf) throws Exception {
-        HdfsSecurityConfig sConfig = new HdfsSecurityConfig(config.config());
-        sConfig.read();
-        sConfig.setup(conf);
+        ConfigReader reader = new ConfigReader(config.config(),
+                HdfsConnectionSettings.HdfsSecuritySettings.__CONFIG_PATH,
+                HdfsConnectionSettings.HdfsSecuritySettings.class);
+        reader.read();
+        HdfsConnectionSettings.HdfsSecuritySettings settings
+                = (HdfsConnectionSettings.HdfsSecuritySettings) reader.settings();
+        settings.setup(conf);
+        this.settings.setSecuritySettings(settings);
     }
 
     /**
@@ -257,106 +258,18 @@ public class HdfsConnection implements Connection {
     @Getter
     @Accessors(fluent = true)
     public static class HdfsConfig extends ConnectionConfig {
-        public static final class Constants {
-            public static final String CONN_PRI_NAME_NODE_URI = "namenode.primary.URI";
-            public static final String CONN_SEC_NAME_NODE_URI = "namenode.secondary.URI";
-            public static final String CONN_SECURITY_ENABLED = "security.enabled";
-            public static final String CONN_ADMIN_CLIENT_ENABLED = "enableAdmin";
-        }
 
         private static final String __CONFIG_PATH = "hdfs";
 
-        protected final HdfsConnectionSettings.HdfsBaseSettings settings;
-
-        public HdfsConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-            settings = new HdfsConnectionSettings.HdfsSettings();
+        public HdfsConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                          @NonNull Class<? extends HdfsConnectionSettings.HdfsBaseSettings> type) {
+            super(config, __CONFIG_PATH, type);
         }
 
         public HdfsConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                           @NonNull String path,
-                          @NonNull HdfsConnectionSettings.HdfsBaseSettings settings) {
-            super(config, path);
-            this.settings = settings;
-        }
-
-        public HdfsConnectionSettings.HdfsBaseSettings read() throws ConfigurationException {
-            Preconditions.checkNotNull(config());
-            if (get() == null) {
-                throw new ConfigurationException("HDFS Configuration not set or is NULL");
-            }
-            try {
-                HdfsConnectionSettings.HdfsSettings settings = (HdfsConnectionSettings.HdfsSettings) this.settings;
-                settings.setName(get().getString(ConnectionConfig.CONFIG_NAME));
-                settings.setPrimaryNameNodeUri(get().getString(Constants.CONN_PRI_NAME_NODE_URI));
-                checkStringValue(settings.getPrimaryNameNodeUri(), getClass(), Constants.CONN_PRI_NAME_NODE_URI);
-                if (get().containsKey(Constants.CONN_SEC_NAME_NODE_URI)) {
-                    settings.setSecondaryNameNodeUri(get().getString(Constants.CONN_SEC_NAME_NODE_URI));
-                    checkStringValue(settings.getSecondaryNameNodeUri(), getClass(), Constants.CONN_SEC_NAME_NODE_URI);
-                }
-                if (checkIfNodeExists((String) null, Constants.CONN_SECURITY_ENABLED))
-                    settings.setSecurityEnabled(get().getBoolean(Constants.CONN_SECURITY_ENABLED));
-                if (checkIfNodeExists((String) null, Constants.CONN_ADMIN_CLIENT_ENABLED))
-                    settings.setAdminEnabled(get().getBoolean(Constants.CONN_ADMIN_CLIENT_ENABLED));
-
-                settings.setParameters(readParameters());
-
-                settings.validate();
-                return settings;
-            } catch (Throwable t) {
-                throw new ConfigurationException("Error processing HDFS configuration.", t);
-            }
-        }
-    }
-
-    @Getter
-    @Accessors(fluent = true)
-    public static class HdfsSecurityConfig extends ConfigReader {
-        private static final String __CONFIG_PATH = "security";
-        private static final String HDFS_PARAM_SECURITY_REQUIRED = "hadoop.security.authorization";
-        private static final String HDFS_PARAM_SECURITY_MODE = "hadoop.security.authentication";
-        private static final String HDFS_PARAM_SECURITY_KB_HOST = "java.security.krb5.kdc";
-        private static final String HDFS_PARAM_SECURITY_KB_REALM = "java.security.krb5.realm";
-        private static final String HDFS_PARAM_SECURITY_PRINCIPLE = "dfs.namenode.kerberos.principal.pattern";
-        private static final String HDFS_SECURITY_TYPE = "kerberos";
-        private static final String HDFS_SECURITY_USERNAME = "kerberos.username";
-        private static final String HDFS_SECURITY_KEYTAB = "kerberos.user.keytab";
-
-        private Map<String, String> params;
-
-        public HdfsSecurityConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public void read() throws ConfigurationException {
-            params = readParameters();
-        }
-
-        public void setup(@NonNull Configuration conf) throws ConfigurationException, IOException {
-            Preconditions.checkState(params != null);
-
-
-            // set kerberos host and realm
-            System.setProperty(HDFS_PARAM_SECURITY_KB_HOST, params.get(HDFS_PARAM_SECURITY_KB_HOST));
-            System.setProperty(HDFS_PARAM_SECURITY_KB_REALM, params.get(HDFS_PARAM_SECURITY_KB_REALM));
-
-            conf.set(HDFS_PARAM_SECURITY_MODE, HDFS_SECURITY_TYPE);
-            conf.set(HDFS_PARAM_SECURITY_REQUIRED, "true");
-
-            String principle = params.get(HDFS_PARAM_SECURITY_PRINCIPLE);
-            if (!Strings.isNullOrEmpty(principle)) {
-                conf.set(HDFS_PARAM_SECURITY_PRINCIPLE, principle);
-            }
-            String username = params.get(HDFS_SECURITY_USERNAME);
-            if (Strings.isNullOrEmpty(username)) {
-                throw new ConfigurationException(String.format("Missing Kerberos user. [param=%s]", HDFS_SECURITY_USERNAME));
-            }
-            String keyteabf = params.get(HDFS_SECURITY_KEYTAB);
-            if (Strings.isNullOrEmpty(keyteabf)) {
-                throw new ConfigurationException(String.format("Missing keytab path. [param=%s]", HDFS_SECURITY_KEYTAB));
-            }
-            UserGroupInformation.setConfiguration(conf);
-            UserGroupInformation.loginUserFromKeytab(username, keyteabf);
+                          @NonNull Class<? extends HdfsConnectionSettings.HdfsBaseSettings> type) {
+            super(config, path, type);
         }
     }
 }
