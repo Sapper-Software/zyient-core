@@ -1,0 +1,40 @@
+plugins {
+    id "com.google.protobuf" version "0.9.2"
+}
+
+apply plugin: 'com.google.protobuf'
+
+protobuf {
+    // Configure the protoc executable
+    protoc {
+        // Download from repositories
+        artifact = 'com.google.protobuf:protoc:3.21.5'
+    }
+
+    generateProtoTasks {
+
+        // all() returns the collection of all protoc tasks
+        all().each { task ->
+            // Here you can configure the task
+        }
+
+        // (Java-only) returns tasks for a sourceSet
+        ofSourceSet('main')
+    }
+}
+
+idea {
+    module {
+        sourceDirs += file("${projectDir}/src/generated/main/java");
+    }
+}
+
+dependencies {
+    implementation 'ai.sapper.cdc:common:1.4-SNAPSHOT'
+    implementation 'ai.sapper.cdc:core:1.4-SNAPSHOT'
+
+    implementation 'org.apache.avro:avro:1.11.0'
+
+    // https://mvnrepository.com/artifact/joda-time/joda-time
+    implementation 'joda-time:joda-time:2.12.2'
+}

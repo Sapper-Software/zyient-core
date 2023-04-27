@@ -1,0 +1,339 @@
+syntax = "proto2";
+
+package ai_sapper_cdc_entity_model;
+
+option java_multiple_files = true;
+option java_package = "ai.sapper.cdc.entity.model";
+option java_outer_classname = "CDCMessageProto";
+
+message DbSource {
+  enum EngineType {
+    MySQL = 0;
+    MongoDB = 1;
+    PostgresSQL = 2;
+    Oracle = 3;
+    SQLServer = 4;
+    Db2 = 5;
+    Cassandra = 6;
+    Vitess = 7;
+    HBase = 8;
+    Kudu = 9;
+    HDFS = 10;
+  }
+
+  required string name = 1;
+  required EngineType type = 2;
+  required string hostname = 3;
+  required int32 port = 4;
+  required string username = 5;
+  optional string charset = 6;
+}
+
+message DbEntity {
+  required string database = 1;
+  required string table = 2;
+  optional int32 group = 3;
+  optional string sourcePath = 4;
+}
+
+message Version {
+  required int32 major = 1;
+  required int32 minor = 2;
+}
+
+message DbDataType {
+  enum Type {
+    BOOLEAN = 0;
+    TINYINT = 1;
+    SMALLINT = 2;
+    INTEGER = 3;
+    BIGINT = 4;
+    FLOAT = 5;
+    DOUBLE = 6;
+    DECIMAL = 15;
+    VARCHAR = 7;
+    TEXT = 22;
+    LONGTEXT = 8;
+    CHAR = 9;
+    BLOB = 10;
+    LONGBLOB = 11;
+    BINARY = 12;
+    VARBINARY = 13;
+    DATE = 17;
+    TIME = 18;
+    DATETIME = 23;
+    TIMESTAMP = 16;
+    RECORD = 14;
+    ARRAY = 19;
+    MAP = 20;
+    NULL = 21;
+    JSON = 24;
+  }
+  required Type type = 1;
+  optional int64 size = 2;
+  optional int32 scale = 3;
+  optional int32 precision = 4;
+  optional int32 jdbcType = 5;
+  optional int32 rangeMin = 6;
+  optional int32 rangeMax = 7;
+}
+
+message DbColumn {
+  required string name = 1;
+  required DbDataType type = 2;
+  optional string charset = 3;
+  required int32 position = 4;
+  required bool nullable = 5;
+}
+
+message DbKeyColumn {
+  required string name = 1;
+  required int32 position = 2;
+}
+
+message DbPrimaryKey {
+  repeated DbKeyColumn columns = 1;
+}
+
+message DbTable {
+  required DbEntity entity = 1;
+  repeated DbColumn columns = 2;
+  required DbPrimaryKey keys = 3;
+  optional string charset = 4;
+}
+
+message BooleanColumnData {
+  required bool data = 1;
+}
+
+message IntegerColumnData {
+  required int32 data = 1;
+}
+
+message BigIntColumnData {
+  required bytes value = 1;
+}
+
+message LongColumnData {
+  required int64 data = 1;
+}
+
+message FloatColumnData {
+  required float data = 1;
+}
+
+message DoubleColumnData {
+  required double data = 1;
+}
+
+message BigDecColumnData {
+  required BigIntColumnData value = 1;
+  required int32 scale = 2;
+  optional int32 precision = 3;
+}
+
+message StringColumnData {
+  required bytes data = 1;
+  optional string encoding = 2;
+}
+
+message BinaryColumnData {
+  required bytes data = 1;
+}
+
+message NullColumnData {
+  required bool null = 1;
+}
+
+message ArrayColumnData {
+  repeated DbValue data = 1;
+}
+
+message JsonColumnData {
+  required string type = 1;
+  required bytes data = 2;
+}
+
+message MapColumnData {
+  repeated DbKeyValue values = 1;
+}
+
+message DbKeyValue {
+  required DbPrimitiveValue key = 1;
+  optional DbValue value = 2;
+}
+
+message ObjectColumnData {
+  repeated DbColumnData fields = 1;
+}
+
+message DbValue {
+  oneof data {
+    DbPrimitiveValue primitive = 1;
+    ArrayColumnData array = 2;
+    MapColumnData map = 3;
+    ObjectColumnData record = 4;
+  }
+}
+
+message DbPrimitiveValue {
+  oneof value {
+    BooleanColumnData boolean = 4;
+    IntegerColumnData integer = 5;
+    BigIntColumnData bigint = 1;
+    LongColumnData long = 6;
+    FloatColumnData float = 7;
+    DoubleColumnData double = 8;
+    BigDecColumnData decimal = 2;
+    StringColumnData string = 9;
+    BinaryColumnData bytes = 10;
+    JsonColumnData json = 11;
+    NullColumnData null = 12;
+  }
+}
+
+message DbColumnData {
+  required string name = 1;
+  required int32 position = 2;
+  required DbDataType.Type type = 3;
+  required DbValue data = 4;
+}
+
+message DbRecord {
+  repeated DbColumnData columns = 1;
+}
+
+message DbSet {
+  enum Type {
+    GLOBAL = 0;
+    SESSION = 1;
+    OTHER = 2;
+  }
+  required Type type = 1;
+  map<string, string> variables = 2;
+}
+
+message DbKey {
+  repeated DbColumnData values = 1;
+}
+
+message DbChangeRecord {
+  enum ChangeType {
+    CREATE = 0;
+    UPDATE = 1;
+    DELETE = 2;
+  }
+  required DbEntity entity = 1;
+  required Version version = 2;
+  required ChangeType type = 3;
+  optional string query = 4;
+  optional DbRecord before = 5;
+  optional DbRecord after = 6;
+  optional DbRecord filter = 7;
+  optional DbKey key = 8;
+}
+
+message DbDropTable {
+  required bool exists = 1;
+}
+
+message DbAlterColumn {
+  enum ColumnOp {
+    ADD = 0;
+    DROP = 1;
+    MODIFY = 2;
+    RENAME = 3;
+  }
+  required ColumnOp op = 1;
+  required DbColumn column = 2;
+}
+
+message DbAlteredColumns {
+  repeated DbAlterColumn columns = 1;
+}
+
+message DbAlterKey {
+  repeated DbAlterColumn columns = 1;
+}
+
+message DbAlterTable {
+  required DbEntity entity = 1;
+  optional DbAlteredColumns columns = 2;
+  optional DbAlterKey key = 3;
+  optional string charset = 4;
+}
+
+message DbSchemaChange {
+  enum ChangeType {
+    CREATE = 0;
+    ALTER = 1;
+    DROP = 2;
+    CONFIG = 3;
+  }
+  required DbEntity entity = 1;
+  required ChangeType type = 2;
+  required Version version = 3;
+  optional string ddl = 4;
+  oneof op {
+    DbTable table = 5;
+    DbSet set = 6;
+    DbDropTable drop = 7;
+    DbAlterTable alter = 8;
+  }
+}
+
+message Sequence {
+  required int64 major = 1;
+  required int32 minor = 2;
+}
+
+message Transaction {
+  required string id = 1;
+  required Sequence sequence = 2;
+  required int64 timestamp = 3;
+  required string class = 4;
+}
+
+message AdminEvent {
+  enum AdminEventType {
+    SCHEMA_CREATE = 0;
+    SCHEMA_UPDATE = 1;
+    SNAPSHOT_DONE = 2;
+    ENTITY_ACTIVATE = 3;
+    ENTITY_PAUSE = 4;
+    ENTITY_RESUME = 5;
+    ENTITY_DELETE = 6;
+  }
+  required AdminEventType type = 1;
+  required int64 timestamp = 2;
+}
+
+message ErrorEvent {
+  map<string, string> path = 1;
+  optional int64 offset = 2;
+  required string message = 3;
+  oneof change {
+    DbSchemaChange schemaChange = 4;
+    DbChangeRecord changeRecord = 5;
+  }
+}
+
+message ChangeEvent {
+  enum EventType {
+    SCHEMA = 0;
+    DATA = 1;
+    ADMIN = 2;
+    ERROR = 3;
+  }
+  required DbSource source = 1;
+  required DbEntity entity = 2;
+  required EventType type = 3;
+  required Transaction tnx = 4;
+  required bool snapshot = 5;
+  oneof change {
+    DbSchemaChange schemaChange = 6;
+    DbChangeRecord changeRecord = 7;
+    AdminEvent adminEvent = 8;
+    ErrorEvent errorEvent = 9;
+  }
+}
