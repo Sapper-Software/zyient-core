@@ -9,4 +9,5 @@ pluginManagement {
 rootProject.name = 'cdc-core'
 include 'common'
 include 'entity'
+include 'core'
 

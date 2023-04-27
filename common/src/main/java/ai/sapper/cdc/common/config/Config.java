@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common;
+package ai.sapper.cdc.common.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -13,4 +13,5 @@ public @interface Config {
     boolean required() default true;
 
     Class<?> type() default String.class;
+    boolean autoUpdate() default false;
 }

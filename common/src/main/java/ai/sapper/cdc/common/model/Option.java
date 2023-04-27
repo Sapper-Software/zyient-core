@@ -1,6 +1,7 @@
 package ai.sapper.cdc.common.model;
 
-import ai.sapper.cdc.common.ConfigReader;
+import ai.sapper.cdc.common.config.ConfigReader;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -11,7 +12,9 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.CLASS
+)
 public class Option {
     public static class Constants {
         public static final String __CONFIG_PATH = "option";

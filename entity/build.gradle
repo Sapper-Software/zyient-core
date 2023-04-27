@@ -25,13 +25,13 @@ protobuf {
 
 idea {
     module {
-        sourceDirs += file("${projectDir}/src/generated/main/java");
+        sourceDirs += file("${projectDir}/build/generated/source/main/java");
     }
 }
 
 dependencies {
-    implementation 'ai.sapper.cdc:common:1.4-SNAPSHOT'
-    implementation 'ai.sapper.cdc:core:1.4-SNAPSHOT'
+    implementation project(':common')
+    implementation project(':core')
 
     implementation 'org.apache.avro:avro:1.11.0'
 

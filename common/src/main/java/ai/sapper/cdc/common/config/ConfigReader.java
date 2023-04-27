@@ -1,5 +1,6 @@
-package ai.sapper.cdc.common;
+package ai.sapper.cdc.common.config;
 
+import ai.sapper.cdc.common.model.Options;
 import ai.sapper.cdc.common.model.services.EConfigFileType;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
@@ -28,48 +29,69 @@ import java.net.URI;
 import java.util.*;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public class ConfigReader {
     public static final String __NODE_PARAMETERS = "parameters";
     public static final String __NODE_PARAMETER = "parameter";
     public static final String __PARAM_NAME = "name";
     public static final String __PARAM_VALUE = "value";
-    public static final String CONFIG_PARAMS = "parameters";
+    public static final String __PARAM_VALUES = "values";
 
     private final HierarchicalConfiguration<ImmutableNode> config;
+    private final Class<? extends Settings> type;
+    private Settings settings;
 
-    public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config, @NonNull String path) {
+    public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                        @NonNull String path,
+                        @NonNull Class<? extends Settings> type) {
         this.config = config.configurationAt(path);
+        this.type = type;
     }
 
-    public void read(@NonNull Class<? extends ConfigReader> type) throws ConfigurationException {
+    public void read() throws ConfigurationException {
         try {
-            Field[] fields = ReflectionUtils.getAllFields(getClass());
+            Field[] fields = ReflectionUtils.getAllFields(settings.getClass());
             if (fields != null) {
+                settings = type.getDeclaredConstructor().newInstance();
                 for (Field field : fields) {
                     if (field.isAnnotationPresent(Config.class)) {
                         Config c = field.getAnnotation(Config.class);
-                        if (c.name().compareTo(CONFIG_PARAMS) == 0) {
+                        if (c.name().compareTo(Settings.CONFIG_PARAMS) == 0) {
                             Map<String, String> params = readParameters();
-                            ReflectionUtils.setValue(params, this, field);
+                            if (params != null)
+                                ReflectionUtils.setValue(params, settings, field);
                             continue;
                         }
                         if (checkIfNodeExists(config, c.name())) {
                             if (c.type().equals(String.class)) {
-                                ReflectionUtils.setValue(config.getString(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getString(c.name()), settings, field);
                             } else if (ReflectionUtils.isBoolean(c.type())) {
-                                ReflectionUtils.setValue(config.getBoolean(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getBoolean(c.name()), settings, field);
                             } else if (ReflectionUtils.isShort(c.type())) {
-                                ReflectionUtils.setValue(config.getShort(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getShort(c.name()), settings, field);
                             } else if (ReflectionUtils.isInt(c.type())) {
-                                ReflectionUtils.setValue(config.getInt(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getInt(c.name()), settings, field);
                             } else if (ReflectionUtils.isLong(c.type())) {
-                                ReflectionUtils.setValue(config.getLong(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getLong(c.name()), settings, field);
                             } else if (ReflectionUtils.isFloat(c.type())) {
-                                ReflectionUtils.setValue(config.getFloat(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getFloat(c.name()), settings, field);
                             } else if (ReflectionUtils.isDouble(c.type())) {
-                                ReflectionUtils.setValue(config.getDouble(c.name()), this, field);
+                                ReflectionUtils.setValue(config.getDouble(c.name()), settings, field);
+                            } else if (c.type().equals(Options.class)) {
+                                Options options = new Options(c.name());
+                                options.read(config);
+                                ReflectionUtils.setValue(options, settings, field);
+                            } else if (c.type().equals(List.class)) {
+                                List<String> values = readList(c.name());
+                                if (values != null) {
+                                    ReflectionUtils.setValue(values, settings, field);
+                                }
+                            } else if (c.type().equals(Class.class)) {
+                                Class<?> cls = Class.forName(config.getString(c.name()));
+                                ReflectionUtils.setValue(cls, settings, field);
+                            } else if (c.type().isEnum()) {
+                                String value = config.getString(c.name());
+                                ReflectionUtils.setValueFromString(value, settings, field);
                             }
                         } else if (c.required()) {
                             throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
@@ -116,7 +138,27 @@ public class ConfigReader {
         return null;
     }
 
-    protected Map<String, String> readParameters() throws ConfigurationException {
+    public List<String> readList(@NonNull String path) {
+        if (checkIfNodeExists(path, __PARAM_VALUES)) {
+            HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(path);
+            if (pc != null) {
+                List<HierarchicalConfiguration<ImmutableNode>> pl = pc.configurationsAt(__PARAM_VALUE);
+                if (pl != null && !pl.isEmpty()) {
+                    List<String> values = new ArrayList<>(pl.size());
+                    for (HierarchicalConfiguration<ImmutableNode> p : pl) {
+                        String value = p.getString(__PARAM_VALUE);
+                        if (!Strings.isNullOrEmpty(value)) {
+                            values.add(value);
+                        }
+                    }
+                    return values;
+                }
+            }
+        }
+        return null;
+    }
+
+    public Map<String, String> readParameters()  {
         if (checkIfNodeExists((String) null, __NODE_PARAMETERS)) {
             HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(__NODE_PARAMETERS);
             if (pc != null) {

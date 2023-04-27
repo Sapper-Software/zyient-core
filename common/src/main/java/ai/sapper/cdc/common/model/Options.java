@@ -133,7 +133,7 @@ public class Options {
         if (nodes != null && !nodes.isEmpty()) {
             for (HierarchicalConfiguration<ImmutableNode> n : nodes) {
                 Option option = new Option().read(n);
-                put(option.name(), option.parseValue());
+                put(option.getName(), option.parseValue());
             }
         }
     }

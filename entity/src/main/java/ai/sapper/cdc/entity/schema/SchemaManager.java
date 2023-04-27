@@ -1,6 +1,6 @@
 package ai.sapper.cdc.entity.schema;
 
-import ai.sapper.cdc.common.ConfigReader;
+import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.cache.LRUCache;
 import ai.sapper.cdc.common.model.services.PathOrSchema;
 import ai.sapper.cdc.common.model.services.PathWithSchema;
