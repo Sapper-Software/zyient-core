@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections.settngs;
 
+import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.connections.ConnectionConfig;
 import ai.sapper.cdc.core.connections.db.AzureTableConnection;
@@ -16,9 +17,9 @@ public class AzureTableConnectionSettings extends ConnectionSettings {
         public static final String CONFIG_DB_NAME = "db";
     }
 
-    @Setting(name = Constants.CONFIG_CONNECTION_STRING)
+    @Config(name = Constants.CONFIG_CONNECTION_STRING)
     private String connectionString;
-    @Setting(name = Constants.CONFIG_DB_NAME)
+    @Config(name = Constants.CONFIG_DB_NAME)
     private String db;
 
     public AzureTableConnectionSettings() {
@@ -30,12 +31,6 @@ public class AzureTableConnectionSettings extends ConnectionSettings {
         super(settings);
         Preconditions.checkArgument(settings instanceof AzureTableConnectionSettings);
         connectionString = ((AzureTableConnectionSettings) settings).getConnectionString();
-    }
-
-    @Override
-    public void validate() throws Exception {
-        ConfigReader.checkStringValue(getName(), getClass(), ConnectionConfig.CONFIG_NAME);
-        ConfigReader.checkStringValue(connectionString, getClass(), Constants.CONFIG_CONNECTION_STRING);
-        ConfigReader.checkStringValue(db, getClass(), Constants.CONFIG_DB_NAME);
+        db = ((AzureTableConnectionSettings) settings).db;
     }
 }

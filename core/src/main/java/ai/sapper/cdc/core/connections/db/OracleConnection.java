@@ -40,8 +40,8 @@ public class OracleConnection extends DbConnection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new OracleConnectionConfig(xmlConfig);
-                settings = config.read();
-
+                config.read();
+                settings = (JdbcConnectionSettings) config.settings();
                 state.state(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
@@ -135,16 +135,8 @@ public class OracleConnection extends DbConnection {
     public static class OracleConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "oracle";
 
-        private JdbcConnectionSettings settings;
-
         public OracleConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public JdbcConnectionSettings read() throws ConfigurationException {
-            settings = super.read();
-            settings.setConnectionClass(OracleConnection.class);
-            return settings;
+            super(config, __CONFIG_PATH, OracleConnection.class);
         }
     }
 }

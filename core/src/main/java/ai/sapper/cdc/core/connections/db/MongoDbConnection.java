@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections.db;
 
+import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -9,6 +10,7 @@ import ai.sapper.cdc.core.connections.ConnectionManager;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.EConnectionType;
+import ai.sapper.cdc.core.connections.settngs.JdbcConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.MongoDbConnectionSettings;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.google.common.base.Preconditions;
@@ -61,7 +63,8 @@ public class MongoDbConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new MongoDbConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+                settings = (MongoDbConnectionSettings) config.settings();
 
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -83,16 +86,17 @@ public class MongoDbConnection implements Connection {
                 }
                 state.clear(EConnectionState.Unknown);
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(zkNode)
                         .build();
-                if (client.checkExists().forPath(hpath) == null) {
-                    throw new Exception(String.format("JDBC Settings path not found. [path=%s]", hpath));
+                ZkConfigReader reader = new ZkConfigReader(client, MongoDbConnectionSettings.class);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("MongoDB Connection settings not found. [path=%s]", zkPath));
                 }
-                byte[] data = client.getData().forPath(hpath);
-                settings = JSONUtils.read(data, MongoDbConnectionSettings.class);
-                Preconditions.checkNotNull(settings);
-                Preconditions.checkState(name.equals(settings.getName()));
+                settings = (MongoDbConnectionSettings) reader.settings();
+                settings.validate();
+
                 this.connectionManager = env.connectionManager();
                 state.state(EConnectionState.Initialized);
                 return this;

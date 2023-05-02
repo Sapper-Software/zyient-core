@@ -1,18 +1,24 @@
 package ai.sapper.cdc.core.connections.db;
 
+import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.ZkConfigReader;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
+import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settngs.JdbcConnectionSettings;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.curator.framework.CuratorFramework;
 
 import java.io.IOException;
 import java.sql.DriverManager;
@@ -43,7 +49,9 @@ public class Db2Connection extends DbConnection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new Db2ConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+
+                settings = (JdbcConnectionSettings) config.settings();
 
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -53,8 +61,40 @@ public class Db2Connection extends DbConnection {
         }
     }
 
+    @Override
+    public Connection init(@NonNull String name,
+                           @NonNull ZookeeperConnection connection,
+                           @NonNull String path,
+                           @NonNull BaseEnv<?> env) throws ConnectionError {
+        synchronized (state) {
+            try {
+                if (state.isConnected()) {
+                    close();
+                }
+                state.clear(EConnectionState.Unknown);
+                CuratorFramework client = connection.client();
+                String zkPath = new PathUtils.ZkPathBuilder(path)
+                        .withPath(zkNode)
+                        .build();
+                ZkConfigReader reader = new ZkConfigReader(client, Db2ConnectionSettings.class);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("JDBC Connection settings not found. [path=%s]", zkPath));
+                }
+                settings = (JdbcConnectionSettings) reader.settings();
+                settings.validate();
+
+                this.connectionManager = env.connectionManager();
+                state.state(EConnectionState.Initialized);
+                return this;
+            } catch (Exception ex) {
+                throw new ConnectionError(ex);
+            }
+        }
+    }
+
     public String db2Type() {
-        return config.db2Type;
+        return ((Db2ConnectionSettings) config.settings()).db2Type;
     }
 
     protected String createJdbcUrl() throws Exception {
@@ -136,28 +176,21 @@ public class Db2Connection extends DbConnection {
         return Db2ConnectionConfig.__CONFIG_PATH;
     }
 
+    @Getter
+    @Setter
+    public static class Db2ConnectionSettings extends JdbcConnectionSettings {
+        @Config(name = "db2type", required = false)
+        private String db2Type = TYPE_DB2_LUW;
+    }
 
     @Getter
     @Accessors(fluent = true)
     public static class Db2ConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "db2";
-        public static final String CONFIG_DB2_TYPE = "db2type";
 
-        private JdbcConnectionSettings settings;
-        private String db2Type = TYPE_DB2_LUW;
 
         public Db2ConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public JdbcConnectionSettings read() throws ConfigurationException {
-            settings = super.read();
-            settings.setConnectionClass(Db2Connection.class);
-            String s = get().getString(CONFIG_DB2_TYPE);
-            if (!Strings.isNullOrEmpty(s)) {
-                db2Type = s;
-            }
-            return settings;
+            super(config, __CONFIG_PATH, Db2ConnectionSettings.class, Db2Connection.class);
         }
     }
 }

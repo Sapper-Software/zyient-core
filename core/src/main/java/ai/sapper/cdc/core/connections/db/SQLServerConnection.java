@@ -40,7 +40,8 @@ public class SQLServerConnection extends DbConnection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new SQLServerConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+                settings = (JdbcConnectionSettings) config.settings();
 
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -135,16 +136,8 @@ public class SQLServerConnection extends DbConnection {
     public static class SQLServerConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "sqlserver";
 
-        private JdbcConnectionSettings settings;
-
         public SQLServerConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public JdbcConnectionSettings read() throws ConfigurationException {
-            settings = super.read();
-            settings.setConnectionClass(SQLServerConnection.class);
-            return settings;
+            super(config, __CONFIG_PATH, SQLServerConnection.class);
         }
     }
 }

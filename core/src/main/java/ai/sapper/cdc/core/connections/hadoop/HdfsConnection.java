@@ -111,7 +111,10 @@ public class HdfsConnection implements Connection {
                         .withPath(HdfsConfig.__CONFIG_PATH)
                         .build();
                 ZkConfigReader reader = new ZkConfigReader(client, HdfsConnectionSettings.HdfsSettings.class);
-                reader.read(zkPath);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("HDFS Connection settings not found. [path=%s]", zkPath));
+                }
                 settings = (HdfsConnectionSettings.HdfsBaseSettings) reader.settings();
                 settings.validate();
 

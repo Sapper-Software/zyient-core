@@ -115,7 +115,10 @@ public class HdfsHAConnection extends HdfsConnection {
                         .withPath(HdfsHAConfig.__CONFIG_PATH)
                         .build();
                 ZkConfigReader reader = new ZkConfigReader(client, HdfsConnectionSettings.HdfsHASettings.class);
-                reader.read(zkPath);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("HDFS(HA) Connection settings not found. [path=%s]", zkPath));
+                }
                 settings = (HdfsConnectionSettings.HdfsBaseSettings) reader.settings();
                 settings.validate();
 

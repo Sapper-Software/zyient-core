@@ -41,7 +41,8 @@ public class JdbcConnection extends DbConnection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new JdbcConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+                settings = (JdbcConnectionSettings) config.settings();
 
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -102,30 +103,8 @@ public class JdbcConnection extends DbConnection {
     public static class JdbcConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "jdbc";
 
-
-
-        private JdbcConnectionSettings settings;
-
         public JdbcConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
             super(config, __CONFIG_PATH);
-        }
-
-        public JdbcConnectionSettings read() throws ConfigurationException {
-            try {
-                settings = super.read();
-                settings.setJdbcDriver(get().getString(Constants.CONFIG_DRIVER));
-                if (Strings.isNullOrEmpty(settings.getJdbcDriver())) {
-                    throw new ConfigurationException(
-                            String.format("JDBC Configuration Error: missing [%s]", Constants.CONFIG_DRIVER));
-                }
-                String s = get().getString(Constants.CONFIG_DIALECT);
-                if (!Strings.isNullOrEmpty(s)) {
-                    settings.setJdbcDialect(s);
-                }
-                return settings;
-            } catch (Exception ex) {
-                throw new ConfigurationException(ex);
-            }
         }
     }
 }

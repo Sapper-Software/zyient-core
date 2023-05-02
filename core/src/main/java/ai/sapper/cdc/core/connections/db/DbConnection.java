@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections.db;
 
+import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -59,16 +60,17 @@ public abstract class DbConnection implements Connection {
                 }
                 state.clear(EConnectionState.Unknown);
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(zkNode)
                         .build();
-                if (client.checkExists().forPath(hpath) == null) {
-                    throw new Exception(String.format("JDBC Settings path not found. [path=%s]", hpath));
+                ZkConfigReader reader = new ZkConfigReader(client, JdbcConnectionSettings.class);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("JDBC Connection settings not found. [path=%s]", zkPath));
                 }
-                byte[] data = client.getData().forPath(hpath);
-                settings = JSONUtils.read(data, JdbcConnectionSettings.class);
-                Preconditions.checkNotNull(settings);
-                Preconditions.checkState(name.equals(settings.getName()));
+                settings = (JdbcConnectionSettings) reader.settings();
+                settings.validate();
+
                 this.connectionManager = env.connectionManager();
                 state.state(EConnectionState.Initialized);
                 return this;

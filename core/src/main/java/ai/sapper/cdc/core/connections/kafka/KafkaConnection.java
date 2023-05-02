@@ -85,7 +85,10 @@ public abstract class KafkaConnection implements MessageConnection {
                     .withPath(KafkaConfig.__CONFIG_PATH)
                     .build();
             ZkConfigReader reader = new ZkConfigReader(client, KafkaSettings.class);
-            reader.read(zkPath);
+            if (!reader.read(zkPath)) {
+                throw new ConnectionError(
+                        String.format("Kafka Connection settings not found. [path=%s]", zkPath));
+            }
             settings = (KafkaSettings) reader.settings();
             settings.validate();
 

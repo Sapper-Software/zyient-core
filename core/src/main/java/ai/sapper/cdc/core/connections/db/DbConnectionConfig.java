@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.connections.db;
 
 import ai.sapper.cdc.core.connections.ConnectionConfig;
+import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.JdbcConnectionSettings;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -15,43 +16,27 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Setter
 @Accessors(fluent = true)
 public class DbConnectionConfig extends ConnectionConfig {
-    public static class Constants {
-
-    }
-
-    private final JdbcConnectionSettings settings = new JdbcConnectionSettings();
+    private final Class<? extends DbConnection> connectionClass;
 
     public DbConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                              @NonNull String path) {
-        super(config, path);
+                              @NonNull String path,
+                              @NonNull Class<? extends DbConnection> connectionClass) {
+        super(config, path, JdbcConnectionSettings.class);
+        this.connectionClass = connectionClass;
     }
 
-    public JdbcConnectionSettings read() throws ConfigurationException {
-        if (get() == null) {
-            throw new ConfigurationException("JDBC Configuration not drt or is NULL");
-        }
-        try {
-            settings.setName(get().getString(ConnectionConfig.CONFIG_NAME));
-            checkStringValue(settings.getName(), getClass(), ConnectionConfig.CONFIG_NAME);
-            settings.setJdbcUrl(get().getString(Constants.CONFIG_JDBC_URL));
-            checkStringValue(settings.getJdbcUrl(), getClass(), Constants.CONFIG_JDBC_URL);
-            settings.setUser(get().getString(Constants.CONFIG_USER));
-            checkStringValue(settings.getUser(), getClass(), Constants.CONFIG_USER);
-            settings.setPassword(get().getString(Constants.CONFIG_PASS_KEY));
-            checkStringValue(settings.getPassword(), getClass(), Constants.CONFIG_PASS_KEY);
-            String s = get().getString(Constants.CONFIG_POOL_SIZE);
-            if (!Strings.isNullOrEmpty(s)) {
-                settings.setPoolSize(Integer.parseInt(s));
-            }
-            s = get().getString(Constants.CONFIG_DB_NAME);
-            if (!Strings.isNullOrEmpty(s)) {
-                settings.setDb(s);
-            }
-            settings.setParameters(readParameters());
+    public DbConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                              @NonNull String path,
+                              @NonNull Class<? extends ConnectionSettings> type,
+                              @NonNull Class<? extends DbConnection> connectionClass) {
+        super(config, path, type);
+        this.connectionClass = connectionClass;
+    }
 
-            return settings;
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
+    @Override
+    public void read() throws ConfigurationException {
+        super.read();
+        JdbcConnectionSettings settings = (JdbcConnectionSettings) settings();
+        settings.setConnectionClass(connectionClass);
     }
 }

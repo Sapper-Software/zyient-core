@@ -40,7 +40,7 @@ public class MySqlConnection extends DbConnection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new MySqlConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
 
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -134,17 +134,9 @@ public class MySqlConnection extends DbConnection {
     @Accessors(fluent = true)
     public static class MySqlConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "mysql";
-
-        private JdbcConnectionSettings settings;
-
+        
         public MySqlConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public JdbcConnectionSettings read() throws ConfigurationException {
-            settings = super.read();
-            settings.setConnectionClass(MySqlConnection.class);
-            return settings;
+            super(config, __CONFIG_PATH, MySqlConnection.class);
         }
     }
 }

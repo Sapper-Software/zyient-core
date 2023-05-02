@@ -40,8 +40,8 @@ public class S2Connection extends DbConnection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new S2ConnectionConfig(xmlConfig);
-                settings = config.read();
-
+                config.read();
+                settings = (JdbcConnectionSettings) config.settings();
                 state.state(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
@@ -135,16 +135,8 @@ public class S2Connection extends DbConnection {
     public static class S2ConnectionConfig extends DbConnectionConfig {
         public static final String __CONFIG_PATH = "s2";
 
-        private JdbcConnectionSettings settings;
-
         public S2ConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-        }
-
-        public JdbcConnectionSettings read() throws ConfigurationException {
-            settings = super.read();
-            settings.setConnectionClass(S2Connection.class);
-            return settings;
+            super(config, __CONFIG_PATH, S2Connection.class);
         }
     }
 }

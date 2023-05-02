@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.connections.db;
 
+import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -7,6 +8,7 @@ import ai.sapper.cdc.core.connections.*;
 import ai.sapper.cdc.core.connections.settngs.AzureTableConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.EConnectionType;
+import ai.sapper.cdc.core.connections.settngs.JdbcConnectionSettings;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.data.tables.TableServiceClient;
 import com.azure.data.tables.TableServiceClientBuilder;
@@ -51,7 +53,8 @@ public class AzureTableConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
                 this.connectionManager = env.connectionManager();
                 config = new AzureTableConnectionConfig(xmlConfig);
-                settings = config.read();
+                config.read();
+                settings = (AzureTableConnectionSettings) config.settings();
 
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -64,7 +67,8 @@ public class AzureTableConnection implements Connection {
     @Override
     public Connection init(@NonNull String name,
                            @NonNull ZookeeperConnection connection,
-                           @NonNull String path, @NonNull BaseEnv<?> env) throws ConnectionError {
+                           @NonNull String path,
+                           @NonNull BaseEnv<?> env) throws ConnectionError {
         synchronized (state) {
             try {
                 if (state.isConnected()) {
@@ -72,16 +76,17 @@ public class AzureTableConnection implements Connection {
                 }
                 state.clear(EConnectionState.Unknown);
                 CuratorFramework client = connection.client();
-                String hpath = new PathUtils.ZkPathBuilder(path)
+                String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(AzureTableConnectionConfig.__CONFIG_PATH)
                         .build();
-                if (client.checkExists().forPath(hpath) == null) {
-                    throw new Exception(String.format("JDBC Settings path not found. [path=%s]", hpath));
+                ZkConfigReader reader = new ZkConfigReader(client, AzureTableConnectionSettings.class);
+                if (!reader.read(zkPath)) {
+                    throw new ConnectionError(
+                            String.format("JDBC Connection settings not found. [path=%s]", zkPath));
                 }
-                byte[] data = client.getData().forPath(hpath);
-                settings = JSONUtils.read(data, AzureTableConnectionSettings.class);
-                Preconditions.checkNotNull(settings);
-                Preconditions.checkState(name.equals(settings.getName()));
+                settings = (AzureTableConnectionSettings) reader.settings();
+                settings.validate();
+
                 this.connectionManager = env.connectionManager();
                 state.state(EConnectionState.Initialized);
                 return this;
@@ -174,30 +179,12 @@ public class AzureTableConnection implements Connection {
     }
 
     @Getter
-    @Setter
     @Accessors(fluent = true)
     public static class AzureTableConnectionConfig extends ConnectionConfig {
         public static final String __CONFIG_PATH = "azure.table";
 
-        private AzureTableConnectionSettings settings;
-
         public AzureTableConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
-            settings = new AzureTableConnectionSettings();
-        }
-
-        public AzureTableConnectionSettings read() throws ConfigurationException {
-            try {
-                settings.setName(get().getString(ConnectionConfig.CONFIG_NAME));
-                checkStringValue(settings.getName(), getClass(), ConnectionConfig.CONFIG_NAME);
-                settings.setDb(get().getString(AzureTableConnectionSettings.Constants.CONFIG_DB_NAME));
-                settings.setConnectionString(get().getString(AzureTableConnectionSettings.Constants.CONFIG_CONNECTION_STRING));
-                settings.validate();
-
-                return settings;
-            } catch (Exception ex) {
-                throw new ConfigurationException(ex);
-            }
+            super(config, __CONFIG_PATH, AzureTableConnectionSettings.class);
         }
     }
 }
