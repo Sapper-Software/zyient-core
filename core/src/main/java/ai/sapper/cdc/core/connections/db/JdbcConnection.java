@@ -104,7 +104,7 @@ public class JdbcConnection extends DbConnection {
         public static final String __CONFIG_PATH = "jdbc";
 
         public JdbcConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
+            super(config, __CONFIG_PATH, JdbcConnection.class);
         }
     }
 }
