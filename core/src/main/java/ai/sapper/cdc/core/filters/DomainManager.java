@@ -272,7 +272,7 @@ public class DomainManager {
 
     @Getter
     @Accessors(fluent = true)
-    public static class DomainManagerConfig extends BaseStateManager.BaseStateManagerConfig {
+    public static class DomainManagerConfig extends BaseStateManager.BaseStateManagerSettings {
         public static final class Constants {
             public static final String CONFIG_HDFS_CONNECTION = "hdfs";
             public static final String CONFIG_IGNORE_REGEX = "ignoreRegex";

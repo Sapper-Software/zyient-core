@@ -36,33 +36,6 @@ public class LocalPathInfo extends PathInfo {
 
     /**
      * @return
-     */
-    @Override
-    public PathInfo parentPathInfo() throws Exception {
-        return new LocalPathInfo(file.getParentFile().getAbsolutePath(),
-                domain());
-    }
-
-    /**
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public boolean isDirectory() throws IOException {
-        return file.isDirectory();
-    }
-
-    /**
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public boolean isFile() throws IOException {
-        return file.isFile();
-    }
-
-    /**
-     * @return
      * @throws IOException
      */
     @Override

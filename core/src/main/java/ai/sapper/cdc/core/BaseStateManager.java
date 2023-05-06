@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core;
 
-import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
@@ -11,6 +12,7 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -33,7 +35,7 @@ public abstract class BaseStateManager<T> implements Closeable {
     }
 
     private ZookeeperConnection connection;
-    private BaseStateManagerConfig config;
+    private BaseStateManagerSettings settings;
     private String zkPath;
     private String zkAgentStatePath;
     private String zkModulePath;
@@ -85,23 +87,23 @@ public abstract class BaseStateManager<T> implements Closeable {
         return this;
     }
 
-    public BaseStateManager<T> withConfig(@NonNull BaseStateManagerConfig config) {
-        this.config = config;
+    public BaseStateManager<T> withSettings(@NonNull BaseStateManager.BaseStateManagerSettings settings) {
+        this.settings = settings;
         return this;
     }
 
     public String basePath() {
-        return config().basePath();
+        return settings().basePath();
     }
 
     public BaseStateManager<T> init(@NonNull BaseEnv<?> env) throws ManagerStateError {
         try {
             Preconditions.checkNotNull(moduleInstance);
-            Preconditions.checkNotNull(config);
+            Preconditions.checkNotNull(settings);
             Preconditions.checkState(!Strings.isNullOrEmpty(environment));
 
             connection = env.connectionManager()
-                    .getConnection(config.zkConnection(),
+                    .getConnection(settings.zkConnection(),
                             ZookeeperConnection.class);
             Preconditions.checkNotNull(connection);
             if (!connection.isConnected()) connection.connect();
@@ -336,8 +338,8 @@ public abstract class BaseStateManager<T> implements Closeable {
     }
 
     @Getter
-    @Accessors(fluent = true)
-    public static abstract class BaseStateManagerConfig extends ConfigReader {
+    @Setter
+    public static abstract class BaseStateManagerSettings extends Settings {
 
         public static final class Constants {
             public static final String __CONFIG_PATH = "state";
@@ -345,36 +347,9 @@ public abstract class BaseStateManager<T> implements Closeable {
             public static final String CONFIG_ZK_CONNECTION = "connection";
         }
 
+        @Config(name = Constants.CONFIG_ZK_BASE)
         private String basePath;
+        @Config(name = Constants.CONFIG_ZK_CONNECTION)
         private String zkConnection;
-
-        public BaseStateManagerConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                                      @NonNull String path) {
-            super(config, path);
-        }
-
-        public void read() throws ConfigurationException {
-            if (get() == null) {
-                throw new ConfigurationException("Domain Manager Configuration not set or is NULL");
-            }
-            try {
-                basePath = get().getString(Constants.CONFIG_ZK_BASE);
-                if (Strings.isNullOrEmpty(basePath)) {
-                    throw new ConfigurationException(String.format("Domain Manager Configuration Error: missing [%s]",
-                            Constants.CONFIG_ZK_BASE));
-                }
-                basePath = basePath.trim();
-                if (basePath.endsWith("/")) {
-                    basePath = basePath.substring(0, basePath.length() - 2);
-                }
-                zkConnection = get().getString(Constants.CONFIG_ZK_CONNECTION);
-                if (Strings.isNullOrEmpty(zkConnection)) {
-                    throw new ConfigurationException(String.format("Domain Manager Configuration Error: missing [%s]",
-                            Constants.CONFIG_ZK_CONNECTION));
-                }
-            } catch (Throwable t) {
-                throw new ConfigurationException("Error processing Domain Manager configuration.", t);
-            }
-        }
     }
 }

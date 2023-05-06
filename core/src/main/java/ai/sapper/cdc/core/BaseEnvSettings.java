@@ -21,7 +21,7 @@ public abstract class BaseEnvSettings extends Settings {
         private static final String CONFIG_HEARTBEAT = "enableHeartbeat";
         private static final String CONFIG_SOURCE_NAME = "source";
         private static final String CONFIG_STATE_MANAGER_TYPE
-                = BaseStateManager.BaseStateManagerConfig.Constants.__CONFIG_PATH + ".stateManagerClass";
+                = BaseStateManager.BaseStateManagerSettings.Constants.__CONFIG_PATH + ".stateManagerClass";
         private static final String CONFIG_CONNECTIONS = "paths.connections";
 
     }

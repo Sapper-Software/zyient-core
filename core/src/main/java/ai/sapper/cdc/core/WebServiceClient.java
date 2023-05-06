@@ -1,6 +1,8 @@
 package ai.sapper.cdc.core;
 
+import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.ConnectionManager;
@@ -9,6 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -28,6 +31,7 @@ import java.util.Map;
 public class WebServiceClient {
     private WebServiceConnection connection;
     private WebServiceClientConfig config;
+    private WebServiceClientSettings settings;
 
     public WebServiceClient() {
     }
@@ -42,12 +46,12 @@ public class WebServiceClient {
         try {
             config = new WebServiceClientConfig(xmlConfig, configPath);
             config.read();
-
-            connection = manager.getConnection(config.connection, WebServiceConnection.class);
+            settings = (WebServiceClientSettings) config.settings();
+            connection = manager.getConnection(settings.connection, WebServiceConnection.class);
             if (connection == null) {
                 throw new ConfigurationException(
                         String.format("Connection not found. [name=%s][type=%s]",
-                                config.connection, WebServiceConnection.class.getCanonicalName()));
+                                settings.connection, WebServiceConnection.class.getCanonicalName()));
             }
 
             return this;
@@ -61,7 +65,7 @@ public class WebServiceClient {
                      List<String> params,
                      String mediaType) throws ConnectionError {
         Preconditions.checkNotNull(connection);
-        String path = config.pathMap.get(service);
+        String path = settings.pathMap.get(service);
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
@@ -121,7 +125,7 @@ public class WebServiceClient {
                 throw new ConnectionError(
                         String.format("Service response was null. [service=%s]", target.getUri().toString()));
             } catch (Throwable t) {
-                if (handle && count < config().retryCount) {
+                if (handle && count < settings().retryCount) {
                     count++;
                     DefaultLogger.LOGGER.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
@@ -139,7 +143,7 @@ public class WebServiceClient {
                          List<String> params,
                          String mediaType) throws ConnectionError {
         Preconditions.checkNotNull(connection);
-        String path = config.pathMap.get(service);
+        String path = settings.pathMap.get(service);
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
@@ -169,7 +173,7 @@ public class WebServiceClient {
                             String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }
             } catch (Throwable t) {
-                if (handle && count < config().retryCount) {
+                if (handle && count < settings().retryCount) {
                     count++;
                     DefaultLogger.LOGGER.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
@@ -187,7 +191,7 @@ public class WebServiceClient {
                         List<String> params,
                         String mediaType) throws ConnectionError {
         Preconditions.checkNotNull(connection);
-        String path = config.pathMap.get(service);
+        String path = settings.pathMap.get(service);
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
@@ -217,7 +221,7 @@ public class WebServiceClient {
                             String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }
             } catch (Throwable t) {
-                if (handle && count < config().retryCount) {
+                if (handle && count < settings().retryCount) {
                     count++;
                     DefaultLogger.LOGGER.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
@@ -234,7 +238,7 @@ public class WebServiceClient {
                         List<String> params,
                         String mediaType) throws ConnectionError {
         Preconditions.checkNotNull(connection);
-        String path = config.pathMap.get(service);
+        String path = settings.pathMap.get(service);
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
@@ -264,7 +268,7 @@ public class WebServiceClient {
                             String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }
             } catch (Throwable t) {
-                if (handle && count < config().retryCount) {
+                if (handle && count < settings().retryCount) {
                     count++;
                     DefaultLogger.LOGGER.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
@@ -276,9 +280,9 @@ public class WebServiceClient {
         }
     }
 
-    public static class WebServiceClientConfig extends ConfigReader {
-        private static final String __CONFIG_PATH = "client";
-
+    @Getter
+    @Setter
+    public static class WebServiceClientSettings extends Settings {
         public static class Constants {
             public static final String CONFIG_NAME = "name";
             public static final String CONFIG_CONNECTION = "connection";
@@ -286,40 +290,22 @@ public class WebServiceClient {
             public static final String CONFIG_RETRIES = "retryCount";
         }
 
+        @Config(name = Constants.CONFIG_NAME)
         private String name;
+        @Config(name = Constants.CONFIG_CONNECTION)
         private String connection;
+        @Config(name = Constants.CONFIG_PATH_MAP)
         private Map<String, String> pathMap;
+        @Config(name = Constants.CONFIG_RETRIES, required = false, type = Integer.class)
         private int retryCount = 0;
+    }
+
+    public static class WebServiceClientConfig extends ConfigReader {
+        private static final String __CONFIG_PATH = "client";
+
 
         public WebServiceClientConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config, @NonNull String path) {
-            super(config, String.format("%s.%s", path, __CONFIG_PATH));
-        }
-
-        public void read() throws ConfigurationException {
-            if (get() == null) {
-                throw new ConfigurationException("WebService client Configuration not set or is NULL");
-            }
-            name = get().getString(Constants.CONFIG_NAME);
-            if (Strings.isNullOrEmpty(name)) {
-                throw new ConfigurationException(String.format("WebService connection Configuration Error: missing [%s]",
-                        Constants.CONFIG_NAME));
-            }
-            connection = get().getString(Constants.CONFIG_CONNECTION);
-            if (Strings.isNullOrEmpty(connection)) {
-                throw new ConfigurationException(String.format("WebService connection Configuration Error: missing [%s]",
-                        Constants.CONFIG_CONNECTION));
-            }
-            if (ConfigReader.checkIfNodeExists(get(), Constants.CONFIG_PATH_MAP)) {
-                pathMap = ConfigReader.readAsMap(get(), Constants.CONFIG_PATH_MAP);
-            }
-            if (pathMap == null || pathMap.isEmpty()) {
-                throw new ConfigurationException(String.format("WebService connection Configuration Error: missing [%s]",
-                        Constants.CONFIG_PATH_MAP));
-            }
-            String s = get().getString(Constants.CONFIG_RETRIES);
-            if (!Strings.isNullOrEmpty(s)) {
-                retryCount = Integer.parseInt(s);
-            }
+            super(config, String.format("%s.%s", path, __CONFIG_PATH), WebServiceClientSettings.class);
         }
     }
 }

@@ -2,6 +2,9 @@ package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.connections.ConnectionManager;
+import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import lombok.Getter;
@@ -23,26 +26,38 @@ import java.util.Map;
 public abstract class FileSystem implements Closeable {
     private PathInfo root;
     private FileSystemHelper helper = null;
+    private ZookeeperConnection zkConnection;
+    protected ConfigReader configReader;
 
     public abstract FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                     String pathPrefix,
-                                    KeyStore keyStore) throws IOException;
+                                    KeyStore keyStore,
+                                    @NonNull ConnectionManager manager) throws IOException;
+
+    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                     String pathPrefix,
+                     KeyStore keyStore,
+                     @NonNull ConnectionManager manager,
+                     @NonNull Class<? extends FileSystemSettings> settingsType) throws Exception {
+
+    }
 
     public abstract Inode create(@NonNull InodeType type,
                                  @NonNull String path,
                                  String domain,
                                  boolean overwrite) throws IOException;
+
     public abstract Inode get(@NonNull String path, String domain) throws IOException;
 
     public abstract Inode get(@NonNull String path, String domain, boolean prefix) throws IOException;
 
     public abstract Inode get(@NonNull Map<String, String> config);
 
-    public abstract DirectoryInode mkdir(@NonNull PathInfo path, @NonNull String name) throws IOException;
+    public abstract DirectoryInode mkdir(@NonNull DirectoryInode path, @NonNull String name) throws IOException;
 
     public abstract DirectoryInode mkdirs(@NonNull PathInfo path) throws IOException;
 
-    public abstract FileInode upload(@NonNull File source, @NonNull PathInfo directory) throws IOException;
+    public abstract FileInode upload(@NonNull File source, @NonNull DirectoryInode directory) throws IOException;
 
     public abstract boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException;
 
@@ -65,27 +80,34 @@ public abstract class FileSystem implements Closeable {
     }
 
     public boolean exists(@NonNull String path, String domain) throws IOException {
-        PathInfo pi = get(path, domain);
+        Inode pi = get(path, domain);
         if (pi != null) return pi.exists();
         return false;
     }
 
     public boolean isDirectory(@NonNull String path, String domain) throws IOException {
         Inode pi = get(path, domain);
-        if (pi != null) return (pi.getType() == InodeType.Directory);
+        if (pi != null) return pi.isDirectory();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
         }
     }
 
     public boolean isFile(@NonNull String path, String domain) throws IOException {
-        PathInfo pi = get(path, domain);
+        Inode pi = get(path, domain);
         if (pi != null) return pi.isFile();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
         }
     }
 
+    public boolean isArchive(@NonNull String path, String domain) throws IOException {
+        Inode pi = get(path, domain);
+        if (pi != null) return pi.isArchive();
+        else {
+            throw new IOException(String.format("File not found. [path=%s]", path));
+        }
+    }
 
     public abstract Writer writer(@NonNull PathInfo path, boolean createDir, boolean overwrite) throws IOException;
 
@@ -101,27 +123,22 @@ public abstract class FileSystem implements Closeable {
 
     @Getter
     @Setter
-    @Accessors(fluent = true)
-    public static class FileSystemConfig extends ConfigReader {
+    public static class FileSystemSettings extends Settings {
         public static final String TEMP_PATH = String.format("%s/zyient/cdc",
                 System.getProperty("java.io.tmpdir"));
 
-        private static final String CONFIG_ROOT = "root";
-        private static final String CONFIG_TEMP_FOLDER = "tempDir";
+        public static final String CONFIG_ROOT = "root";
+        public static final String CONFIG_TEMP_FOLDER = "tempDir";
+        public static final String CONFIG_ZK_CONNECTION = "zk";
 
+        @Config(name = CONFIG_ZK_CONNECTION)
+        private String zkConnection;
         @Config(name = CONFIG_ROOT)
         private String rootPath;
         @Config(name = CONFIG_TEMP_FOLDER, required = false)
         private String tempDir = TEMP_PATH;
-
-        public FileSystemConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config, @NonNull String path) {
-            super(config, path);
-        }
-
-        @Override
-        public void read(@NonNull Class<? extends ConfigReader> type) throws ConfigurationException {
-            super.read(type);
-        }
+        @Config(name = "domains", required = false)
+        private Map<String, String> domains;
     }
 
     public interface FileSystemMocker {

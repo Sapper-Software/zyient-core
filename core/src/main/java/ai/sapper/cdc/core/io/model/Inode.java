@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.io.IOException;
 import java.util.UUID;
 
 @Getter
@@ -27,5 +28,23 @@ public abstract class Inode {
         this.name = name;
     }
 
-    public abstract boolean exists();
+    public boolean isDirectory() {
+        return (type == InodeType.Directory);
+    }
+
+    public boolean isFile() {
+        return (type == InodeType.File);
+    }
+
+    public boolean isArchive() {
+        return (type == InodeType.Archive);
+    }
+
+    public boolean exists() throws IOException {
+        return path.exists();
+    }
+
+    public long size() throws IOException {
+        return path.size();
+    }
 }

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<configuration>
+    <test>
+        <name>TEST-CONFIG</name>
+        <created>1683359770</created>
+        <version>2.11</version>
+        <type>File</type>
+        <authors>
+            <values>
+                <value>Jack Kerouac</value>
+                <value>Samuel Beckett</value>
+                <value>Robert Frost</value>
+            </values>
+        </authors>
+        <domains>
+            <default>UNKNOWN</default>
+            <domain1>DOMAIN-1</domain1>
+            <domain2>DOMAIN-2</domain2>
+            <domain3>DOMAIN-1</domain3>
+        </domains>
+        <int-list>
+            <values>
+                <value>12334</value>
+                <value>4314</value>
+                <value>352135</value>
+                <value>123</value>
+            </values>
+        </int-list>
+    </test>
+</configuration>

@@ -25,7 +25,6 @@ public abstract class PathInfo {
     private final String domain;
     private final String path;
     private long dataSize = -1;
-    private boolean archive = false;
 
     protected PathInfo(@NonNull String path, @NonNull String domain) {
         this.path = PathUtils.formatPath(path);
@@ -43,7 +42,6 @@ public abstract class PathInfo {
         return FilenameUtils.getFullPath(path);
     }
 
-    public abstract PathInfo parentPathInfo() throws Exception;
 
     public String name() {
         return FilenameUtils.getName(path);
@@ -52,10 +50,6 @@ public abstract class PathInfo {
     public String extension() {
         return FilenameUtils.getExtension(path);
     }
-
-    public abstract boolean isDirectory() throws IOException;
-
-    public abstract boolean isFile() throws IOException;
 
     public abstract boolean exists() throws IOException;
 
@@ -66,7 +60,6 @@ public abstract class PathInfo {
         config.put(CONFIG_KEY_TYPE, getClass().getCanonicalName());
         config.put(CONFIG_KEY_DOMAIN, domain);
         config.put(CONFIG_KEY_PATH, path);
-        config.put(Archiver.CONFIG_KEY_ARCHIVE, String.valueOf(archive));
 
         return config;
     }

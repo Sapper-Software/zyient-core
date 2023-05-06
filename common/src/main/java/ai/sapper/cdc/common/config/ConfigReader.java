@@ -57,6 +57,8 @@ public class ConfigReader {
 
     public void read() throws ConfigurationException {
         try {
+            settings = type.getDeclaredConstructor().newInstance();
+
             Field[] fields = ReflectionUtils.getAllFields(settings.getClass());
             if (fields != null) {
                 settings = type.getDeclaredConstructor().newInstance();
@@ -103,13 +105,23 @@ public class ConfigReader {
                                 List<String> values = readAsList(c.name(), String.class);
                                 if (values != null) {
                                     ReflectionUtils.setValue(values, settings, field);
+                                } else if (c.required()) {
+                                    throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
                                 }
                             } else if (c.type().equals(Class.class)) {
-                                Class<?> cls = Class.forName(config.getString(c.name()));
+                                String cname = config.getString(c.name());
+                                Class<?> cls = Class.forName(cname);
                                 ReflectionUtils.setValue(cls, settings, field);
                             } else if (c.type().isEnum()) {
                                 String value = config.getString(c.name());
                                 ReflectionUtils.setValueFromString(value, settings, field);
+                            } else if (c.type().equals(Map.class)) {
+                                Map<String, String> map = readAsMap(config, c.name());
+                                if (map != null) {
+                                    ReflectionUtils.setValue(map, settings, field);
+                                } else if (c.required()) {
+                                    throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
+                                }
                             }
                         } else if (c.required()) {
                             throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
@@ -129,7 +141,7 @@ public class ConfigReader {
         }
         if (!Strings.isNullOrEmpty(key)) {
             try {
-                List<HierarchicalConfiguration<ImmutableNode>> nodes = get().configurationsAt(name);
+                List<HierarchicalConfiguration<ImmutableNode>> nodes = get().configurationsAt(key);
                 if (nodes != null) return !nodes.isEmpty();
             } catch (ConfigurationRuntimeException e) {
                 // Ignore Exception
@@ -160,18 +172,16 @@ public class ConfigReader {
                                   @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrString(type));
         if (checkIfNodeExists(path, __PARAM_VALUES)) {
-            HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(path);
+            String key = String.format("%s.%s", path, __PARAM_VALUES);
+            HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(key);
             if (pc != null) {
-                List<HierarchicalConfiguration<ImmutableNode>> pl = pc.configurationsAt(__PARAM_VALUE);
-                if (pl != null && !pl.isEmpty()) {
-                    List<T> values = createListType(type);
-                    for (HierarchicalConfiguration<ImmutableNode> p : pl) {
-                        String value = p.getString(__PARAM_VALUE);
-                        if (!Strings.isNullOrEmpty(value)) {
-                            addToList(value, values, type);
-                        }
+                List<Object> values = pc.getList(__PARAM_VALUE);
+                if (values != null) {
+                    List<T> result = createListType(type);
+                    for (Object value : values) {
+                        addToList(value, result, type);
                     }
-                    return values;
+                    return result;
                 }
             }
         }
@@ -179,29 +189,69 @@ public class ConfigReader {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> void addToList(String value, List<T> list, Class<? extends T> type) throws Exception {
+    private <T> void addToList(Object value, List<T> list, Class<? extends T> type) throws Exception {
         if (type.equals(String.class)) {
             list.add((T) value);
         } else if (ReflectionUtils.isShort(type)) {
-            Short s = Short.parseShort(value);
-            list.add((T) s);
+            if (value instanceof String) {
+                Short s = Short.parseShort((String) value);
+                list.add((T) s);
+            } else if (ReflectionUtils.isShort(value.getClass())) {
+                list.add((T) value);
+            } else {
+                throw new Exception(
+                        String.format("Cannot convert to Short. [type=%s]", value.getClass().getCanonicalName()));
+            }
         } else if (ReflectionUtils.isInt(type)) {
-            Integer s = Integer.parseInt(value);
-            list.add((T) s);
+            if (value instanceof String) {
+                Integer s = Integer.parseInt((String) value);
+                list.add((T) s);
+            } else if (ReflectionUtils.isInt(value.getClass())) {
+                list.add((T) value);
+            } else {
+                throw new Exception(
+                        String.format("Cannot convert to Integer. [type=%s]", value.getClass().getCanonicalName()));
+            }
         } else if (ReflectionUtils.isLong(type)) {
-            Long s = Long.parseLong(value);
-            list.add((T) s);
+            if (value instanceof String) {
+                Long s = Long.parseLong((String) value);
+                list.add((T) s);
+            } else if (ReflectionUtils.isLong(value.getClass())) {
+                list.add((T) value);
+            } else {
+                throw new Exception(
+                        String.format("Cannot convert to Long. [type=%s]", value.getClass().getCanonicalName()));
+            }
         } else if (ReflectionUtils.isFloat(type)) {
-            Float s = Float.parseFloat(value);
-            list.add((T) s);
+            if (value instanceof String) {
+                Float s = Float.parseFloat((String) value);
+                list.add((T) s);
+            } else if (ReflectionUtils.isFloat(value.getClass())) {
+                list.add((T) value);
+            } else {
+                throw new Exception(
+                        String.format("Cannot convert to Float. [type=%s]", value.getClass().getCanonicalName()));
+            }
         } else if (ReflectionUtils.isDouble(type)) {
-            Double s = Double.parseDouble(value);
-            list.add((T) s);
+            if (value instanceof String) {
+                Double s = Double.parseDouble((String) value);
+                list.add((T) s);
+            } else if (ReflectionUtils.isDouble(value.getClass())) {
+                list.add((T) value);
+            } else {
+                throw new Exception(
+                        String.format("Cannot convert to Double. [type=%s]", value.getClass().getCanonicalName()));
+            }
         } else if (type.equals(Class.class)) {
-            Class<?> cls = Class.forName(value);
-            list.add((T) cls);
-        }
-        throw new Exception(String.format("List type not supported. [type=%s]", type.getCanonicalName()));
+            if (value instanceof String) {
+                Class<?> cls = Class.forName((String) value);
+                list.add((T) cls);
+            } else {
+                throw new Exception(
+                        String.format("Cannot convert to Class. [type=%s]", value.getClass().getCanonicalName()));
+            }
+        } else
+            throw new Exception(String.format("List type not supported. [type=%s]", type.getCanonicalName()));
     }
 
     @SuppressWarnings("unchecked")
@@ -335,6 +385,7 @@ public class ConfigReader {
                 map.put(k, v);
             }
         }
+        if (map.isEmpty()) return null;
         return map;
     }
 
