@@ -351,5 +351,15 @@ public abstract class BaseStateManager<T> implements Closeable {
         private String basePath;
         @Config(name = Constants.CONFIG_ZK_CONNECTION)
         private String zkConnection;
+
+        public BaseStateManagerSettings() {
+        }
+
+        public BaseStateManagerSettings(@NonNull Settings source) {
+            super(source);
+            Preconditions.checkArgument(source instanceof BaseStateManagerSettings);
+            this.basePath = ((BaseStateManagerSettings) source).basePath;
+            this.zkConnection = ((BaseStateManagerSettings) source).zkConnection;
+        }
     }
 }

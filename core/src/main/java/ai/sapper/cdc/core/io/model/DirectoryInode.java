@@ -14,6 +14,9 @@ public class DirectoryInode extends Inode {
     @JsonIgnore
     private boolean synced = false;
 
+    public DirectoryInode() {
+    }
+
     public DirectoryInode(@NonNull String name) {
         super(InodeType.Directory, name);
     }

@@ -9,4 +9,9 @@ public class LockDef {
     private String name;
     private String module;
     private String path;
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
 }

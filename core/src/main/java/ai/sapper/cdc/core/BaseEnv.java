@@ -6,6 +6,7 @@ import ai.sapper.cdc.common.audit.AuditLogger;
 import ai.sapper.cdc.common.utils.NetUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.ConnectionManager;
+import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.model.ModuleInstance;
 import ai.sapper.cdc.core.utils.DistributedLockBuilder;
@@ -225,6 +226,14 @@ public abstract class BaseEnv<T extends Enum<?>> {
         return dLockBuilder.createLock(path, module, name);
     }
 
+    public DistributedLock createCustomLock(@NonNull String path,
+                                            @NonNull ZookeeperConnection connection,
+                                            long timeout) throws Exception {
+        Preconditions.checkNotNull(dLockBuilder);
+        Preconditions.checkArgument(timeout > 0);
+        return dLockBuilder.createLock(path, connection, timeout);
+    }
+
     public void saveLocks() throws Exception {
         Preconditions.checkNotNull(dLockBuilder);
         dLockBuilder.save();
@@ -246,6 +255,9 @@ public abstract class BaseEnv<T extends Enum<?>> {
             for (ExitCallback<T> callback : exitCallbacks) {
                 callback.call(state);
             }
+        }
+        if (dLockBuilder != null) {
+            dLockBuilder.close();
         }
     }
 

@@ -15,12 +15,11 @@ public class FileInode extends Inode {
     private long syncedSize = 0;
     private long updatedSize = 0;
 
-    public FileInode(@NonNull String name) {
-        super(InodeType.File, name);
+    public FileInode() {
+
     }
 
-    @Override
-    public boolean exists() {
-        return (state != EFileState.Unknown && state != EFileState.Deleted);
+    public FileInode(@NonNull String name) {
+        super(InodeType.File, name);
     }
 }

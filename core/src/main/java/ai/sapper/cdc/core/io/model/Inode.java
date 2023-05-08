@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.Setter;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.UUID;
 
 @Getter
@@ -13,13 +14,19 @@ import java.util.UUID;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public abstract class Inode {
     private String uuid;
-    private PathInfo path;
+    private Map<String, String> path;
+    private String absolutePath;
     private long createTimestamp = 0;
     private long updateTimestamp = 0;
     private long syncTimestamp = 0;
     private InodeType type;
     private Inode parent = null;
     private String name;
+    private String zkPath;
+
+    public Inode() {
+
+    }
 
     public Inode(@NonNull InodeType type,
                  @NonNull String name) {
@@ -38,10 +45,6 @@ public abstract class Inode {
 
     public boolean isArchive() {
         return (type == InodeType.Archive);
-    }
-
-    public boolean exists() throws IOException {
-        return path.exists();
     }
 
     public long size() throws IOException {

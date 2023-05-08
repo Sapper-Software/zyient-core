@@ -15,6 +15,8 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +24,8 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class DistributedLockBuilder {
+public class DistributedLockBuilder implements Closeable {
+
     public static class Constants {
         public static final String CONFIG_LOCKS = "locks";
         public static final String CONFIG_ZK_CONN = String.format("%s.connection", CONFIG_LOCKS);
@@ -36,6 +39,7 @@ public class DistributedLockBuilder {
     private String environment;
     private String zkPath;
     private final Map<String, LockDef> lockDefs = new HashMap<>();
+    private final Map<String, DistributedLock> locks = new HashMap<>();
 
     public DistributedLockBuilder withEnv(@NonNull String environment) {
         this.environment = environment;
@@ -117,29 +121,52 @@ public class DistributedLockBuilder {
     public DistributedLock createLock(@NonNull String path,
                                       @NonNull String module,
                                       @NonNull String name) throws Exception {
-        String key = getLockKey(module, name);
-        if (lockDefs().containsKey(key)) {
-            LockDef def = lockDefs().get(key);
-            if (def == null) {
-                throw new Exception(String.format("No lock definition found: [module=%s][name=%s]", module, name));
-            }
-            return new DistributedLock(def.getModule(),
-                    def.getPath(),
-                    path)
-                    .withConnection(connection);
-        } else {
-            LockDef def = new LockDef();
-            def.setName(name);
-            def.setModule(module);
-            def.setPath(name);
-            save(def);
+        synchronized (this) {
+            String key = getLockKey(module, name);
+            if (lockDefs().containsKey(key)) {
+                LockDef def = lockDefs().get(key);
+                if (def == null) {
+                    throw new Exception(String.format("No lock definition found: [module=%s][name=%s]", module, name));
+                }
+                return createLock(def, path, key);
+            } else {
+                LockDef def = new LockDef();
+                def.setName(name);
+                def.setModule(module);
+                def.setPath(name);
+                save(def);
 
-            lockDefs.put(key, def);
-            return new DistributedLock(def.getModule(),
+                lockDefs.put(key, def);
+                return createLock(def, path, key);
+            }
+        }
+    }
+
+    public DistributedLock createLock(@NonNull String path,
+                                      @NonNull ZookeeperConnection connection,
+                                      long timeout) throws Exception {
+        synchronized (this) {
+            DistributedLock lock = locks.get(path);
+            if (lock == null) {
+                lock = new DistributedLock(path)
+                        .withConnection(connection)
+                        .withLockTimeout(timeout);
+                locks.put(path, lock);
+            }
+            return lock;
+        }
+    }
+
+    private DistributedLock createLock(LockDef def, String path, String key) {
+        DistributedLock lock = locks.get(key);
+        if (lock == null) {
+            lock = new DistributedLock(def.getModule(),
                     def.getPath(),
                     path)
                     .withConnection(connection);
+            locks.put(key, lock);
         }
+        return lock;
     }
 
     public void save(@NonNull LockDef def) throws Exception {
@@ -157,10 +184,25 @@ public class DistributedLockBuilder {
     }
 
     public void save() throws Exception {
-        if (!lockDefs.isEmpty()) {
-            for (String name : lockDefs.keySet()) {
-                save(lockDefs.get(name));
+        synchronized (this) {
+            if (!lockDefs.isEmpty()) {
+                for (String name : lockDefs.keySet()) {
+                    save(lockDefs.get(name));
+                }
             }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        synchronized (this) {
+            if (!locks.isEmpty()) {
+                for (String name : locks.keySet()) {
+                    locks.get(name).close();
+                }
+            }
+            locks.clear();
+            lockDefs.clear();
         }
     }
 }

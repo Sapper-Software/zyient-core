@@ -39,6 +39,12 @@ public class DistributedLock extends ReentrantLock implements Closeable {
         this.zkBasePath = zkBasePath;
     }
 
+    public DistributedLock(@NonNull String zkBasePath) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(zkBasePath));
+        this.id = null;
+        this.zkBasePath = zkBasePath;
+    }
+
     public DistributedLock(@NonNull String namespace, @NonNull String name, @NonNull String zkBasePath) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(zkBasePath));
         this.zkBasePath = zkBasePath;
@@ -60,12 +66,19 @@ public class DistributedLock extends ReentrantLock implements Closeable {
     }
 
     private String lockPath() {
-        return new PathUtils.ZkPathBuilder()
-                .withPath(zkBasePath)
-                .withPath(id.namespace)
-                .withPath("__locks")
-                .withPath(id.name)
-                .build();
+        if (id != null) {
+            return new PathUtils.ZkPathBuilder()
+                    .withPath(zkBasePath)
+                    .withPath(id.namespace)
+                    .withPath("__locks")
+                    .withPath(id.name)
+                    .build();
+        } else {
+            return new PathUtils.ZkPathBuilder()
+                    .withPath(zkBasePath)
+                    .withPath("__locks")
+                    .build();
+        }
     }
 
     /**

@@ -1,5 +1,8 @@
 package ai.sapper.cdc.core.filters;
 
+import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.filters.DomainFilter;
 import ai.sapper.cdc.common.filters.DomainFilterMatcher;
 import ai.sapper.cdc.common.filters.DomainFilters;
@@ -16,6 +19,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -39,7 +43,7 @@ public class DomainManager {
     private ZookeeperConnection zkConnection;
     private HdfsConnection hdfsConnection;
     private String environment;
-    private DomainManagerConfig config;
+    private DomainManagerSettings settings;
     private Map<String, DomainFilterMatcher> matchers = new HashMap<>();
     private final List<FilterAddCallback> callbacks = new ArrayList<>();
     private Pattern ignorePattern = Pattern.compile(IGNORE_REGEX);
@@ -48,30 +52,33 @@ public class DomainManager {
                               @NonNull ConnectionManager manger,
                               @NonNull String environment) throws ConfigurationException {
         try {
-            config = new DomainManagerConfig(xmlConfig);
-            config.read();
+            ConfigReader reader = new ConfigReader(xmlConfig,
+                    DomainManagerSettings.__CONFIG_PATH,
+                    DomainManagerSettings.class);
+            reader.read();
+            settings = (DomainManagerSettings) reader.settings();
 
             this.environment = environment;
 
-            zkConnection = manger.getConnection(config.zkConnection(), ZookeeperConnection.class);
+            zkConnection = manger.getConnection(settings.zkConnection(), ZookeeperConnection.class);
             if (zkConnection == null) {
                 throw new ConfigurationException(
-                        String.format("ZooKeeper connection not found. [name=%s]", config.zkConnection()));
+                        String.format("ZooKeeper connection not found. [name=%s]", settings.zkConnection()));
             }
             if (!zkConnection.isConnected()) zkConnection.connect();
 
-            if (!Strings.isNullOrEmpty(config.hdfsConnection)) {
-                hdfsConnection = manger.getConnection(config.hdfsConnection, HdfsConnection.class);
+            if (!Strings.isNullOrEmpty(settings.hdfsConnection)) {
+                hdfsConnection = manger.getConnection(settings.hdfsConnection, HdfsConnection.class);
                 if (hdfsConnection == null) {
                     throw new ConfigurationException(
-                            String.format("HDFS Connection not found. [name=%s]", config.hdfsConnection));
+                            String.format("HDFS Connection not found. [name=%s]", settings.hdfsConnection));
                 }
                 if (!hdfsConnection.isConnected()) {
                     hdfsConnection.connect();
                 }
             }
-            if (!Strings.isNullOrEmpty(config.ignoreRegex)) {
-                ignorePattern = Pattern.compile(config.ignoreRegex);
+            if (!Strings.isNullOrEmpty(settings.ignoreRegex)) {
+                ignorePattern = Pattern.compile(settings.ignoreRegex);
             }
             String path = getZkPath();
             CuratorFramework client = zkConnection.client();
@@ -125,10 +132,10 @@ public class DomainManager {
     }
 
     private String getZkPath() {
-        return new PathUtils.ZkPathBuilder(config.basePath())
+        return new PathUtils.ZkPathBuilder(settings.basePath())
                 .withPath(environment)
                 .withPath(CONFIG_PATH)
-                .withPath(config.module)
+                .withPath(settings.module)
                 .build();
     }
 
@@ -271,8 +278,8 @@ public class DomainManager {
     }
 
     @Getter
-    @Accessors(fluent = true)
-    public static class DomainManagerConfig extends BaseStateManager.BaseStateManagerSettings {
+    @Setter
+    public static class DomainManagerSettings extends BaseStateManager.BaseStateManagerSettings {
         public static final class Constants {
             public static final String CONFIG_HDFS_CONNECTION = "hdfs";
             public static final String CONFIG_IGNORE_REGEX = "ignoreRegex";
@@ -281,35 +288,22 @@ public class DomainManager {
 
         private static final String __CONFIG_PATH = "managers.domain";
 
-         private String hdfsConnection;
+        @Config(name = Constants.CONFIG_HDFS_CONNECTION, required = false)
+        private String hdfsConnection;
+        @Config(name = Constants.CONFIG_IGNORE_REGEX, required = false)
         private String ignoreRegex;
+        @Config(name = Constants.CONFIG_MODULE)
         private String module;
 
-        public DomainManagerConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH);
+        public DomainManagerSettings() {
         }
 
-        public DomainManagerConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config, @NonNull String configPath) {
-            super(config, configPath);
-        }
-
-        public void read() throws ConfigurationException {
-            super.read();
-            try {
-                module = get().getString(Constants.CONFIG_MODULE);
-                if (Strings.isNullOrEmpty(module)) {
-                    throw new ConfigurationException(
-                            String.format("Domain Manager: missing param. [name=%s]", Constants.CONFIG_MODULE));
-                }
-                if (get().containsKey(Constants.CONFIG_HDFS_CONNECTION)) {
-                    hdfsConnection = get().getString(Constants.CONFIG_HDFS_CONNECTION);
-                }
-                if (get().containsKey(Constants.CONFIG_IGNORE_REGEX)) {
-                    ignoreRegex = get().getString(Constants.CONFIG_IGNORE_REGEX);
-                }
-            } catch (Throwable t) {
-                throw new ConfigurationException("Error processing Domain Manager configuration.", t);
-            }
+        public DomainManagerSettings(@NonNull Settings source) {
+            super(source);
+            Preconditions.checkArgument(source instanceof DomainManagerSettings);
+            this.hdfsConnection = ((DomainManagerSettings) source).hdfsConnection;
+            this.ignoreRegex = ((DomainManagerSettings) source).ignoreRegex;
+            this.module = ((DomainManagerSettings) source).module;
         }
     }
 }
