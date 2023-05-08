@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.io;
 
+import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -11,10 +12,13 @@ import java.io.IOException;
 @Getter
 @Accessors(fluent = true)
 public abstract class Writer implements Closeable {
-    private final PathInfo path;
+    private final FileInode inode;
+    private final FileSystem fs;
 
-    protected Writer(@NonNull PathInfo path) {
-        this.path = path;
+    protected Writer(@NonNull FileInode inode,
+                     @NonNull FileSystem fs) {
+        this.inode = inode;
+        this.fs = fs;
     }
 
     public abstract Writer open(boolean overwrite) throws IOException;
@@ -27,6 +31,10 @@ public abstract class Writer implements Closeable {
 
     public long write(byte[] data) throws IOException {
         return write(data, 0, data.length);
+    }
+
+    public long write(byte[] data, long length) throws IOException {
+        return write(data, 0, length);
     }
 
     public abstract void flush() throws IOException;

@@ -1,12 +1,13 @@
 package ai.sapper.cdc.core.io.impl.local;
 
-import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
-import ai.sapper.cdc.core.io.model.PathInfo;
+import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.impl.CDCFileSystem;
-import ai.sapper.cdc.core.keystore.KeyStore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -14,54 +15,53 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.filefilter.IOFileFilter;
-import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class LocalFileSystem extends CDCFileSystem {
-    private FileSystemConfig fsConfig = null;
+public class LocalFileSystem<T extends FileSystem.FileSystemSettings> extends CDCFileSystem {
+    public static final String __CONFIG_PATH = "local";
 
-    /**
-     * @param config
-     * @param pathPrefix
-     * @return
-     * @throws IOException
-     */
+    private final Class<T> settingsType;
+
+    @SuppressWarnings("unchecked")
+    public LocalFileSystem() {
+        settingsType = (Class<T>) FileSystemSettings.class;
+    }
+
+    public LocalFileSystem(@NonNull Class<T> settingsType) {
+        this.settingsType = settingsType;
+    }
+
     @Override
-    public CDCFileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                              String pathPrefix,
-                              KeyStore keyStore) throws IOException {
+    @SuppressWarnings("unchecked")
+    public FileSystem<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                   String pathPrefix,
+                                   @NonNull BaseEnv<?> env) throws IOException {
         try {
-            if (fsConfig == null) {
-                fsConfig = new LocalFileSystemConfig(config, pathPrefix);
-                fsConfig.read(LocalFileSystemConfig.class);
+            if (Strings.isNullOrEmpty(pathPrefix)) {
+                pathPrefix = __CONFIG_PATH;
             }
-            LocalPathInfo rp = new LocalPathInfo(fsConfig.rootPath(), "");
-            setRootPath(rp);
-            File tdir = new File(fsConfig.tempDir());
-            if (!tdir.exists()) {
-                tdir.mkdirs();
-            } else {
-                FileUtils.deleteDirectory(tdir);
-                tdir.mkdirs();
-            }
-            return this;
-        } catch (Exception ex) {
-            throw new IOException(ex);
+            super.init(config, pathPrefix, env, settingsType);
+            return postInit();
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(LOG, "Error initializing Local FileSystem.", t);
+            state().error(t);
+            throw new IOException(t);
         }
+    }
+
+    @Override
+    public PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException {
+        return new LocalPathInfo(values);
     }
 
     /**
@@ -70,83 +70,114 @@ public class LocalFileSystem extends CDCFileSystem {
      * @throws IOException
      */
     @Override
-    public PathInfo get(@NonNull String path, String domain) throws IOException {
-        if (root() != null) {
-            path = PathUtils.formatPath(String.format("%s/%s/%s", root().path(), domain, path));
+    public Inode get(@NonNull String path, String domain) throws IOException {
+        if (!path.startsWith(settings().pathPrefix())) {
+            path = PathUtils.formatPath(String.format("%s/%s/%s", settings.pathPrefix(), domain, path));
         }
-        return new LocalPathInfo(path, domain);
+        PathInfo pi = new LocalPathInfo(path, domain);
+        return getInode(pi);
     }
 
-    /**
-     * @param path
-     * @param domain
-     * @param prefix
-     * @return
-     * @throws IOException
-     */
     @Override
-    public PathInfo get(@NonNull String path, String domain, boolean prefix) throws IOException {
-        if (prefix) {
-            return get(path, domain);
+    protected String getAbsolutePath(@NonNull String path,
+                                     @NonNull String module) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(module));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
+        String target = domainMap.get(module);
+
+        return PathUtils.formatPath(String.format("/%s/%s/%s",
+                settings.pathPrefix(), target, path));
+    }
+
+    @Override
+    public DirectoryInode mkdir(@NonNull DirectoryInode parent,
+                                @NonNull String name) throws IOException {
+        String path = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), name));
+        LocalPathInfo pd = (LocalPathInfo) parent.getPathInfo();
+        if (pd == null) {
+            pd = new LocalPathInfo(parent.getPath());
+            parent.setPathInfo(pd);
         }
-        return new LocalPathInfo(path, domain);
-    }
-
-    /**
-     * @param config
-     * @return
-     */
-    @Override
-    public PathInfo get(@NonNull Map<String, String> config) {
-        return new LocalPathInfo(config);
-    }
-
-
-    /**
-     * @param path
-     * @param name
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public String mkdir(@NonNull PathInfo path, @NonNull String name) throws IOException {
-        LocalPathInfo di = new LocalPathInfo(String.format("%s/%s", path.path(), name), path.domain());
-        if (!di.exists()) {
-            if (!di.file().mkdir()) {
-                throw new IOException(String.format("Failed to create directory. [path=%s]", di.file().getAbsolutePath()));
+        if (!pd.file().exists()) {
+            throw new IOException(String.format("Parent directory not found. [path=%s]", pd.file().getAbsolutePath()));
+        }
+        LocalPathInfo pi = new LocalPathInfo(path, pd.domain());
+        Inode node = createInode(InodeType.Directory, pi);
+        if (!pi.file().exists()) {
+            if (!pi.file().mkdir()) {
+                throw new IOException(
+                        String.format("Error creating directory. [path=%s]", pi.file().getAbsolutePath()));
             }
         }
-        return di.file().getAbsolutePath();
+        if (node.getPath() == null)
+            node.setPath(pi.pathConfig());
+        if (node.getPathInfo() == null)
+            node.setPathInfo(pi);
+        return (DirectoryInode) node;
     }
 
-    /**
-     * @param path
-     * @return
-     * @throws IOException
-     */
     @Override
-    public String mkdirs(@NonNull PathInfo path) throws IOException {
-        LocalPathInfo di = new LocalPathInfo(path.path(), path.domain());
-        if (!di.exists()) {
-            if (!di.file().mkdirs()) {
-                throw new IOException(String.format("Failed to create directory. [path=%s]", di.file().getAbsolutePath()));
+    public DirectoryInode mkdirs(@NonNull String module, @NonNull String path) throws IOException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
+        path = getAbsolutePath(path, module);
+        LocalPathInfo pi = new LocalPathInfo(path, module);
+        Inode node = createInode(InodeType.Directory, pi);
+        if (!pi.file().exists()) {
+            if (!pi.file().mkdirs()) {
+                throw new IOException(
+                        String.format("Error creating directory. [path=%s]", pi.file().getAbsolutePath()));
             }
         }
-        return di.file().getAbsolutePath();
+        if (node.getPath() == null)
+            node.setPath(pi.pathConfig());
+        if (node.getPathInfo() == null)
+            node.setPathInfo(pi);
+        return (DirectoryInode) node;
     }
 
-    /**
-     * @param source
-     * @param directory
-     * @throws IOException
-     */
     @Override
-    public PathInfo upload(@NonNull File source, @NonNull PathInfo directory) throws IOException {
-        Preconditions.checkArgument(directory.isDirectory());
-        File dest = new File(String.format("%s/%s", directory.path(), FilenameUtils.getName(source.getAbsolutePath())));
-        FileUtils.copyFile(source, dest);
+    public FileInode create(@NonNull String module, @NonNull String path) throws IOException {
+        LocalPathInfo pi = new LocalPathInfo(path, module);
+        return create(pi);
+    }
 
-        return get(dest.getAbsolutePath(), directory.domain(), false);
+    @Override
+    public FileInode create(@NonNull PathInfo pathInfo) throws IOException {
+        Preconditions.checkArgument(pathInfo instanceof LocalPathInfo);
+        LocalPathInfo pi = (LocalPathInfo) pathInfo;
+        Inode node = createInode(InodeType.File, pi);
+        File dir = pi.file().getParentFile();
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+                throw new IOException(
+                        String.format("Error creating directory. [path=%s]", dir.getAbsolutePath()));
+            }
+        }
+        if (node.getPath() == null)
+            node.setPath(pi.pathConfig());
+        if (node.getPathInfo() == null)
+            node.setPathInfo(pi);
+        return (FileInode) node;
+    }
+
+    @Override
+    public FileInode upload(@NonNull File source,
+                            @NonNull DirectoryInode directory) throws IOException {
+        LocalPathInfo di = (LocalPathInfo) directory.getPathInfo();
+        if (di == null) {
+            di = new LocalPathInfo(directory.getPath());
+            directory.setPathInfo(di);
+        }
+        if (!di.file().exists()) {
+            throw new IOException(String.format("Target directory not found. [path=%s]", di.file().getAbsolutePath()));
+        }
+        String fname = FilenameUtils.getName(source.getAbsolutePath());
+        String path = PathUtils.formatPath(String.format("%s/%s", di.file().getAbsolutePath(), fname));
+        File dest = new File(path);
+        if (dest.getAbsolutePath().compareTo(source.getAbsolutePath()) != 0) {
+            FileUtils.copyFile(source, dest);
+        }
+        return create(di.domain(), dest.getAbsolutePath());
     }
 
     /**
@@ -156,92 +187,46 @@ public class LocalFileSystem extends CDCFileSystem {
      * @throws IOException
      */
     @Override
-    public boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException {
+    public boolean delete(@NonNull PathInfo path,
+                          boolean recursive) throws IOException {
         Preconditions.checkArgument(path instanceof LocalPathInfo);
-        if (path.exists()) {
-            if (path.isDirectory() && recursive) {
-                FileUtils.deleteDirectory(((LocalPathInfo) path).file());
-                return path.exists();
-            } else {
-                return ((LocalPathInfo) path).file().delete();
+        if (deleteInode(path, recursive)) {
+            if (path.exists()) {
+                if (((LocalPathInfo) path).file().isDirectory() && recursive) {
+                    FileUtils.deleteDirectory(((LocalPathInfo) path).file());
+                    return path.exists();
+                } else {
+                    return ((LocalPathInfo) path).file().delete();
+                }
             }
         }
         return false;
     }
 
-    /**
-     * @param path
-     * @return
-     * @throws IOException
-     */
     @Override
-    public List<String> list(@NonNull PathInfo path, boolean recursive) throws IOException {
-        Preconditions.checkArgument(path instanceof LocalPathInfo);
-        if (path.exists() && path.isDirectory()) {
-            Collection<File> files = FileUtils.listFiles(((LocalPathInfo) path).file(), null, recursive);
-            if (files != null && !files.isEmpty()) {
-                List<String> paths = new ArrayList<>(files.size());
-                for (File file : files) {
-                    paths.add(file.getAbsolutePath());
-                }
-                return paths;
-            }
+    public boolean exists(@NonNull String path, String domain) throws IOException {
+        Inode node = get(path, domain);
+        if (node != null) {
+            LocalPathInfo pi = (LocalPathInfo) parsePathInfo(node.getPath());
+            return pi.exists();
         }
+        return false;
+    }
+
+    @Override
+    protected Reader getReader(@NonNull Inode inode) throws IOException {
         return null;
     }
 
     @Override
-    public List<String> find(@NonNull PathInfo path, String dirQuery, @NonNull String fileQuery) throws IOException {
-        Preconditions.checkArgument(path instanceof LocalPathInfo);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(fileQuery));
-        if (path.exists() && path.isDirectory()) {
-            IOFileFilter dirFilter = null;
-            if (!Strings.isNullOrEmpty(dirQuery)) {
-                dirFilter = new LocalFileFilter(dirQuery);
-            } else {
-                dirFilter = TrueFileFilter.INSTANCE;
-            }
-            IOFileFilter fileFilter = new LocalFileFilter(fileQuery);
-            Collection<File> files = FileUtils.listFiles(((LocalPathInfo) path).file(), fileFilter, dirFilter);
-            if (files != null && !files.isEmpty()) {
-                List<String> paths = new ArrayList<>(files.size());
-                for (File file : files) {
-                    paths.add(file.getAbsolutePath());
-                }
-                return paths;
-            }
+    protected Writer getWriter(@NonNull Inode inode, boolean createDir, boolean overwrite) throws IOException {
+        LocalPathInfo pi = (LocalPathInfo) inode.getPathInfo();
+        if (pi == null) {
+            pi = new LocalPathInfo(inode.getPath());
+            inode.setPathInfo(pi);
         }
+
         return null;
-    }
-
-    @Override
-    public List<String> findFiles(@NonNull PathInfo path, String dirQuery, @NonNull String fileQuery) throws IOException {
-        Preconditions.checkArgument(path instanceof LocalPathInfo);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(fileQuery));
-        if (path.exists() && path.isDirectory()) {
-            IOFileFilter dirFilter = null;
-            dirFilter = TrueFileFilter.INSTANCE;
-
-            IOFileFilter fileFilter = new LocalFileFilter(fileQuery).dirRegex(dirQuery);
-            Collection<File> files = FileUtils.listFiles(((LocalPathInfo) path).file(), fileFilter, dirFilter);
-            if (files != null && !files.isEmpty()) {
-                List<String> paths = new ArrayList<>(files.size());
-                for (File file : files) {
-                    if (file.isFile())
-                        paths.add(file.getAbsolutePath());
-                }
-                return paths;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * @return
-     */
-    @Override
-    public String tempPath() {
-        return fsConfig.tempDir();
     }
 
     /**
@@ -283,40 +268,5 @@ public class LocalFileSystem extends CDCFileSystem {
             throw new IOException(String.format("File not found. [path=%s]", ((LocalPathInfo) path).file().getAbsolutePath()));
         }
         return new LocalReader(path).open();
-    }
-
-    /**
-     * Closes this stream and releases any system resources associated
-     * with it. If the stream is already closed then invoking this
-     * method has no effect.
-     *
-     * <p> As noted in {@link AutoCloseable#close()}, cases where the
-     * close may fail require careful attention. It is strongly advised
-     * to relinquish the underlying resources and to internally
-     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-     * the {@code IOException}.
-     *
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    public void close() throws IOException {
-
-    }
-
-    @Getter
-    @Accessors(fluent = true)
-    public static class LocalFileSystemConfig extends FileSystemConfig {
-
-        public LocalFileSystemConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config, @NonNull String path) {
-            super(config, path);
-        }
-
-        /**
-         * @throws ConfigurationException
-         */
-        @Override
-        public void read(@NonNull Class<? extends ConfigReader> type) throws ConfigurationException {
-            super.read(type);
-        }
     }
 }

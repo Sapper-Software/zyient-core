@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.io.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -23,6 +24,8 @@ public abstract class Inode {
     private Inode parent = null;
     private String name;
     private String zkPath;
+    @JsonIgnore
+    private PathInfo pathInfo;
 
     public Inode() {
 

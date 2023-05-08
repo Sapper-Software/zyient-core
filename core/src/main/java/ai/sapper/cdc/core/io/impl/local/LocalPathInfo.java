@@ -14,10 +14,9 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public class LocalPathInfo extends PathInfo {
-    private File file;
+    private final File file;
 
     protected LocalPathInfo(@NonNull String path, @NonNull String domain) {
         super(path, domain);

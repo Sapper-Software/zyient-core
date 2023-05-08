@@ -23,7 +23,7 @@ public class AzureReader extends LocalReader {
      */
     @Override
     public Reader open() throws IOException {
-        AzurePathInfo path = AzureFileSystem.checkPath(path());
+        AzurePathInfo path = AzureFileSystem.checkPath(inode());
         fs.read(path);
 
         return super.open();
@@ -43,7 +43,7 @@ public class AzureReader extends LocalReader {
 
     @Override
     public File copy() throws IOException {
-        AzurePathInfo path = AzureFileSystem.checkPath(path());
+        AzurePathInfo path = AzureFileSystem.checkPath(inode());
         if (path.temp() != null && path.temp().exists()) {
             return path.temp();
         } else {

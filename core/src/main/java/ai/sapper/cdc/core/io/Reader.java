@@ -1,6 +1,6 @@
 package ai.sapper.cdc.core.io;
 
-import ai.sapper.cdc.core.io.model.PathInfo;
+import ai.sapper.cdc.core.io.model.FileInode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -12,10 +12,13 @@ import java.io.IOException;
 @Getter
 @Accessors(fluent = true)
 public abstract class Reader implements Closeable {
-    private final PathInfo path;
+    private final FileInode inode;
+    private final FileSystem fs;
 
-    protected Reader(@NonNull PathInfo path) {
-        this.path = path;
+    protected Reader(@NonNull FileInode inode,
+                     @NonNull FileSystem fs) {
+        this.inode = inode;
+        this.fs = fs;
     }
 
     public abstract Reader open() throws IOException;

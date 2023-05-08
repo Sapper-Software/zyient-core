@@ -1,5 +1,7 @@
 package ai.sapper.cdc.core.io.impl.local;
 
+import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.io.Writer;
 import com.google.common.base.Preconditions;
@@ -13,14 +15,20 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public class LocalWriter extends Writer {
     private FileOutputStream outputStream;
+    private final LocalPathInfo path;
 
-    protected LocalWriter(@NonNull PathInfo path) {
-        super(path);
-        Preconditions.checkArgument(path instanceof LocalPathInfo);
+    protected LocalWriter(@NonNull FileInode inode,
+                          @NonNull FileSystem fs) throws IOException {
+        super(inode, fs);
+        if (inode.getPathInfo() == null) {
+            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
+            inode.setPathInfo(path);
+        } else {
+            path = (LocalPathInfo) inode.getPathInfo();
+        }
     }
 
     /**
@@ -29,11 +37,10 @@ public class LocalWriter extends Writer {
      */
     @Override
     public Writer open(boolean overwrite) throws IOException {
-        LocalPathInfo pi = (LocalPathInfo) path();
-        if (!pi.exists() || overwrite) {
-            outputStream = new FileOutputStream(pi.file());
-        } else if (pi.exists()) {
-            outputStream = new FileOutputStream(pi.file(), true);
+        if (!path.exists() || overwrite) {
+            outputStream = new FileOutputStream(path.file());
+        } else if (path.exists()) {
+            outputStream = new FileOutputStream(path.file(), true);
         }
         return this;
     }

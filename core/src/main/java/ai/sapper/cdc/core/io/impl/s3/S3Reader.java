@@ -23,7 +23,7 @@ public class S3Reader extends LocalReader {
      */
     @Override
     public Reader open() throws IOException {
-        S3PathInfo s3path = S3FileSystem.checkPath(path());
+        S3PathInfo s3path = S3FileSystem.checkPath(inode());
         fs.read(s3path);
 
         return super.open();
@@ -43,7 +43,7 @@ public class S3Reader extends LocalReader {
 
     @Override
     public File copy() throws IOException {
-        S3PathInfo s3path = S3FileSystem.checkPath(path());
+        S3PathInfo s3path = S3FileSystem.checkPath(inode());
         if (s3path.temp() != null && s3path.temp().exists()) {
             return s3path.temp();
         } else {

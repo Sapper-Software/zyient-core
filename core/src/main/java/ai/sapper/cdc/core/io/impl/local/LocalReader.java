@@ -1,5 +1,7 @@
 package ai.sapper.cdc.core.io.impl.local;
 
+import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.io.Reader;
 import com.google.common.base.Preconditions;
@@ -13,14 +15,20 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public class LocalReader extends Reader {
     private RandomAccessFile inputStream;
+    private final LocalPathInfo path;
 
-    public LocalReader(@NonNull PathInfo path) {
-        super(path);
-        Preconditions.checkArgument(path instanceof LocalPathInfo);
+    public LocalReader(@NonNull FileInode inode,
+                       @NonNull FileSystem fs) throws IOException {
+        super(inode, fs);
+        if (inode.getPathInfo() == null) {
+            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
+            inode.setPathInfo(path);
+        } else {
+            path = (LocalPathInfo) inode.getPathInfo();
+        }
     }
 
     /**
@@ -29,11 +37,10 @@ public class LocalReader extends Reader {
      */
     @Override
     public Reader open() throws IOException {
-        LocalPathInfo pi = (LocalPathInfo) path();
-        if (!pi.exists()) {
-            throw new IOException(String.format("File not found. [path=%s]", pi.file().getAbsolutePath()));
+        if (!path.exists()) {
+            throw new IOException(String.format("File not found. [path=%s]", path.file().getAbsolutePath()));
         }
-        inputStream = new RandomAccessFile(pi.file(), "r");
+        inputStream = new RandomAccessFile(path.file(), "r");
 
         return this;
     }
@@ -48,7 +55,7 @@ public class LocalReader extends Reader {
     @Override
     public int read(byte[] buffer, int offset, int length) throws IOException {
         if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
+            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
         }
         return inputStream.read(buffer, offset, length);
     }
@@ -60,7 +67,7 @@ public class LocalReader extends Reader {
     @Override
     public void seek(int offset) throws IOException {
         if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
+            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
         }
         inputStream.seek(offset);
     }
@@ -75,8 +82,7 @@ public class LocalReader extends Reader {
 
     @Override
     public File copy() throws IOException {
-        LocalPathInfo pi = (LocalPathInfo) path();
-        return pi.file();
+        return path.file();
     }
 
     /**

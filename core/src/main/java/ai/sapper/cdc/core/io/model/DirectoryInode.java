@@ -20,9 +20,4 @@ public class DirectoryInode extends Inode {
     public DirectoryInode(@NonNull String name) {
         super(InodeType.Directory, name);
     }
-
-    @Override
-    public boolean exists() {
-        return synced;
-    }
 }
