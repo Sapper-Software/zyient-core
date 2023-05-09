@@ -1,5 +1,7 @@
 package ai.sapper.cdc.core.io.impl.local;
 
+import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.Inode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -16,21 +18,44 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public class LocalPathInfo extends PathInfo {
-    private final File file;
+    protected File file;
 
-    protected LocalPathInfo(@NonNull String path, @NonNull String domain) {
-        super(path, domain);
-        file = new File(path);
-    }
-
-    public LocalPathInfo(@NonNull Map<String, String> config) {
-        super(config);
+    public LocalPathInfo(@NonNull FileSystem fs,
+                         @NonNull Inode node) {
+        super(fs, node);
         file = new File(path());
+        if (file.exists()) {
+            directory = file.isDirectory();
+        }
     }
 
-    protected LocalPathInfo(@NonNull File file, @NonNull String domain) {
-        super(file.getAbsolutePath(), domain);
+    protected LocalPathInfo(@NonNull FileSystem fs,
+                            @NonNull String path,
+                            @NonNull String domain) {
+        super(fs, path, domain);
+        file = new File(path);
+        if (file.exists()) {
+            directory = file.isDirectory();
+        }
+    }
+
+    public LocalPathInfo(@NonNull FileSystem fs,
+                         @NonNull Map<String, String> config) {
+        super(fs, config);
+        file = new File(path());
+        if (file.exists()) {
+            directory = file.isDirectory();
+        }
+    }
+
+    protected LocalPathInfo(@NonNull FileSystem fs,
+                            @NonNull File file,
+                            @NonNull String domain) {
+        super(fs, file.getAbsolutePath(), domain);
         this.file = file;
+        if (file.exists()) {
+            directory = file.isDirectory();
+        }
     }
 
     /**

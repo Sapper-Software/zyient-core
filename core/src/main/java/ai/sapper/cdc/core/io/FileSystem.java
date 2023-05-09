@@ -19,6 +19,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,13 +35,12 @@ import java.util.regex.Pattern;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implements Closeable {
+public abstract class FileSystem implements Closeable {
     protected final Logger LOG = LoggerFactory.getLogger(FileSystem.class);
 
     private FileSystemHelper helper = null;
     private ZookeeperConnection zkConnection;
-    protected ConfigReader configReader;
-    protected T settings;
+    protected FileSystemSettings settings;
     protected FSDomainMap domainMap;
     private final Connection.ConnectionState state = new Connection.ConnectionState();
     private String zkPath;
@@ -50,22 +50,20 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
     private File tmpDir;
     @Getter(AccessLevel.NONE)
     private Thread cleaner;
+    private FileSystemConfigReader configReader;
 
-    public abstract FileSystem<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                                       String pathPrefix,
-                                       @NonNull BaseEnv<?> env) throws IOException;
+    public abstract FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                    @NonNull BaseEnv<?> env) throws IOException;
 
-    @SuppressWarnings("unchecked")
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                     @NonNull String pathPrefix,
                      @NonNull BaseEnv<?> env,
-                     @NonNull Class<T> settingsType) throws Exception {
+                     @NonNull FileSystemConfigReader configReader) throws Exception {
         Preconditions.checkArgument(env.state().isAvailable());
 
         this.env = env;
-        configReader = new ConfigReader(config, pathPrefix, settingsType);
+        this.configReader = configReader;
         configReader.read();
-        settings = (T) configReader.settings();
+        settings = (FileSystemSettings) configReader.settings();
         zkConnection = env.connectionManager()
                 .getConnection(settings.zkConnection(),
                         ZookeeperConnection.class);
@@ -78,22 +76,27 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
         zkPath = new PathUtils.ZkPathBuilder(settings.zkPath())
                 .withPath(settings.name())
                 .build();
+        Preconditions.checkState(settings.containers != null && !settings.containers.isEmpty());
+        domainMap = new FSDomainMap(settings.defaultContainer(), settings.containers);
         CuratorFramework client = zkConnection.client();
         if (client.checkExists().forPath(zkPath) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(zkPath);
         }
-        domainMap = new FSDomainMap(settings.defaultDomain(), settings.domains());
-
-        Collection<String> domains = domainMap.getDomains();
-        try (DistributedLock lock = getRootLock(client)) {
-            lock.lock();
-            try {
-                for (String domain : domains) {
-                    registerDomain(domain, client);
+        try {
+            Collection<Container> domains = domainMap.getDomains();
+            try (DistributedLock lock = getRootLock(client)) {
+                lock.lock();
+                try {
+                    for (Container domain : domains) {
+                        registerDomain(domain.getDomain(), client);
+                    }
+                } finally {
+                    lock.unlock();
                 }
-            } finally {
-                lock.unlock();
             }
+        } catch (Exception ex) {
+            state.error(ex);
+            throw new IOException(ex);
         }
         tmpDir = new File(settings.tempDir());
         if (!tmpDir.exists()) {
@@ -104,7 +107,7 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
         }
     }
 
-    protected FileSystem<T> postInit() throws IOException {
+    protected FileSystem postInit() throws IOException {
         if (settings.cleanTmp()) {
             cleaner = new Thread(new TmpCleaner(this, tmpDir, settings.tempTTL()), "TMP-CLEANER-THREAD");
             cleaner.start();
@@ -125,9 +128,8 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
     protected DistributedLock getDomainLock(@NonNull String domain,
                                             @NonNull CuratorFramework client) throws Exception {
         Preconditions.checkState(state.isConnected());
-        String target = domainMap.get(domain);
         String zp = new PathUtils.ZkPathBuilder(zkPath)
-                .withPath(target)
+                .withPath(domain)
                 .build();
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
@@ -157,7 +159,7 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
             }
         } else {
             client.create().creatingParentContainersIfNeeded().forPath(path);
-            DirectoryInode di = new DirectoryInode(name);
+            DirectoryInode di = new DirectoryInode(name, name);
             di.setParent(null);
             di.setPath(null);
             di.setUuid(UUID.randomUUID().toString());
@@ -176,10 +178,9 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
     protected Inode createInode(@NonNull InodeType type,
                                 @NonNull PathInfo path) throws IOException {
         Preconditions.checkState(state.isConnected());
-        String target = domainMap.get(path.domain());
-        DirectoryInode dnode = domains.get(target);
+        DirectoryInode dnode = domains.get(path.domain());
         if (dnode == null) {
-            throw new IOException(String.format("Domain directory node not found. [domain=%s]", target));
+            throw new IOException(String.format("Domain directory node not found. [domain=%s]", path.domain()));
         }
         String fpath = path.path();
         String[] parts = fpath.split("/");
@@ -268,7 +269,7 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
                                     throw new IOException(String.format("Empty path node: [path=%s]", zpath));
                                 }
                             } else {
-                                DirectoryInode di = new DirectoryInode(parts[index]);
+                                DirectoryInode di = new DirectoryInode(parent.getDomain(), parts[index]);
                                 di.setParent(parent);
                                 di.setPath(path.pathConfig());
                                 di.setAbsolutePath(path.path());
@@ -286,7 +287,7 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
                             if (client.checkExists().forPath(zpath) != null) {
                                 throw new IOException(String.format("File already registered: [path=%s]", zpath));
                             }
-                            FileInode fi = new FileInode(parts[index]);
+                            FileInode fi = new FileInode(parent.getDomain(), parts[index]);
                             fi.setParent(parent);
                             fi.setPath(path.pathConfig());
                             fi.setAbsolutePath(path.path());
@@ -317,7 +318,7 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
                     try (DistributedLock lock = getLock(parent, client)) {
                         lock.lock();
                         try {
-                            dnode = new DirectoryInode(parts[index]);
+                            dnode = new DirectoryInode(parent.getDomain(), parts[index]);
                             dnode.setParent(parent);
                             dnode.setPath(path.pathConfig());
                             dnode.setAbsolutePath(path.path());
@@ -347,12 +348,11 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
         return getInode(path.domain(), path.path());
     }
 
-    protected Inode getInode(@NonNull String module, @NonNull String path) throws IOException {
+    protected Inode getInode(@NonNull String domain, @NonNull String path) throws IOException {
         Preconditions.checkState(state.isConnected());
-        String target = domainMap.get(module);
-        DirectoryInode dnode = domains.get(target);
+        DirectoryInode dnode = domains.get(domain);
         if (dnode == null) {
-            throw new IOException(String.format("Domain directory node not found. [domain=%s]", target));
+            throw new IOException(String.format("Domain directory node not found. [domain=%s]", domain));
         }
         try {
             String zpath = getInodeZkPath(dnode, path);
@@ -399,17 +399,16 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
     }
 
     protected abstract String getAbsolutePath(@NonNull String path,
-                                              @NonNull String module);
+                                              @NonNull String domain) throws IOException;
 
     public abstract DirectoryInode mkdir(@NonNull DirectoryInode path, @NonNull String name) throws IOException;
 
-    public abstract DirectoryInode mkdirs(@NonNull String module, @NonNull String path) throws IOException;
+    public abstract DirectoryInode mkdirs(@NonNull String domain, @NonNull String path) throws IOException;
 
-    public abstract FileInode create(@NonNull String module, @NonNull String path) throws IOException;
+    public abstract FileInode create(@NonNull String domain, @NonNull String path) throws IOException;
 
     public abstract FileInode create(@NonNull PathInfo pathInfo) throws IOException;
 
-    public abstract FileInode upload(@NonNull File source, @NonNull DirectoryInode directory) throws IOException;
 
     public abstract boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException;
 
@@ -537,31 +536,24 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
         }
     }
 
-    public final Writer writer(@NonNull Inode inode,
-                               boolean createDir,
+    public final Writer writer(@NonNull FileInode inode,
                                boolean overwrite) throws IOException {
         Preconditions.checkState(state.isConnected());
-        return getWriter(inode, createDir, overwrite);
+        return getWriter(inode, overwrite);
     }
 
-    public final Writer writer(@NonNull Inode inode,
-                               boolean overwrite) throws IOException {
-        return writer(inode, false, overwrite);
+    public final Writer writer(@NonNull FileInode inode) throws IOException {
+        return writer(inode, false);
     }
 
-    public final Writer writer(@NonNull Inode inode) throws IOException {
-        return writer(inode, false, false);
-    }
-
-    public final Reader reader(@NonNull Inode inode) throws IOException {
+    public final Reader reader(@NonNull FileInode inode) throws IOException {
         Preconditions.checkState(state.isConnected());
         return getReader(inode);
     }
 
-    protected abstract Reader getReader(@NonNull Inode inode) throws IOException;
+    protected abstract Reader getReader(@NonNull FileInode inode) throws IOException;
 
-    protected abstract Writer getWriter(@NonNull Inode inode,
-                                        boolean createDir,
+    protected abstract Writer getWriter(@NonNull FileInode inode,
                                         boolean overwrite) throws IOException;
 
     @Override
@@ -585,8 +577,6 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
                 System.getProperty("java.io.tmpdir"));
 
         public static final String CONFIG_NAME = "name";
-        public static final String CONFIG_DEFAULT_DOMAIN = "domain";
-        public static final String CONFIG_ROOT = "root";
         public static final String CONFIG_TEMP_FOLDER = "tmp.path";
         public static final String CONFIG_TEMP_TTL = "tmp.ttl";
         public static final String CONFIG_TEMP_CLEAN = "tmp.clean";
@@ -597,24 +587,44 @@ public abstract class FileSystem<T extends FileSystem.FileSystemSettings> implem
 
         @Config(name = CONFIG_NAME)
         private String name;
-        @Config(name = CONFIG_DEFAULT_DOMAIN)
-        private String defaultDomain;
         @Config(name = CONFIG_ZK_CONNECTION)
         private String zkConnection;
         @Config(name = CONFIG_ZK_PATH)
         private String zkPath;
-        @Config(name = CONFIG_ROOT)
-        private String pathPrefix;
         @Config(name = CONFIG_TEMP_FOLDER, required = false)
         private String tempDir = TEMP_PATH;
         @Config(name = CONFIG_TEMP_CLEAN, required = false, type = Boolean.class)
         private boolean cleanTmp = true;
         @Config(name = CONFIG_TEMP_TTL, required = false, type = Long.class)
         private long tempTTL = 15 * 60 * 1000;
-        @Config(name = "domains", required = false, type = Map.class)
-        private Map<String, String> domains;
         @Config(name = CONFIG_ZK_LOCK_TIMEOUT, required = false, type = Integer.class)
         private int lockTimeout = LOCK_TIMEOUT;
+        private Container defaultContainer;
+        private Map<String, Container> containers;
+    }
+
+    @Getter
+    @Accessors(fluent = true)
+    public static abstract class FileSystemConfigReader extends ConfigReader {
+        private final Class<? extends Container> containerType;
+
+        public FileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                      @NonNull String path,
+                                      @NonNull Class<? extends FileSystemSettings> type,
+                                      @NonNull Class<? extends Container> containerType) {
+            super(config, path, type);
+            this.containerType = containerType;
+        }
+
+        @Override
+        public void read() throws ConfigurationException {
+            super.read();
+            ContainerConfigReader reader = new ContainerConfigReader(config(), containerType);
+            reader.read();
+            FileSystemSettings settings = (FileSystemSettings) settings();
+            settings.defaultContainer = reader.defaultContainer();
+            settings.containers = reader.containers();
+        }
     }
 
     public interface FileSystemMocker {

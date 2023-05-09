@@ -19,7 +19,8 @@ public class FileInode extends Inode {
 
     }
 
-    public FileInode(@NonNull String name) {
-        super(InodeType.File, name);
+    public FileInode(@NonNull String domain,
+                     @NonNull String name) {
+        super(InodeType.File, domain, name);
     }
 }

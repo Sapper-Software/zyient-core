@@ -9,6 +9,7 @@ import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settngs.JdbcConnectionSettings;
 import ai.sapper.cdc.core.keystore.KeyStore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -178,6 +179,8 @@ public class Db2Connection extends DbConnection {
 
     @Getter
     @Setter
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+            property = "@class")
     public static class Db2ConnectionSettings extends JdbcConnectionSettings {
         @Config(name = "db2type", required = false)
         private String db2Type = TYPE_DB2_LUW;

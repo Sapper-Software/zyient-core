@@ -9,23 +9,23 @@ import java.util.Set;
 
 public class FSDomainMap {
     public static final String __DEFAULT_DOMAIN = "default";
-    private final Map<String, String> domains = new HashMap<>();
+    private final Map<String, Container> domains = new HashMap<>();
 
-    public FSDomainMap(String defaultDomain, Map<String, String> domains) {
+    public FSDomainMap(Container defaultContainer, Map<String, Container> domains) {
         if (domains != null && !domains.isEmpty()) {
             this.domains.putAll(domains);
         }
-        this.domains.put(__DEFAULT_DOMAIN, defaultDomain);
+        this.domains.put(__DEFAULT_DOMAIN, defaultContainer);
     }
 
-    public String get(@NonNull String domain) {
+    public Container get(@NonNull String domain) {
         if (domains.containsKey(domain)) {
             return domains.get(domain);
         }
         return domains.get(__DEFAULT_DOMAIN);
     }
 
-    public Collection<String> getDomains() {
+    public Collection<Container> getDomains() {
         return this.domains.values();
     }
 }

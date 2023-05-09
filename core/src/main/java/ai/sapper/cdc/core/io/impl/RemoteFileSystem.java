@@ -2,7 +2,10 @@ package ai.sapper.cdc.core.io.impl;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.impl.local.LocalFileSystem;
+import ai.sapper.cdc.core.io.model.DirectoryInode;
+import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -21,58 +24,23 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public abstract class RemoteFileSystem extends LocalFileSystem {
-    private Map<String, String> bucketMap = new HashMap<>();
+    private RemoteFsCache cache;
 
-    /**
-     * @param config
-     * @param pathPrefix
-     * @param keyStore
-     * @return
-     * @throws IOException
-     */
     @Override
-    public CDCFileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                              String pathPrefix,
-                              KeyStore keyStore) throws IOException {
-        Preconditions.checkNotNull(fsConfig());
-        Preconditions.checkState(fsConfig() instanceof RemoteFileSystemConfig);
-        super.init(config, pathPrefix, keyStore);
-        if (((RemoteFileSystemConfig) fsConfig()).mappings != null) {
-            bucketMap = ((RemoteFileSystemConfig) fsConfig()).mappings;
-        }
-
-        File tdir = new File(fsConfig().tempDir());
-        if (!tdir.exists()) {
-            tdir.mkdirs();
-        } else {
-            FileUtils.deleteDirectory(tdir);
-            tdir.mkdirs();
-        }
-        return this;
+    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                     @NonNull BaseEnv<?> env,
+                     @NonNull FileSystemConfigReader configReader) throws Exception {
+        super.init(config, env, configReader);
+        cache = new RemoteFsCache(this);
+        cache.init(config);
     }
+
+    public abstract FileInode upload(@NonNull File source, @NonNull DirectoryInode directory) throws IOException;
+
+    public abstract File download(@NonNull FileInode inode) throws IOException;
 
     public void debug(Object mesg) {
         DefaultLogger.LOGGER.debug(String.format("RESPONSE: %s", mesg));
     }
 
-    @Getter
-    @Accessors(fluent = true)
-    public static class RemoteFileSystemConfig extends FileSystemConfig {
-        public static final String CONFIG_DOMAIN_MAP = "domains.mapping";
-
-        private Map<String, String> mappings;
-
-        public RemoteFileSystemConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                                      @NonNull String path) {
-            super(config, path);
-        }
-
-        @Override
-        public void read(@NonNull Class<? extends ConfigReader> type) throws ConfigurationException {
-            super.read(type);
-            if (checkIfNodeExists(get(), CONFIG_DOMAIN_MAP)) {
-                mappings = readAsMap(get(), CONFIG_DOMAIN_MAP);
-            }
-        }
-    }
 }

@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.io.Archiver;
+import ai.sapper.cdc.core.io.FileSystem;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -22,16 +23,33 @@ public abstract class PathInfo {
     public static final String CONFIG_KEY_DOMAIN = "domain";
     public static final String CONFIG_KEY_PATH = "path";
 
+    private final FileSystem fs;
     private final String domain;
     private final String path;
+    protected boolean directory;
     private long dataSize = -1;
 
-    protected PathInfo(@NonNull String path, @NonNull String domain) {
+    protected PathInfo(@NonNull FileSystem fs,
+                       @NonNull Inode node) {
+        this.fs = fs;
+        this.directory = node.isDirectory();
+        domain = node.getPath().get(CONFIG_KEY_DOMAIN);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
+        path = node.getPath().get(CONFIG_KEY_PATH);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
+    }
+
+    protected PathInfo(@NonNull FileSystem fs,
+                       @NonNull String path,
+                       @NonNull String domain) {
+        this.fs = fs;
         this.path = PathUtils.formatPath(path);
         this.domain = domain;
     }
 
-    protected PathInfo(@NonNull Map<String, String> config) {
+    protected PathInfo(@NonNull FileSystem fs,
+                       @NonNull Map<String, String> config) {
+        this.fs = fs;
         domain = config.get(CONFIG_KEY_DOMAIN);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
         path = config.get(CONFIG_KEY_PATH);

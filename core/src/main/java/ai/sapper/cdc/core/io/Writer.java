@@ -13,18 +13,21 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public abstract class Writer implements Closeable {
     private final FileInode inode;
-    private final FileSystem fs;
+    private final FileSystem<?> fs;
+    private final boolean overwrite;
 
     protected Writer(@NonNull FileInode inode,
-                     @NonNull FileSystem fs) {
+                     @NonNull FileSystem<?> fs,
+                     boolean overwrite) {
         this.inode = inode;
         this.fs = fs;
+        this.overwrite = overwrite;
     }
 
     public abstract Writer open(boolean overwrite) throws IOException;
 
     public Writer open() throws IOException {
-        return open(false);
+        return open(overwrite);
     }
 
     public abstract long write(byte[] data, long offset, long length) throws IOException;

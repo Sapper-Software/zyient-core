@@ -21,8 +21,9 @@ public class LocalWriter extends Writer {
     private final LocalPathInfo path;
 
     protected LocalWriter(@NonNull FileInode inode,
-                          @NonNull FileSystem fs) throws IOException {
-        super(inode, fs);
+                          @NonNull FileSystem<?> fs,
+                          boolean overwrite) throws IOException {
+        super(inode, fs, overwrite);
         if (inode.getPathInfo() == null) {
             path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
             inode.setPathInfo(path);

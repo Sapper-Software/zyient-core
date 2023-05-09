@@ -4,6 +4,7 @@ import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.connections.ConnectionConfig;
 import ai.sapper.cdc.core.connections.db.AzureTableConnection;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
@@ -11,6 +12,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class AzureTableConnectionSettings extends ConnectionSettings {
     public static class Constants {
         public static final String CONFIG_CONNECTION_STRING = "connectionString";

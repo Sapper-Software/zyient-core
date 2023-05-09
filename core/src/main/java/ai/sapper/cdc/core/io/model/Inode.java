@@ -15,6 +15,7 @@ import java.util.UUID;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public abstract class Inode {
     private String uuid;
+    private String domain;
     private Map<String, String> path;
     private String absolutePath;
     private long createTimestamp = 0;
@@ -32,10 +33,12 @@ public abstract class Inode {
     }
 
     public Inode(@NonNull InodeType type,
+                 @NonNull String domain,
                  @NonNull String name) {
         uuid = UUID.randomUUID().toString();
         this.type = type;
         this.name = name;
+        this.domain = domain;
     }
 
     public boolean isDirectory() {

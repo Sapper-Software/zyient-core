@@ -3,6 +3,9 @@ package ai.sapper.cdc.core.io.impl.s3;
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.PathUtils;
+import ai.sapper.cdc.core.io.model.Container;
+import ai.sapper.cdc.core.io.model.DirectoryInode;
+import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
@@ -14,6 +17,7 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -42,10 +46,6 @@ public class S3FileSystem extends RemoteFileSystem {
 
     @Getter(AccessLevel.PACKAGE)
     private S3Client client;
-    @Getter(AccessLevel.PACKAGE)
-    private String defaultBucket;
-    private final S3ReadCache cache = new S3ReadCache(this);
-    private S3FileSystemConfig fsConfig;
 
     public S3FileSystem withClient(@NonNull S3Client client) {
         this.client = client;
@@ -418,36 +418,33 @@ public class S3FileSystem extends RemoteFileSystem {
         }
     }
 
-    /**
-     * @return
-     */
     @Override
-    public String tempPath() {
-        return fsConfig.tempDir();
+    public FileInode upload(@NonNull File source, @NonNull DirectoryInode directory) throws IOException {
+        return null;
+    }
+
+    @Override
+    public File download(@NonNull FileInode inode) throws IOException {
+        return null;
+    }
+
+    @Getter
+    @Setter
+    public static class S3FileSystemSettings extends FileSystemSettings {
+        public static final String CONFIG_REGION = "region";
+
+        @Config(name = CONFIG_REGION)
+        private String region;
     }
 
     @Getter
     @Accessors(fluent = true)
-    public static class S3FileSystemConfig extends RemoteFileSystemConfig {
-        public static final String CONFIG_REGION = "region";
-        public static final String CONFIG_DEFAULT_BUCKET = "defaultBucket";
+    public static class S3FileSystemConfigReader extends FileSystemConfigReader {
+        public static final String __CONFIG_PATH = "s3";
 
-        @Config(name = CONFIG_REGION)
-        private String region;
-        @Config(name = CONFIG_DEFAULT_BUCKET)
-        private String defaultBucket;
-
-        public S3FileSystemConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                                  @NonNull String path) {
-            super(config, path);
-        }
-
-        /**
-         * @throws ConfigurationException
-         */
-        @Override
-        public void read(@NonNull Class<? extends ConfigReader> type) throws ConfigurationException {
-            super.read(type);
+        public S3FileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                        @NonNull Class<? extends Container> containerType) {
+            super(config, __CONFIG_PATH, S3FileSystemSettings.class, containerType);
         }
     }
 }

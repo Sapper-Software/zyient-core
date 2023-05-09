@@ -1,6 +1,8 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.common.utils.ChecksumUtils;
+import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.Inode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.io.impl.local.LocalPathInfo;
 import com.google.common.base.Preconditions;
@@ -29,14 +31,22 @@ public class S3PathInfo extends LocalPathInfo {
 
     private final S3Client client;
     private final String bucket;
-    private File temp;
-    private final boolean directory;
+
+    public S3PathInfo(@NonNull FileSystem fs,
+                      @NonNull Inode node,
+                      S3Client client,
+                      String bucket) {
+        super(fs, node);
+        this.client = client;
+        this.bucket = bucket;
+    }
 
     protected S3PathInfo(@NonNull S3Client client,
+                         @NonNull FileSystem fs,
                          @NonNull String domain,
                          @NonNull String bucket,
                          @NonNull String path) throws Exception {
-        super(path, domain);
+        super(fs, path, domain);
         this.client = client;
         this.bucket = bucket;
         init();
@@ -44,11 +54,12 @@ public class S3PathInfo extends LocalPathInfo {
     }
 
     protected S3PathInfo(@NonNull S3Client client,
+                         @NonNull FileSystem fs,
                          @NonNull String domain,
                          @NonNull String bucket,
                          @NonNull String path,
                          boolean directory) throws Exception {
-        super(path, domain);
+        super(fs, path, domain);
         this.client = client;
         this.bucket = bucket;
         if (!directory)
@@ -57,8 +68,9 @@ public class S3PathInfo extends LocalPathInfo {
     }
 
     protected S3PathInfo(@NonNull S3Client client,
+                         @NonNull FileSystem fs,
                          @NonNull Map<String, String> config) throws Exception {
-        super(config);
+        super(fs, config);
         this.client = client;
         bucket = config.get(CONFIG_KEY_BUCKET);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(bucket));
@@ -68,16 +80,8 @@ public class S3PathInfo extends LocalPathInfo {
 
     private void init() throws Exception {
         String name = FilenameUtils.getName(path());
-        if (!Strings.isNullOrEmpty(name)) {
-            String hash = ChecksumUtils.generateHash(path());
-            String tempf = String.format("%s/%s/%s/%s",
-                    S3FileSystem.TEMP_PATH,
-                    bucket,
-                    hash,
-                    name);
-            temp = new File(tempf);
-            file(temp);
-        }
+        String hash = ChecksumUtils.generateHash(path());
+        file = fs().createTmpFile(hash, name);
     }
 
     protected S3PathInfo withTemp(@NonNull File temp) {

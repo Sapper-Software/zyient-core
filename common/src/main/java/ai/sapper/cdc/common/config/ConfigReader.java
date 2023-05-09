@@ -58,7 +58,16 @@ public class ConfigReader {
     public void read() throws ConfigurationException {
         try {
             settings = type.getDeclaredConstructor().newInstance();
+            settings = read(settings, config);
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
+    }
 
+    public Settings read(@NonNull Settings settings,
+                         @NonNull HierarchicalConfiguration<ImmutableNode> config)
+            throws ConfigurationException {
+        try {
             Field[] fields = ReflectionUtils.getAllFields(settings.getClass());
             if (fields != null) {
                 settings = type.getDeclaredConstructor().newInstance();
@@ -129,6 +138,7 @@ public class ConfigReader {
                     }
                 }
             }
+            return settings;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }

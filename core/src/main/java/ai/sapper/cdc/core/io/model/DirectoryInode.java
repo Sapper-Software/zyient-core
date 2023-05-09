@@ -17,7 +17,8 @@ public class DirectoryInode extends Inode {
     public DirectoryInode() {
     }
 
-    public DirectoryInode(@NonNull String name) {
-        super(InodeType.Directory, name);
+    public DirectoryInode(@NonNull String domain,
+                          @NonNull String name) {
+        super(InodeType.Directory, domain, name);
     }
 }
