@@ -73,14 +73,8 @@ public class LocalPathInfo extends PathInfo {
      */
     @Override
     public long size() throws IOException {
-        if (dataSize() < 0) {
-            if (!exists()) {
-                dataSize(0);
-            } else {
-                Path p = Paths.get(file.toURI());
-                dataSize(Files.size(p));
-            }
-        }
+        Path p = Paths.get(file.toURI());
+        dataSize(Files.size(p));
         return dataSize();
     }
 

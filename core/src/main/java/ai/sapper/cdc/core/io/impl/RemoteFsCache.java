@@ -6,10 +6,7 @@ import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.core.io.ContainerConfigReader;
-import ai.sapper.cdc.core.io.impl.s3.S3ReadCache;
 import ai.sapper.cdc.core.io.model.FileInode;
-import ai.sapper.cdc.core.io.model.Inode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -19,6 +16,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -73,11 +71,21 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
             boolean fetch = false;
             if (entry == null) {
                 fetch = true;
-            } else if ((System.currentTimeMillis() - entry.updatedTime) > settings.cacheTimeout){
+            } else if ((System.currentTimeMillis() - entry.updatedTime) > settings.cacheTimeout) {
                 fetch = true;
             }
             if (fetch) {
                 File file = fs.download(inode);
+                if (file == null) return null;
+                if (inode.isCompressed()) {
+                    File outf = fs.decompress(file);
+                    if (!file.delete()) {
+                        throw new IOException(String.format("Failed to delete file. [path=%s]", file.getAbsolutePath()));
+                    }
+                    if (!outf.renameTo(file)) {
+                        throw new IOException(String.format("Filed to rename file. [path=%s]", outf.getAbsolutePath()));
+                    }
+                }
                 return put(inode, file);
             }
             return entry.file;

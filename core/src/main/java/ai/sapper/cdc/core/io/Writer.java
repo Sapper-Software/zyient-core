@@ -2,23 +2,26 @@ package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
 public abstract class Writer implements Closeable {
-    private final FileInode inode;
-    private final FileSystem<?> fs;
+    protected FileInode inode;
+    protected final FileSystem fs;
     private final boolean overwrite;
 
     protected Writer(@NonNull FileInode inode,
-                     @NonNull FileSystem<?> fs,
+                     @NonNull FileSystem fs,
                      boolean overwrite) {
+        Preconditions.checkArgument(inode.getPathInfo() != null);
         this.inode = inode;
         this.fs = fs;
         this.overwrite = overwrite;
@@ -49,4 +52,6 @@ public abstract class Writer implements Closeable {
     }
 
     public abstract boolean isOpen();
+
+    public abstract void commit() throws IOException;
 }

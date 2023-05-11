@@ -12,8 +12,8 @@ import java.io.IOException;
 @Getter
 @Accessors(fluent = true)
 public abstract class Reader implements Closeable {
-    private final FileInode inode;
-    private final FileSystem fs;
+    protected final FileInode inode;
+    protected final FileSystem fs;
 
     protected Reader(@NonNull FileInode inode,
                      @NonNull FileSystem fs) {
@@ -34,4 +34,14 @@ public abstract class Reader implements Closeable {
     public abstract boolean isOpen();
 
     public abstract File copy() throws IOException;
+
+    public static File checkDecompress(@NonNull File infile,
+                                       @NonNull FileInode inode,
+                                       @NonNull FileSystem fs) throws IOException {
+        if (inode.isCompressed()) {
+            return fs.decompress(infile);
+        }
+        return infile;
+    }
+
 }

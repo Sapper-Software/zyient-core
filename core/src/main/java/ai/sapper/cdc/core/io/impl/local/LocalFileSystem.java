@@ -5,6 +5,7 @@ import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.io.Reader;
@@ -66,20 +67,12 @@ public class LocalFileSystem extends CDCFileSystem {
      * @throws IOException
      */
     @Override
-    public Inode get(@NonNull String path, String domain) throws IOException {
-        path = PathUtils.formatPath(path);
-        if (!Strings.isNullOrEmpty(domain)) {
-            Container container = domainMap.get(domain);
-            if (!(container instanceof LocalContainer)) {
-                throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
-            }
-            String pp = ((LocalContainer) container).getPath();
-            if (!path.startsWith(pp)) {
-                path = PathUtils.formatPath(String.format("%s/%s", pp, path));
-            }
+    public Inode get(@NonNull PathInfo path) throws IOException {
+        Inode node = getInode(path);
+        if (node != null) {
+            node.setPathInfo(parsePathInfo(node.getPath()));
         }
-        PathInfo pi = new LocalPathInfo(this, path, domain);
-        return getInode(pi);
+        return node;
     }
 
     @Override
@@ -121,7 +114,7 @@ public class LocalFileSystem extends CDCFileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (DirectoryInode) node;
+        return (DirectoryInode) updateInode(node, pi);
     }
 
     @Override
@@ -140,12 +133,13 @@ public class LocalFileSystem extends CDCFileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (DirectoryInode) node;
+        return (DirectoryInode) updateInode(node, pi);
     }
 
     @Override
-    public FileInode create(@NonNull String module, @NonNull String path) throws IOException {
-        LocalPathInfo pi = new LocalPathInfo(this, path, module);
+    public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
+        path = getAbsolutePath(path, domain);
+        LocalPathInfo pi = new LocalPathInfo(this, path, domain);
         return create(pi);
     }
 
@@ -165,7 +159,7 @@ public class LocalFileSystem extends CDCFileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (FileInode) node;
+        return (FileInode) updateInode(node, pi);
     }
 
     /**
@@ -192,8 +186,8 @@ public class LocalFileSystem extends CDCFileSystem {
     }
 
     @Override
-    public boolean exists(@NonNull String path, String domain) throws IOException {
-        Inode node = get(path, domain);
+    public boolean exists(@NonNull PathInfo path) throws IOException {
+        Inode node = get(path);
         if (node != null) {
             LocalPathInfo pi = (LocalPathInfo) parsePathInfo(node.getPath());
             return pi.exists();

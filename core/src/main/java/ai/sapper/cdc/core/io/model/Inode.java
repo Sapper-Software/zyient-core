@@ -56,4 +56,9 @@ public abstract class Inode {
     public long size() throws IOException {
         return path.size();
     }
+
+    @Override
+    public String toString() {
+        return String.format("[ID=%s][PATH=%s]", uuid, path);
+    }
 }

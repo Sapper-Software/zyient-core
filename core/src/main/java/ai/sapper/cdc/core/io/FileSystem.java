@@ -11,6 +11,7 @@ import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.*;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -25,10 +26,13 @@ import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xerial.snappy.Snappy;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -98,6 +102,7 @@ public abstract class FileSystem implements Closeable {
             state.error(ex);
             throw new IOException(ex);
         }
+        settings.tempDir = PathUtils.formatPath(String.format("%s/fs/%s", settings.tempDir(), settings.name));
         tmpDir = new File(settings.tempDir());
         if (!tmpDir.exists()) {
             if (!tmpDir.mkdirs()) {
@@ -123,6 +128,12 @@ public abstract class FileSystem implements Closeable {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
         return env.createCustomLock(zp, zkConnection, settings.lockTimeout());
+    }
+
+    public DistributedLock getLock(@NonNull Inode inode) throws Exception {
+        Preconditions.checkState(state.isConnected());
+        CuratorFramework client = zkConnection.client();
+        return getLock(inode, client);
     }
 
     protected DistributedLock getDomainLock(@NonNull String domain,
@@ -188,8 +199,8 @@ public abstract class FileSystem implements Closeable {
         return createInode(dnode, path, type, parts, 0, client);
     }
 
-    protected Inode updateInode(@NonNull Inode inode,
-                                @NonNull PathInfo path) throws IOException {
+    public Inode updateInode(@NonNull Inode inode,
+                             @NonNull PathInfo path) throws IOException {
         Preconditions.checkState(state.isConnected());
         Inode current = getInode(path);
         if (current == null) {
@@ -296,7 +307,7 @@ public abstract class FileSystem implements Closeable {
                             fi.setUpdateTimestamp(System.currentTimeMillis());
                             fi.setZkPath(zpath);
                             fi.setPathInfo(path);
-
+                            fi.getState().state(EFileState.New);
                             client.setData().forPath(zpath, JSONUtils.asBytes(fi, DirectoryInode.class));
                             return fi;
                         }
@@ -342,7 +353,7 @@ public abstract class FileSystem implements Closeable {
         }
     }
 
-    public abstract Inode get(@NonNull String path, String domain) throws IOException;
+    public abstract Inode get(@NonNull PathInfo path) throws IOException;
 
     protected Inode getInode(@NonNull PathInfo path) throws IOException {
         return getInode(path.domain(), path.path());
@@ -379,6 +390,14 @@ public abstract class FileSystem implements Closeable {
         return dir;
     }
 
+    public File createTmpFile() throws IOException {
+        return createTmpFile(null, null);
+    }
+
+    public File createTmpFile(String path) throws IOException {
+        return createTmpFile(path, null);
+    }
+
     public File createTmpFile(String path, String name) throws IOException {
         Preconditions.checkState(state.isConnected());
         File tdir = tmpDir;
@@ -389,7 +408,12 @@ public abstract class FileSystem implements Closeable {
             name = String.format("%s.tmp", UUID.randomUUID().toString());
         }
         String fpath = PathUtils.formatPath(String.format("%s/%s", tdir.getAbsolutePath(), name));
-        return new File(fpath);
+        File file = new File(fpath);
+        if (!file.setLastModified(System.currentTimeMillis())) {
+            DefaultLogger.warn(LOG, String.format("Failed to touch file. [path=%s]", file.getAbsolutePath()));
+        }
+
+        return file;
     }
 
     protected String getInodeZkPath(DirectoryInode mnode, String path) {
@@ -510,30 +534,43 @@ public abstract class FileSystem implements Closeable {
         return null;
     }
 
-    public abstract boolean exists(@NonNull String path, String domain) throws IOException;
+    public abstract boolean exists(@NonNull PathInfo path) throws IOException;
 
-    public boolean isDirectory(@NonNull String path, String domain) throws IOException {
-        Inode pi = get(path, domain);
+    public boolean isDirectory(@NonNull PathInfo path) throws IOException {
+        Inode pi = get(path);
         if (pi != null) return pi.isDirectory();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
         }
     }
 
-    public boolean isFile(@NonNull String path, String domain) throws IOException {
-        Inode pi = get(path, domain);
+    public boolean isFile(@NonNull PathInfo path) throws IOException {
+        Inode pi = get(path);
         if (pi != null) return pi.isFile();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
         }
     }
 
-    public boolean isArchive(@NonNull String path, String domain) throws IOException {
-        Inode pi = get(path, domain);
+    public boolean isArchive(@NonNull PathInfo path) throws IOException {
+        Inode pi = get(path);
         if (pi != null) return pi.isArchive();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
         }
+    }
+
+    public final Writer writer(@NonNull PathInfo path) throws IOException {
+        return writer(path, false);
+    }
+
+    public final Writer writer(@NonNull PathInfo path,
+                               boolean overwrite) throws IOException {
+        Inode node = get(path);
+        if (node == null) {
+            node = createInode(InodeType.File, path);
+        }
+        return writer((FileInode) node, overwrite);
     }
 
     public final Writer writer(@NonNull FileInode inode,
@@ -546,9 +583,45 @@ public abstract class FileSystem implements Closeable {
         return writer(inode, false);
     }
 
+    public final Reader reader(@NonNull PathInfo path) throws IOException {
+        Inode node = get(path);
+        if (node == null) {
+            throw new IOException(String.format("File does not exist. [path=%s]", path));
+        }
+        if (!(node instanceof FileInode)) {
+            throw new IOException(String.format("Path is not a file. [path=%s]", path));
+        }
+        return reader((FileInode) node);
+    }
+
     public final Reader reader(@NonNull FileInode inode) throws IOException {
         Preconditions.checkState(state.isConnected());
         return getReader(inode);
+    }
+
+
+    public File compress(@NonNull File file) throws IOException {
+        Preconditions.checkArgument(file.exists());
+        byte[] data = Files.readAllBytes(Paths.get(file.toURI()));
+        if (data.length > 0) {
+            byte[] compressed = Snappy.compress(data);
+            File outf = createTmpFile();
+            Files.write(Paths.get(outf.toURI()), compressed);
+            return outf;
+        }
+        return null;
+    }
+
+    public File decompress(@NonNull File file) throws IOException {
+        Preconditions.checkArgument(file.exists());
+        byte[] data = Files.readAllBytes(Paths.get(file.toURI()));
+        if (data.length > 0) {
+            byte[] uncompressed = Snappy.uncompress(data);
+            File outf = createTmpFile();
+            Files.write(Paths.get(outf.toURI()), uncompressed);
+            return outf;
+        }
+        return null;
     }
 
     protected abstract Reader getReader(@NonNull FileInode inode) throws IOException;
@@ -572,6 +645,8 @@ public abstract class FileSystem implements Closeable {
 
     @Getter
     @Setter
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+            property = "@class")
     public static class FileSystemSettings extends Settings {
         public static final String TEMP_PATH = String.format("%s/zyient/cdc",
                 System.getProperty("java.io.tmpdir"));

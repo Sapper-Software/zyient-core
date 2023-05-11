@@ -26,100 +26,58 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class S3PathInfo extends LocalPathInfo {
+public class S3PathInfo extends PathInfo {
     public static final String CONFIG_KEY_BUCKET = "bucket";
 
     private final S3Client client;
     private final String bucket;
+    private File temp;
 
     public S3PathInfo(@NonNull FileSystem fs,
                       @NonNull Inode node,
-                      S3Client client,
                       String bucket) {
         super(fs, node);
-        this.client = client;
+        Preconditions.checkArgument(fs instanceof S3FileSystem);
+        this.client = ((S3FileSystem) fs).client();
         this.bucket = bucket;
     }
 
-    protected S3PathInfo(@NonNull S3Client client,
-                         @NonNull FileSystem fs,
+    protected S3PathInfo(@NonNull FileSystem fs,
                          @NonNull String domain,
                          @NonNull String bucket,
-                         @NonNull String path) throws Exception {
+                         @NonNull String path) {
         super(fs, path, domain);
-        this.client = client;
+        Preconditions.checkArgument(fs instanceof S3FileSystem);
+        this.client = ((S3FileSystem) fs).client();
         this.bucket = bucket;
-        init();
         directory = false;
     }
 
-    protected S3PathInfo(@NonNull S3Client client,
-                         @NonNull FileSystem fs,
+    protected S3PathInfo(@NonNull FileSystem fs,
                          @NonNull String domain,
                          @NonNull String bucket,
                          @NonNull String path,
-                         boolean directory) throws Exception {
+                         boolean directory) {
         super(fs, path, domain);
-        this.client = client;
+        Preconditions.checkArgument(fs instanceof S3FileSystem);
+        this.client = ((S3FileSystem) fs).client();
         this.bucket = bucket;
-        if (!directory)
-            init();
         this.directory = directory;
     }
 
-    protected S3PathInfo(@NonNull S3Client client,
-                         @NonNull FileSystem fs,
-                         @NonNull Map<String, String> config) throws Exception {
+    protected S3PathInfo(@NonNull FileSystem fs,
+                         @NonNull Map<String, String> config) {
         super(fs, config);
-        this.client = client;
+        Preconditions.checkArgument(fs instanceof S3FileSystem);
+        this.client = ((S3FileSystem) fs).client();
         bucket = config.get(CONFIG_KEY_BUCKET);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(bucket));
-        init();
         directory = false;
-    }
-
-    private void init() throws Exception {
-        String name = FilenameUtils.getName(path());
-        String hash = ChecksumUtils.generateHash(path());
-        file = fs().createTmpFile(hash, name);
     }
 
     protected S3PathInfo withTemp(@NonNull File temp) {
         this.temp = temp;
-        file(temp);
-
         return this;
-    }
-
-    /**
-     * @return
-     */
-    @Override
-    public PathInfo parentPathInfo() throws Exception {
-        String path = path();
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() - 2);
-        }
-        return new S3PathInfo(client, domain(), bucket, FilenameUtils.getFullPath(path), true);
-    }
-
-    /**
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public boolean isDirectory() throws IOException {
-        if (directory) return true;
-        return path().endsWith("/");
-    }
-
-    /**
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public boolean isFile() throws IOException {
-        return exists();
     }
 
     /**
@@ -129,25 +87,7 @@ public class S3PathInfo extends LocalPathInfo {
     @Override
     public boolean exists() throws IOException {
         if (path().endsWith("/")) return true;
-        try {
-            ListObjectsRequest request = ListObjectsRequest
-                    .builder()
-                    .bucket(bucket())
-                    .prefix(parent())
-                    .build();
-            ListObjectsResponse res = client.listObjects(request);
-            List<S3Object> objects = res.contents();
-            if (objects != null && !objects.isEmpty()) {
-                for (S3Object so : objects) {
-                    if (so.key().compareTo(path()) == 0) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        } catch (Exception ex) {
-            return false;
-        }
+        return fs().exists(this);
     }
 
     /**
@@ -160,7 +100,8 @@ public class S3PathInfo extends LocalPathInfo {
             Path p = Paths.get(temp.toURI());
             dataSize(Files.size(p));
         } else {
-            dataSize(0);
+            S3FileSystem sfs = (S3FileSystem) fs();
+            dataSize(sfs.size(this));
         }
         return dataSize();
     }

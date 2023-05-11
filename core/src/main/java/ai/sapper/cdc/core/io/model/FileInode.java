@@ -11,7 +11,8 @@ import lombok.Setter;
         property = "@class")
 public class FileInode extends Inode {
     private String tmpPath;
-    private EFileState state = EFileState.Unknown;
+    private FileState state = new FileState();
+    private boolean compressed = false;
     private long syncedSize = 0;
     private long updatedSize = 0;
 

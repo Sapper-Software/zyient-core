@@ -40,6 +40,7 @@ public class LocalReader extends Reader {
         if (!path.exists()) {
             throw new IOException(String.format("File not found. [path=%s]", path.file().getAbsolutePath()));
         }
+
         inputStream = new RandomAccessFile(path.file(), "r");
 
         return this;
