@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.io.impl.glacier;
 
+import ai.sapper.cdc.core.io.model.ArchivePathInfo;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -12,7 +13,7 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class GlacierPathInfo extends PathInfo {
+public class GlacierPathInfo extends ArchivePathInfo {
     public static final String CONFIG_KEY_VAULT = "vault";
     private final GlacierClient client;
     private final String vault;
@@ -21,49 +22,18 @@ public class GlacierPathInfo extends PathInfo {
     protected GlacierPathInfo(@NonNull GlacierClient client,
                               @NonNull String path,
                               @NonNull String domain,
+                              @NonNull Map<String, String> source,
                               @NonNull String vault) {
-        super(path, domain);
+        super(domain, source, path);
         this.client = client;
         this.vault = vault;
-        archive(true);
     }
 
     protected GlacierPathInfo(@NonNull GlacierClient client,
-                              @NonNull Map<String, String> config) {
+                              @NonNull Map<String, String> config) throws IOException {
         super(config);
         this.client = client;
-        vault = config.get(CONFIG_KEY_VAULT);
-        archive(true);
-    }
-
-    @Override
-    public PathInfo parentPathInfo() {
-        String path = path();
-        if (path.endsWith("/")) {
-            path = path.substring(0, path.length() - 2);
-        }
-        String p = FilenameUtils.getFullPath(path);
-        return new GlacierPathInfo(client, path, domain(), vault);
-    }
-
-    @Override
-    public boolean isDirectory() throws IOException {
-        return path().endsWith("/");
-    }
-
-    @Override
-    public boolean isFile() throws IOException {
-        return exists();
-    }
-
-    @Override
-    public boolean exists() throws IOException {
-        return false;
-    }
-
-    @Override
-    public long size() throws IOException {
-        return 0;
+        this.vault = checkKey(CONFIG_KEY_VAULT, config);
     }
 
     @Override

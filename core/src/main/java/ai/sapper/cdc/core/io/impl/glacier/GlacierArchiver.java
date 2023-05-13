@@ -1,10 +1,14 @@
 package ai.sapper.cdc.core.io.impl.glacier;
 
+import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.schema.SchemaEntity;
 import ai.sapper.cdc.common.utils.ChecksumUtils;
 import ai.sapper.cdc.core.io.Archiver;
+import ai.sapper.cdc.core.io.ContainerConfigReader;
 import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.ArchivePathInfo;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -27,15 +31,19 @@ import java.util.Map;
 
 public class GlacierArchiver extends Archiver {
     private GlacierClient client;
-    private GlacierArchiverConfig config;
+    private ConfigReader configReader;
+    private GlacierArchiverSettings settings;
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig, String pathPrefix) throws IOException {
         try {
-            config = new GlacierArchiverConfig(xmlConfig);
-            config.read();
-
-            Region region = Region.of(config.region);
+            if (Strings.isNullOrEmpty(pathPrefix)) {
+                pathPrefix = Archiver.CONFIG_ARCHIVER;
+            }
+            configReader = new ConfigReader(xmlConfig, pathPrefix, GlacierArchiverSettings.class);
+            configReader.read();
+            settings = (GlacierArchiverSettings) configReader.settings();
+            Region region = Region.of(settings.region);
             client = GlacierClient.builder()
                     .region(region)
                     .credentialsProvider(ProfileCredentialsProvider.create())
@@ -46,7 +54,7 @@ public class GlacierArchiver extends Archiver {
     }
 
     @Override
-    public PathInfo archive(@NonNull PathInfo source, @NonNull PathInfo target, @NonNull FileSystem sourceFS) throws IOException {
+    public ArchivePathInfo archive(@NonNull PathInfo source, @NonNull ArchivePathInfo target, @NonNull FileSystem sourceFS) throws IOException {
         Preconditions.checkArgument(target instanceof GlacierPathInfo);
         File zip = new File(source.path());
         try {
@@ -59,24 +67,15 @@ public class GlacierArchiver extends Archiver {
 
             UploadArchiveResponse res = client.uploadArchive(uploadRequest, Paths.get(zip.getAbsolutePath()));
             String id = res.archiveId();
-            return new GlacierPathInfo(client, id, target.domain(), ((GlacierPathInfo) target).vault());
+            return new GlacierPathInfo(client, id, target.domain(), source.pathConfig(), ((GlacierPathInfo) target).vault());
         } catch (Exception ex) {
             throw new IOException(ex);
         }
     }
 
     @Override
-    public PathInfo getTargetPath(@NonNull String path, @NonNull SchemaEntity schemaEntity) {
-        String vault = config.defaultVault;
-        if (config.mappings != null && config.mappings.containsKey(schemaEntity.getDomain())) {
-            vault = config.mappings.get(schemaEntity.getDomain());
-        }
-        path = String.format("%s/%s", schemaEntity.getDomain(), path);
-        return new GlacierPathInfo(client, path, schemaEntity.getDomain(), vault);
-    }
-
-    @Override
-    public File getFromArchive(@NonNull PathInfo path) throws IOException {
+    public File getFromArchive(@NonNull ArchivePathInfo path) throws IOException {
+        
         throw new IOException("Method not implemented...");
     }
 
@@ -90,41 +89,18 @@ public class GlacierArchiver extends Archiver {
 
     @Getter
     @Accessors(fluent = true)
-    public static class GlacierArchiverConfig extends ConfigReader {
+    public static class GlacierArchiverSettings extends Settings {
         public static class Constants {
             public static final String CONFIG_REGION = "region";
             public static final String CONFIG_DEFAULT_VAULT = "defaultVault";
             public static final String CONFIG_DOMAIN_MAP = "domains.mapping";
         }
 
+        @Config(name = Constants.CONFIG_REGION)
         private String region;
+        @Config(name = Constants.CONFIG_DEFAULT_VAULT)
         private String defaultVault;
-
+        @Config(name = Constants.CONFIG_DOMAIN_MAP, required = false, type = Map.class)
         private Map<String, String> mappings;
-
-        public GlacierArchiverConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, Archiver.CONFIG_ARCHIVER);
-        }
-
-        public void read() throws ConfigurationException {
-            if (get() == null) {
-                throw new ConfigurationException("Glacier Archiver Configuration not set or is NULL");
-            }
-            region = get().getString(Constants.CONFIG_REGION);
-            if (Strings.isNullOrEmpty(region)) {
-                throw new ConfigurationException(
-                        String.format("Glacier Archiver Configuration: missing parameter. [name=%s]",
-                                Constants.CONFIG_REGION));
-            }
-            defaultVault = get().getString(Constants.CONFIG_DEFAULT_VAULT);
-            if (Strings.isNullOrEmpty(defaultVault)) {
-                throw new ConfigurationException(
-                        String.format("Glacier Archiver Configuration: missing parameter. [name=%s]",
-                                Constants.CONFIG_DEFAULT_VAULT));
-            }
-            if (ConfigReader.checkIfNodeExists(get(), Constants.CONFIG_DOMAIN_MAP)) {
-                mappings = ConfigReader.readAsMap(get(), Constants.CONFIG_DOMAIN_MAP);
-            }
-        }
     }
 }

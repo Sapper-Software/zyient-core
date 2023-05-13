@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.common.schema.SchemaEntity;
+import ai.sapper.cdc.core.io.model.ArchivePathInfo;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -16,19 +17,13 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public abstract class Archiver implements Closeable {
     public static final String CONFIG_ARCHIVER = "archiver";
-    public static final String CONFIG_KEY_ARCHIVE = "archived";
-
-    private FileSystem targetFS;
 
     public abstract void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                               String pathPrefix) throws IOException;
 
-    public abstract PathInfo archive(@NonNull PathInfo source,
-                                     @NonNull PathInfo target,
-                                     @NonNull FileSystem sourceFS) throws IOException;
+    public abstract ArchivePathInfo archive(@NonNull PathInfo source,
+                                            @NonNull ArchivePathInfo target,
+                                            @NonNull FileSystem sourceFS) throws IOException;
 
-    public abstract PathInfo getTargetPath(@NonNull String path,
-                                           @NonNull SchemaEntity schemaEntity);
-
-    public abstract File getFromArchive(@NonNull PathInfo path) throws IOException;
+    public abstract File getFromArchive(@NonNull ArchivePathInfo path) throws IOException;
 }

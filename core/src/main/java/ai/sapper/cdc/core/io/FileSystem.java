@@ -42,7 +42,6 @@ import java.util.regex.Pattern;
 public abstract class FileSystem implements Closeable {
     protected final Logger LOG = LoggerFactory.getLogger(FileSystem.class);
 
-    private FileSystemHelper helper = null;
     private ZookeeperConnection zkConnection;
     protected FileSystemSettings settings;
     protected FSDomainMap domainMap;
