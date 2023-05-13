@@ -1,7 +1,7 @@
-package ai.sapper.cdc.core.io.impl.s3;
+package ai.sapper.cdc.core.io.impl.azure;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.io.impl.local.LocalContainer;
+import ai.sapper.cdc.core.io.model.Container;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class S3Container extends LocalContainer {
-    @Config(name = "bucket")
-    private String bucket;
+public class AzureContainer extends Container {
+    @Config(name = "container")
+    private String container;
 }

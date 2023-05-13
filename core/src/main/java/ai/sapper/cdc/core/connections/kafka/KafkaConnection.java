@@ -2,13 +2,11 @@ package ai.sapper.cdc.core.connections.kafka;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.config.ZkConfigReader;
-import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.*;
 import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settngs.EConnectionType;
-import ai.sapper.cdc.core.connections.settngs.KafkaPartitionsParser;
 import ai.sapper.cdc.core.connections.settngs.KafkaSettings;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -23,7 +21,6 @@ import org.apache.curator.framework.CuratorFramework;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
 import java.util.Properties;
 
 @Getter

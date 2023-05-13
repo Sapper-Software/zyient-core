@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.io.impl.s3;
+package ai.sapper.cdc.core.io.impl.azure;
 
 import ai.sapper.cdc.core.io.impl.RemoteWriter;
 import ai.sapper.cdc.core.io.model.FileInode;
@@ -11,17 +11,17 @@ import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
-public class S3Writer extends RemoteWriter {
-    private final S3PathInfo pathInfo;
+public class AzureWriter extends RemoteWriter {
+    private final AzurePathInfo pathInfo;
 
-    protected S3Writer(@NonNull FileInode path,
-                       @NonNull S3FileSystem fs,
-                       boolean overwrite) throws IOException {
+    protected AzureWriter(@NonNull FileInode path,
+                          @NonNull AzureFileSystem fs,
+                          boolean overwrite) throws IOException {
         super(path, fs, overwrite);
         if (path.getPathInfo() != null) {
-            pathInfo = (S3PathInfo) path.getPathInfo();
+            pathInfo = (AzurePathInfo) path.getPathInfo();
         } else {
-            pathInfo = (S3PathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getPath());
             path.setPathInfo(pathInfo);
         }
     }
@@ -29,6 +29,6 @@ public class S3Writer extends RemoteWriter {
     @Override
     protected String getTmpPath() {
         String dir = FilenameUtils.getPath(pathInfo.path());
-        return String.format("%s/%s", pathInfo.bucket(), dir);
+        return String.format("%s/%s", pathInfo.container(), dir);
     }
 }

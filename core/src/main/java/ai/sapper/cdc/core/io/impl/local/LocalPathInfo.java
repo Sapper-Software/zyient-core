@@ -5,7 +5,6 @@ import ai.sapper.cdc.core.io.model.Inode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.File;

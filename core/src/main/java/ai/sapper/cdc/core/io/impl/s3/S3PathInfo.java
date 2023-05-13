@@ -1,27 +1,20 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
-import ai.sapper.cdc.common.utils.ChecksumUtils;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.model.Inode;
 import ai.sapper.cdc.core.io.model.PathInfo;
-import ai.sapper.cdc.core.io.impl.local.LocalPathInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
-import software.amazon.awssdk.services.s3.model.ListObjectsResponse;
-import software.amazon.awssdk.services.s3.model.S3Object;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.Map;
 
 @Getter

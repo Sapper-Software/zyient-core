@@ -10,8 +10,6 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.util.Map;
-
 @Getter
 @Setter
 @Accessors(fluent = true)

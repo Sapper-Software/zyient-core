@@ -1,18 +1,14 @@
 package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.Connection;
-import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 
 @Getter
 @Setter

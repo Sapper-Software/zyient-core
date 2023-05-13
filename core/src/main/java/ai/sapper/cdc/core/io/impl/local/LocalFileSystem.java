@@ -1,17 +1,13 @@
 package ai.sapper.cdc.core.io.impl.local;
 
-import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
-import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.io.FileSystem;
-import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.impl.CDCFileSystem;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import ai.sapper.cdc.core.io.model.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -19,10 +15,8 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;

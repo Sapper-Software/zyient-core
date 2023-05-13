@@ -1,7 +1,6 @@
 package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.common.utils.PathUtils;
-import ai.sapper.cdc.core.io.Archiver;
 import ai.sapper.cdc.core.io.FileSystem;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -26,7 +25,7 @@ public abstract class PathInfo {
     private final FileSystem fs;
     private final String domain;
     private final String path;
-    protected boolean directory;
+    protected boolean directory = false;
     private long dataSize = -1;
 
     protected PathInfo(@NonNull FileSystem fs,

@@ -1,81 +1,26 @@
 package ai.sapper.cdc.core.io.impl.azure;
 
-import ai.sapper.cdc.core.io.model.PathInfo;
-import ai.sapper.cdc.core.io.Reader;
-import ai.sapper.cdc.core.io.impl.local.LocalReader;
+import ai.sapper.cdc.core.io.impl.RemoteReader;
+import ai.sapper.cdc.core.io.model.FileInode;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 
-import java.io.File;
 import java.io.IOException;
 
-public class AzureReader extends LocalReader {
-    private final AzureFileSystem fs;
+@Getter
+@Accessors(fluent = true)
+public class AzureReader extends RemoteReader {
+    private final AzurePathInfo pathInfo;
 
-    public AzureReader(@NonNull AzureFileSystem fs,
-                       @NonNull PathInfo path) {
-        super(path);
-        this.fs = fs;
-    }
-
-    /**
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public Reader open() throws IOException {
-        AzurePathInfo path = AzureFileSystem.checkPath(inode());
-        fs.read(path);
-
-        return super.open();
-    }
-
-    /**
-     * @param buffer
-     * @param offset
-     * @param length
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public int read(byte[] buffer, int offset, int length) throws IOException {
-        return super.read(buffer, offset, length);
-    }
-
-    @Override
-    public File copy() throws IOException {
-        AzurePathInfo path = AzureFileSystem.checkPath(inode());
-        if (path.temp() != null && path.temp().exists()) {
-            return path.temp();
+    public AzureReader(@NonNull FileInode path,
+                       @NonNull AzureFileSystem fs) throws IOException {
+        super(path, fs);
+        if (path.getPathInfo() != null) {
+            pathInfo = (AzurePathInfo) path.getPathInfo();
         } else {
-            fs.read(path);
-            return path.temp();
+            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getPath());
+            path.setPathInfo(pathInfo);
         }
-    }
-
-    /**
-     * @param offset
-     * @throws IOException
-     */
-    @Override
-    public void seek(int offset) throws IOException {
-        super.seek(offset);
-    }
-
-    /**
-     * Closes this stream and releases any system resources associated
-     * with it. If the stream is already closed then invoking this
-     * method has no effect.
-     *
-     * <p> As noted in {@link AutoCloseable#close()}, cases where the
-     * close may fail require careful attention. It is strongly advised
-     * to relinquish the underlying resources and to internally
-     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-     * the {@code IOException}.
-     *
-     * @throws IOException if an I/O error occurs
-     */
-    @Override
-    public void close() throws IOException {
-        super.close();
     }
 }

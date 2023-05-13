@@ -6,7 +6,10 @@ import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.impl.local.LocalContainer;
-import ai.sapper.cdc.core.io.model.*;
+import ai.sapper.cdc.core.io.model.Container;
+import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.io.model.Inode;
+import ai.sapper.cdc.core.io.model.PathInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -47,7 +50,9 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
                         new LinkedBlockingQueue<>());
     }
 
-    public abstract FileInode upload(@NonNull File source, @NonNull FileInode path) throws IOException;
+    public abstract FileInode upload(@NonNull File source,
+                                     @NonNull FileInode path,
+                                     boolean clearLock) throws IOException;
 
     public abstract File download(@NonNull FileInode inode) throws IOException;
 
@@ -117,27 +122,42 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
                 pp, domain, path));
     }
 
+    @Override
+    public void close() throws IOException {
+        super.close();
+        uploader.shutdown();
+        try {
+            if (!uploader.awaitTermination(60, TimeUnit.SECONDS)) {
+                uploader.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            uploader.shutdownNow();
+        }
+    }
+
     @Getter
     @Accessors(fluent = true)
     public static abstract class FileUploader implements Runnable {
         protected final RemoteFileSystem fs;
         protected final FileInode inode;
         private final FileUploadCallback callback;
-
+        private final boolean clearLock;
 
         protected FileUploader(@NonNull RemoteFileSystem fs,
                                @NonNull FileInode inode,
-                               @NonNull FileUploadCallback callback) {
+                               @NonNull FileUploadCallback callback,
+                               boolean clearLock) {
             this.fs = fs;
             this.inode = inode;
             this.callback = callback;
+            this.clearLock = clearLock;
         }
 
         @Override
         public void run() {
             try {
                 Object response = upload();
-                callback.onSuccess(inode, response);
+                callback.onSuccess(inode, response, clearLock);
             } catch (Throwable t) {
                 DefaultLogger.stacktrace(t);
                 DefaultLogger.LOGGER.error(

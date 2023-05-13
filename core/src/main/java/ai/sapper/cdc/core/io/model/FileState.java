@@ -3,7 +3,6 @@ package ai.sapper.cdc.core.io.model;
 import ai.sapper.cdc.common.AbstractState;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter

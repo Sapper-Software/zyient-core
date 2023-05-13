@@ -10,11 +10,10 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class FileInode extends Inode {
-    private String tmpPath;
+    private FileInodeLock lock;
     private FileState state = new FileState();
     private boolean compressed = false;
     private long syncedSize = 0;
-    private long updatedSize = 0;
 
     public FileInode() {
 

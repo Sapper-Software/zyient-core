@@ -1,22 +1,15 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
-import ai.sapper.cdc.core.io.impl.FileUploadCallback;
-import ai.sapper.cdc.core.io.impl.local.LocalContainer;
-import ai.sapper.cdc.core.io.impl.local.LocalFileSystem;
-import ai.sapper.cdc.core.io.impl.local.LocalPathInfo;
-import ai.sapper.cdc.core.io.impl.local.LocalWriter;
-import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
-import ai.sapper.cdc.core.io.impl.CDCFileSystem;
+import ai.sapper.cdc.core.io.impl.FileUploadCallback;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
-import ai.sapper.cdc.core.keystore.KeyStore;
+import ai.sapper.cdc.core.io.model.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -25,7 +18,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -39,11 +31,8 @@ import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Getter
 @Accessors(fluent = true)
@@ -265,17 +254,17 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public FileInode upload(@NonNull File source, @NonNull FileInode inode) throws IOException {
+    public FileInode upload(@NonNull File source,
+                            @NonNull FileInode inode,
+                            boolean clearLock) throws IOException {
         S3PathInfo path = (S3PathInfo) inode.getPathInfo();
         if (path == null) {
             throw new IOException(
                     String.format("Path information not set in inode. [domain=%s, path=%s]",
                             inode.getDomain(), inode.getAbsolutePath()));
         }
-        path.withTemp(source);
-        inode.setTmpPath(source.getAbsolutePath());
-        inode.getState().state(EFileState.PendingSync);
-
+        S3FileUploader task = new S3FileUploader(this, client, inode, this, clearLock);
+        uploader.submit(task);
         return inode;
     }
 
@@ -339,13 +328,48 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public void onSuccess(@NonNull FileInode inode, @NonNull Object response) {
-
+    public void onSuccess(@NonNull FileInode inode,
+                          @NonNull Object response,
+                          boolean clearLock) {
+        Preconditions.checkArgument(response instanceof HeadObjectResponse);
+        try {
+            inode.setSyncedSize(((HeadObjectResponse) response).contentLength());
+            if (clearLock) {
+                inode.getState().state(EFileState.Synced);
+                fileUnlock(inode);
+            } else {
+                inode.getState().state(EFileState.Updating);
+                fileUpdateLock(inode);
+            }
+            updateInode(inode, inode.getPathInfo());
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(LOG, ex.getLocalizedMessage());
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
     public void onError(@NonNull FileInode inode, @NonNull Throwable error) {
-
+        try {
+            String temp = null;
+            if (inode.getLock() != null) {
+                temp = inode.getLock().getLocalPath();
+            }
+            DefaultLogger.error(LOG,
+                    String.format("Error uploading file. [domain=%s][path=%s][temp=%s][error=%s]",
+                            inode.getDomain(),
+                            inode.getAbsolutePath(),
+                            temp,
+                            error.getLocalizedMessage()));
+            DefaultLogger.stacktrace(error);
+            inode.getState().error(error);
+            updateInode(inode, inode.getPathInfo());
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(LOG, ex.getLocalizedMessage());
+            throw new RuntimeException(ex);
+        }
     }
 
     @Getter
@@ -373,8 +397,9 @@ public class S3FileSystem extends RemoteFileSystem {
         protected S3FileUploader(@NonNull RemoteFileSystem fs,
                                  @NonNull S3Client client,
                                  @NonNull FileInode inode,
-                                 @NonNull FileUploadCallback callback) {
-            super(fs, inode, callback);
+                                 @NonNull FileUploadCallback callback,
+                                 boolean clearLock) {
+            super(fs, inode, callback, clearLock);
             this.client = client;
         }
 

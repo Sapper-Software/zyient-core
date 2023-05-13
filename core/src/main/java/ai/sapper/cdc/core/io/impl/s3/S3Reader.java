@@ -2,16 +2,14 @@ package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.core.io.impl.RemoteReader;
 import ai.sapper.cdc.core.io.model.FileInode;
-import ai.sapper.cdc.core.io.model.PathInfo;
-import ai.sapper.cdc.core.io.Reader;
-import ai.sapper.cdc.core.io.impl.local.LocalReader;
-import com.google.common.base.Preconditions;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 
+@Getter
+@Accessors(fluent = true)
 public class S3Reader extends RemoteReader {
     private final S3PathInfo pathInfo;
 

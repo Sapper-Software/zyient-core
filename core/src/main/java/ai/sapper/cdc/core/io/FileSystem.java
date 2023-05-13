@@ -422,6 +422,81 @@ public abstract class FileSystem implements Closeable {
                 .build();
     }
 
+    public Inode fileLock(@NonNull FileInode node) throws Exception {
+        Preconditions.checkArgument(node.getPathInfo() != null);
+        FileInode current = (FileInode) getInode(node.getPathInfo());
+        if (current.getLock() == null) {
+            FileInodeLock lock = new FileInodeLock(settings.id, settings.name);
+            node.setLock(lock);
+        } else {
+            if (settings.id.compareTo(current.getLock().getClientId()) != 0) {
+                throw new DistributedLock.LockError(
+                        String.format("[FS: %s] File already locked. [client ID=%s]",
+                                settings.name, current.getLock().getClientId()));
+            } else {
+                node.setLock(current.getLock());
+            }
+        }
+        if (Strings.isNullOrEmpty(node.getLock().getLocalPath())) {
+            File temp = createTmpFile(null, node.getName());
+            if (temp.exists()) {
+                if (!temp.delete()) {
+                    DefaultLogger.warn(LOG, String.format("Failed to delete file. [path=%s]", temp.getAbsolutePath()));
+                }
+                node.getLock().setLocalPath(temp.getAbsolutePath());
+            }
+        }
+        node.getLock().setTimeUpdated(System.currentTimeMillis());
+        return updateInode(node, node.getPathInfo());
+    }
+
+    public Inode fileUnlock(@NonNull FileInode node) throws Exception {
+        Preconditions.checkArgument(node.getPathInfo() != null);
+        FileInode current = (FileInode) getInode(node.getPathInfo());
+        if (current.getLock() == null) {
+            throw new Exception(
+                    String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
+                            settings.name, node.getDomain(), node.getAbsolutePath()));
+        }
+        if (settings.id.compareTo(current.getLock().getClientId()) != 0) {
+            throw new DistributedLock.LockError(
+                    String.format("[FS: %s] File not locked by current file system. [client ID=%s]",
+                            settings.name, current.getLock().getClientId()));
+        }
+        node.setLock(null);
+        return updateInode(node, node.getPathInfo());
+    }
+
+    public Inode fileUpdateLock(@NonNull FileInode node) throws Exception {
+        Preconditions.checkArgument(node.getPathInfo() != null);
+        FileInode current = (FileInode) getInode(node.getPathInfo());
+        if (current.getLock() == null) {
+            throw new Exception(
+                    String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
+                            settings.name, node.getDomain(), node.getAbsolutePath()));
+        }
+        if (settings.id.compareTo(current.getLock().getClientId()) != 0) {
+            throw new DistributedLock.LockError(
+                    String.format("[FS: %s] File not locked by current file system. [client ID=%s]",
+                            settings.name, current.getLock().getClientId()));
+        }
+        node.setLock(current.getLock());
+        node.getLock().setTimeUpdated(System.currentTimeMillis());
+        return updateInode(node, node.getPathInfo());
+    }
+
+    public boolean isFileLocked(@NonNull FileInode node) throws Exception {
+        Preconditions.checkArgument(node.getPathInfo() != null);
+        FileInode current = (FileInode) getInode(node.getPathInfo());
+        if (current.getLock() == null) {
+            return false;
+        }
+        if (!current.getState().markedForUpdate()) {
+            return false;
+        }
+        return settings.id.compareTo(current.getLock().getClientId()) == 0;
+    }
+
     protected abstract String getAbsolutePath(@NonNull String path,
                                               @NonNull String domain) throws IOException;
 
@@ -652,6 +727,7 @@ public abstract class FileSystem implements Closeable {
                 System.getProperty("java.io.tmpdir"));
 
         public static final String CONFIG_NAME = "name";
+        public static final String CONFIG_ID = "id";
         public static final String CONFIG_TEMP_FOLDER = "tmp.path";
         public static final String CONFIG_TEMP_TTL = "tmp.ttl";
         public static final String CONFIG_TEMP_CLEAN = "tmp.clean";
@@ -662,6 +738,8 @@ public abstract class FileSystem implements Closeable {
 
         @Config(name = CONFIG_NAME)
         private String name;
+        @Config(name = CONFIG_ID)
+        private String id;
         @Config(name = CONFIG_ZK_CONNECTION)
         private String zkConnection;
         @Config(name = CONFIG_ZK_PATH)

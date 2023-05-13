@@ -4,16 +4,11 @@ import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
-import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
+import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.model.EFileState;
 import ai.sapper.cdc.core.io.model.FileInode;
-import ai.sapper.cdc.core.io.model.PathInfo;
-import ai.sapper.cdc.core.io.Writer;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.File;
@@ -45,28 +40,19 @@ public class LocalWriter extends Writer {
      * @throws IOException
      */
     @Override
-    public Writer open(boolean overwrite) throws IOException {
+    public Writer open(boolean overwrite) throws IOException, DistributedLock.LockError {
         try {
             DistributedLock lock = fs.getLock(inode);
             lock.lock();
             try {
-                if (!Strings.isNullOrEmpty(inode.getTmpPath())) {
-                    temp = new File(inode.getTmpPath());
-                    if (!temp.exists()) {
-                        throw new IOException(
-                                String.format("Inode out of sync: local file not found. [path=%s]",
-                                        temp.getAbsolutePath()));
-                    }
-                }
-                if (temp == null) {
-                    if (fs.exists(path)) {
-                        temp = Reader.checkDecompress(path.file, inode, fs);
-                    } else {
-                        temp = fs.createTmpFile(null, inode.getName());
-                    }
+                inode = (FileInode) fs.fileLock(inode);
+                temp = new File(inode.getLock().getLocalPath());
+                if (fs.exists(path)) {
+                    temp = Reader.checkDecompress(path.file, inode, fs);
+                } else {
+                    temp = fs.createTmpFile(null, inode.getName());
                 }
                 outputStream = new FileOutputStream(temp, !overwrite);
-                inode.setTmpPath(temp.getAbsolutePath());
                 inode.getState().state(EFileState.Updating);
 
                 inode = (FileInode) fs.updateInode(inode, path);
@@ -75,6 +61,9 @@ public class LocalWriter extends Writer {
             } finally {
                 lock.unlock();
             }
+        } catch (DistributedLock.LockError le) {
+            String err = String.format("[%s][%s] %s", inode.getDomain(), inode.getAbsolutePath(), le.getLocalizedMessage());
+            throw new DistributedLock.LockError(err);
         } catch (Exception ex) {
             throw new IOException(ex);
         }
@@ -132,7 +121,7 @@ public class LocalWriter extends Writer {
     }
 
     @Override
-    public void commit() throws IOException {
+    public void commit(boolean clearLock) throws IOException {
         try {
             File toUpload = temp;
             if (inode.isCompressed()) {
@@ -151,11 +140,13 @@ public class LocalWriter extends Writer {
             DistributedLock lock = fs.getLock(inode);
             lock.lock();
             try {
-                inode.setSyncedSize(path.dataSize());
+                inode.setSyncedSize(fileSize(temp));
                 inode.getState().state(EFileState.Synced);
-                inode.setTmpPath(null);
-
-                fs.updateInode(inode, path);
+                if (clearLock) {
+                    inode = (FileInode) fs.fileUnlock(inode);
+                } else {
+                    inode = (FileInode) fs.fileUpdateLock(inode);
+                }
             } finally {
                 lock.unlock();
             }
@@ -184,7 +175,6 @@ public class LocalWriter extends Writer {
                 outputStream.flush();
                 outputStream.close();
                 outputStream = null;
-                commit();
                 if (temp.exists()) {
                     if (!temp.delete()) {
                         DefaultLogger.LOGGER.warn(

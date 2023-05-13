@@ -2,8 +2,10 @@ package ai.sapper.cdc.entity.jdbc;
 
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.entity.*;
-import ai.sapper.cdc.entity.avro.AvroEntitySchema;
-import ai.sapper.cdc.entity.schema.*;
+import ai.sapper.cdc.entity.schema.ArraySchemaField;
+import ai.sapper.cdc.entity.schema.EntitySchema;
+import ai.sapper.cdc.entity.schema.MapSchemaField;
+import ai.sapper.cdc.entity.schema.SchemaField;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -13,7 +15,6 @@ import lombok.Setter;
 import org.apache.avro.Schema;
 import org.apache.avro.SchemaBuilder;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.lang3.ObjectUtils;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;

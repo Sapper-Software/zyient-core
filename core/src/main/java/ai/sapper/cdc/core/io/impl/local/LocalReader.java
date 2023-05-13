@@ -1,13 +1,10 @@
 package ai.sapper.cdc.core.io.impl.local;
 
 import ai.sapper.cdc.core.io.FileSystem;
-import ai.sapper.cdc.core.io.model.FileInode;
-import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.io.Reader;
-import com.google.common.base.Preconditions;
+import ai.sapper.cdc.core.io.model.FileInode;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.File;
