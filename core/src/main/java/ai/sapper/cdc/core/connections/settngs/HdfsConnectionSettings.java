@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.hadoop.HdfsConnection;
 import ai.sapper.cdc.core.connections.hadoop.HdfsHAConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -35,7 +36,8 @@ public class HdfsConnectionSettings {
         protected boolean adminEnabled = false;
         protected HdfsSecuritySettings securitySettings;
 
-        public HdfsBaseSettings() {
+        public HdfsBaseSettings(@NonNull Class<? extends Connection> type) {
+            super(type);
             setType(EConnectionType.hadoop);
         }
 
@@ -58,7 +60,7 @@ public class HdfsConnectionSettings {
         private String secondaryNameNodeUri;
 
         public HdfsSettings() {
-            setConnectionClass(HdfsConnection.class);
+            super(HdfsConnection.class);
         }
 
         public HdfsSettings(@NonNull ConnectionSettings settings) {
@@ -89,7 +91,7 @@ public class HdfsConnectionSettings {
         private String[][] nameNodeAddresses;
 
         public HdfsHASettings() {
-            setConnectionClass(HdfsHAConnection.class);
+            super(HdfsHAConnection.class);
         }
     }
 

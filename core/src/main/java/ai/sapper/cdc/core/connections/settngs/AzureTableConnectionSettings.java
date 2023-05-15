@@ -24,7 +24,7 @@ public class AzureTableConnectionSettings extends ConnectionSettings {
     private String db;
 
     public AzureTableConnectionSettings() {
-        setConnectionClass(AzureTableConnection.class);
+        super(AzureTableConnection.class);
         setType(EConnectionType.db);
     }
 

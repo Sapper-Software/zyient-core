@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.Exists;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -31,7 +32,7 @@ public class ZookeeperSettings extends ConnectionSettings {
     private String authenticationHandler;
     @Config(name = Constants.CONFIG_NAMESPACE, required = false)
     private String namespace;
-    @Config(name = Constants.CONFIG_RETRY, required = false, type = Boolean.class)
+    @Config(name = Constants.CONFIG_RETRY, required = false, type = Exists.class)
     private boolean retryEnabled = false;
     @Config(name = Constants.CONFIG_RETRY_INTERVAL, required = false, type = Integer.class)
     private int retryInterval = 1000;
@@ -43,7 +44,7 @@ public class ZookeeperSettings extends ConnectionSettings {
     private int sessionTimeout = -1;
 
     public ZookeeperSettings() {
-        setConnectionClass(ZookeeperConnection.class);
+        super(ZookeeperConnection.class);
         setType(EConnectionType.zookeeper);
     }
 

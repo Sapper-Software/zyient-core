@@ -80,6 +80,14 @@ public class ConfigReader {
                                 ReflectionUtils.setValue(params, settings, field);
                             continue;
                         }
+                        if (c.type().equals(Exists.class)) {
+                            if (checkIfNodeExists(config, c.name())) {
+                                ReflectionUtils.setBooleanValue(settings, field, true);
+                            } else {
+                                ReflectionUtils.setBooleanValue(settings, field, false);
+                            }
+                            continue;
+                        }
                         if (checkIfNodeExists(config, c.name())) {
                             if (!c.parser().equals(ConfigValueParser.DummyValueParser.class)) {
                                 String value = config.getString(c.name());

@@ -4,6 +4,7 @@ import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.Connection;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -13,18 +14,15 @@ import java.lang.reflect.Field;
 @Getter
 @Setter
 public abstract class ConnectionSettings extends Settings {
-    public static final String CONFIG_CLASS = "@class";
-
-    @Config(name = "type", type = EConnectionType.class)
     private EConnectionType type;
-    @Config(name = "source", type = ESettingsSource.class)
+    @JsonIgnore
     private ESettingsSource source;
     @Config(name = "name")
     private String name;
-    @Config(name = "class", type = Class.class)
     private Class<? extends Connection> connectionClass;
 
-    public ConnectionSettings() {
+    public ConnectionSettings(@NonNull Class<? extends Connection> type) {
+        connectionClass = type;
         source = ESettingsSource.File;
     }
 

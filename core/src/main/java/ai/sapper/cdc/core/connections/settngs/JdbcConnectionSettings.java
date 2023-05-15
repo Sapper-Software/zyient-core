@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.db.JdbcConnection;
 import ai.sapper.cdc.core.model.Encrypted;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -41,7 +42,12 @@ public class JdbcConnectionSettings extends ConnectionSettings {
     private int poolSize = 32;
 
     public JdbcConnectionSettings() {
-        setConnectionClass(JdbcConnection.class);
+        super(JdbcConnection.class);
+        setType(EConnectionType.db);
+    }
+
+    public JdbcConnectionSettings(@NonNull Class<? extends Connection> type) {
+        super(type);
         setType(EConnectionType.db);
     }
 

@@ -183,6 +183,10 @@ public class Db2Connection extends DbConnection {
     public static class Db2ConnectionSettings extends JdbcConnectionSettings {
         @Config(name = "db2type", required = false)
         private String db2Type = TYPE_DB2_LUW;
+
+        public Db2ConnectionSettings() {
+            super(Db2Connection.class);
+        }
     }
 
     @Getter

@@ -82,6 +82,15 @@ public abstract class Settings {
                 if (field.isAnnotationPresent(Config.class)) {
                     Config config = field.getAnnotation(Config.class);
                     String v = values.get(config.name());
+                    if (config.type().equals(Exists.class)) {
+                        if (Strings.isNullOrEmpty(v)) {
+                            ReflectionUtils.setBooleanValue(settings, field, false);
+                        } else {
+                            Boolean b = Boolean.parseBoolean(v);
+                            ReflectionUtils.setBooleanValue(settings, field, b);
+                        }
+                        continue;
+                    }
                     if (Strings.isNullOrEmpty(v)) {
                         if (config.required()) {
                             throw new ConfigurationException(

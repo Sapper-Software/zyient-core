@@ -35,7 +35,7 @@ public class MongoDbConnectionSettings extends ConnectionSettings {
     private int poolSize = 32;
 
     public MongoDbConnectionSettings() {
-        setConnectionClass(MongoDbConnection.class);
+        super(MongoDbConnection.class);
         setType(EConnectionType.db);
     }
 

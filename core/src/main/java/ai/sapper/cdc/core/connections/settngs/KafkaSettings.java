@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.kafka.KafkaConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -36,7 +37,8 @@ public class KafkaSettings extends ConnectionSettings {
     @Config(name = Constants.CONFIG_PARTITIONS, required = false, type = List.class, parser = KafkaPartitionsParser.class)
     private List<Integer> partitions;
 
-    public KafkaSettings() {
+    public KafkaSettings(@NonNull Class<? extends Connection> type) {
+        super(type);
         setType(EConnectionType.kafka);
     }
 
