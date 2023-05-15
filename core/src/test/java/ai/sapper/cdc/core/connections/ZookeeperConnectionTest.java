@@ -64,11 +64,11 @@ class ZookeeperConnectionTest {
             assertEquals(Connection.EConnectionState.Closed, connection.connectionState());
 
             ZookeeperSettings settings = connection.settings();
-            Map<String, String> values = ConnectionSettings.serialize(settings);
+            Map<String, String> values = settings.serialize();
             assertNotNull(values);
             assertFalse(values.isEmpty());
 
-            settings = (ZookeeperSettings) ConnectionSettings.read(values);
+            settings = ConnectionSettings.read(values);
             assertNotNull(settings);
             settings.validate();
         } catch (Throwable t) {

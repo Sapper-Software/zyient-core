@@ -1,10 +1,16 @@
 package ai.sapper.cdc.common.config;
 
+import ai.sapper.cdc.common.utils.JSONUtils;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
@@ -13,6 +19,7 @@ import java.util.Map;
         use = JsonTypeInfo.Id.CLASS
 )
 public abstract class Settings {
+    public static final String CONFIG_SETTINGS_TYPE = "@class";
     public static final String CONFIG_PARAMS = "parameters";
 
     @Config(name = CONFIG_PARAMS, required = false, type = Map.class)
@@ -24,5 +31,78 @@ public abstract class Settings {
 
     public Settings(@NonNull Settings source) {
         this.parameters = source.parameters;
+    }
+
+
+    public Map<String, String> serialize() throws Exception {
+        Map<String, String> values = new HashMap<>();
+        Field[] fields = ReflectionUtils.getAllFields(getClass());
+        if (fields == null || fields.length == 0) {
+            return null;
+        }
+        values.put(CONFIG_SETTINGS_TYPE, getClass().getCanonicalName());
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Config.class)) {
+                Config config = field.getAnnotation(Config.class);
+                Object v = ReflectionUtils.getFieldValue(this, field);
+                if (v == null) {
+                    if (config.required()) {
+                        throw new ConfigurationException(
+                                String.format("Missing field value. [field=%s]", field.getName()));
+                    }
+                } else {
+                    if (!ReflectionUtils.isPrimitiveTypeOrString(config.type())) {
+                        if (config.type().equals(Class.class)) {
+                            Class<?> t = (Class<?>) v;
+                            values.put(config.name(), t.getCanonicalName());
+                        } else {
+                            String json = JSONUtils.asString(v, v.getClass());
+                            values.put(config.name(), json);
+                        }
+                    } else
+                        values.put(config.name(), String.valueOf(v));
+                }
+            }
+        }
+        return values;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T extends Settings> T read(@NonNull Map<String, String> values) throws Exception {
+        String type = values.get(CONFIG_SETTINGS_TYPE);
+        if (Strings.isNullOrEmpty(type)) {
+            throw new ConfigurationException(
+                    String.format("Settings type not defined. [key=%s]", CONFIG_SETTINGS_TYPE));
+        }
+        Class<T> cls = (Class<T>) Class.forName(type);
+        T settings = cls.getDeclaredConstructor().newInstance();
+        Field[] fields = ReflectionUtils.getAllFields(cls);
+        if (fields != null && fields.length > 0) {
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Config.class)) {
+                    Config config = field.getAnnotation(Config.class);
+                    String v = values.get(config.name());
+                    if (Strings.isNullOrEmpty(v)) {
+                        if (config.required()) {
+                            throw new ConfigurationException(
+                                    String.format("Missing field value. [field=%s]", field.getName()));
+                        }
+                    } else {
+                        if (!ReflectionUtils.isPrimitiveTypeOrString(config.type())) {
+                            if (config.type().equals(Class.class)) {
+                                Class<?> t = Class.forName(v);
+                                ReflectionUtils.setValue(t, settings, field);
+                            } else {
+                                Object o = JSONUtils.read(v, config.type());
+                                ReflectionUtils.setValue(o, settings, field);
+                            }
+                        } else {
+                            ReflectionUtils.setValueFromString(v, settings, field);
+                        }
+                    }
+                }
+            }
+        }
+        return settings;
     }
 }
