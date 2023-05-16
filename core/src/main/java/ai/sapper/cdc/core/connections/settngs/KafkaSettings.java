@@ -30,7 +30,7 @@ public class KafkaSettings extends ConnectionSettings {
     @Config(name = "configPath")
     private String configPath;
     private Properties properties;
-    @Config(name = Constants.CONFIG_MODE, required = false)
+    @Config(name = Constants.CONFIG_MODE, required = false, type = KafkaConnection.EKafkaClientMode.class)
     private KafkaConnection.EKafkaClientMode mode = KafkaConnection.EKafkaClientMode.Producer;
     @Config(name = Constants.CONFIG_TOPIC, required = false)
     private String topic;
