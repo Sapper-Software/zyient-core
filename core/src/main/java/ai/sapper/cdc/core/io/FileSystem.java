@@ -11,6 +11,7 @@ import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.*;
+import ai.sapper.cdc.core.model.ModuleInstance;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -54,6 +55,7 @@ public abstract class FileSystem implements Closeable {
     @Getter(AccessLevel.NONE)
     private Thread cleaner;
     private FileSystemConfigReader configReader;
+    private String id;
 
     public abstract FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                     @NonNull BaseEnv<?> env) throws IOException;
@@ -92,6 +94,8 @@ public abstract class FileSystem implements Closeable {
         if (!zkConnection.isConnected()) {
             zkConnection.connect();
         }
+        ModuleInstance instance = env.moduleInstance();
+        id = String.format("%s/%s/%s", settings.name, instance.getName(), instance.getInstanceId());
         zkPath = new PathUtils.ZkPathBuilder(settings.zkPath())
                 .withPath(settings.name())
                 .build();
@@ -441,10 +445,10 @@ public abstract class FileSystem implements Closeable {
         Preconditions.checkArgument(node.getPathInfo() != null);
         FileInode current = (FileInode) getInode(node.getPathInfo());
         if (current.getLock() == null) {
-            FileInodeLock lock = new FileInodeLock(settings.id, settings.name);
+            FileInodeLock lock = new FileInodeLock(id, settings.name);
             node.setLock(lock);
         } else {
-            if (settings.id.compareTo(current.getLock().getClientId()) != 0) {
+            if (id.compareTo(current.getLock().getClientId()) != 0) {
                 throw new DistributedLock.LockError(
                         String.format("[FS: %s] File already locked. [client ID=%s]",
                                 settings.name, current.getLock().getClientId()));
@@ -473,7 +477,7 @@ public abstract class FileSystem implements Closeable {
                     String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
                             settings.name, node.getDomain(), node.getAbsolutePath()));
         }
-        if (settings.id.compareTo(current.getLock().getClientId()) != 0) {
+        if (id.compareTo(current.getLock().getClientId()) != 0) {
             throw new DistributedLock.LockError(
                     String.format("[FS: %s] File not locked by current file system. [client ID=%s]",
                             settings.name, current.getLock().getClientId()));
@@ -490,7 +494,7 @@ public abstract class FileSystem implements Closeable {
                     String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
                             settings.name, node.getDomain(), node.getAbsolutePath()));
         }
-        if (settings.id.compareTo(current.getLock().getClientId()) != 0) {
+        if (id.compareTo(current.getLock().getClientId()) != 0) {
             throw new DistributedLock.LockError(
                     String.format("[FS: %s] File not locked by current file system. [client ID=%s]",
                             settings.name, current.getLock().getClientId()));
@@ -509,7 +513,7 @@ public abstract class FileSystem implements Closeable {
         if (!current.getState().markedForUpdate()) {
             return false;
         }
-        return settings.id.compareTo(current.getLock().getClientId()) == 0;
+        return id.compareTo(current.getLock().getClientId()) == 0;
     }
 
     protected abstract String getAbsolutePath(@NonNull String path,
@@ -737,10 +741,11 @@ public abstract class FileSystem implements Closeable {
     @Setter
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
             property = "@class")
-    public static class FileSystemSettings extends Settings {
+    public abstract static class FileSystemSettings extends Settings {
         public static final String TEMP_PATH = String.format("%s/zyient/cdc",
                 System.getProperty("java.io.tmpdir"));
 
+        public static final String CONFIG_FS_CLASS = "@type";
         public static final String CONFIG_NAME = "name";
         public static final String CONFIG_ID = "id";
         public static final String CONFIG_TEMP_FOLDER = "tmp.path";
@@ -751,10 +756,10 @@ public abstract class FileSystem implements Closeable {
         public static final String CONFIG_ZK_LOCK_TIMEOUT = "zk.lockTimeout";
         public static final int LOCK_TIMEOUT = 60 * 1000;
 
+        @Config(name = CONFIG_FS_CLASS)
+        private String type;
         @Config(name = CONFIG_NAME)
         private String name;
-        @Config(name = CONFIG_ID)
-        private String id;
         @Config(name = CONFIG_ZK_CONNECTION)
         private String zkConnection;
         @Config(name = CONFIG_ZK_PATH)

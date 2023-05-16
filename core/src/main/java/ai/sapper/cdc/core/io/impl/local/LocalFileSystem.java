@@ -7,6 +7,7 @@ import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.model.*;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -25,19 +26,19 @@ import java.util.Map;
 @Setter
 @Accessors(fluent = true)
 public class LocalFileSystem extends FileSystem {
-    private final Class<? extends FileSystemSettings> settingsType;
+    private final Class<? extends LocalFileSystemSettings> settingsType;
 
     public LocalFileSystem() {
-        settingsType = FileSystemSettings.class;
+        settingsType = LocalFileSystemSettings.class;
     }
 
-    public LocalFileSystem(@NonNull Class<? extends FileSystemSettings> settingsType) {
+    public LocalFileSystem(@NonNull Class<? extends LocalFileSystemSettings> settingsType) {
         this.settingsType = settingsType;
     }
 
     @Override
     public FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                            @NonNull BaseEnv<?> env) throws IOException {
+                           @NonNull BaseEnv<?> env) throws IOException {
         try {
             super.init(config, env, new LocalFileSystemConfigReader(config));
             return postInit();
@@ -212,18 +213,28 @@ public class LocalFileSystem extends FileSystem {
         return new LocalWriter(inode, this, overwrite).open();
     }
 
+    @Getter
+    @Setter
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+            property = "@class")
+    public static class LocalFileSystemSettings extends FileSystemSettings {
+        public LocalFileSystemSettings() {
+            type(LocalFileSystem.class.getCanonicalName());
+        }
+    }
+
     public static class LocalFileSystemConfigReader extends FileSystemConfigReader {
         public static final String __CONFIG_PATH = "local";
 
         public LocalFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                            @NonNull String path,
-                                           @NonNull Class<? extends FileSystemSettings> type,
+                                           @NonNull Class<? extends LocalFileSystemSettings> type,
                                            @NonNull Class<? extends Container> containerType) {
             super(config, path, type, containerType);
         }
 
         public LocalFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, FileSystemSettings.class, LocalContainer.class);
+            super(config, __CONFIG_PATH, LocalFileSystemSettings.class, LocalContainer.class);
         }
     }
 }

@@ -7,6 +7,7 @@ import ai.sapper.cdc.common.utils.NetUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.ConnectionManager;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
+import ai.sapper.cdc.core.io.FileSystemManager;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.model.ModuleInstance;
 import ai.sapper.cdc.core.utils.DistributedLockBuilder;
@@ -59,6 +60,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private Thread heartbeatThread;
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
+    private FileSystemManager fileSystemManager;
 
     public BaseEnv(@NonNull String name) {
         this.name = name;
@@ -89,6 +91,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
         return setup(xmlConfig, state);
     }
 
+    @SuppressWarnings("unchecked")
     private BaseEnv<T> setup(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                              @NonNull AbstractEnvState<T> state) throws ConfigurationException {
         try {
@@ -143,6 +146,10 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 auditLogger.init(rootConfig);
             }
 
+            if (ConfigReader.checkIfNodeExists(rootConfig, FileSystemManager.__CONFIG_PATH)) {
+                fileSystemManager = new FileSystemManager();
+                fileSystemManager.init(rootConfig, this);
+            }
             DefaultExports.initialize();
 
             this.state = state;

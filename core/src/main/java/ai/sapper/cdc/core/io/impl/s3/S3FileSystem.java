@@ -401,6 +401,10 @@ public class S3FileSystem extends RemoteFileSystem {
 
         @Config(name = CONFIG_REGION)
         private String region;
+
+        public S3FileSystemSettings() {
+            type(S3FileSystem.class.getCanonicalName());
+        }
     }
 
     @Getter

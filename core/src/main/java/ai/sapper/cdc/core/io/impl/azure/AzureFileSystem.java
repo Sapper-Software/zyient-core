@@ -11,6 +11,7 @@ import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.storage.blob.BlobClient;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
@@ -164,7 +165,13 @@ public class AzureFileSystem extends RemoteFileSystem {
 
     @Getter
     @Setter
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+            property = "@class")
     public static class AzureFileSystemSettings extends RemoteFileSystemSettings {
         private AzureFsClient.AzureFsClientSettings clientSettings;
+
+        public AzureFileSystemSettings() {
+            type(AzureFileSystem.class.getCanonicalName());
+        }
     }
 }
