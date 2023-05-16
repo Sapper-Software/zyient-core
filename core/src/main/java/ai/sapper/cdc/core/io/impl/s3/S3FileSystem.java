@@ -40,6 +40,7 @@ public class S3FileSystem extends RemoteFileSystem {
 
     @Getter(AccessLevel.PACKAGE)
     private S3Client client;
+    private S3FileSystemSettings settings;
 
     public S3FileSystem withClient(@NonNull S3Client client) {
         this.client = client;
@@ -63,9 +64,30 @@ public class S3FileSystem extends RemoteFileSystem {
                            @NonNull BaseEnv<?> env) throws IOException {
         try {
             super.init(config, env, new S3FileSystemConfigReader(config));
-            S3FileSystemSettings settings = (S3FileSystemSettings) settings();
+            settings = (S3FileSystemSettings) configReader().settings();
             if (client == null) {
                 Region region = Region.of(settings.region);
+                client = S3Client.builder()
+                        .region(region)
+                        .build();
+            }
+            return postInit();
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(LOG, "Error initializing Local FileSystem.", t);
+            state().error(t);
+            throw new IOException(t);
+        }
+    }
+
+    @Override
+    public FileSystem init(@NonNull FileSystemSettings settings, @NonNull BaseEnv<?> env) throws IOException {
+        Preconditions.checkArgument(settings instanceof S3FileSystemSettings);
+        super.init(settings, env);
+        try {
+            this.settings = (S3FileSystemSettings) settings;
+            if (client == null) {
+                Region region = Region.of(this.settings.region);
                 client = S3Client.builder()
                         .region(region)
                         .build();

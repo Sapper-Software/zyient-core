@@ -58,6 +58,18 @@ public abstract class FileSystem implements Closeable {
     public abstract FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                     @NonNull BaseEnv<?> env) throws IOException;
 
+    public FileSystem init(@NonNull FileSystemSettings settings,
+                           @NonNull BaseEnv<?> env) throws IOException {
+        try {
+            this.env = env;
+            this.settings = settings;
+            setup();
+            return this;
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+    }
+
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                      @NonNull BaseEnv<?> env,
                      @NonNull FileSystemConfigReader configReader) throws Exception {
@@ -67,6 +79,10 @@ public abstract class FileSystem implements Closeable {
         this.configReader = configReader;
         configReader.read();
         settings = (FileSystemSettings) configReader.settings();
+        setup();
+    }
+
+    private void setup() throws Exception {
         zkConnection = env.connectionManager()
                 .getConnection(settings.zkConnection(),
                         ZookeeperConnection.class);

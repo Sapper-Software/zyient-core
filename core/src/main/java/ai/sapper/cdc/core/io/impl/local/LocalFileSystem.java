@@ -6,7 +6,6 @@ import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
-import ai.sapper.cdc.core.io.impl.CDCFileSystem;
 import ai.sapper.cdc.core.io.model.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -25,7 +24,7 @@ import java.util.Map;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class LocalFileSystem extends CDCFileSystem {
+public class LocalFileSystem extends FileSystem {
     private final Class<? extends FileSystemSettings> settingsType;
 
     public LocalFileSystem() {
@@ -38,7 +37,7 @@ public class LocalFileSystem extends CDCFileSystem {
 
     @Override
     public FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                           @NonNull BaseEnv<?> env) throws IOException {
+                            @NonNull BaseEnv<?> env) throws IOException {
         try {
             super.init(config, env, new LocalFileSystemConfigReader(config));
             return postInit();

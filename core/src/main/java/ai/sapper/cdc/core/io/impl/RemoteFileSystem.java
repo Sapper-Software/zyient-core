@@ -35,8 +35,8 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                     @NonNull BaseEnv<?> env,
-                     @NonNull FileSystemConfigReader configReader) throws Exception {
+                      @NonNull BaseEnv<?> env,
+                      @NonNull FileSystemConfigReader configReader) throws Exception {
         super.init(config, env, configReader);
         Preconditions.checkArgument(configReader instanceof RemoteFileSystemConfigReader);
         cache = new RemoteFsCache(this);

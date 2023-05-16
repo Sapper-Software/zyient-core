@@ -41,6 +41,12 @@ public class ConfigReader {
     private Settings settings;
 
     public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                        @NonNull Class<? extends Settings> type) {
+        this.config = config;
+        this.type = type;
+    }
+
+    public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                         @NonNull String path,
                         @NonNull Class<? extends Settings> type) {
         this.config = config.configurationAt(path);

@@ -27,7 +27,6 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class AzureFileSystem extends RemoteFileSystem {
     private AzureFsClient client;
-    private AzureFileSystemConfigReader configReader;
     private AzureFileSystemSettings settings;
 
     public static AzurePathInfo checkPath(PathInfo pathInfo) throws IOException {
@@ -40,15 +39,37 @@ public class AzureFileSystem extends RemoteFileSystem {
 
     @Override
     public FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                           @NonNull BaseEnv<?> env) throws IOException {
+                            @NonNull BaseEnv<?> env) throws IOException {
         try {
-            configReader = new AzureFileSystemConfigReader(config);
+            AzureFileSystemConfigReader configReader = new AzureFileSystemConfigReader(config);
             super.init(config, env, configReader);
             settings = (AzureFileSystemSettings) configReader.settings();
             KeyStore keyStore = env.keyStore();
             Preconditions.checkNotNull(keyStore);
             client = new AzureFsClient()
                     .init(configReader.config(), keyStore);
+            settings.clientSettings = client.settings();
+            return postInit();
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(LOG, "Error initializing Local FileSystem.", t);
+            state().error(t);
+            throw new IOException(t);
+        }
+    }
+
+    @Override
+    public FileSystem init(@NonNull FileSystemSettings settings,
+                            @NonNull BaseEnv<?> env) throws IOException {
+        Preconditions.checkArgument(settings instanceof AzureFileSystemSettings);
+        super.init(settings, env);
+        try {
+            this.settings = (AzureFileSystemSettings) settings;
+            KeyStore keyStore = env.keyStore();
+            Preconditions.checkNotNull(keyStore);
+            Preconditions.checkNotNull(((AzureFileSystemSettings) settings).clientSettings);
+            client = new AzureFsClient()
+                    .init(((AzureFileSystemSettings) settings).clientSettings, keyStore);
             return postInit();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
@@ -144,6 +165,6 @@ public class AzureFileSystem extends RemoteFileSystem {
     @Getter
     @Setter
     public static class AzureFileSystemSettings extends RemoteFileSystemSettings {
-
+        private AzureFsClient.AzureFsClientSettings clientSettings;
     }
 }
