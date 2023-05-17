@@ -33,17 +33,17 @@ public class AzureFsClient {
             config.read();
             settings = (AzureFsClientSettings) config.settings();
 
-            Class<? extends AzureStorageAuth> ac = (Class<? extends AzureStorageAuth>) Class.forName(settings.authClass);
+            Class<? extends AzureStorageAuth> ac = (Class<? extends AzureStorageAuth>) Class.forName(settings.getAuthClass());
             auth = ac.getDeclaredConstructor()
                     .newInstance()
-                    .withAccount(settings.authAccount)
+                    .withAccount(settings.getAuthAccount())
                     .init(config.config(), keyStore);
 
-            String endpoint = String.format(Locale.ROOT, settings.endpointUrl, settings.authAccount);
+            String endpoint = String.format(Locale.ROOT, settings.getEndpointUrl(), settings.getAuthAccount());
             BlobServiceClientBuilder builder = new BlobServiceClientBuilder()
                     .endpoint(endpoint);
             client = auth.credentials(builder).buildClient();
-            settings.authSettings = auth.settings();
+            settings.setAuthSettings(auth.settings());
 
             return this;
         } catch (Exception ex) {
@@ -54,17 +54,17 @@ public class AzureFsClient {
     @SuppressWarnings("unchecked")
     public AzureFsClient init(@NonNull AzureFsClientSettings settings,
                               @NonNull KeyStore keyStore) throws IOException {
-        Preconditions.checkNotNull(settings.authSettings);
+        Preconditions.checkNotNull(settings.getAuthSettings());
         try {
             this.settings = settings;
 
-            Class<? extends AzureStorageAuth> ac = (Class<? extends AzureStorageAuth>) Class.forName(settings.authClass);
+            Class<? extends AzureStorageAuth> ac = (Class<? extends AzureStorageAuth>) Class.forName(settings.getAuthClass());
             auth = ac.getDeclaredConstructor()
                     .newInstance()
-                    .withAccount(settings.authAccount)
-                    .init(settings.authSettings, keyStore);
+                    .withAccount(settings.getAuthAccount())
+                    .init(settings.getAuthSettings(), keyStore);
 
-            String endpoint = String.format(Locale.ROOT, settings.endpointUrl, settings.authAccount);
+            String endpoint = String.format(Locale.ROOT, settings.getEndpointUrl(), settings.getAuthAccount());
             BlobServiceClientBuilder builder = new BlobServiceClientBuilder()
                     .endpoint(endpoint);
             client = auth.credentials(builder).buildClient();
@@ -82,17 +82,4 @@ public class AzureFsClient {
         return client.getBlobContainerClient(container);
     }
 
-    @Getter
-    @Setter
-    public static class AzureFsClientSettings extends Settings {
-        public static final String __CONFIG_PATH = "client";
-
-        @Config(name = "endpointUrl")
-        private String endpointUrl;
-        @Config(name = "authClass")
-        private String authClass;
-        @Config(name = "account")
-        private String authAccount;
-        private AzureStorageAuth.AzureStorageAuthSettings authSettings;
-    }
 }

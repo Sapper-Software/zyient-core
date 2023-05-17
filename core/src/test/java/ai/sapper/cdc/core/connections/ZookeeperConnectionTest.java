@@ -30,6 +30,7 @@ class ZookeeperConnectionTest {
 
     private static ConnectionManager manager;
     private static DemoEnv env = new DemoEnv();
+
     @BeforeAll
     public static void setup() throws Exception {
         xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);

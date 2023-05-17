@@ -57,6 +57,8 @@ public abstract class FileSystem implements Closeable {
     private FileSystemConfigReader configReader;
     private String id;
 
+    public abstract Class<? extends FileSystemSettings> getSettingsType();
+
     public abstract FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                     @NonNull BaseEnv<?> env) throws IOException;
 
@@ -75,8 +77,6 @@ public abstract class FileSystem implements Closeable {
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                      @NonNull BaseEnv<?> env,
                      @NonNull FileSystemConfigReader configReader) throws Exception {
-        Preconditions.checkArgument(env.state().isAvailable());
-
         this.env = env;
         this.configReader = configReader;
         configReader.read();
@@ -86,21 +86,21 @@ public abstract class FileSystem implements Closeable {
 
     private void setup() throws Exception {
         zkConnection = env.connectionManager()
-                .getConnection(settings.zkConnection(),
+                .getConnection(settings.getZkConnection(),
                         ZookeeperConnection.class);
         if (zkConnection == null) {
-            throw new Exception(String.format("ZooKeeper connection not found. [name=%s]", settings.zkConnection()));
+            throw new Exception(String.format("ZooKeeper connection not found. [name=%s]", settings.getZkConnection()));
         }
         if (!zkConnection.isConnected()) {
             zkConnection.connect();
         }
         ModuleInstance instance = env.moduleInstance();
-        id = String.format("%s/%s/%s", settings.name, instance.getName(), instance.getInstanceId());
-        zkPath = new PathUtils.ZkPathBuilder(settings.zkPath())
-                .withPath(settings.name())
+        id = String.format("%s/%s/%s", settings.getName(), instance.getName(), instance.getInstanceId());
+        zkPath = new PathUtils.ZkPathBuilder(settings.getZkPath())
+                .withPath(settings.getName())
                 .build();
-        Preconditions.checkState(settings.containers != null && !settings.containers.isEmpty());
-        domainMap = new FSDomainMap(settings.defaultContainer(), settings.containers);
+        Preconditions.checkState(settings.getContainers() != null && !settings.getContainers().isEmpty());
+        domainMap = new FSDomainMap(settings.getDefaultContainer(), settings.getContainers());
         CuratorFramework client = zkConnection.client();
         if (client.checkExists().forPath(zkPath) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(zkPath);
@@ -111,7 +111,7 @@ public abstract class FileSystem implements Closeable {
                 lock.lock();
                 try {
                     for (Container domain : domains) {
-                        registerDomain(domain.getDomain(), client);
+                        registerDomain(domain, client);
                     }
                 } finally {
                     lock.unlock();
@@ -121,8 +121,7 @@ public abstract class FileSystem implements Closeable {
             state.error(ex);
             throw new IOException(ex);
         }
-        settings.tempDir = PathUtils.formatPath(String.format("%s/fs/%s", settings.tempDir(), settings.name));
-        tmpDir = new File(settings.tempDir());
+        tmpDir = new File(settings.getTempDir());
         if (!tmpDir.exists()) {
             if (!tmpDir.mkdirs()) {
                 throw new IOException(
@@ -132,8 +131,8 @@ public abstract class FileSystem implements Closeable {
     }
 
     protected FileSystem postInit() throws IOException {
-        if (settings.cleanTmp()) {
-            cleaner = new Thread(new TmpCleaner(this, tmpDir, settings.tempTTL()), "TMP-CLEANER-THREAD");
+        if (settings.isCleanTmp()) {
+            cleaner = new Thread(new TmpCleaner(this, tmpDir, settings.getTempTTL()), "TMP-CLEANER-THREAD");
             cleaner.start();
         }
         return this;
@@ -146,7 +145,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(zp, zkConnection, settings.lockTimeout());
+        return env.createCustomLock(zp, zkConnection, settings.getLockTimeout());
     }
 
     public DistributedLock getLock(@NonNull Inode inode) throws Exception {
@@ -164,42 +163,42 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(zp, zkConnection, settings.lockTimeout());
+        return env.createCustomLock(zp, zkConnection, settings.getLockTimeout());
     }
 
     private DistributedLock getRootLock(@NonNull CuratorFramework client) throws Exception {
-        Preconditions.checkState(state.isConnected());
         String zp = new PathUtils.ZkPathBuilder(zkPath)
                 .build();
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(zp, zkConnection, settings.lockTimeout());
+        return env.createCustomLock(zp, zkConnection, settings.getLockTimeout());
     }
 
-    private void registerDomain(String name, CuratorFramework client) throws Exception {
+    private void registerDomain(Container container, CuratorFramework client) throws Exception {
         String path = new PathUtils.ZkPathBuilder(zkPath)
-                .withPath(name)
+                .withPath(container.getDomain())
                 .build();
         if (client.checkExists().forPath(path) != null) {
             byte[] data = client.getData().forPath(path);
             if (data != null && data.length > 0) {
                 DirectoryInode di = JSONUtils.read(data, DirectoryInode.class);
-                domains.put(name, di);
+                domains.put(container.getDomain(), di);
             }
         } else {
             client.create().creatingParentContainersIfNeeded().forPath(path);
-            DirectoryInode di = new DirectoryInode(name, name);
+            DirectoryInode di = new DirectoryInode(container.getDomain(), "root");
             di.setParent(null);
-            di.setPath(null);
+            di.setPath(container.pathInfo(this).pathConfig());
             di.setUuid(UUID.randomUUID().toString());
             di.setCreateTimestamp(System.currentTimeMillis());
             di.setUpdateTimestamp(System.currentTimeMillis());
             di.setSynced(true);
             di.setZkPath(path);
+            di.setAbsolutePath(container.getPath());
 
             client.setData().forPath(path, JSONUtils.asBytes(di, DirectoryInode.class));
-            domains.put(name, di);
+            domains.put(container.getDomain(), di);
         }
     }
 
@@ -445,13 +444,13 @@ public abstract class FileSystem implements Closeable {
         Preconditions.checkArgument(node.getPathInfo() != null);
         FileInode current = (FileInode) getInode(node.getPathInfo());
         if (current.getLock() == null) {
-            FileInodeLock lock = new FileInodeLock(id, settings.name);
+            FileInodeLock lock = new FileInodeLock(id, settings.getName());
             node.setLock(lock);
         } else {
             if (id.compareTo(current.getLock().getClientId()) != 0) {
                 throw new DistributedLock.LockError(
                         String.format("[FS: %s] File already locked. [client ID=%s]",
-                                settings.name, current.getLock().getClientId()));
+                                settings.getName(), current.getLock().getClientId()));
             } else {
                 node.setLock(current.getLock());
             }
@@ -475,12 +474,12 @@ public abstract class FileSystem implements Closeable {
         if (current.getLock() == null) {
             throw new Exception(
                     String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
-                            settings.name, node.getDomain(), node.getAbsolutePath()));
+                            settings.getName(), node.getDomain(), node.getAbsolutePath()));
         }
         if (id.compareTo(current.getLock().getClientId()) != 0) {
             throw new DistributedLock.LockError(
                     String.format("[FS: %s] File not locked by current file system. [client ID=%s]",
-                            settings.name, current.getLock().getClientId()));
+                            settings.getName(), current.getLock().getClientId()));
         }
         node.setLock(null);
         return updateInode(node, node.getPathInfo());
@@ -492,12 +491,12 @@ public abstract class FileSystem implements Closeable {
         if (current.getLock() == null) {
             throw new Exception(
                     String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
-                            settings.name, node.getDomain(), node.getAbsolutePath()));
+                            settings.getName(), node.getDomain(), node.getAbsolutePath()));
         }
         if (id.compareTo(current.getLock().getClientId()) != 0) {
             throw new DistributedLock.LockError(
                     String.format("[FS: %s] File not locked by current file system. [client ID=%s]",
-                            settings.name, current.getLock().getClientId()));
+                            settings.getName(), current.getLock().getClientId()));
         }
         node.setLock(current.getLock());
         node.getLock().setTimeUpdated(System.currentTimeMillis());
@@ -738,45 +737,6 @@ public abstract class FileSystem implements Closeable {
     }
 
     @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public abstract static class FileSystemSettings extends Settings {
-        public static final String TEMP_PATH = String.format("%s/zyient/cdc",
-                System.getProperty("java.io.tmpdir"));
-
-        public static final String CONFIG_FS_CLASS = "@type";
-        public static final String CONFIG_NAME = "name";
-        public static final String CONFIG_ID = "id";
-        public static final String CONFIG_TEMP_FOLDER = "tmp.path";
-        public static final String CONFIG_TEMP_TTL = "tmp.ttl";
-        public static final String CONFIG_TEMP_CLEAN = "tmp.clean";
-        public static final String CONFIG_ZK_CONNECTION = "zk.connection";
-        public static final String CONFIG_ZK_PATH = "zk.path";
-        public static final String CONFIG_ZK_LOCK_TIMEOUT = "zk.lockTimeout";
-        public static final int LOCK_TIMEOUT = 60 * 1000;
-
-        @Config(name = CONFIG_FS_CLASS)
-        private String type;
-        @Config(name = CONFIG_NAME)
-        private String name;
-        @Config(name = CONFIG_ZK_CONNECTION)
-        private String zkConnection;
-        @Config(name = CONFIG_ZK_PATH)
-        private String zkPath;
-        @Config(name = CONFIG_TEMP_FOLDER, required = false)
-        private String tempDir = TEMP_PATH;
-        @Config(name = CONFIG_TEMP_CLEAN, required = false, type = Boolean.class)
-        private boolean cleanTmp = true;
-        @Config(name = CONFIG_TEMP_TTL, required = false, type = Long.class)
-        private long tempTTL = 15 * 60 * 1000;
-        @Config(name = CONFIG_ZK_LOCK_TIMEOUT, required = false, type = Integer.class)
-        private int lockTimeout = LOCK_TIMEOUT;
-        private Container defaultContainer;
-        private Map<String, Container> containers;
-    }
-
-    @Getter
     @Accessors(fluent = true)
     public static abstract class FileSystemConfigReader extends ConfigReader {
         private final Class<? extends Container> containerType;
@@ -789,14 +749,21 @@ public abstract class FileSystem implements Closeable {
             this.containerType = containerType;
         }
 
+        public FileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                      @NonNull Class<? extends FileSystemSettings> type,
+                                      @NonNull Class<? extends Container> containerType) {
+            super(config, type);
+            this.containerType = containerType;
+        }
+
         @Override
         public void read() throws ConfigurationException {
             super.read();
             ContainerConfigReader reader = new ContainerConfigReader(config(), containerType);
             reader.read();
             FileSystemSettings settings = (FileSystemSettings) settings();
-            settings.defaultContainer = reader.defaultContainer();
-            settings.containers = reader.containers();
+            settings.setDefaultContainer(reader.defaultContainer());
+            settings.setContainers(reader.containers());
         }
     }
 

@@ -9,6 +9,7 @@ import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
+import ai.sapper.cdc.core.io.model.FileSystemSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
@@ -30,6 +31,7 @@ import java.util.Map;
 public class FileSystemManager {
     public static final String __CONFIG_PATH = "fs";
     public static final String __CONFIG_PATH_DEFS = "fileSystems";
+    public static final String __CONFIG_PATH_DEF = "fileSystem";
 
     private BaseEnv<?> env;
     @Getter(AccessLevel.NONE)
@@ -80,20 +82,26 @@ public class FileSystemManager {
         return env.createCustomLock(zkBasePath, zkConnection, 10000);
     }
 
+
+    @SuppressWarnings("unchecked")
     private void readConfig(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         if (ConfigReader.checkIfNodeExists(config, __CONFIG_PATH_DEFS)) {
-            List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_PATH_DEFS);
+            config = config.configurationAt(__CONFIG_PATH_DEFS);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_PATH_DEF);
             if (nodes != null && !nodes.isEmpty()) {
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                    ConfigReader reader = new ConfigReader(node, FileSystem.FileSystemSettings.class);
-                    reader.read();
-                    FileSystem.FileSystemSettings settings = (FileSystem.FileSystemSettings) reader.settings();
-                    addFs(settings);
+                    String type = node.getString(FileSystemSettings.CONFIG_FS_CLASS);
+                    Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(type);
+                    FileSystem fs = cls.getDeclaredConstructor().newInstance();
+                    fs.init(node, env);
+                    fileSystems.put(fs.settings.getName(), fs);
+                    DefaultLogger.LOGGER.info(String.format("Loaded file system. [name=%s][id=%s]", fs.settings.getName(), fs.id()));
                 }
             }
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void readConfig() throws Exception {
         CuratorFramework client = zkConnection.client();
         if (client.checkExists().forPath(zkBasePath) == null) {
@@ -106,21 +114,20 @@ public class FileSystemManager {
                 String path = new PathUtils.ZkPathBuilder(zkBasePath)
                         .withPath(node)
                         .build();
-                FileSystem.FileSystemSettings settings = read(path, client);
+                FileSystemSettings settings = read(path, client);
                 if (settings != null) {
-                    addFs(settings);
+                    Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.getType());
+                    FileSystem fs = cls.getDeclaredConstructor().newInstance();
+                    addFs(settings, fs);
                 }
             }
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private FileSystem addFs(FileSystem.FileSystemSettings settings) throws Exception {
-        Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.type());
-        FileSystem fs = cls.getDeclaredConstructor().newInstance();
+    private FileSystem addFs(FileSystemSettings settings, FileSystem fs) throws Exception {
         fs.init(settings, env);
-        fileSystems.put(settings.name(), fs);
-        DefaultLogger.LOGGER.info(String.format("Loaded file system. [name=%s][id=%s]", settings.name(), fs.id()));
+        fileSystems.put(settings.getName(), fs);
+        DefaultLogger.LOGGER.info(String.format("Loaded file system. [name=%s][id=%s]", settings.getName(), fs.id()));
 
         return fs;
     }
@@ -131,15 +138,17 @@ public class FileSystemManager {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends FileSystem> T add(FileSystem.FileSystemSettings settings) throws IOException {
+    public <T extends FileSystem> T add(FileSystemSettings settings) throws IOException {
         Preconditions.checkNotNull(zkConnection);
         try {
             DistributedLock lock = getLock();
             lock.lock();
             try {
-                FileSystem fs = addFs(settings);
+                Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.getType());
+                FileSystem fs = cls.getDeclaredConstructor().newInstance();
+                fs = addFs(settings, fs);
                 CuratorFramework client = zkConnection.client();
-                save(settings.name(), settings, client);
+                save(settings.getName(), settings, client);
                 return (T) fs;
             } finally {
                 lock.unlock();
@@ -159,7 +168,7 @@ public class FileSystemManager {
                     CuratorFramework client = zkConnection.client();
                     for (String name : fileSystems.keySet()) {
                         FileSystem fs = fileSystems.get(name);
-                        FileSystem.FileSystemSettings settings = fs.settings;
+                        FileSystemSettings settings = fs.settings;
                         save(name, settings, client);
                         DefaultLogger.LOGGER.info(String.format("Saved fileSystem settings. [name=%s]", name));
                     }
@@ -173,7 +182,7 @@ public class FileSystemManager {
     }
 
     private void save(String name,
-                      FileSystem.FileSystemSettings settings,
+                      FileSystemSettings settings,
                       CuratorFramework client) throws Exception {
         String path = new PathUtils.ZkPathBuilder(zkBasePath)
                 .withPath(name)
@@ -185,12 +194,12 @@ public class FileSystemManager {
         client.setData().forPath(path, data);
     }
 
-    private FileSystem.FileSystemSettings read(String path,
+    private FileSystemSettings read(String path,
                                                CuratorFramework client) throws Exception {
         if (client.checkExists().forPath(path) != null) {
             byte[] data = client.getData().forPath(path);
             if (data != null && data.length > 0) {
-                return JSONUtils.read(data, FileSystem.FileSystemSettings.class);
+                return JSONUtils.read(data, FileSystemSettings.class);
             }
         }
         return null;

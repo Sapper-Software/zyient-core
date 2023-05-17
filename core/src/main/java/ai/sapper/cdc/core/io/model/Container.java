@@ -2,8 +2,10 @@ package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.io.FileSystem;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -13,4 +15,8 @@ import lombok.Setter;
 public abstract class Container extends Settings {
     @Config(name = "domain")
     private String domain;
+    @Config(name = "path")
+    private String path;
+
+    public abstract PathInfo pathInfo(@NonNull FileSystem fs);
 }

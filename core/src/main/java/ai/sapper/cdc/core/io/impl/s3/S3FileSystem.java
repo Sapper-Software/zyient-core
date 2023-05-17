@@ -60,13 +60,18 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
+    public Class<? extends FileSystemSettings> getSettingsType() {
+        return S3FileSystemSettings.class;
+    }
+
+    @Override
     public FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                            @NonNull BaseEnv<?> env) throws IOException {
         try {
             super.init(config, env, new S3FileSystemConfigReader(config));
             settings = (S3FileSystemSettings) configReader().settings();
             if (client == null) {
-                Region region = Region.of(settings.region);
+                Region region = Region.of(settings.getRegion());
                 client = S3Client.builder()
                         .region(region)
                         .build();
@@ -87,7 +92,7 @@ public class S3FileSystem extends RemoteFileSystem {
         try {
             this.settings = (S3FileSystemSettings) settings;
             if (client == null) {
-                Region region = Region.of(this.settings.region);
+                Region region = Region.of(this.settings.getRegion());
                 client = S3Client.builder()
                         .region(region)
                         .build();
@@ -395,25 +400,10 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Getter
-    @Setter
-    public static class S3FileSystemSettings extends RemoteFileSystemSettings {
-        public static final String CONFIG_REGION = "region";
-
-        @Config(name = CONFIG_REGION)
-        private String region;
-
-        public S3FileSystemSettings() {
-            type(S3FileSystem.class.getCanonicalName());
-        }
-    }
-
-    @Getter
     @Accessors(fluent = true)
     public static class S3FileSystemConfigReader extends RemoteFileSystemConfigReader {
-        public static final String __CONFIG_PATH = "s3";
-
         public S3FileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, S3FileSystemSettings.class, S3Container.class);
+            super(config, S3FileSystemSettings.class, S3Container.class);
         }
     }
 

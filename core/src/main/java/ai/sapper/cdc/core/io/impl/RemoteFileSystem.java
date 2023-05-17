@@ -43,8 +43,8 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         cache.init(config);
         RemoteFileSystemSettings settings = (RemoteFileSystemSettings) settings();
         uploader =
-                new ThreadPoolExecutor(settings.uploadThreadCount,
-                        settings.uploadThreadCount,
+                new ThreadPoolExecutor(settings.getUploadThreadCount(),
+                        settings.getUploadThreadCount(),
                         0L,
                         TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<>());
@@ -62,26 +62,6 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         DefaultLogger.LOGGER.debug(String.format("RESPONSE: %s", mesg));
     }
 
-    @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class RemoteFileSystemSettings extends FileSystemSettings {
-        public static final String CONFIG_WRITER_FLUSH_INTERVAL = "writer.flush.interval";
-        public static final String CONFIG_WRITER_FLUSH_SIZE = "writer.flush.size";
-        public static final String CONFIG_WRITER_UPLOAD_THREADS = "writer.threads";
-        private static final long DEFAULT_WRITER_FLUSH_INTERVAL = 60 * 1000; // 1min
-        private static final long DEFAULT_WRITER_FLUSH_SIZE = 1024 * 1024 * 32; //32MB
-        private static final int DEFAULT_UPLOAD_THREAD_COUNT = 4;
-
-        @Config(name = CONFIG_WRITER_FLUSH_INTERVAL, required = false, type = Long.class)
-        private long writerFlushInterval = DEFAULT_WRITER_FLUSH_INTERVAL;
-        @Config(name = CONFIG_WRITER_FLUSH_SIZE, required = false, type = Long.class)
-        private long writerFlushSize = DEFAULT_WRITER_FLUSH_SIZE;
-        @Config(name = CONFIG_WRITER_UPLOAD_THREADS, required = false, type = Integer.class)
-        private int uploadThreadCount = DEFAULT_UPLOAD_THREAD_COUNT;
-    }
-
     public static class RemoteFileSystemConfigReader extends FileSystemConfigReader {
 
         public RemoteFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
@@ -89,6 +69,12 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
                                             @NonNull Class<? extends RemoteFileSystemSettings> type,
                                             @NonNull Class<? extends Container> containerType) {
             super(config, path, type, containerType);
+        }
+
+        public RemoteFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                            @NonNull Class<? extends RemoteFileSystemSettings> type,
+                                            @NonNull Class<? extends Container> containerType) {
+            super(config, type, containerType);
         }
     }
 

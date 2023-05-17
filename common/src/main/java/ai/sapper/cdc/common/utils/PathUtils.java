@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 public class PathUtils {
-    public static final String TEMP_PATH = String.format("%s/hcdc/tmp", System.getProperty("java.io.tmpdir"));
+    public static final String TEMP_PATH = String.format("%s/sapper/cdc/tmp", System.getProperty("java.io.tmpdir"));
 
 
     public static String formatPath(@NonNull String path) {

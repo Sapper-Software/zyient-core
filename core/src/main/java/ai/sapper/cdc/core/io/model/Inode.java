@@ -41,14 +41,17 @@ public abstract class Inode {
         this.domain = domain;
     }
 
+    @JsonIgnore
     public boolean isDirectory() {
         return (type == InodeType.Directory);
     }
 
+    @JsonIgnore
     public boolean isFile() {
         return (type == InodeType.File);
     }
 
+    @JsonIgnore
     public boolean isArchive() {
         return (type == InodeType.Archive);
     }

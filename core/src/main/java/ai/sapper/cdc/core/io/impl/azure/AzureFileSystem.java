@@ -8,6 +8,7 @@ import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
 import ai.sapper.cdc.core.io.model.DirectoryInode;
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.io.model.FileSystemSettings;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.storage.blob.BlobClient;
@@ -39,6 +40,11 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
+    public Class<? extends FileSystemSettings> getSettingsType() {
+        return AzureFileSystemSettings.class;
+    }
+
+    @Override
     public FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                             @NonNull BaseEnv<?> env) throws IOException {
         try {
@@ -49,7 +55,7 @@ public class AzureFileSystem extends RemoteFileSystem {
             Preconditions.checkNotNull(keyStore);
             client = new AzureFsClient()
                     .init(configReader.config(), keyStore);
-            settings.clientSettings = client.settings();
+            settings.setClientSettings(client.settings());
             return postInit();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
@@ -68,9 +74,9 @@ public class AzureFileSystem extends RemoteFileSystem {
             this.settings = (AzureFileSystemSettings) settings;
             KeyStore keyStore = env.keyStore();
             Preconditions.checkNotNull(keyStore);
-            Preconditions.checkNotNull(((AzureFileSystemSettings) settings).clientSettings);
+            Preconditions.checkNotNull(((AzureFileSystemSettings) settings).getClientSettings());
             client = new AzureFsClient()
-                    .init(((AzureFileSystemSettings) settings).clientSettings, keyStore);
+                    .init(((AzureFileSystemSettings) settings).getClientSettings(), keyStore);
             return postInit();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
@@ -156,22 +162,10 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     public static class AzureFileSystemConfigReader extends RemoteFileSystemConfigReader {
-        public static final String __CONFIG_PATH = "azure/fs";
 
         public AzureFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, AzureFileSystemSettings.class, AzureContainer.class);
+            super(config, AzureFileSystemSettings.class, AzureContainer.class);
         }
     }
 
-    @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class AzureFileSystemSettings extends RemoteFileSystemSettings {
-        private AzureFsClient.AzureFsClientSettings clientSettings;
-
-        public AzureFileSystemSettings() {
-            type(AzureFileSystem.class.getCanonicalName());
-        }
-    }
 }

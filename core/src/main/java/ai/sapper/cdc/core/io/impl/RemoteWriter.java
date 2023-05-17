@@ -104,8 +104,8 @@ public abstract class RemoteWriter extends Writer {
         long t = System.currentTimeMillis() - lastFlushTimestamp;
         long s = fileSize(temp) - lastFlushSize;
         RemoteFileSystem rfs = (RemoteFileSystem) fs;
-        RemoteFileSystem.RemoteFileSystemSettings rs = (RemoteFileSystem.RemoteFileSystemSettings) rfs.settings();
-        if (t > rs.writerFlushInterval() || s > rs.writerFlushSize()) {
+        RemoteFileSystemSettings rs = (RemoteFileSystemSettings) rfs.settings();
+        if (t > rs.getWriterFlushInterval() || s > rs.getWriterFlushSize()) {
             commit(false);
         }
     }

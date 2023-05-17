@@ -37,6 +37,11 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
+    public Class<? extends FileSystemSettings> getSettingsType() {
+        return LocalFileSystemSettings.class;
+    }
+
+    @Override
     public FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                            @NonNull BaseEnv<?> env) throws IOException {
         try {
@@ -213,18 +218,7 @@ public class LocalFileSystem extends FileSystem {
         return new LocalWriter(inode, this, overwrite).open();
     }
 
-    @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class LocalFileSystemSettings extends FileSystemSettings {
-        public LocalFileSystemSettings() {
-            type(LocalFileSystem.class.getCanonicalName());
-        }
-    }
-
     public static class LocalFileSystemConfigReader extends FileSystemConfigReader {
-        public static final String __CONFIG_PATH = "local";
 
         public LocalFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                            @NonNull String path,
@@ -234,7 +228,7 @@ public class LocalFileSystem extends FileSystem {
         }
 
         public LocalFileSystemConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, LocalFileSystemSettings.class, LocalContainer.class);
+            super(config, LocalFileSystemSettings.class, LocalContainer.class);
         }
     }
 }
