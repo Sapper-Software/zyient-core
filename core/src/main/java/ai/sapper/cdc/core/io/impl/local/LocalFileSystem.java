@@ -56,6 +56,13 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
+    public FileSystem init(@NonNull FileSystemSettings settings,
+                           @NonNull BaseEnv<?> env) throws IOException {
+        super.init(settings, env);
+        return postInit();
+    }
+
+    @Override
     public PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException {
         return new LocalPathInfo(this, values);
     }

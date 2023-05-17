@@ -10,6 +10,7 @@ import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.FileSystemSettings;
+import ai.sapper.cdc.core.model.ESettingsSource;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
@@ -169,6 +170,7 @@ public class FileSystemManager {
                     for (String name : fileSystems.keySet()) {
                         FileSystem fs = fileSystems.get(name);
                         FileSystemSettings settings = fs.settings;
+                        if (settings.getSource() == ESettingsSource.ZooKeeper) continue;
                         save(name, settings, client);
                         DefaultLogger.LOGGER.info(String.format("Saved fileSystem settings. [name=%s]", name));
                     }
@@ -184,6 +186,7 @@ public class FileSystemManager {
     private void save(String name,
                       FileSystemSettings settings,
                       CuratorFramework client) throws Exception {
+        settings.setSource(ESettingsSource.ZooKeeper);
         String path = new PathUtils.ZkPathBuilder(zkBasePath)
                 .withPath(name)
                 .build();
@@ -199,7 +202,9 @@ public class FileSystemManager {
         if (client.checkExists().forPath(path) != null) {
             byte[] data = client.getData().forPath(path);
             if (data != null && data.length > 0) {
-                return JSONUtils.read(data, FileSystemSettings.class);
+                FileSystemSettings settings =  JSONUtils.read(data, FileSystemSettings.class);
+                settings.setSource(ESettingsSource.ZooKeeper);
+                return settings;
             }
         }
         return null;

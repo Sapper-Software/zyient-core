@@ -107,15 +107,14 @@ public abstract class FileSystem implements Closeable {
         }
         try {
             Collection<Container> domains = domainMap.getDomains();
-            try (DistributedLock lock = getRootLock(client)) {
-                lock.lock();
-                try {
-                    for (Container domain : domains) {
-                        registerDomain(domain, client);
-                    }
-                } finally {
-                    lock.unlock();
+            DistributedLock lock = getRootLock(client);
+            lock.lock();
+            try {
+                for (Container domain : domains) {
+                    registerDomain(domain, client);
                 }
+            } finally {
+                lock.unlock();
             }
         } catch (Exception ex) {
             state.error(ex);
@@ -135,6 +134,7 @@ public abstract class FileSystem implements Closeable {
             cleaner = new Thread(new TmpCleaner(this, tmpDir, settings.getTempTTL()), "TMP-CLEANER-THREAD");
             cleaner.start();
         }
+        state.state(Connection.EConnectionState.Connected);
         return this;
     }
 

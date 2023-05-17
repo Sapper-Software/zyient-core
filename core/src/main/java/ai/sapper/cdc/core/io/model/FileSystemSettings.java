@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.model.ESettingsSource;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
@@ -45,4 +46,5 @@ public abstract class FileSystemSettings extends Settings {
     private int lockTimeout = LOCK_TIMEOUT;
     private Container defaultContainer;
     private Map<String, Container> containers;
+    private ESettingsSource source = ESettingsSource.File;
 }

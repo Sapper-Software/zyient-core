@@ -4,6 +4,7 @@ import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.Connection;
+import ai.sapper.cdc.core.model.ESettingsSource;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.NonNull;
