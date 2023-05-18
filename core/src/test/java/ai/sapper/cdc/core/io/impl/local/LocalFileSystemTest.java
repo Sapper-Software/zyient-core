@@ -53,7 +53,7 @@ class LocalFileSystemTest {
             DefaultLogger.LOGGER.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
             File d = new File(di.getAbsolutePath());
             assertTrue(d.exists() && d.isDirectory());
-            DirectoryInode cdi = fs.mkdir(di, "test/child");
+            DirectoryInode cdi = fs.mkdir(di, "child");
             assertNotNull(cdi);
             DefaultLogger.LOGGER.info(String.format("Created directory. [path=%s]", cdi.getAbsolutePath()));
             d = new File(cdi.getAbsolutePath());

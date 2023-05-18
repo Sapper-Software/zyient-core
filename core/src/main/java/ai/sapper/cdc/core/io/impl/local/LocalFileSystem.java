@@ -92,13 +92,16 @@ public class LocalFileSystem extends FileSystem {
         }
         String pp = ((LocalContainer) container).getPath();
 
-        return PathUtils.formatPath(String.format("/%s/%s/%s",
-                pp, domain, path));
+        return PathUtils.formatPath(String.format("/%s/%s",
+                pp, path));
     }
 
     @Override
     public DirectoryInode mkdir(@NonNull DirectoryInode parent,
                                 @NonNull String name) throws IOException {
+        if (name.indexOf('/') >= 0) {
+            throw new IOException(String.format("Invalid directory name: recursive directory creation not supported. [name=%s]", name));
+        }
         String path = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), name));
         LocalPathInfo pd = (LocalPathInfo) parent.getPathInfo();
         if (pd == null) {

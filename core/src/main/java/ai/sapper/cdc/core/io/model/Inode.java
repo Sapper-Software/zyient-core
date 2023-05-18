@@ -22,7 +22,9 @@ public abstract class Inode {
     private long updateTimestamp = 0;
     private long syncTimestamp = 0;
     private InodeType type;
+    @JsonIgnore
     private Inode parent = null;
+    private String parentZkPath;
     private String name;
     private String zkPath;
     @JsonIgnore
@@ -39,6 +41,15 @@ public abstract class Inode {
         this.type = type;
         this.name = name;
         this.domain = domain;
+    }
+
+    public void setParent(Inode parent) {
+        this.parent = parent;
+        if (parent != null) {
+            parentZkPath = parent.getZkPath();
+        } else {
+            parentZkPath = null;
+        }
     }
 
     @JsonIgnore
