@@ -6,6 +6,7 @@ import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.FileSystemManager;
 import ai.sapper.cdc.core.io.model.DirectoryInode;
+import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.utils.DemoEnv;
 import com.google.common.base.Preconditions;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -67,6 +68,23 @@ class LocalFileSystemTest {
 
     @Test
     void create() {
+        try {
+            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
+            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
+            assertNotNull(di);
+            DefaultLogger.LOGGER.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            File d = new File(di.getAbsolutePath());
+            assertTrue(d.exists() && d.isDirectory());
+            FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            assertNotNull(fi);
+            DefaultLogger.LOGGER.info(String.format("Created directory. [path=%s]", fi.getAbsolutePath()));
+            d = new File(fi.getAbsolutePath());
+            assertTrue(d.exists() && d.isFile());
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.LOGGER.error(ex.getLocalizedMessage());
+            fail(ex);
+        }
     }
 
     @Test

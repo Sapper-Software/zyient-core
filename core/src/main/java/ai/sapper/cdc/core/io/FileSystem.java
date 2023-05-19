@@ -213,7 +213,8 @@ public abstract class FileSystem implements Closeable {
         }
         String fpath = path.path().trim();
         if (fpath.startsWith(dnode.getAbsolutePath())) {
-            fpath = fpath.substring(dnode.getAbsolutePath().length());
+            int index = dnode.getAbsolutePath().length();
+            fpath = fpath.substring(index);
         }
         if (fpath.startsWith("/")) {
             fpath = fpath.substring(1);

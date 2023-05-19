@@ -168,6 +168,8 @@ public class LocalFileSystem extends FileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
+        if (node.isFile())
+            FileUtils.touch(pi.file);
         return (FileInode) updateInode(node, pi);
     }
 
