@@ -44,7 +44,7 @@ class HdfsConnectionTest {
 
     @Test
     void connect() {
-        DefaultLogger.LOGGER.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "connect"));
+        DefaultLogger.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "connect"));
         try {
             HdfsConnection connection = manager.getConnection(__CONNECTION_NAME, HdfsConnection.class);
             connection.connect();
@@ -60,18 +60,18 @@ class HdfsConnectionTest {
             for (Path p : paths) {
                 URI uri = p.toUri();
                 String hdfsPath = uri.getPath();
-                DefaultLogger.LOGGER.info(String.format("HDFS Path=[%s]", hdfsPath));
+                DefaultLogger.info(String.format("HDFS Path=[%s]", hdfsPath));
             }
             manager.save(connection);
         } catch (Throwable t) {
-            DefaultLogger.LOGGER.error(DefaultLogger.stacktrace(t));
+            DefaultLogger.stacktrace(t);
             fail(t);
         }
     }
 
     @Test
     void fileLifeCycle() {
-        DefaultLogger.LOGGER.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "close"));
+        DefaultLogger.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "close"));
         try {
             HdfsConnection connection = manager.getConnection(__CONNECTION_NAME, HdfsConnection.class);
             connection.connect();
@@ -135,7 +135,7 @@ class HdfsConnectionTest {
 
             connection.close();
         } catch (Throwable t) {
-            DefaultLogger.LOGGER.error(DefaultLogger.stacktrace(t));
+            DefaultLogger.stacktrace(t);
             fail(t);
         }
     }

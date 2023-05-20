@@ -18,11 +18,14 @@ import java.io.Serializable;
 import java.security.PrivilegedActionException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Getter
 @Accessors(fluent = true)
 public class DistributedLock extends ReentrantLock implements Closeable {
+    public static final String ZK_PATH_LOCK = "__locks";
+
     private static final int DEFAULT_LOCK_TIMEOUT = 15000;
 
     private final LockId id;
@@ -32,23 +35,44 @@ public class DistributedLock extends ReentrantLock implements Closeable {
     private InterProcessMutex mutex = null;
     private ZookeeperConnection connection;
     private final String zkBasePath;
+    private final DistributedLockBuilder builder;
+    @Getter(AccessLevel.NONE)
+    private AtomicInteger refereces = new AtomicInteger(0);
+    @Getter(AccessLevel.PACKAGE)
+    private final String key;
 
-    public DistributedLock(@NonNull LockId id, @NonNull String zkBasePath) {
+    public DistributedLock(@NonNull LockId id,
+                           @NonNull String zkBasePath,
+                           @NonNull String key,
+                           DistributedLockBuilder builder) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(zkBasePath));
         this.id = id;
         this.zkBasePath = zkBasePath;
+        this.key = key;
+        this.builder = builder;
     }
 
-    public DistributedLock(@NonNull String zkBasePath) {
+    public DistributedLock(@NonNull String name,
+                           @NonNull String zkBasePath,
+                           @NonNull String key,
+                           DistributedLockBuilder builder) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(zkBasePath));
-        this.id = null;
+        this.id = new LockId("default", name);
         this.zkBasePath = zkBasePath;
+        this.key = key;
+        this.builder = builder;
     }
 
-    public DistributedLock(@NonNull String namespace, @NonNull String name, @NonNull String zkBasePath) {
+    public DistributedLock(@NonNull String namespace,
+                           @NonNull String name,
+                           @NonNull String zkBasePath,
+                           @NonNull String key,
+                           DistributedLockBuilder builder) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(zkBasePath));
         this.zkBasePath = zkBasePath;
         id = new LockId(namespace, name);
+        this.key = key;
+        this.builder = builder;
     }
 
     public DistributedLock withConnection(@NonNull ZookeeperConnection connection) {
@@ -65,18 +89,23 @@ public class DistributedLock extends ReentrantLock implements Closeable {
         return this;
     }
 
-    private String lockPath() {
+    public DistributedLock incrementReference() {
+        refereces.incrementAndGet();
+        return this;
+    }
+
+    public String lockPath() {
         if (id != null) {
             return new PathUtils.ZkPathBuilder()
                     .withPath(zkBasePath)
                     .withPath(id.namespace)
-                    .withPath("__locks")
+                    .withPath(ZK_PATH_LOCK)
                     .withPath(id.name)
                     .build();
         } else {
             return new PathUtils.ZkPathBuilder()
                     .withPath(zkBasePath)
-                    .withPath("__locks")
+                    .withPath(ZK_PATH_LOCK)
                     .build();
         }
     }
@@ -138,7 +167,7 @@ public class DistributedLock extends ReentrantLock implements Closeable {
         try {
             return tryLock(lockTimeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException ie) {
-            DefaultLogger.LOGGER.debug(String.format("Lock Timeout: [name=%s]", id.toString()));
+            DefaultLogger.debug(String.format("Lock Timeout: [name=%s]", id.toString()));
             return false;
         }
     }
@@ -295,9 +324,16 @@ public class DistributedLock extends ReentrantLock implements Closeable {
      */
     @Override
     public void close() throws IOException {
-        if (getHoldCount() == 0) {
-            mutex = null;
+        refereces.decrementAndGet();
+        if (builder != null) {
+            if (builder.removeLock(this)) {
+                DefaultLogger.trace(String.format("Removed lock instance. [name=%s]", lockPath()));
+            }
         }
+    }
+
+    public boolean hasReference() {
+        return (refereces.get() > 0);
     }
 
     public static final class LockError extends RuntimeException {
@@ -407,12 +443,12 @@ public class DistributedLock extends ReentrantLock implements Closeable {
                 return true;
             } catch (LockError le) {
                 if (count > retryCount) {
-                    DefaultLogger.LOGGER.error(
+                    DefaultLogger.error(
                             String.format("Error acquiring lock. [error=%s][retries=%d]",
                                     le.getLocalizedMessage(), retryCount));
                     return false;
                 }
-                DefaultLogger.LOGGER.warn(String.format("Failed to acquire lock, will retry... [error=%s][retries=%d]",
+                DefaultLogger.trace(String.format("Failed to acquire lock, will retry... [error=%s][retries=%d]",
                         le.getLocalizedMessage(), retryCount));
                 Thread.sleep(sleepInterval);
                 count++;

@@ -61,7 +61,7 @@ public abstract class BaseStateManager<T> implements Closeable {
                             String.format("Error acquiring lock. [error=%s][retries=%d]",
                                     le.getLocalizedMessage(), retryCount));
                 }
-                DefaultLogger.LOGGER.warn(String.format("Failed to acquire lock, will retry... [error=%s][retries=%d]",
+                DefaultLogger.warn(String.format("Failed to acquire lock, will retry... [error=%s][retries=%d]",
                         le.getLocalizedMessage(), retryCount));
                 Thread.sleep(500);
                 retryCount++;

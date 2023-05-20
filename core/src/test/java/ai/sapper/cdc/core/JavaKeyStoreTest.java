@@ -60,7 +60,7 @@ class JavaKeyStoreTest {
             //store.delete();
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
-            DefaultLogger.LOGGER.error(ex.getLocalizedMessage());
+            DefaultLogger.error(ex.getLocalizedMessage());
             fail(ex);
         }
     }

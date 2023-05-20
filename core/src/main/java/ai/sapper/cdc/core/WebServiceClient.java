@@ -127,7 +127,7 @@ public class WebServiceClient {
             } catch (Throwable t) {
                 if (handle && count < settings().retryCount) {
                     count++;
-                    DefaultLogger.LOGGER.error(
+                    DefaultLogger.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
                                     count, target.getUri().toString()), t);
                 } else {
@@ -175,7 +175,7 @@ public class WebServiceClient {
             } catch (Throwable t) {
                 if (handle && count < settings().retryCount) {
                     count++;
-                    DefaultLogger.LOGGER.error(
+                    DefaultLogger.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
                                     count, target.getUri().toString()), t);
                 } else {
@@ -223,7 +223,7 @@ public class WebServiceClient {
             } catch (Throwable t) {
                 if (handle && count < settings().retryCount) {
                     count++;
-                    DefaultLogger.LOGGER.error(
+                    DefaultLogger.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
                                     count, target.getUri().toString()), t);
                 } else {
@@ -270,7 +270,7 @@ public class WebServiceClient {
             } catch (Throwable t) {
                 if (handle && count < settings().retryCount) {
                     count++;
-                    DefaultLogger.LOGGER.error(
+                    DefaultLogger.error(
                             String.format("Error calling web service. [tries=%d][service=%s]",
                                     count, target.getUri().toString()), t);
                 } else {

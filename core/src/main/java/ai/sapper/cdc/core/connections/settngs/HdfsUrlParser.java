@@ -25,7 +25,7 @@ public class HdfsUrlParser  implements ConfigValueParser<String[][]> {
             String key = parts[0].trim();
             String address = parts[1].trim();
 
-            DefaultLogger.LOGGER.info(String.format("Registering namenode [%s -> %s]...", key, address));
+            DefaultLogger.info(String.format("Registering namenode [%s -> %s]...", key, address));
             r[ii][0] = key;
             r[ii][1] = address;
         }

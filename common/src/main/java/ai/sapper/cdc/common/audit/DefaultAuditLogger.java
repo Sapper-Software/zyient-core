@@ -34,8 +34,8 @@ public class DefaultAuditLogger implements AuditLogger {
             String json = JSONUtils.asString(record, record.getClass());
             LOGGER.info(String.format("RECORD[%s]", json));
         } catch (Exception ex) {
-            DefaultLogger.LOGGER.error(ex.getLocalizedMessage());
-            DefaultLogger.LOGGER.debug(DefaultLogger.stacktrace(ex));
+            DefaultLogger.error(ex.getLocalizedMessage());
+            DefaultLogger.stacktrace(ex);
         }
     }
 
@@ -52,8 +52,8 @@ public class DefaultAuditLogger implements AuditLogger {
             String json = JSONUtils.asString(record, record.getClass());
             LOGGER.info(String.format("RECORD[%s]", json));
         } catch (Exception ex) {
-            DefaultLogger.LOGGER.error(ex.getLocalizedMessage());
-            DefaultLogger.LOGGER.debug(DefaultLogger.stacktrace(ex));
+            DefaultLogger.error(ex.getLocalizedMessage());
+            DefaultLogger.stacktrace(ex);
         }
     }
 

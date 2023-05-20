@@ -59,7 +59,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     public abstract long size(@NonNull PathInfo path) throws IOException;
 
     public void debug(Object mesg) {
-        DefaultLogger.LOGGER.debug(String.format("RESPONSE: %s", mesg));
+        DefaultLogger.debug(String.format("RESPONSE: %s", mesg));
     }
 
     public static class RemoteFileSystemConfigReader extends FileSystemConfigReader {
@@ -146,7 +146,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
                 callback.onSuccess(inode, response, clearLock);
             } catch (Throwable t) {
                 DefaultLogger.stacktrace(t);
-                DefaultLogger.LOGGER.error(
+                DefaultLogger.error(
                         String.format("Upload failed. [domain=%s][path=%s]", inode.getDomain(), inode.getPath()));
                 callback.onError(inode, t);
             }

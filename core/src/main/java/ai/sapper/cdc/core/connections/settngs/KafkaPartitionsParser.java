@@ -18,12 +18,12 @@ public class KafkaPartitionsParser implements ConfigValueParser<List<Integer>> {
                     if (Strings.isNullOrEmpty(part)) continue;
                     Integer p = Integer.parseInt(part.trim());
                     partitions.add(p);
-                    DefaultLogger.LOGGER.debug(String.format("Added partition; [%d]", p));
+                    DefaultLogger.debug(String.format("Added partition; [%d]", p));
                 }
             } else {
                 Integer p = Integer.parseInt(value.trim());
                 partitions.add(p);
-                DefaultLogger.LOGGER.debug(String.format("Added partition; [%d]", p));
+                DefaultLogger.debug(String.format("Added partition; [%d]", p));
             }
         }
         if (partitions.isEmpty()) partitions.add(0);

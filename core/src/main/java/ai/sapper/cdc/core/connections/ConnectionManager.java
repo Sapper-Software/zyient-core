@@ -299,7 +299,7 @@ public class ConnectionManager implements Closeable {
         for (String name : connections.keySet()) {
             Connection connection = connections.get(name);
             save(connection);
-            DefaultLogger.LOGGER.info(
+            DefaultLogger.info(
                     String.format("Saved connection: [name=%s][type=%s]",
                             name, connection.getClass().getCanonicalName()));
         }

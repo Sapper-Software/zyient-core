@@ -133,7 +133,7 @@ public class KafkaAdmin {
             admin.run();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
-            DefaultLogger.LOGGER.error(t.getLocalizedMessage());
+            DefaultLogger.error(t.getLocalizedMessage());
             t.printStackTrace();
         }
     }

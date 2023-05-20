@@ -124,7 +124,7 @@ public class AvroUtils {
             try {
                 if (output != null) output.close();
             } catch (Exception e) {
-                DefaultLogger.LOGGER.error(e.getLocalizedMessage());
+                DefaultLogger.error(e.getLocalizedMessage());
             }
         }
     }

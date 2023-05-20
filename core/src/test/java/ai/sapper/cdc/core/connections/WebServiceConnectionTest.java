@@ -35,7 +35,7 @@ class WebServiceConnectionTest {
 
     @Test
     void connect() {
-        DefaultLogger.LOGGER.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "connect"));
+        DefaultLogger.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "connect"));
         try {
             WebServiceConnection ws = manager.getConnection(__CONNECTION_NAME, WebServiceConnection.class);
 
@@ -44,11 +44,11 @@ class WebServiceConnectionTest {
             Response response = builder.get();
             String data = response.readEntity(String.class);
             assertFalse(Strings.isNullOrEmpty(data));
-            DefaultLogger.LOGGER.debug(String.format("DATA [%s]", data));
+            DefaultLogger.debug(String.format("DATA [%s]", data));
 
             manager.save(ws);
         } catch (Throwable t) {
-            DefaultLogger.LOGGER.error(DefaultLogger.stacktrace(t));
+            DefaultLogger.stacktrace(t);
             fail(t);
         }
     }

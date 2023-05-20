@@ -177,7 +177,7 @@ public class LocalWriter extends Writer {
                 outputStream = null;
                 if (temp.exists()) {
                     if (!temp.delete()) {
-                        DefaultLogger.LOGGER.warn(
+                        DefaultLogger.warn(
                                 String.format("Failed to delete temporary file. [path=%s]", temp.getAbsolutePath()));
                     }
                 }

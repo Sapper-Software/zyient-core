@@ -245,7 +245,7 @@ public abstract class EntitySchema {
             }
             return sf;
         } else {
-            DefaultLogger.LOGGER.warn(String.format("AVRO Datatype not supported: [type=%s]",
+            DefaultLogger.warn(String.format("AVRO Datatype not supported: [type=%s]",
                     field.schema().getName()));
         }
         return null;

@@ -970,7 +970,7 @@ public class SchemaHelper {
             ObjectMapper mapper = new ObjectMapper();
             String json = mapper.writeValueAsString(data);
             Map<String, Object> map = mapper.readValue(json, Map.class);
-            DefaultLogger.LOGGER.debug(String.format("\nJSON: [\n%s\n]", json));
+            DefaultLogger.trace(String.format("\nJSON: [\n%s\n]", json));
             ObjectCache cache = new ObjectCache();
             ObjectField field =
                     ObjectField.parse(data.getClass().getSimpleName(), map, true, cache);

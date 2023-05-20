@@ -73,14 +73,14 @@ public class FileSystemManager {
             return this;
         } catch (Exception ex) {
             fileSystems.clear();
-            DefaultLogger.LOGGER.error(ex.getLocalizedMessage());
+            DefaultLogger.error(ex.getLocalizedMessage());
             DefaultLogger.stacktrace(ex);
             throw new IOException(ex);
         }
     }
 
     private DistributedLock getLock() throws Exception {
-        return env.createCustomLock(zkBasePath, zkConnection, 10000);
+        return env.createCustomLock("fs-root-lock", zkBasePath, zkConnection, 10000);
     }
 
 
@@ -96,7 +96,7 @@ public class FileSystemManager {
                     FileSystem fs = cls.getDeclaredConstructor().newInstance();
                     fs.init(node, env);
                     fileSystems.put(fs.settings.getName(), fs);
-                    DefaultLogger.LOGGER.info(String.format("Loaded file system. [name=%s][id=%s]", fs.settings.getName(), fs.id()));
+                    DefaultLogger.info(String.format("Loaded file system. [name=%s][id=%s]", fs.settings.getName(), fs.id()));
                 }
             }
         }
@@ -128,7 +128,7 @@ public class FileSystemManager {
     private FileSystem addFs(FileSystemSettings settings, FileSystem fs) throws Exception {
         fs.init(settings, env);
         fileSystems.put(settings.getName(), fs);
-        DefaultLogger.LOGGER.info(String.format("Loaded file system. [name=%s][id=%s]", settings.getName(), fs.id()));
+        DefaultLogger.info(String.format("Loaded file system. [name=%s][id=%s]", settings.getName(), fs.id()));
 
         return fs;
     }
@@ -172,7 +172,7 @@ public class FileSystemManager {
                         FileSystemSettings settings = fs.settings;
                         if (settings.getSource() == ESettingsSource.ZooKeeper) continue;
                         save(name, settings, client);
-                        DefaultLogger.LOGGER.info(String.format("Saved fileSystem settings. [name=%s]", name));
+                        DefaultLogger.info(String.format("Saved fileSystem settings. [name=%s]", name));
                     }
                 } finally {
                     lock.unlock();

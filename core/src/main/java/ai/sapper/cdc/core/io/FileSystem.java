@@ -1,8 +1,6 @@
 package ai.sapper.cdc.core.io;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
@@ -12,13 +10,11 @@ import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.model.ModuleInstance;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -145,7 +141,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(zp, zkConnection, settings.getLockTimeout());
+        return env.createCustomLock(inode.getName(), zp, zkConnection, settings.getLockTimeout());
     }
 
     public DistributedLock getLock(@NonNull Inode inode) throws Exception {
@@ -163,7 +159,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(zp, zkConnection, settings.getLockTimeout());
+        return env.createCustomLock(domain, zp, zkConnection, settings.getLockTimeout());
     }
 
     private DistributedLock getRootLock(@NonNull CuratorFramework client) throws Exception {
@@ -172,7 +168,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(zp, zkConnection, settings.getLockTimeout());
+        return env.createCustomLock(settings.getName(), zp, zkConnection, settings.getLockTimeout());
     }
 
     private void registerDomain(Container container, CuratorFramework client) throws Exception {
@@ -242,12 +238,13 @@ public abstract class FileSystem implements Closeable {
         inode.setUpdateTimestamp(System.currentTimeMillis());
         CuratorFramework client = zkConnection.client();
         try {
-            DistributedLock lock = getLock(current, client);
-            lock.lock();
-            try {
-                client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
-            } finally {
-                lock.unlock();
+            try (DistributedLock lock = getLock(current, client)) {
+                lock.lock();
+                try {
+                    client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
+                } finally {
+                    lock.unlock();
+                }
             }
         } catch (Exception ex) {
             throw new IOException(ex);
@@ -262,14 +259,29 @@ public abstract class FileSystem implements Closeable {
         if (current == null) {
             return false;
         }
+        Inode parent = current.getParent();
+        if (parent == null) {
+            throw new IOException(String.format("Parent node note found. [zkPath=%s]", current.getParentZkPath()));
+        }
         CuratorFramework client = zkConnection.client();
-        try (DistributedLock lock = getLock(current, client)) {
+        try (DistributedLock lock = getLock(parent, client)) {
             lock.lock();
             try {
                 if (recursive)
                     client.delete().deletingChildrenIfNeeded().forPath(current.getZkPath());
-                else
+                else {
+                    client.setData().forPath(current.getZkPath(), null);
+                    List<String> children = client.getChildren().forPath(current.getZkPath());
+                    for (String zp : children) {
+                        if (zp.compareTo(DistributedLock.ZK_PATH_LOCK) == 0) {
+                            String p = new PathUtils.ZkPathBuilder(current.getZkPath())
+                                    .withPath(zp)
+                                    .build();
+                            client.delete().deletingChildrenIfNeeded().forPath(p);
+                        }
+                    }
                     client.delete().forPath(current.getZkPath());
+                }
             } finally {
                 lock.unlock();
             }
@@ -821,7 +833,7 @@ public abstract class FileSystem implements Closeable {
                 }
             } catch (Throwable t) {
                 DefaultLogger.stacktrace(t);
-                DefaultLogger.LOGGER.error("Cleaner thread terminated with error.", t);
+                DefaultLogger.error("Cleaner thread terminated with error.", t);
                 fs.state.error(t);
             }
         }

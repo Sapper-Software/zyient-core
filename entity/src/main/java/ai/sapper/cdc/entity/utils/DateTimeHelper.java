@@ -13,7 +13,7 @@ public class DateTimeHelper {
         try {
             return ISODateTimeFormat.dateTimeParser().parseDateTime(txt);
         } catch (RuntimeException re) {
-            DefaultLogger.LOGGER.error(
+            DefaultLogger.error(
                     String.format("Error parsing date: [value=%s][error=%s]", txt, re.getLocalizedMessage()));
             throw re;
         }

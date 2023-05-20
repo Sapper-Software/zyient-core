@@ -49,7 +49,7 @@ public class ConnectionLoader {
             loader.run();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
-            DefaultLogger.LOGGER.error(t.getLocalizedMessage());
+            DefaultLogger.error(t.getLocalizedMessage());
             t.printStackTrace();
         }
     }

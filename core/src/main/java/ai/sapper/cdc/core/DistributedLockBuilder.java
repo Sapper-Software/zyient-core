@@ -1,8 +1,7 @@
-package ai.sapper.cdc.core.utils;
+package ai.sapper.cdc.core;
 
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
-import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ConnectionManager;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.model.LockDef;
@@ -142,18 +141,19 @@ public class DistributedLockBuilder implements Closeable {
         }
     }
 
-    public DistributedLock createLock(@NonNull String path,
+    public DistributedLock createLock(@NonNull String name,
+                                      @NonNull String path,
                                       @NonNull ZookeeperConnection connection,
                                       long timeout) throws Exception {
         synchronized (this) {
             DistributedLock lock = locks.get(path);
             if (lock == null) {
-                lock = new DistributedLock(path)
+                lock = new DistributedLock(name, path, path, this)
                         .withConnection(connection)
                         .withLockTimeout(timeout);
                 locks.put(path, lock);
             }
-            return lock;
+            return lock.incrementReference();
         }
     }
 
@@ -162,11 +162,24 @@ public class DistributedLockBuilder implements Closeable {
         if (lock == null) {
             lock = new DistributedLock(def.getModule(),
                     def.getPath(),
-                    path)
+                    path,
+                    key,
+                    this)
                     .withConnection(connection);
             locks.put(key, lock);
         }
-        return lock;
+        return lock.incrementReference();
+    }
+
+    public boolean removeLock(@NonNull DistributedLock lock) {
+        synchronized (this) {
+            if (locks.containsKey(lock.key())) {
+                lock = locks.get(lock.key());
+                if (!lock.hasReference())
+                    return (locks.remove(lock.key()) != null);
+            }
+        }
+        return false;
     }
 
     public void save(@NonNull LockDef def) throws Exception {
@@ -182,6 +195,7 @@ public class DistributedLockBuilder implements Closeable {
         String json = JSONUtils.asString(def, LockDef.class);
         client.setData().forPath(path, json.getBytes(StandardCharsets.UTF_8));
     }
+
 
     public void save() throws Exception {
         synchronized (this) {

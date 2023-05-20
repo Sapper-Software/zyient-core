@@ -393,7 +393,7 @@ public class ReflectionUtils {
                 setValueFromString(value, source, f);
                 return true;
             } catch (ReflectionException re) {
-                DefaultLogger.LOGGER.error(re.getLocalizedMessage(), re);
+                DefaultLogger.error(re.getLocalizedMessage(), re);
             }
         }
         return false;

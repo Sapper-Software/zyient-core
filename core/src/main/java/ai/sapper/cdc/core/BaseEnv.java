@@ -10,7 +10,6 @@ import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.FileSystemManager;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.model.ModuleInstance;
-import ai.sapper.cdc.core.utils.DistributedLockBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -233,12 +232,13 @@ public abstract class BaseEnv<T extends Enum<?>> {
         return dLockBuilder.createLock(path, module, name);
     }
 
-    public DistributedLock createCustomLock(@NonNull String path,
+    public DistributedLock createCustomLock(@NonNull String name,
+                                            @NonNull String path,
                                             @NonNull ZookeeperConnection connection,
                                             long timeout) throws Exception {
         Preconditions.checkNotNull(dLockBuilder);
         Preconditions.checkArgument(timeout > 0);
-        return dLockBuilder.createLock(path, connection, timeout);
+        return dLockBuilder.createLock(name, path, connection, timeout);
     }
 
     public void saveLocks() throws Exception {

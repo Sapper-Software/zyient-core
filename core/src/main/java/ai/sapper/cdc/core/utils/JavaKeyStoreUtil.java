@@ -55,7 +55,7 @@ public class JavaKeyStoreUtil {
             util.run();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
-            DefaultLogger.LOGGER.error(t.getLocalizedMessage());
+            DefaultLogger.error(t.getLocalizedMessage());
             t.printStackTrace();
         }
     }

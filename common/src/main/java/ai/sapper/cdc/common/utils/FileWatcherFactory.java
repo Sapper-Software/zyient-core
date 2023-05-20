@@ -24,7 +24,7 @@ public class FileWatcherFactory {
             watchers.put(name, watcher);
 
             runner.start();
-            DefaultLogger.LOGGER.debug(String.format("Created new file watcher. [name=%s, path=%s, regex=%s]",
+            DefaultLogger.debug(String.format("Created new file watcher. [name=%s, path=%s, regex=%s]",
                     name, watcher.directory(), watcher.regex()));
             return watcher;
         }
@@ -56,12 +56,12 @@ public class FileWatcherFactory {
             for (String name : watchers.keySet()) {
                 try {
                     if (!stop(name)) {
-                        DefaultLogger.LOGGER.warn(String.format("Failed to stop watcher. [name=%s]", name));
+                        DefaultLogger.warn(String.format("Failed to stop watcher. [name=%s]", name));
                     } else {
-                        DefaultLogger.LOGGER.debug(String.format("Stopped watcher. [name=%s]", name));
+                        DefaultLogger.debug(String.format("Stopped watcher. [name=%s]", name));
                     }
                 } catch (InterruptedException ie) {
-                    DefaultLogger.LOGGER.error(String.format("Error stopping watcher. [name=%s]", name), ie);
+                    DefaultLogger.error(String.format("Error stopping watcher. [name=%s]", name), ie);
                 }
             }
         }

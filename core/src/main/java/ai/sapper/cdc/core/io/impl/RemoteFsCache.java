@@ -130,7 +130,7 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
     public void evicted(String key, FsCacheEntry value) {
         if (value.file.exists()) {
             if (!value.file.delete()) {
-                DefaultLogger.LOGGER.error(
+                DefaultLogger.error(
                         String.format("Failed to delete evicted file. [path=%s]", value.file.getAbsolutePath()));
             }
         }
