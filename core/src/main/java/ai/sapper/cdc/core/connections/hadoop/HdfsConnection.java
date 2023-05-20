@@ -65,7 +65,7 @@ public class HdfsConnection implements Connection {
 
                 setupHadoopConfig();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -112,7 +112,7 @@ public class HdfsConnection implements Connection {
 
                 setupHadoopConfig();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
             }
@@ -159,7 +159,8 @@ public class HdfsConnection implements Connection {
         Preconditions.checkState(settings instanceof HdfsConnectionSettings.HdfsSettings);
         synchronized (state) {
             if (!state.isConnected()
-                    && (state.state() == EConnectionState.Initialized || state.state() == EConnectionState.Closed)) {
+                    && (state.getState() == EConnectionState.Initialized
+                    || state.getState() == EConnectionState.Closed)) {
                 state.clear(EConnectionState.Initialized);
                 try {
                     fileSystem = FileSystem.get(hdfsConfig);
@@ -174,7 +175,7 @@ public class HdfsConnection implements Connection {
                     }
                     dfsClient = new DFSClient(URI.create(
                             ((HdfsConnectionSettings.HdfsSettings) settings).getPrimaryNameNodeUri()), hdfsConfig);
-                    state.state(EConnectionState.Connected);
+                    state.setState(EConnectionState.Connected);
                 } catch (Throwable t) {
                     state.error(t);
                     throw new ConnectionError("Error opening HDFS connection.", t);
@@ -189,7 +190,7 @@ public class HdfsConnection implements Connection {
      */
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     /**
@@ -197,7 +198,7 @@ public class HdfsConnection implements Connection {
      */
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     /**
@@ -226,7 +227,7 @@ public class HdfsConnection implements Connection {
     public void close() throws IOException {
         synchronized (state) {
             if (state.isConnected()) {
-                state.state(EConnectionState.Closed);
+                state.setState(EConnectionState.Closed);
             }
             try {
                 if (fileSystem != null) {
@@ -245,7 +246,7 @@ public class HdfsConnection implements Connection {
 
     public final FileSystem get() throws ConnectionError {
         if (!state.isConnected()) {
-            throw new ConnectionError(String.format("HDFS Connection not available. [state=%s]", state.state().name()));
+            throw new ConnectionError(String.format("HDFS Connection not available. [state=%s]", state.getState().name()));
         }
         return fileSystem;
     }

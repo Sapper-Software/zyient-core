@@ -52,7 +52,7 @@ public class AzureTableConnection implements Connection {
                 config.read();
                 settings = (AzureTableConnectionSettings) config.settings();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -84,7 +84,7 @@ public class AzureTableConnection implements Connection {
                 settings.validate();
 
                 this.connectionManager = env.connectionManager();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -103,7 +103,7 @@ public class AzureTableConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
                 this.settings = (AzureTableConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -113,7 +113,7 @@ public class AzureTableConnection implements Connection {
 
     @Override
     public Connection connect() throws ConnectionError {
-        if (state.state() != EConnectionState.Initialized) {
+        if (state.getState() != EConnectionState.Initialized) {
             throw new ConnectionError(String.format("[%s] Not initialized.", name()));
         }
         KeyStore keyStore = connectionManager().keyStore();
@@ -124,7 +124,7 @@ public class AzureTableConnection implements Connection {
                 client = new TableServiceClientBuilder()
                         .connectionString(cs)
                         .buildClient();
-                state.state(EConnectionState.Connected);
+                state.setState(EConnectionState.Connected);
                 return this;
             }
         } catch (Exception ex) {
@@ -134,12 +134,12 @@ public class AzureTableConnection implements Connection {
 
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     @Override
@@ -169,7 +169,7 @@ public class AzureTableConnection implements Connection {
                 client = null;
             }
             if (state.isConnected()) {
-                state.state(EConnectionState.Closed);
+                state.setState(EConnectionState.Closed);
             }
         }
     }

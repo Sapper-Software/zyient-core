@@ -64,7 +64,7 @@ public class MongoDbConnection implements Connection {
                 config.read();
                 settings = (MongoDbConnectionSettings) config.settings();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -96,7 +96,7 @@ public class MongoDbConnection implements Connection {
                 settings.validate();
 
                 this.connectionManager = env.connectionManager();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -115,7 +115,7 @@ public class MongoDbConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
                 this.settings = (MongoDbConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -129,11 +129,11 @@ public class MongoDbConnection implements Connection {
         Preconditions.checkNotNull(keyStore);
         synchronized (state) {
             if (state.isConnected()) return this;
-            Preconditions.checkState(state.state() == EConnectionState.Initialized);
+            Preconditions.checkState(state.getState() == EConnectionState.Initialized);
             try {
                 String url = createConnectionUrl(keyStore);
                 client = MongoClients.create(url);
-                state.state(EConnectionState.Connected);
+                state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -170,12 +170,12 @@ public class MongoDbConnection implements Connection {
 
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     @Override
@@ -208,6 +208,6 @@ public class MongoDbConnection implements Connection {
                 }
             }
         }
-        state.state(EConnectionState.Closed);
+        state.setState(EConnectionState.Closed);
     }
 }

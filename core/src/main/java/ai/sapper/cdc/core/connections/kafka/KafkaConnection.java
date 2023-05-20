@@ -120,7 +120,7 @@ public abstract class KafkaConnection implements MessageConnection {
      */
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     /**
@@ -128,7 +128,7 @@ public abstract class KafkaConnection implements MessageConnection {
      */
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     /**

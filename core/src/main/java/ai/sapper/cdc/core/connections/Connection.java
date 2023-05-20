@@ -20,11 +20,11 @@ public interface Connection extends Closeable {
 
         public ConnectionState() {
             super(EConnectionState.Error);
-            state(EConnectionState.Unknown);
+            setState(EConnectionState.Unknown);
         }
 
         public boolean isConnected() {
-            return (state() == EConnectionState.Connected);
+            return (getState() == EConnectionState.Connected);
         }
     }
 

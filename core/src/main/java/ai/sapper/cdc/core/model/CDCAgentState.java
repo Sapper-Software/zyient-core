@@ -1,8 +1,15 @@
 package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.AbstractState;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class CDCAgentState {
     public enum EAgentState {
         Unknown, Active, StandBy, Error, Stopped
@@ -12,7 +19,7 @@ public class CDCAgentState {
 
         public AgentState() {
             super(EAgentState.Error);
-            state(EAgentState.Unknown);
+            setState(EAgentState.Unknown);
         }
 
         public EAgentState parseState(@NonNull String state) {
@@ -24,7 +31,7 @@ public class CDCAgentState {
                 }
             }
             if (s != null) {
-                state(s);
+                setState(s);
             }
             return s;
         }

@@ -43,7 +43,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
                 }
                 setup();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -64,7 +64,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
                     throw new ConfigurationException("Connection not initialized in Consumer mode.");
                 }
                 setup();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -83,7 +83,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
                     throw new ConfigurationException("Connection not initialized in Consumer mode.");
                 }
                 setup();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -119,7 +119,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
                     parts.add(tp);
                 }
                 consumer.assign(parts);
-                state.state(EConnectionState.Connected);
+                state.setState(EConnectionState.Connected);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -145,7 +145,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
     public void close() throws IOException {
         synchronized (state) {
             if (state.isConnected()) {
-                state.state(EConnectionState.Closed);
+                state.setState(EConnectionState.Closed);
             }
             if (consumer != null) {
                 consumer.close();

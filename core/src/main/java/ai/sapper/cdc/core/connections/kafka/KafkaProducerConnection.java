@@ -33,7 +33,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
             super.init(xmlConfig, env);
             try {
                 setup();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -51,7 +51,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
             super.init(name, connection, path, env);
             try {
                 setup();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -67,7 +67,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
             super.setup(settings, env);
             try {
                 setup();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -95,7 +95,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
                 try {
                     producer = new KafkaProducer<K, V>(settings().getProperties());
 
-                    state.state(EConnectionState.Connected);
+                    state.setState(EConnectionState.Connected);
                 } catch (Throwable t) {
                     state.error(t);
                     throw new ConnectionError("Error opening HDFS connection.", t);
@@ -122,7 +122,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
     public void close() throws IOException {
         synchronized (state) {
             if (state.isConnected()) {
-                state.state(EConnectionState.Closed);
+                state.setState(EConnectionState.Closed);
             }
             if (producer != null) {
                 producer.close();

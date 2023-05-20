@@ -15,12 +15,12 @@ public class FileState extends AbstractState<EFileState> {
     }
 
     public boolean markedForUpdate() {
-        return (state() == EFileState.Updating
-                || state() == EFileState.PendingSync
-                || state() == EFileState.New);
+        return (getState() == EFileState.Updating
+                || getState() == EFileState.PendingSync
+                || getState() == EFileState.New);
     }
 
     public boolean synced() {
-        return state() == EFileState.Synced;
+        return getState() == EFileState.Synced;
     }
 }

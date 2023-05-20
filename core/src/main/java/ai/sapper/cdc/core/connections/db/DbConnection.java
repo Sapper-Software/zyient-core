@@ -70,7 +70,7 @@ public abstract class DbConnection implements Connection {
                 settings.validate();
 
                 this.connectionManager = env.connectionManager();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -90,7 +90,7 @@ public abstract class DbConnection implements Connection {
                 state.clear(EConnectionState.Unknown);
                 this.settings = (JdbcConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -133,12 +133,12 @@ public abstract class DbConnection implements Connection {
 
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     @Override

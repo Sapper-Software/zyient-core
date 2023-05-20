@@ -60,7 +60,7 @@ public class ZookeeperConnection implements Connection {
 
                 setup();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -117,7 +117,7 @@ public class ZookeeperConnection implements Connection {
                 settings.validate();
                 setup();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
             }
@@ -138,7 +138,7 @@ public class ZookeeperConnection implements Connection {
                 this.settings = (ZookeeperSettings) settings;
                 setup();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
             }
@@ -154,14 +154,15 @@ public class ZookeeperConnection implements Connection {
     public Connection connect() throws ConnectionError {
         synchronized (state) {
             if (!state.isConnected()
-                    && (state.state() == EConnectionState.Initialized || state.state() == EConnectionState.Closed)) {
+                    && (state.getState() == EConnectionState.Initialized
+                    || state.getState() == EConnectionState.Closed)) {
                 state.clear(EConnectionState.Initialized);
                 try {
                     client = builder.build();
                     client.start();
                     client.blockUntilConnected(15000, TimeUnit.MILLISECONDS);
 
-                    state.state(EConnectionState.Connected);
+                    state.setState(EConnectionState.Connected);
                 } catch (Throwable t) {
                     state.error(t);
                     throw new ConnectionError("Error opening HDFS connection.", t);
@@ -176,7 +177,7 @@ public class ZookeeperConnection implements Connection {
      */
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     /**
@@ -184,7 +185,7 @@ public class ZookeeperConnection implements Connection {
      */
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     /**
@@ -213,7 +214,7 @@ public class ZookeeperConnection implements Connection {
     public void close() throws IOException {
         synchronized (state) {
             if (state.isConnected()) {
-                state.state(EConnectionState.Closed);
+                state.setState(EConnectionState.Closed);
             }
             try {
                 if (client != null) {

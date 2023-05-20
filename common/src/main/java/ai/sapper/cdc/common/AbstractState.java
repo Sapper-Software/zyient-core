@@ -8,7 +8,6 @@ import lombok.experimental.Accessors;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
 public abstract class AbstractState<T extends Enum<?>> {
     private T state;
     @Setter(AccessLevel.NONE)

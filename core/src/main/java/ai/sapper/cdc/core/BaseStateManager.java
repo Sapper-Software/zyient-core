@@ -284,9 +284,9 @@ public abstract class BaseStateManager<T> implements Closeable {
                 Heartbeat heartbeat = new Heartbeat();
                 heartbeat.setName(name);
                 heartbeat.setType(state.getClass().getCanonicalName());
-                heartbeat.setState(state.state().name());
+                heartbeat.setState(state.getState().name());
                 if (state.hasError()) {
-                    heartbeat.setError(state.error());
+                    heartbeat.setError(state.getError());
                 }
                 heartbeat.setTimestamp(System.currentTimeMillis());
                 heartbeat.setModule(moduleInstance);

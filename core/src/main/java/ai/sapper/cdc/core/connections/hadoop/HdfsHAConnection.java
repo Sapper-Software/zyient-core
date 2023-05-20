@@ -62,7 +62,7 @@ public class HdfsHAConnection extends HdfsConnection {
 
                 setupHadoopConfig();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -85,7 +85,7 @@ public class HdfsHAConnection extends HdfsConnection {
 
                 setupHadoopConfig();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
@@ -120,7 +120,7 @@ public class HdfsHAConnection extends HdfsConnection {
 
                 setupHadoopConfig();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
             }
@@ -160,7 +160,8 @@ public class HdfsHAConnection extends HdfsConnection {
         Preconditions.checkState(settings instanceof HdfsConnectionSettings.HdfsHASettings);
         synchronized (state) {
             if (!state.isConnected()
-                    && (state.state() == EConnectionState.Initialized || state.state() == EConnectionState.Closed)) {
+                    && (state.getState() == EConnectionState.Initialized
+                    || state.getState() == EConnectionState.Closed)) {
                 state.clear(EConnectionState.Initialized);
                 try {
                     fileSystem = FileSystem.get(URI.create(String.format("hdfs://%s",
@@ -177,7 +178,7 @@ public class HdfsHAConnection extends HdfsConnection {
                     dfsClient = new DFSClient(URI.create(String.format("hdfs://%s",
                             ((HdfsConnectionSettings.HdfsHASettings) settings).getNameService())), hdfsConfig);
 
-                    state.state(EConnectionState.Connected);
+                    state.setState(EConnectionState.Connected);
                 } catch (Throwable t) {
                     state.error(t);
                     throw new ConnectionError("Error opening HDFS connection.", t);

@@ -98,8 +98,8 @@ public class DistributedLock extends ReentrantLock implements Closeable {
         if (id != null) {
             return new PathUtils.ZkPathBuilder()
                     .withPath(zkBasePath)
-                    .withPath(id.namespace)
                     .withPath(ZK_PATH_LOCK)
+                    .withPath(id.namespace)
                     .withPath(id.name)
                     .build();
         } else {

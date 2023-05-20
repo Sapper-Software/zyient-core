@@ -5,10 +5,10 @@ import ai.sapper.cdc.common.AbstractEnvState;
 public class EnvState extends AbstractEnvState<EEnvState> {
     public EnvState() {
         super(EEnvState.Error);
-        state(EEnvState.Unknown);
+        setState(EEnvState.Unknown);
     }
 
     public boolean isAvailable() {
-        return (state() == EEnvState.Initialized);
+        return (getState() == EEnvState.Initialized);
     }
 }

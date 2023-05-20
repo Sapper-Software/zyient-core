@@ -41,7 +41,7 @@ public class WebServiceConnection implements Connection {
         this.name = name;
         this.endpoint = new URL(endpoint);
         client = new JerseyClientBuilder().build();
-        state.state(EConnectionState.Initialized);
+        state.setState(EConnectionState.Initialized);
     }
 
     /**
@@ -69,7 +69,7 @@ public class WebServiceConnection implements Connection {
                 name = settings.getName();
                 endpoint = new URL(settings.getEndpoint());
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 state.error(ex);
@@ -106,7 +106,7 @@ public class WebServiceConnection implements Connection {
                 this.name = settings.getName();
                 endpoint = new URL(settings.getEndpoint());
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
             }
@@ -125,7 +125,7 @@ public class WebServiceConnection implements Connection {
                 name = this.settings.getName();
                 endpoint = new URL(this.settings.getEndpoint());
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 state.error(ex);
@@ -156,7 +156,7 @@ public class WebServiceConnection implements Connection {
      */
     @Override
     public Throwable error() {
-        return state.error();
+        return state.getError();
     }
 
     /**
@@ -164,7 +164,7 @@ public class WebServiceConnection implements Connection {
      */
     @Override
     public EConnectionState connectionState() {
-        return state.state();
+        return state.getState();
     }
 
     /**
@@ -172,7 +172,7 @@ public class WebServiceConnection implements Connection {
      */
     @Override
     public boolean isConnected() {
-        return state.state() == EConnectionState.Initialized;
+        return state.getState() == EConnectionState.Initialized;
     }
 
     @Override

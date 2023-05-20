@@ -59,16 +59,17 @@ public class FileSystemManager {
             zkBasePath = new PathUtils.ZkPathBuilder(settings.zkBasePath)
                     .withPath(__CONFIG_PATH)
                     .build();
-            DistributedLock lock = getLock();
-            lock.lock();
-            try {
-                readConfig(reader.config());
-                readConfig();
-                if (settings.autoSave) {
-                    save();
+            try (DistributedLock lock = getLock()) {
+                lock.lock();
+                try {
+                    readConfig(reader.config());
+                    readConfig();
+                    if (settings.autoSave) {
+                        save();
+                    }
+                } finally {
+                    lock.unlock();
                 }
-            } finally {
-                lock.unlock();
             }
             return this;
         } catch (Exception ex) {
@@ -141,8 +142,7 @@ public class FileSystemManager {
     @SuppressWarnings("unchecked")
     public <T extends FileSystem> T add(FileSystemSettings settings) throws IOException {
         Preconditions.checkNotNull(zkConnection);
-        try {
-            DistributedLock lock = getLock();
+        try (DistributedLock lock = getLock()) {
             lock.lock();
             try {
                 Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.getType());
@@ -163,19 +163,20 @@ public class FileSystemManager {
         Preconditions.checkNotNull(zkConnection);
         try {
             if (!fileSystems.isEmpty()) {
-                DistributedLock lock = getLock();
-                lock.lock();
-                try {
-                    CuratorFramework client = zkConnection.client();
-                    for (String name : fileSystems.keySet()) {
-                        FileSystem fs = fileSystems.get(name);
-                        FileSystemSettings settings = fs.settings;
-                        if (settings.getSource() == ESettingsSource.ZooKeeper) continue;
-                        save(name, settings, client);
-                        DefaultLogger.info(String.format("Saved fileSystem settings. [name=%s]", name));
+                try (DistributedLock lock = getLock()) {
+                    lock.lock();
+                    try {
+                        CuratorFramework client = zkConnection.client();
+                        for (String name : fileSystems.keySet()) {
+                            FileSystem fs = fileSystems.get(name);
+                            FileSystemSettings settings = fs.settings;
+                            if (settings.getSource() == ESettingsSource.ZooKeeper) continue;
+                            save(name, settings, client);
+                            DefaultLogger.info(String.format("Saved fileSystem settings. [name=%s]", name));
+                        }
+                    } finally {
+                        lock.unlock();
                     }
-                } finally {
-                    lock.unlock();
                 }
             }
         } catch (Exception ex) {
@@ -198,11 +199,11 @@ public class FileSystemManager {
     }
 
     private FileSystemSettings read(String path,
-                                               CuratorFramework client) throws Exception {
+                                    CuratorFramework client) throws Exception {
         if (client.checkExists().forPath(path) != null) {
             byte[] data = client.getData().forPath(path);
             if (data != null && data.length > 0) {
-                FileSystemSettings settings =  JSONUtils.read(data, FileSystemSettings.class);
+                FileSystemSettings settings = JSONUtils.read(data, FileSystemSettings.class);
                 settings.setSource(ESettingsSource.ZooKeeper);
                 return settings;
             }

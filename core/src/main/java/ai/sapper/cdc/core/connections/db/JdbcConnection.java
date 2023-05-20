@@ -42,7 +42,7 @@ public class JdbcConnection extends DbConnection {
                 config.read();
                 settings = (JdbcConnectionSettings) config.settings();
 
-                state.state(EConnectionState.Initialized);
+                state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -56,7 +56,7 @@ public class JdbcConnection extends DbConnection {
         Preconditions.checkNotNull(keyStore);
         synchronized (state) {
             if (state.isConnected()) return this;
-            Preconditions.checkState(state.state() == EConnectionState.Initialized);
+            Preconditions.checkState(state.getState() == EConnectionState.Initialized);
             try {
                 String jdbc = createJdbcUrl(keyStore);
                 poolDataSource = new ComboPooledDataSource();
@@ -64,7 +64,7 @@ public class JdbcConnection extends DbConnection {
                 poolDataSource.setDriverClass(settings.getJdbcDriver());
                 poolDataSource.setInitialPoolSize(8);
 
-                state.state(EConnectionState.Connected);
+                state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
                 throw new ConnectionError(ex);
@@ -87,7 +87,7 @@ public class JdbcConnection extends DbConnection {
     public void close() throws IOException {
         synchronized (state) {
             if (state.isConnected()) {
-                state.state(EConnectionState.Closed);
+                state.setState(EConnectionState.Closed);
             }
             if (poolDataSource != null) {
                 poolDataSource.close();

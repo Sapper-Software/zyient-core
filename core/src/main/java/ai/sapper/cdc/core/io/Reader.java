@@ -39,7 +39,10 @@ public abstract class Reader implements Closeable {
                                        @NonNull FileInode inode,
                                        @NonNull FileSystem fs) throws IOException {
         if (inode.isCompressed()) {
-            return fs.decompress(infile);
+            File outf = fs.decompress(infile);
+            if (outf != null) {
+                return outf;
+            }
         }
         return infile;
     }

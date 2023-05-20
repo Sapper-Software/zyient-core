@@ -362,10 +362,10 @@ public class S3FileSystem extends RemoteFileSystem {
         try {
             inode.setSyncedSize(((HeadObjectResponse) response).contentLength());
             if (clearLock) {
-                inode.getState().state(EFileState.Synced);
+                inode.getState().setState(EFileState.Synced);
                 fileUnlock(inode);
             } else {
-                inode.getState().state(EFileState.Updating);
+                inode.getState().setState(EFileState.Updating);
                 fileUpdateLock(inode);
             }
             updateInode(inode, inode.getPathInfo());
