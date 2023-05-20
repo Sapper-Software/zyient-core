@@ -1,7 +1,6 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystemSettings;
 import lombok.Getter;
 import lombok.Setter;

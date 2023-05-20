@@ -21,6 +21,7 @@ public abstract class PathInfo {
     public static final String CONFIG_KEY_TYPE = "type";
     public static final String CONFIG_KEY_DOMAIN = "domain";
     public static final String CONFIG_KEY_PATH = "path";
+    public static final String CONFIG_IS_DIRECTORY = "isDirectory";
 
     private final FileSystem fs;
     private final String domain;
@@ -32,10 +33,10 @@ public abstract class PathInfo {
                        @NonNull Inode node) {
         this.fs = fs;
         this.directory = node.isDirectory();
-        domain = node.getPath().get(CONFIG_KEY_DOMAIN);
+        domain = node.getDomain();
         Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
-        path = node.getPath().get(CONFIG_KEY_PATH);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
+        path = node.getAbsolutePath();
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
     }
 
     protected PathInfo(@NonNull FileSystem fs,
@@ -52,7 +53,8 @@ public abstract class PathInfo {
         domain = config.get(CONFIG_KEY_DOMAIN);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
         path = config.get(CONFIG_KEY_PATH);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
+        directory = Boolean.parseBoolean(config.get(CONFIG_IS_DIRECTORY));
     }
 
     public String parent() {
@@ -77,6 +79,7 @@ public abstract class PathInfo {
         config.put(CONFIG_KEY_TYPE, getClass().getCanonicalName());
         config.put(CONFIG_KEY_DOMAIN, domain);
         config.put(CONFIG_KEY_PATH, path);
+        config.put(CONFIG_IS_DIRECTORY, String.valueOf(directory));
 
         return config;
     }

@@ -13,8 +13,8 @@ import java.io.IOException;
 public class AzureReader extends RemoteReader {
     private final AzurePathInfo pathInfo;
 
-    public AzureReader(@NonNull FileInode path,
-                       @NonNull AzureFileSystem fs) throws IOException {
+    public AzureReader(@NonNull AzureFileSystem fs,
+                       @NonNull FileInode path) throws IOException {
         super(path, fs);
         if (path.getPathInfo() != null) {
             pathInfo = (AzurePathInfo) path.getPathInfo();

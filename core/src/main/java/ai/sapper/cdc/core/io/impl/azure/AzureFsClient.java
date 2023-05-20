@@ -1,8 +1,6 @@
 package ai.sapper.cdc.core.io.impl.azure;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
@@ -10,7 +8,6 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

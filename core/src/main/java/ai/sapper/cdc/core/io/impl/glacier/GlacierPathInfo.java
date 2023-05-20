@@ -1,11 +1,9 @@
 package ai.sapper.cdc.core.io.impl.glacier;
 
 import ai.sapper.cdc.core.io.model.ArchivePathInfo;
-import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.services.glacier.GlacierClient;
 
 import java.io.IOException;

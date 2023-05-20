@@ -1,6 +1,5 @@
 package ai.sapper.cdc.core.io;
 
-import ai.sapper.cdc.common.schema.SchemaEntity;
 import ai.sapper.cdc.core.io.model.ArchivePathInfo;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import lombok.Getter;

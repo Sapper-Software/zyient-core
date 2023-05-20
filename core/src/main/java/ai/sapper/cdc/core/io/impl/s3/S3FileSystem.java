@@ -1,8 +1,6 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
@@ -15,11 +13,9 @@ import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
@@ -112,58 +108,9 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public DirectoryInode mkdir(@NonNull DirectoryInode parent, @NonNull String name) throws IOException {
-        String path = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), name));
-        S3PathInfo pp = (S3PathInfo) parsePathInfo(parent.getPath());
-        S3PathInfo pi = new S3PathInfo(this, pp.domain(), pp.bucket(), path);
-        Inode node = createInode(InodeType.Directory, pi);
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
-        if (node.getPathInfo() == null)
-            node.setPathInfo(pi);
-        return (DirectoryInode) updateInode(node, pi);
-    }
-
-    @Override
-    public DirectoryInode mkdirs(@NonNull String domain, @NonNull String path) throws IOException {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        path = getAbsolutePath(path, domain);
-        Container container = domainMap.get(domain);
-        if (!(container instanceof S3Container)) {
-            throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
-        }
-
-        S3PathInfo pi = new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path);
-        Inode node = createInode(InodeType.Directory, pi);
-
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
-        if (node.getPathInfo() == null)
-            node.setPathInfo(pi);
-        return (DirectoryInode) updateInode(node, pi);
-    }
-
-    @Override
-    public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
-        path = getAbsolutePath(path, domain);
-        Container container = domainMap.get(domain);
-        if (!(container instanceof S3Container)) {
-            throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
-        }
-        S3PathInfo pi = new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path);
-        return create(pi);
-    }
-
-    @Override
     public FileInode create(@NonNull PathInfo pathInfo) throws IOException {
         Preconditions.checkArgument(pathInfo instanceof S3PathInfo);
-        S3PathInfo pi = (S3PathInfo) pathInfo;
-        Inode node = createInode(InodeType.File, pi);
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
-        if (node.getPathInfo() == null)
-            node.setPathInfo(pi);
-        return (FileInode) updateInode(node, pi);
+        return super.create(pathInfo);
     }
 
     /**
@@ -199,7 +146,7 @@ public class S3FileSystem extends RemoteFileSystem {
                         }
                     }
                     return ret;
-                } else {
+                } else if (!path.directory()) {
                     DeleteObjectRequest dr = DeleteObjectRequest.builder()
                             .bucket(s3path.bucket())
                             .key(s3path.path())
@@ -214,6 +161,9 @@ public class S3FileSystem extends RemoteFileSystem {
     @Override
     public boolean exists(@NonNull PathInfo path) throws IOException {
         if (path instanceof S3PathInfo) {
+            if (path.directory()) {
+                return true;
+            }
             try {
                 HeadObjectRequest request = HeadObjectRequest.builder()
                         .key(((S3PathInfo) path).bucket())
@@ -281,6 +231,20 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
+    public PathInfo createSubPath(@NonNull PathInfo parent, @NonNull String path) {
+        Preconditions.checkArgument(parent instanceof S3PathInfo);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
+        return new S3PathInfo(this, parent.domain(), ((S3PathInfo) parent).bucket(), path);
+    }
+
+    @Override
+    public PathInfo createPath(@NonNull String domain, @NonNull Container container, @NonNull String path) {
+        Preconditions.checkArgument(container instanceof S3Container);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
+        return new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path);
+    }
+
+    @Override
     public FileInode upload(@NonNull File source,
                             @NonNull FileInode inode,
                             boolean clearLock) throws IOException {
@@ -326,13 +290,6 @@ public class S3FileSystem extends RemoteFileSystem {
         return null;
     }
 
-    private File getInodeTempPath(S3PathInfo path) throws IOException {
-        String dir = FilenameUtils.getPath(path.path());
-        dir = PathUtils.formatPath(String.format("%s/%s", path.domain(), dir));
-        String fname = FilenameUtils.getName(path.path());
-        return createTmpFile(dir, fname);
-    }
-
     @Override
     public long size(@NonNull PathInfo path) throws IOException {
         if (path instanceof S3PathInfo) {
@@ -368,29 +325,6 @@ public class S3FileSystem extends RemoteFileSystem {
                 inode.getState().setState(EFileState.Updating);
                 fileUpdateLock(inode);
             }
-            updateInode(inode, inode.getPathInfo());
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            DefaultLogger.error(LOG, ex.getLocalizedMessage());
-            throw new RuntimeException(ex);
-        }
-    }
-
-    @Override
-    public void onError(@NonNull FileInode inode, @NonNull Throwable error) {
-        try {
-            String temp = null;
-            if (inode.getLock() != null) {
-                temp = inode.getLock().getLocalPath();
-            }
-            DefaultLogger.error(LOG,
-                    String.format("Error uploading file. [domain=%s][path=%s][temp=%s][error=%s]",
-                            inode.getDomain(),
-                            inode.getAbsolutePath(),
-                            temp,
-                            error.getLocalizedMessage()));
-            DefaultLogger.stacktrace(error);
-            inode.getState().error(error);
             updateInode(inode, inode.getPathInfo());
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

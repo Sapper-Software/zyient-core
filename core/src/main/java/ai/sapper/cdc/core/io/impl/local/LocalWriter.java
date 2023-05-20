@@ -7,7 +7,6 @@ import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.model.EFileState;
 import ai.sapper.cdc.core.io.model.FileInode;
-import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -17,11 +16,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
 
 @Getter
 @Accessors(fluent = true)
@@ -154,7 +148,7 @@ public class LocalWriter extends Writer {
                                         inode.getDomain(), inode.getAbsolutePath()));
                     }
                     String path = inode.getLock().getLocalPath();
-                    if (path.compareTo(temp.getAbsolutePath()) == 0) {
+                    if (path.compareTo(temp.getAbsolutePath()) != 0) {
                         throw new IOException(String.format("[%s][%s] Local path mismatch. [expected=%s][locked=%s]",
                                 inode.getDomain(), inode.getAbsolutePath(),
                                 temp.getAbsolutePath(), path));

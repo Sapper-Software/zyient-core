@@ -1,6 +1,5 @@
 package ai.sapper.cdc.core.io.impl.local;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.model.Container;
 import ai.sapper.cdc.core.io.model.PathInfo;
