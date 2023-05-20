@@ -5,6 +5,7 @@ import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
+import ai.sapper.cdc.core.io.impl.FileUploadCallback;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
 import ai.sapper.cdc.core.io.model.Container;
 import ai.sapper.cdc.core.io.model.FileInode;
@@ -15,6 +16,7 @@ import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.ListBlobsOptions;
+import com.azure.storage.blob.options.BlobUploadFromFileOptions;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -26,6 +28,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Map;
 
 @Getter
@@ -191,8 +194,18 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public FileInode upload(@NonNull File source, @NonNull FileInode path, boolean clearLock) throws IOException {
-        return null;
+    public FileInode upload(@NonNull File source,
+                            @NonNull FileInode inode,
+                            boolean clearLock) throws IOException {
+        AzurePathInfo path = (AzurePathInfo) inode.getPathInfo();
+        if (path == null) {
+            throw new IOException(
+                    String.format("Path information not set in inode. [domain=%s, path=%s]",
+                            inode.getDomain(), inode.getAbsolutePath()));
+        }
+        AzureFileUploader task = new AzureFileUploader(this, client, inode, this, clearLock);
+        uploader.submit(task);
+        return inode;
     }
 
     @Override
@@ -233,9 +246,47 @@ public class AzureFileSystem extends RemoteFileSystem {
         if (path instanceof AzurePathInfo) {
             AzurePathInfo ap = (AzurePathInfo) path;
             BlobClient c = client.getContainer(ap.container()).getBlobClient(ap.path());
-            return c.getProperties().getBlobSize();
+            if (c != null && c.exists())
+                return c.getProperties().getBlobSize();
         }
         throw new IOException(String.format("Invalid Path handle. [type=%s]", path.getClass().getCanonicalName()));
+    }
+
+    public static class AzureFileUploader extends FileUploader {
+        private final AzureFsClient client;
+
+        protected AzureFileUploader(@NonNull RemoteFileSystem fs,
+                                    @NonNull AzureFsClient client,
+                                    @NonNull FileInode inode,
+                                    @NonNull FileUploadCallback callback,
+                                    boolean clearLock) {
+            super(fs, inode, callback, clearLock);
+            this.client = client;
+        }
+
+        @Override
+        protected Object upload() throws Throwable {
+            AzurePathInfo pi = (AzurePathInfo) inode.getPathInfo();
+            if (pi == null) {
+                throw new Exception("Azure Path information not specified...");
+            }
+            File source = pi.temp();
+            if (source == null) {
+                throw new Exception("File to upload not specified...");
+            }
+            if (!source.exists()) {
+                throw new IOException(String.format("Source file not found. [path=%s]", source.getAbsolutePath()));
+            }
+            BlobContainerClient cc = client.getContainer(pi.container());
+            if (cc == null || !cc.exists()) {
+                throw new IOException(String.format("Azure Container not found. [container=%s]", pi.container()));
+            }
+            BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(source.getAbsolutePath());
+            options.setTags(pi.pathConfig());
+            Duration timeout = Duration.ofSeconds(10);
+            BlobClient bc = cc.getBlobClient(pi.path());
+            return bc.uploadFromFileWithResponse(options, timeout, null);
+        }
     }
 
     public static class AzureFileSystemConfigReader extends RemoteFileSystemConfigReader {
