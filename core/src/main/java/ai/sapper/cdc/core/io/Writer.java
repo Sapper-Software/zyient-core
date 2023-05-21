@@ -101,8 +101,12 @@ public abstract class Writer implements Closeable {
     }
 
     protected long getLocalUpdateTime() throws IOException {
-        if (temp.exists()) {
-            Path p = Paths.get(temp.toURI());
+        return getLocalUpdateTime(temp);
+    }
+
+    private long getLocalUpdateTime(File file) throws IOException {
+        if (file.exists()) {
+            Path p = Paths.get(file.toURI());
             BasicFileAttributes attr =
                     Files.readAttributes(p, BasicFileAttributes.class);
             FileTime ft = attr.lastModifiedTime();

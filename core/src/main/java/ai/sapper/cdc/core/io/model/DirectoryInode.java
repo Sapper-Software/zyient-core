@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -13,6 +15,7 @@ import lombok.Setter;
 public class DirectoryInode extends Inode {
     @JsonIgnore
     private boolean synced = false;
+    private Map<String, String> archivePath;
 
     public DirectoryInode() {
     }

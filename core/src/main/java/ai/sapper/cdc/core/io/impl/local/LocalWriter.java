@@ -125,19 +125,22 @@ public class LocalWriter extends Writer {
     @Override
     public void commit(boolean clearLock) throws IOException {
         try {
-            File toUpload = temp;
+            File toUpload = null;
             if (inode.isCompressed()) {
                 toUpload = fs.compress(temp);
+            } else {
+                toUpload = fs.createTmpFile();
+                FileUtils.copyFile(temp, toUpload);
             }
             if (path.exists()) {
                 if (!path.file.delete()) {
                     throw new IOException(
                             String.format("Failed to delete existing file. [path=%s]", path.file.getAbsolutePath()));
                 }
-                if (!toUpload.renameTo(path.file)) {
-                    throw new IOException(
-                            String.format("Failed to rename file. [path=%s]", toUpload.getAbsolutePath()));
-                }
+            }
+            if (!toUpload.renameTo(path.file)) {
+                throw new IOException(
+                        String.format("Failed to rename file. [path=%s]", toUpload.getAbsolutePath()));
             }
             try (DistributedLock lock = fs.getLock(inode)) {
                 lock.lock();
@@ -147,21 +150,26 @@ public class LocalWriter extends Writer {
                                 String.format("[%s][%s] File not locked or locked by another process.",
                                         inode.getDomain(), inode.getAbsolutePath()));
                     }
-                    String path = inode.getLock().getLocalPath();
-                    if (path.compareTo(temp.getAbsolutePath()) != 0) {
+                    String p = inode.getLock().getLocalPath();
+                    if (p.compareTo(temp.getAbsolutePath()) != 0) {
                         throw new IOException(String.format("[%s][%s] Local path mismatch. [expected=%s][locked=%s]",
                                 inode.getDomain(), inode.getAbsolutePath(),
-                                temp.getAbsolutePath(), path));
+                                temp.getAbsolutePath(), p));
                     }
 
-                    inode.setSyncedSize(fileSize(temp));
+                    inode.setSyncedSize(fileSize(path.file));
                     inode.setSyncTimestamp(getLocalUpdateTime());
                     inode.getState().setState(EFileState.Synced);
                     if (clearLock) {
                         inode = (FileInode) fs.fileUnlock(inode);
+                        if (!temp.delete()) {
+                            throw new IOException(
+                                    String.format("Failed to delete local file. [path=%s]", temp.getAbsolutePath()));
+                        }
                     } else {
                         inode = (FileInode) fs.fileUpdateLock(inode);
                     }
+                    fs.updateInode(inode, inode.getPathInfo());
                 } finally {
                     lock.unlock();
                 }

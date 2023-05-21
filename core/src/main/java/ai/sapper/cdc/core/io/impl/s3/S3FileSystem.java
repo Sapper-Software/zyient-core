@@ -318,6 +318,7 @@ public class S3FileSystem extends RemoteFileSystem {
         Preconditions.checkArgument(response instanceof HeadObjectResponse);
         try {
             inode.setSyncedSize(((HeadObjectResponse) response).contentLength());
+            inode.setSyncTimestamp(((HeadObjectResponse) response).lastModified().toEpochMilli());
             if (clearLock) {
                 inode.getState().setState(EFileState.Synced);
                 fileUnlock(inode);

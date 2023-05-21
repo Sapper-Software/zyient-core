@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.io.impl.local;
+package ai.sapper.cdc.core.io.impl.azure;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.services.EConfigFileType;
@@ -22,10 +22,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LocalFileSystemTest {
-    private static final String __CONFIG_FILE = "src/test/resources/fs-local-test.xml";
-    private static final String FS_DEMO = "local-test-1";
-    private static final String FS_DEMO_DOMAIN = "local-demo-1";
+class AzureFileSystemTest {
+    private static final String __CONFIG_FILE = "src/test/resources/fs-azure-test.xml";
+    private static final String FS_DEMO = "azure-test-1";
+    private static final String FS_DEMO_DOMAIN = "azure-demo-1";
 
     private static XMLConfiguration xmlConfiguration = null;
     private static FileSystemManager manager;
@@ -49,40 +49,16 @@ class LocalFileSystemTest {
     }
 
     @Test
-    void mkdir() {
-        try {
-            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
-            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
-            assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
-            DirectoryInode cdi = fs.mkdir(di, "child");
-            assertNotNull(cdi);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", cdi.getAbsolutePath()));
-            d = new File(cdi.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            DefaultLogger.error(ex.getLocalizedMessage());
-            fail(ex);
-        }
-    }
-
-    @Test
     void create() {
         try {
             String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
             assertNotNull(fi);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", fi.getAbsolutePath()));
-            d = new File(fi.getAbsolutePath());
-            assertTrue(d.exists() && d.isFile());
+            DefaultLogger.info(String.format("Created file. [path=%s]", fi.getAbsolutePath()));
+
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
@@ -97,24 +73,20 @@ class LocalFileSystemTest {
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.get(fi.getPathInfo());
             assertNotNull(fi);
-            d = new File(fi.getAbsolutePath());
-            assertTrue(d.exists() && d.isFile());
 
             assertTrue(fs.delete(fi.getPathInfo()));
-            assertFalse(d.exists());
+            fi = (FileInode) fs.get(fi.getPathInfo());
+            assertNull(fi);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
             fail(ex);
         }
     }
-
 
     @Test
     void getReader() {
@@ -123,21 +95,15 @@ class LocalFileSystemTest {
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.get(fi.getPathInfo());
             assertNotNull(fi);
-            d = new File(fi.getAbsolutePath());
-            assertTrue(d.exists() && d.isFile());
             long written = 0;
             try (Writer writer = fs.writer(fi)) {
                 for (int ii = 0; ii < 200; ii++) {
                     String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
-                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
-                    writer.write(bytes);
-                    written += bytes.length;
+                    written = writer.write(str.getBytes(StandardCharsets.UTF_8));
                 }
                 writer.commit(true);
             }

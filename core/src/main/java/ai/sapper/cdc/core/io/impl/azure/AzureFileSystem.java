@@ -7,14 +7,13 @@ import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.impl.FileUploadCallback;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
-import ai.sapper.cdc.core.io.model.Container;
-import ai.sapper.cdc.core.io.model.FileInode;
-import ai.sapper.cdc.core.io.model.FileSystemSettings;
-import ai.sapper.cdc.core.io.model.PathInfo;
+import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.keystore.KeyStore;
+import com.azure.core.http.rest.Response;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobItem;
+import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobUploadFromFileOptions;
 import com.google.common.base.Preconditions;
@@ -172,11 +171,30 @@ public class AzureFileSystem extends RemoteFileSystem {
         return new AzureWriter(inode, this, overwrite).open();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public void onSuccess(@NonNull FileInode inode,
                           @NonNull Object response,
                           boolean clearLock) {
-
+        Preconditions.checkArgument(response instanceof Response);
+        try {
+            Response<BlockBlobItem> r = (Response<BlockBlobItem>) response;
+            inode.setSyncTimestamp(r.getValue().getLastModified().toInstant().toEpochMilli());
+            long size = size(inode.getPathInfo());
+            inode.setSyncedSize(size);
+            if (clearLock) {
+                inode.getState().setState(EFileState.Synced);
+                fileUnlock(inode);
+            } else {
+                inode.getState().setState(EFileState.Updating);
+                fileUpdateLock(inode);
+            }
+            updateInode(inode, inode.getPathInfo());
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(LOG, ex.getLocalizedMessage());
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override
@@ -203,7 +221,8 @@ public class AzureFileSystem extends RemoteFileSystem {
                     String.format("Path information not set in inode. [domain=%s, path=%s]",
                             inode.getDomain(), inode.getAbsolutePath()));
         }
-        AzureFileUploader task = new AzureFileUploader(this, client, inode, this, clearLock);
+        AzureFileUploader task = new AzureFileUploader(this, client, inode,
+                this, clearLock, settings().getUploadTimeout());
         uploader.submit(task);
         return inode;
     }
@@ -254,14 +273,17 @@ public class AzureFileSystem extends RemoteFileSystem {
 
     public static class AzureFileUploader extends FileUploader {
         private final AzureFsClient client;
+        private final long uploadTimeout;
 
         protected AzureFileUploader(@NonNull RemoteFileSystem fs,
                                     @NonNull AzureFsClient client,
                                     @NonNull FileInode inode,
                                     @NonNull FileUploadCallback callback,
-                                    boolean clearLock) {
+                                    boolean clearLock,
+                                    long uploadTimeout) {
             super(fs, inode, callback, clearLock);
             this.client = client;
+            this.uploadTimeout = uploadTimeout;
         }
 
         @Override
@@ -283,7 +305,7 @@ public class AzureFileSystem extends RemoteFileSystem {
             }
             BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(source.getAbsolutePath());
             options.setTags(pi.pathConfig());
-            Duration timeout = Duration.ofSeconds(10);
+            Duration timeout = Duration.ofSeconds(uploadTimeout);
             BlobClient bc = cc.getBlobClient(pi.path());
             return bc.uploadFromFileWithResponse(options, timeout, null);
         }

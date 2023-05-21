@@ -32,10 +32,10 @@
                     </zk>
                     <containers>
                         <container>
-                            <domain>demo-1</domain>
-                            <path>/tmp/test/fs/demo-1</path>
+                            <domain>local-demo-1</domain>
+                            <path>/tmp/test/fs/local-demo-1</path>
                         </container>
-                        <default>demo-1</default>
+                        <default>local-demo-1</default>
                     </containers>
                 </fileSystem>
             </fileSystems>
