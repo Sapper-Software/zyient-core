@@ -135,7 +135,7 @@ public abstract class FileSystem implements Closeable {
         return this;
     }
 
-    public DistributedLock getLock(@NonNull Inode inode,
+    protected DistributedLock getLock(@NonNull Inode inode,
                                    @NonNull CuratorFramework client) throws Exception {
         Preconditions.checkState(state.isConnected());
         String zp = inode.getZkPath();
@@ -145,7 +145,7 @@ public abstract class FileSystem implements Closeable {
         return env.createCustomLock(inode.getName(), zp, zkConnection, settings.getLockTimeout());
     }
 
-    public DistributedLock getLock(@NonNull Inode inode) throws Exception {
+    protected DistributedLock getLock(@NonNull Inode inode) throws Exception {
         Preconditions.checkState(state.isConnected());
         CuratorFramework client = zkConnection.client();
         return getLock(inode, client);

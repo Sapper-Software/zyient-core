@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.core.state.BaseStateManager;
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
 

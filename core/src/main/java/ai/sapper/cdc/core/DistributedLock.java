@@ -325,6 +325,9 @@ public class DistributedLock extends ReentrantLock implements Closeable {
     @Override
     public void close() throws IOException {
         refereces.decrementAndGet();
+        if (isLockByThread()) {
+            unlock();
+        }
         if (builder != null) {
             if (builder.removeLock(this)) {
                 DefaultLogger.trace(String.format("Removed lock instance. [name=%s]", lockPath()));

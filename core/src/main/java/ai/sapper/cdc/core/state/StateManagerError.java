@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core;
+package ai.sapper.cdc.core.state;
 
 import java.security.PrivilegedActionException;
 

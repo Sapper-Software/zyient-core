@@ -1,78 +1,75 @@
 package ai.sapper.cdc.core.messaging;
 
-import ai.sapper.cdc.common.utils.JSONUtils;
-import ai.sapper.cdc.common.utils.PathUtils;
-import ai.sapper.cdc.core.connections.ZookeeperConnection;
+import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.processing.ProcessorState;
+import ai.sapper.cdc.core.state.OffsetStateManager;
+import ai.sapper.cdc.core.state.OffsetStateManagerSettings;
+import ai.sapper.cdc.core.state.StateManagerError;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import org.apache.curator.framework.CuratorFramework;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Accessors(fluent = true)
-public class KafkaStateManager {
-    private final String name;
-    private final String topic;
-    private final ZookeeperConnection zkConnection;
-    private final String zkStatePath;
+public class KafkaStateManager extends OffsetStateManager<KafkaOffset> {
 
-    public KafkaStateManager(@NonNull String name,
-                             @NonNull String topic,
-                             @NonNull ZookeeperConnection zkConnection,
-                             @NonNull String zkStatePath) {
-        this.name = name;
-        this.topic = topic;
-        this.zkConnection = zkConnection;
-        this.zkStatePath = zkStatePath;
-    }
-
-
-    public KafkaMessageState getState(long partition) throws Exception {
-        String path = getZkPath(partition);
-        CuratorFramework client = zkConnection().client();
-
-        KafkaMessageState state = null;
-        if (client.checkExists().forPath(path) == null) {
-            client.create().creatingParentContainersIfNeeded().forPath(path);
-
-            state = new KafkaMessageState();
-            state.setName(name);
-            state.setPath(path);
-            state.setTopic(topic);
-            state.setPartition(partition);
-            state.setUpdateTimestamp(System.currentTimeMillis());
-
-            byte[] data = JSONUtils.asBytes(state, KafkaMessageState.class);
-            client.setData().forPath(path, data);
-        } else {
-            byte[] data = client.getData().forPath(path);
-            if (data == null || data.length == 0) {
-                throw new MessagingError(String.format("Invalid Kafka Message state. [path=%s]", path));
-            }
-            state = JSONUtils.read(data, KafkaMessageState.class);
+    @Override
+    public OffsetStateManager<KafkaOffset> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                                @NonNull String path,
+                                                @NonNull BaseEnv<?> env) throws StateManagerError {
+        try {
+            super.init(xmlConfig, path, env, KafkaConsumerOffsetSettings.class);
+            state().setState(ProcessorState.EProcessorState.Running);
+            return this;
+        } catch (Throwable ex) {
+            state().error(ex);
+            DefaultLogger.stacktrace(ex);
+            throw new StateManagerError(ex);
         }
-
-        return state;
     }
 
-    public KafkaMessageState updateState(long partition, long offset) throws Exception {
-        KafkaMessageState state = getState(partition);
+    @Override
+    public OffsetStateManager<KafkaOffset> init(@NonNull OffsetStateManagerSettings settings,
+                                                @NonNull BaseEnv<?> env) throws StateManagerError {
+        try {
+            setup(settings, env);
+            state().setState(ProcessorState.EProcessorState.Running);
+            return this;
+        } catch (Throwable ex) {
+            state().error(ex);
+            DefaultLogger.stacktrace(ex);
+            throw new StateManagerError(ex);
+        }
+    }
+
+    public KafkaConsumerState get(@NonNull String topic, int partition) throws StateManagerError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(topic));
+        Preconditions.checkArgument(partition >= 0);
+        String name = String.format("%s/%d", topic, partition);
+        return get(KafkaConsumerState.OFFSET_TYPE, name, KafkaConsumerState.class);
+    }
+
+    public KafkaConsumerState create(@NonNull String topic, int partition) throws StateManagerError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(topic));
+        Preconditions.checkArgument(partition >= 0);
+        String name = String.format("%s/%d", topic, partition);
+        KafkaConsumerState state = create(KafkaConsumerState.OFFSET_TYPE, name, KafkaConsumerState.class);
+        state.setTopic(topic);
+        state.setPartition(partition);
+        KafkaOffset offset = new KafkaOffset();
+        offset.setTopic(topic);
+        offset.setPartition(partition);
         state.setOffset(offset);
-        state.setUpdateTimestamp(System.currentTimeMillis());
 
-        CuratorFramework client = zkConnection().client();
-        String path = getZkPath(partition);
-        byte[] data = JSONUtils.asBytes(state, KafkaMessageState.class);
-        client.setData().forPath(path, data);
-
-        return state;
+        return update(state);
     }
 
-    private String getZkPath(long partition) {
-        return new PathUtils.ZkPathBuilder(zkStatePath)
-                .withPath(name)
-                .withPath(topic)
-                .withPath(String.valueOf(partition))
-                .build();
+    public KafkaConsumerState update(@NonNull KafkaConsumerState offset) throws StateManagerError {
+        return super.update(offset);
     }
 }

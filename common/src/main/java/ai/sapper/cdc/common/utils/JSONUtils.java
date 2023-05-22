@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import lombok.NonNull;
+import org.apache.curator.framework.CuratorFramework;
 
 import java.nio.charset.Charset;
 import java.util.Map;
@@ -46,5 +47,17 @@ public class JSONUtils {
             }
         }
         return false;
+    }
+
+    public static <T> T read(@NonNull CuratorFramework client,
+                             @NonNull String path,
+                             @NonNull Class<? extends T> type) throws Exception {
+        if (client.checkExists().forPath(path) != null) {
+            byte[] data = client.getData().forPath(path);
+            if (data != null && data.length > 0) {
+                return JSONUtils.read(data, type);
+            }
+        }
+        return null;
     }
 }

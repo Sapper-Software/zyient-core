@@ -10,6 +10,7 @@ import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.FileSystemManager;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.model.ModuleInstance;
+import ai.sapper.cdc.core.state.BaseStateManager;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -51,7 +52,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private List<ExitCallback<T>> exitCallbacks;
     private AbstractEnvState<T> state;
     private ModuleInstance moduleInstance;
-    private BaseStateManager<?> stateManager;
+    private BaseStateManager stateManager;
     private AuditLogger auditLogger;
     private BaseEnvConfig config;
     private List<InetAddress> hostIPs;
@@ -115,7 +116,6 @@ public abstract class BaseEnv<T extends Enum<?>> {
             moduleInstance = new ModuleInstance()
                     .withIp(NetUtils.getInetAddress(hostIPs))
                     .withStartTime(System.currentTimeMillis());
-            moduleInstance.setSource(settings().getSource());
             moduleInstance.setModule(settings().getModule());
             moduleInstance.setName(settings().getInstance());
             moduleInstance.setInstanceId(moduleInstance.id());
@@ -129,8 +129,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
                         .withModuleInstance(moduleInstance);
                 stateManager
                         .init(rootConfig,
-                                this,
-                                settings.getSource());
+                                this);
             }
             if (ConfigReader.checkIfNodeExists(rootConfig,
                     AuditLogger.__CONFIG_PATH)) {
@@ -278,7 +277,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     }
 
     public String source() {
-        return moduleInstance.getSource();
+        return settings.getSource();
     }
 
 

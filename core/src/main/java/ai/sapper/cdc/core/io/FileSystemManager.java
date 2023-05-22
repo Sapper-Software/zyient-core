@@ -139,18 +139,66 @@ public class FileSystemManager {
         return (T) fileSystems.get(name);
     }
 
-    @SuppressWarnings("unchecked")
-    public <T extends FileSystem> T add(FileSystemSettings settings) throws IOException {
+    public <T extends FileSystem> T add(@NonNull FileSystemSettings settings) throws IOException {
         Preconditions.checkNotNull(zkConnection);
         try (DistributedLock lock = getLock()) {
             lock.lock();
             try {
-                Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.getType());
-                FileSystem fs = cls.getDeclaredConstructor().newInstance();
-                fs = addFs(settings, fs);
+                return addOrUpdate(settings);
+            } finally {
+                lock.unlock();
+            }
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends FileSystem> T addOrUpdate(FileSystemSettings settings) throws Exception {
+        Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.getType());
+        FileSystem fs = cls.getDeclaredConstructor().newInstance();
+        fs = addFs(settings, fs);
+        CuratorFramework client = zkConnection.client();
+        save(settings.getName(), settings, client);
+        return (T) fs;
+    }
+
+    public <T extends FileSystem> T update(@NonNull FileSystemSettings settings) throws IOException {
+        Preconditions.checkNotNull(zkConnection);
+        try (DistributedLock lock = getLock()) {
+            lock.lock();
+            try {
+                FileSystem fs = get(settings.getName());
+                if (fs == null) {
+                    throw new IOException(String.format("File System not found. [name=%s]", settings.getName()));
+                }
+                fileSystems.remove(settings.getName());
+                return addOrUpdate(settings);
+            } finally {
+                lock.unlock();
+            }
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+    }
+
+    public boolean remove(@NonNull String name) throws IOException {
+        Preconditions.checkNotNull(zkConnection);
+        try (DistributedLock lock = getLock()) {
+            lock.lock();
+            try {
+                FileSystem fs = get(name);
+                if (fs == null) {
+                    return false;
+                }
+                fileSystems.remove(name);
+                String path = fs.zkPath();
                 CuratorFramework client = zkConnection.client();
-                save(settings.getName(), settings, client);
-                return (T) fs;
+                if (client.checkExists().forPath(path) != null) {
+                    client.delete().deletingChildrenIfNeeded().forPath(path);
+                    return true;
+                }
+                return false;
             } finally {
                 lock.unlock();
             }

@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.model;
 
+import ai.sapper.cdc.core.state.OffsetState;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -8,23 +9,26 @@ import lombok.ToString;
 @Getter
 @Setter
 @ToString
-public abstract class ProcessingState<T> {
+public abstract class ProcessingState<O extends OffsetState<?, ?>> {
     private ModuleInstance instance;
     private String namespace;
-    private String currentMessageId;
-    private T processedTxId;
+    private O processedOffset;
     private long updatedTime;
 
     public ProcessingState() {
     }
 
-    public ProcessingState(@NonNull ProcessingState<T> state) {
+    public ProcessingState(@NonNull ProcessingState<O> state) {
         this.instance = state.instance;
         this.namespace = state.namespace;
-        this.currentMessageId = state.currentMessageId;
-        this.processedTxId = state.processedTxId;
+        this.processedOffset = state.processedOffset;
         this.updatedTime = state.updatedTime;
     }
 
-    public abstract int compareTx(T target);
+    public int compareTx(@NonNull O target) {
+        if (processedOffset != null) {
+            return processedOffset.getOffset().compareTo(target.getOffset());
+        }
+        return -1;
+    }
 }
