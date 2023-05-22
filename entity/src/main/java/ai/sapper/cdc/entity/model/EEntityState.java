@@ -1,4 +1,4 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.model;
 
 public enum EEntityState {
     UNKNOWN,

@@ -28,18 +28,15 @@ public abstract class OffsetStateManager<T extends Offset> {
     protected DistributedLock stateLock;
 
     public abstract OffsetStateManager<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                               @NonNull String path,
                                                @NonNull BaseEnv<?> env) throws StateManagerError;
 
     public abstract OffsetStateManager<T> init(@NonNull OffsetStateManagerSettings settings,
                                                @NonNull BaseEnv<?> env) throws StateManagerError;
 
-
     protected void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                        @NonNull String path,
                         @NonNull BaseEnv<?> env,
                         @NonNull Class<? extends OffsetStateManagerSettings> type) throws Exception {
-        ConfigReader reader = new ConfigReader(xmlConfig, path, type);
+        ConfigReader reader = new ConfigReader(xmlConfig, type);
         init(env, reader);
     }
 
@@ -259,6 +256,10 @@ public abstract class OffsetStateManager<T extends Offset> {
         } catch (Exception ex) {
             throw new StateManagerError(ex);
         }
+    }
+
+    public String name() {
+        return settings.getName();
     }
 
     @SuppressWarnings("unchecked")

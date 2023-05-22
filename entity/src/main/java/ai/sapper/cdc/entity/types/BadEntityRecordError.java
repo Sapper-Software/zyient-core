@@ -1,4 +1,4 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.types;
 
 import ai.sapper.cdc.common.schema.SchemaEntity;
 import lombok.NonNull;

@@ -1,5 +1,7 @@
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.entity.model;
 
+import ai.sapper.cdc.core.model.EngineType;
+import ai.sapper.cdc.core.state.Offset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -7,10 +9,9 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.CLASS
-)
-public abstract class TransactionId {
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public abstract class TransactionId extends Offset {
     private EngineType type;
     private long sequence = 0;
 
@@ -24,7 +25,4 @@ public abstract class TransactionId {
 
     public abstract int compare(@NonNull TransactionId next, boolean snapshot);
 
-    public abstract void parse(@NonNull String id) throws Exception;
-
-    public abstract String asString();
 }

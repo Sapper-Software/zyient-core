@@ -1,7 +1,7 @@
 package ai.sapper.cdc.entity.schema;
 
-import ai.sapper.cdc.entity.DataType;
-import ai.sapper.cdc.entity.DataTypeUtils;
+import ai.sapper.cdc.entity.types.DataType;
+import ai.sapper.cdc.entity.types.DataTypeUtils;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

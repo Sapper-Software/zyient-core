@@ -1,8 +1,8 @@
 package ai.sapper.cdc.entity.avro;
 
-import ai.sapper.cdc.entity.BasicDataTypeReaders;
-import ai.sapper.cdc.entity.DataType;
-import ai.sapper.cdc.entity.DataTypeReader;
+import ai.sapper.cdc.entity.types.BasicDataTypeReaders;
+import ai.sapper.cdc.entity.types.DataType;
+import ai.sapper.cdc.entity.types.DataTypeReader;
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
 import org.apache.avro.generic.GenericRecord;

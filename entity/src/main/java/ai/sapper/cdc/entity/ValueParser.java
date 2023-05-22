@@ -4,6 +4,7 @@ import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.entity.model.*;
 import ai.sapper.cdc.entity.schema.EntitySchema;
+import ai.sapper.cdc.entity.types.*;
 import com.google.protobuf.ByteString;
 import lombok.NonNull;
 

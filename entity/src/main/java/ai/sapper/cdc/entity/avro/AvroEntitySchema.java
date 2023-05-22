@@ -6,6 +6,7 @@ import ai.sapper.cdc.entity.jdbc.DbEntitySchema;
 import ai.sapper.cdc.entity.model.DbDataType;
 import ai.sapper.cdc.entity.schema.EntityDiff;
 import ai.sapper.cdc.entity.schema.EntitySchema;
+import ai.sapper.cdc.entity.types.*;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

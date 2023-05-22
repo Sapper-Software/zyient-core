@@ -1,4 +1,4 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.types;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;

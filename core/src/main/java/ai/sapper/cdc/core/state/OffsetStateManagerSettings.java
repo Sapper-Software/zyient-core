@@ -2,6 +2,8 @@ package ai.sapper.cdc.core.state;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.model.ESettingsSource;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -39,8 +41,11 @@ public abstract class OffsetStateManagerSettings extends Settings {
     private short lockRetryCount = Constants.LOCK_RETRY_COUNT;
     @Config(name = Constants.CONFIG_LOCK_TIMEOUT, required = false, type = Long.class)
     private long lockTimeout = Constants.LOCK_TIMEOUT;
+    @JsonIgnore
+    private ESettingsSource source;
 
     public OffsetStateManagerSettings() {
+        source = ESettingsSource.File;
     }
 
     public OffsetStateManagerSettings(@NonNull Settings source) {
@@ -52,5 +57,6 @@ public abstract class OffsetStateManagerSettings extends Settings {
         this.zkConnection = ((OffsetStateManagerSettings) source).zkConnection;
         this.lockTimeout = ((OffsetStateManagerSettings) source).lockTimeout;
         this.lockRetryCount = ((OffsetStateManagerSettings) source).lockRetryCount;
+        this.source = ((OffsetStateManagerSettings) source).source;
     }
 }

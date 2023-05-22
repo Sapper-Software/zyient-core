@@ -6,6 +6,7 @@ import ai.sapper.cdc.entity.schema.ArraySchemaField;
 import ai.sapper.cdc.entity.schema.EntitySchema;
 import ai.sapper.cdc.entity.schema.MapSchemaField;
 import ai.sapper.cdc.entity.schema.SchemaField;
+import ai.sapper.cdc.entity.types.*;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

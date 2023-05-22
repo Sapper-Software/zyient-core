@@ -1,6 +1,7 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.types;
 
 import ai.sapper.cdc.common.utils.ReflectionUtils;
+import ai.sapper.cdc.entity.utils.ConversionUtils;
 import ai.sapper.cdc.entity.utils.DateTimeHelper;
 import com.google.common.base.Strings;
 import lombok.NonNull;

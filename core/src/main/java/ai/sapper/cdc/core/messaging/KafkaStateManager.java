@@ -20,10 +20,9 @@ public class KafkaStateManager extends OffsetStateManager<KafkaOffset> {
 
     @Override
     public OffsetStateManager<KafkaOffset> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                                @NonNull String path,
                                                 @NonNull BaseEnv<?> env) throws StateManagerError {
         try {
-            super.init(xmlConfig, path, env, KafkaConsumerOffsetSettings.class);
+            super.init(xmlConfig, env, KafkaConsumerOffsetSettings.class);
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Throwable ex) {

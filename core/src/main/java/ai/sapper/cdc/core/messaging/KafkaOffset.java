@@ -22,4 +22,20 @@ public class KafkaOffset extends Offset {
         Preconditions.checkArgument(offset instanceof KafkaOffset);
         return (int) (offsetCommitted - ((KafkaOffset) offset).offsetCommitted);
     }
+
+    @Override
+    public String asString() {
+        return String.format("%d:%d", offsetRead, offsetCommitted);
+    }
+
+    @Override
+    public Offset fromString(@NonNull String source) throws Exception {
+        String[] parts = source.split(":");
+        if (parts.length != 2) {
+            throw new Exception(String.format("Invalid offset: %s", source));
+        }
+        offsetRead = Long.parseLong(parts[0]);
+        offsetCommitted = Long.parseLong(parts[1]);
+        return this;
+    }
 }

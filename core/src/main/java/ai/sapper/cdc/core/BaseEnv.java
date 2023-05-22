@@ -11,6 +11,7 @@ import ai.sapper.cdc.core.io.FileSystemManager;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.model.ModuleInstance;
 import ai.sapper.cdc.core.state.BaseStateManager;
+import ai.sapper.cdc.core.state.HeartbeatThread;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -186,6 +187,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public void setup(@NonNull String module,
                       @NonNull String connectionsConfigPath) throws ConfigurationException {
         try {
@@ -275,11 +277,6 @@ public abstract class BaseEnv<T extends Enum<?>> {
     public String instance() {
         return moduleInstance.getName();
     }
-
-    public String source() {
-        return settings.getSource();
-    }
-
 
     private static final Map<String, BaseEnv<?>> __instances = new LinkedHashMap<>();
     private static final ReentrantLock __instanceLock = new ReentrantLock();

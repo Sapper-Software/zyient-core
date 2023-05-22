@@ -14,6 +14,7 @@ import lombok.Setter;
         property = "@class")
 public class BaseStateManagerSettings extends Settings  {
     public static final String __CONFIG_PATH = "state";
+    public static final String __CONFIG_PATH_OFFSET_MANAGERS = "offsets";
 
     public static final class Constants {
         public static final short LOCK_RETRY_COUNT = 4;
@@ -23,6 +24,7 @@ public class BaseStateManagerSettings extends Settings  {
         public static final String CONFIG_ZK_CONNECTION = "connection";
         public static final String CONFIG_LOCK_RETRY = "locking.retry";
         public static final String CONFIG_LOCK_TIMEOUT = "locking.timeout";
+        public static final String CONFIG_SAVE_OFFSETS = String.format("%s.save", __CONFIG_PATH_OFFSET_MANAGERS);
     }
 
     @Config(name = Constants.CONFIG_ZK_BASE)
@@ -33,6 +35,7 @@ public class BaseStateManagerSettings extends Settings  {
     private short lockRetryCount = Constants.LOCK_RETRY_COUNT;
     @Config(name = Constants.CONFIG_LOCK_TIMEOUT, required = false, type = Long.class)
     private long lockTimeout = Constants.LOCK_TIMEOUT;
+    private boolean saveOffsetManager = true;
 
     public BaseStateManagerSettings() {
     }
@@ -44,5 +47,6 @@ public class BaseStateManagerSettings extends Settings  {
         this.zkConnection = ((BaseStateManagerSettings) source).zkConnection;
         this.lockTimeout = ((BaseStateManagerSettings) source).lockTimeout;
         this.lockRetryCount = ((BaseStateManagerSettings) source).lockRetryCount;
+        this.saveOffsetManager = ((BaseStateManagerSettings) source).saveOffsetManager;
     }
 }

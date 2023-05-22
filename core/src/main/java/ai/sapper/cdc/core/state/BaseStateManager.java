@@ -4,10 +4,12 @@ import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.model.CDCAgentState;
+import ai.sapper.cdc.core.model.ESettingsSource;
 import ai.sapper.cdc.core.model.Heartbeat;
 import ai.sapper.cdc.core.model.ModuleInstance;
 import com.google.common.base.Preconditions;
@@ -25,6 +27,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -44,6 +47,7 @@ public abstract class BaseStateManager implements Closeable {
     private String zkAgentStatePath;
     private String zkModulePath;
     private String zkAgentPath;
+    private HierarchicalConfiguration<ImmutableNode> config;
 
     private ModuleInstance moduleInstance;
     private String name;
@@ -51,6 +55,7 @@ public abstract class BaseStateManager implements Closeable {
     @Getter(AccessLevel.NONE)
     private DistributedLock stateLock;
     private final Map<String, OffsetStateManager<?>> offsetManagers = new HashMap<>();
+    private BaseEnv<?> env;
 
     protected void stateLock() throws Exception {
         int retryCount = 0;
@@ -106,6 +111,7 @@ public abstract class BaseStateManager implements Closeable {
                         @NonNull ConfigReader reader) throws Exception {
         reader.read();
         init(env, (BaseStateManagerSettings) reader.settings());
+        config = reader.config();
     }
 
     protected void init(@NonNull BaseEnv<?> env,
@@ -114,6 +120,7 @@ public abstract class BaseStateManager implements Closeable {
         Preconditions.checkState(!Strings.isNullOrEmpty(environment));
 
         this.settings = settings;
+        this.env = env;
 
         connection = env.connectionManager()
                 .getConnection(settings.getZkConnection(),
@@ -150,11 +157,145 @@ public abstract class BaseStateManager implements Closeable {
                 .withPath(Constants.ZK_PATH_PROCESS_STATE)
                 .build();
 
-        initOffsetManagers();
+        initOffsetManagers(client);
     }
 
-    private void initOffsetManagers() {
+    private void initOffsetManagers(CuratorFramework client) throws Exception {
+        if (config != null) {
+            readOffsetManagers(config);
+        }
+        readOffsetManagers(client);
+        if (settings.isSaveOffsetManager()) {
+            stateLock.lock();
+            try {
+                for (String name : offsetManagers.keySet()) {
+                    OffsetStateManager<?> manager = offsetManagers.get(name);
+                    OffsetStateManagerSettings os = manager.settings();
+                    if (os.getSource() != ESettingsSource.File) continue;
+                    saveOffsetManager(os, client);
+                }
+            } finally {
+                stateLock.unlock();
+            }
+        }
+    }
 
+    private void readOffsetManagers(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        if (ConfigReader.checkIfNodeExists(config, BaseStateManagerSettings.__CONFIG_PATH_OFFSET_MANAGERS)) {
+            String s = config.getString(BaseStateManagerSettings.Constants.CONFIG_SAVE_OFFSETS);
+            if (!Strings.isNullOrEmpty(s)) {
+                settings.setSaveOffsetManager(Boolean.parseBoolean(s));
+            }
+            HierarchicalConfiguration<ImmutableNode> root
+                    = config.configurationAt(BaseStateManagerSettings.__CONFIG_PATH_OFFSET_MANAGERS);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes
+                    = root.configurationsAt(OffsetStateManagerSettings.__CONFIG_PATH);
+            if (nodes != null && !nodes.isEmpty()) {
+                for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                    Class<? extends OffsetStateManager<?>> cls = OffsetStateManager.parseManagerType(node);
+                    OffsetStateManager<?> manager = cls
+                            .getDeclaredConstructor()
+                            .newInstance()
+                            .init(node, env);
+                    offsetManagers.put(manager.name(), manager);
+                    DefaultLogger.info(String.format("[Offset Manager] Read from file: [type=%s][name=%s]",
+                            manager.settings().getType(), manager.settings().getName()));
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void readOffsetManagers(CuratorFramework client) throws Exception {
+        String zkPath = new PathUtils.ZkPathBuilder(basePath())
+                .withPath(BaseStateManagerSettings.__CONFIG_PATH_OFFSET_MANAGERS)
+                .withPath(OffsetStateManagerSettings.__CONFIG_PATH)
+                .build();
+        if (client.checkExists().forPath(zkPath) == null) return;
+        List<String> nodes = client.getChildren().forPath(zkPath);
+        if (nodes != null && !nodes.isEmpty()) {
+            for (String node : nodes) {
+                String cp = new PathUtils.ZkPathBuilder(zkPath)
+                        .withPath(node)
+                        .build();
+                OffsetStateManagerSettings os = JSONUtils.read(client, cp, OffsetStateManagerSettings.class);
+                if (os != null) {
+                    os.setSource(ESettingsSource.ZooKeeper);
+                    Class<? extends OffsetStateManager<?>> cls
+                            = (Class<? extends OffsetStateManager<?>>) Class.forName(os.getType());
+                    OffsetStateManager<?> manager = cls
+                            .getDeclaredConstructor()
+                            .newInstance()
+                            .init(os, env);
+                    offsetManagers.put(manager.name(), manager);
+                    DefaultLogger.info(String.format("[Offset Manager] Read from ZooKeeper: [type=%s][name=%s]",
+                            manager.settings().getType(), manager.settings().getName()));
+                }
+            }
+        }
+    }
+
+
+    private void saveOffsetManager(OffsetStateManagerSettings settings,
+                                   CuratorFramework client) throws Exception {
+        String zkPath = getOffsetSettingsPath(settings.getName());
+        if (client.checkExists().forPath(zkPath) == null) {
+            client.create().creatingParentContainersIfNeeded().forPath(zkPath);
+        }
+        client.setData().forPath(zkPath, JSONUtils.asBytes(settings, settings.getClass()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends OffsetStateManager<?>> T getOffsetManager(@NonNull String name,
+                                                                @NonNull Class<? extends T> managerType) {
+        OffsetStateManager<?> manager = offsetManagers.get(name);
+        if (manager != null) {
+            if (manager.getClass().equals(managerType)
+                    || ReflectionUtils.isSuperType(managerType, manager.getClass())) {
+                return (T) manager;
+            }
+        }
+        return null;
+    }
+
+    public void updateOffsetManager(@NonNull OffsetStateManagerSettings settings) throws StateManagerError {
+        CuratorFramework client = connection.client();
+        stateLock.lock();
+        try {
+            saveOffsetManager(settings, client);
+        } catch (Exception ex) {
+            throw new StateManagerError(ex);
+        } finally {
+            stateLock.unlock();
+        }
+    }
+
+    public boolean deleteOffsetManager(@NonNull String name) throws StateManagerError {
+        CuratorFramework client = connection.client();
+        stateLock.lock();
+        try {
+            if (offsetManagers.containsKey(name)) {
+                offsetManagers.remove(name);
+            }
+            String zkPath = getOffsetSettingsPath(name);
+            if (client.checkExists().forPath(zkPath) == null) {
+                return false;
+            }
+            client.delete().deletingChildrenIfNeeded().forPath(zkPath);
+            return true;
+        } catch (Exception ex) {
+            throw new StateManagerError(ex);
+        } finally {
+            stateLock.unlock();
+        }
+    }
+
+    private String getOffsetSettingsPath(@NonNull String name) {
+        return new PathUtils.ZkPathBuilder(basePath())
+                .withPath(BaseStateManagerSettings.__CONFIG_PATH_OFFSET_MANAGERS)
+                .withPath(OffsetStateManagerSettings.__CONFIG_PATH)
+                .withPath(name)
+                .build();
     }
 
     public abstract BaseStateManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,

@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.entity.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -12,7 +12,4 @@ import lombok.ToString;
         property = "@class")
 public class LongTxState extends BaseTxState {
 
-    public LongTxState() {
-        setProcessedTxId(new BaseTxId());
-    }
 }

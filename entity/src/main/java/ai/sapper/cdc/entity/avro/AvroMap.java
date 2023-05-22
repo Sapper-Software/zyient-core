@@ -1,6 +1,6 @@
 package ai.sapper.cdc.entity.avro;
 
-import ai.sapper.cdc.entity.DataType;
+import ai.sapper.cdc.entity.types.DataType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;

@@ -1,6 +1,8 @@
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.entity.model;
 
+import ai.sapper.cdc.core.state.Offset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -56,7 +58,7 @@ public class BaseTxId extends TransactionId {
      * @throws Exception
      */
     @Override
-    public void parse(@NonNull String id) throws Exception {
+    public BaseTxId fromString(@NonNull String id) throws Exception {
         String[] parts = id.split("-");
         if (parts.length == 3) {
             this.id = Long.parseLong(parts[0]);
@@ -65,6 +67,7 @@ public class BaseTxId extends TransactionId {
         } else {
             throw new Exception(String.format("Invalid Transaction id. [id=%s]", id));
         }
+        return this;
     }
 
     /**
@@ -73,5 +76,11 @@ public class BaseTxId extends TransactionId {
     @Override
     public String asString() {
         return String.format("%d-%d-%d", id, recordId, getSequence());
+    }
+
+    @Override
+    public int compareTo(@NonNull Offset offset) {
+        Preconditions.checkArgument(offset instanceof BaseTxId);
+        return compare((TransactionId) offset, false);
     }
 }

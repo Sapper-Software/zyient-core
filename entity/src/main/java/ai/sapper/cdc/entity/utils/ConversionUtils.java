@@ -1,4 +1,4 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.utils;
 
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import lombok.NonNull;

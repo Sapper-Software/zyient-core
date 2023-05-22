@@ -1,4 +1,4 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.model;
 
 import ai.sapper.cdc.common.model.Options;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

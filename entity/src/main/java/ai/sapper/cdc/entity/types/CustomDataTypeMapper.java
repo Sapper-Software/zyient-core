@@ -1,5 +1,6 @@
-package ai.sapper.cdc.entity;
+package ai.sapper.cdc.entity.types;
 
+import ai.sapper.cdc.entity.Metadata;
 import ai.sapper.cdc.entity.schema.SchemaField;
 import lombok.NonNull;
 import org.apache.avro.Schema;

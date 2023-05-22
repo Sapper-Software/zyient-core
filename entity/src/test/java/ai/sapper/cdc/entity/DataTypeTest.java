@@ -2,6 +2,9 @@ package ai.sapper.cdc.entity;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.entity.avro.AvroEntitySchema;
+import ai.sapper.cdc.entity.types.DataType;
+import ai.sapper.cdc.entity.types.SizedDataType;
+import ai.sapper.cdc.entity.types.TextType;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Types;
