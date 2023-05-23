@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.messaging;
+package ai.sapper.cdc.core.messaging.kafka;
 
 import ai.sapper.cdc.core.state.Offset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

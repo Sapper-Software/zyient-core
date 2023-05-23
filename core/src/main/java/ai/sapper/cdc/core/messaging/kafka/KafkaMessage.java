@@ -1,5 +1,6 @@
-package ai.sapper.cdc.core.messaging;
+package ai.sapper.cdc.core.messaging.kafka;
 
+import ai.sapper.cdc.core.messaging.MessageObject;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

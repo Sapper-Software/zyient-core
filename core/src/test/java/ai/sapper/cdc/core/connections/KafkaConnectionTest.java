@@ -1,8 +1,8 @@
 package ai.sapper.cdc.core.connections;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumer;
-import ai.sapper.cdc.core.connections.kafka.BasicKafkaProducer;
+import ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection;
+import ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection;
 import ai.sapper.cdc.core.utils.DemoEnv;
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
@@ -48,10 +48,10 @@ class KafkaConnectionTest {
     void test() {
         DefaultLogger.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "connect"));
         try {
-            BasicKafkaProducer producer = manager.getConnection(__PRODUCER_NAME, BasicKafkaProducer.class);
+            BasicKafkaProducerConnection producer = manager.getConnection(__PRODUCER_NAME, BasicKafkaProducerConnection.class);
             producer.connect();
 
-            BasicKafkaConsumer consumer = manager.getConnection(__CONSUMER_NAME, BasicKafkaConsumer.class);
+            BasicKafkaConsumerConnection consumer = manager.getConnection(__CONSUMER_NAME, BasicKafkaConsumerConnection.class);
             consumer.connect();
 
             manager.save(producer);
@@ -111,7 +111,7 @@ class KafkaConnectionTest {
         @Override
         public void run() {
             try {
-                BasicKafkaConsumer consumer = manager.getConnection(__CONSUMER_NAME, BasicKafkaConsumer.class);
+                BasicKafkaConsumerConnection consumer = manager.getConnection(__CONSUMER_NAME, BasicKafkaConsumerConnection.class);
 
                 while (true) {
                     ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(10000));

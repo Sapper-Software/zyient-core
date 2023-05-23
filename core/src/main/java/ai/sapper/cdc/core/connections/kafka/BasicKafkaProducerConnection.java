@@ -12,7 +12,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
-public class BasicKafkaProducer extends KafkaProducerConnection<String, byte[]> {
+public class BasicKafkaProducerConnection extends KafkaProducerConnection<String, byte[]> {
     /**
      * @param xmlConfig
      * @return

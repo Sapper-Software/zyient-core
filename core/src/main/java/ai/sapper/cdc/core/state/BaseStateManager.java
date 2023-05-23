@@ -8,7 +8,7 @@ import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
-import ai.sapper.cdc.core.model.CDCAgentState;
+import ai.sapper.cdc.core.model.BaseAgentState;
 import ai.sapper.cdc.core.model.ESettingsSource;
 import ai.sapper.cdc.core.model.Heartbeat;
 import ai.sapper.cdc.core.model.ModuleInstance;
@@ -316,7 +316,7 @@ public abstract class BaseStateManager implements Closeable {
     public abstract Heartbeat heartbeat(@NonNull String instance) throws StateManagerError;
 
     public Heartbeat heartbeat(@NonNull String name,
-                               @NonNull CDCAgentState.AgentState state) throws StateManagerError {
+                               @NonNull BaseAgentState.AgentState state) throws StateManagerError {
         checkState();
         synchronized (this) {
             try {

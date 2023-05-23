@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.messaging;
+package ai.sapper.cdc.core.messaging.kafka;
 
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;

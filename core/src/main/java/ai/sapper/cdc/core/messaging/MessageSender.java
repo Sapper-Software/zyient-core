@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.messaging;
 
 import ai.sapper.cdc.common.audit.AuditLogger;
 import ai.sapper.cdc.core.connections.MessageConnection;
+import ai.sapper.cdc.core.processing.ProcessorState;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
@@ -13,6 +14,7 @@ import java.util.List;
 @Getter
 @Accessors(fluent = true)
 public abstract class MessageSender<K, M> implements Closeable {
+    private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
     private AuditLogger auditLogger;
 
@@ -29,6 +31,8 @@ public abstract class MessageSender<K, M> implements Closeable {
         this.auditLogger = auditLogger;
         return this;
     }
+
+    public abstract MessageSender<K, M> init() throws MessagingError;
 
     public abstract MessageObject<K, M> send(@NonNull MessageObject<K, M> message) throws MessagingError;
 

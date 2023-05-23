@@ -59,7 +59,7 @@
                     </rest>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaProducer</type>
+                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection</type>
                     <kafka>
                         <name>test-kafka-producer</name>
                         <mode>Producer</mode>
@@ -70,7 +70,7 @@
                     </kafka>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumer</type>
+                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection</type>
                     <kafka>
                         <name>test-kafka-consumer</name>
                         <mode>Consumer</mode>

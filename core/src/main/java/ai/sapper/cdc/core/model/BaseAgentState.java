@@ -10,7 +10,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class CDCAgentState {
+public class BaseAgentState {
     public enum EAgentState {
         Unknown, Active, StandBy, Error, Stopped
     }
