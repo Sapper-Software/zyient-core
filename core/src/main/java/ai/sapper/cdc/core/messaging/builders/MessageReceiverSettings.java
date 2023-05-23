@@ -17,4 +17,6 @@ public class MessageReceiverSettings extends Settings {
     private String offsetManager;
     @Config(name = "batchSize", required = false, type = Integer.class)
     private int batchSize = -1;
+    @Config(name = "receiverTimeout", required = false, type = Long.class)
+    private long receiverTimeout = -1;
 }

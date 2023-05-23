@@ -26,6 +26,14 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
     private BasicKafkaConsumerConnection consumer = null;
     private String topic;
     private Map<Integer, KafkaConsumerState> states;
+    private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+
+    public BaseKafkaConsumer<M> withReceiveTimeout(long receiveTimeout) {
+        Preconditions.checkArgument(receiveTimeout > 0);
+        defaultReceiveTimeout = receiveTimeout;
+
+        return this;
+    }
 
     private void seek(TopicPartition partition, long offset) {
         if (offset > 0) {
@@ -139,7 +147,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public MessageObject<String, M> receive() throws MessagingError {
-        return receive(DEFAULT_RECEIVE_TIMEOUT);
+        return receive(defaultReceiveTimeout);
     }
 
     @Override
@@ -159,7 +167,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public List<MessageObject<String, M>> nextBatch() throws MessagingError {
-        return nextBatch(DEFAULT_RECEIVE_TIMEOUT);
+        return nextBatch(defaultReceiveTimeout);
     }
 
     @Override

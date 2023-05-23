@@ -1,10 +1,8 @@
 package ai.sapper.cdc.entity.model;
 
-import ai.sapper.cdc.core.state.EOffsetState;
 import ai.sapper.cdc.core.state.OffsetState;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter

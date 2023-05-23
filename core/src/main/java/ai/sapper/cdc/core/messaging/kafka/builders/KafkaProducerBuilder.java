@@ -2,20 +2,18 @@ package ai.sapper.cdc.core.messaging.kafka.builders;
 
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection;
-import ai.sapper.cdc.core.messaging.MessageReceiver;
-import ai.sapper.cdc.core.messaging.builders.MessageReceiverBuilder;
-import ai.sapper.cdc.core.messaging.builders.MessageReceiverSettings;
+import ai.sapper.cdc.core.connections.settngs.EConnectionType;
 import ai.sapper.cdc.core.messaging.builders.MessageSenderBuilder;
 import ai.sapper.cdc.core.messaging.builders.MessageSenderSettings;
-import ai.sapper.cdc.core.messaging.kafka.BasicKafkaProducer;
+import ai.sapper.cdc.core.messaging.kafka.BaseKafkaProducer;
 import ai.sapper.cdc.core.messaging.kafka.KafkaPartitioner;
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
 
 public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
-    private final Class<? extends BasicKafkaProducer<M>> type;
+    private final Class<? extends BaseKafkaProducer<M>> type;
 
-    protected KafkaProducerBuilder(@NonNull Class<? extends BasicKafkaProducer<M>> type,
+    protected KafkaProducerBuilder(@NonNull Class<? extends BaseKafkaProducer<M>> type,
                                    @NonNull BaseEnv<?> env,
                                    @NonNull Class<? extends MessageSenderSettings> settingsType) {
         super(env, settingsType);
@@ -24,7 +22,8 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public BasicKafkaProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
+    public BaseKafkaProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
+        Preconditions.checkArgument(settings.getType() == EConnectionType.kafka);
         Preconditions.checkArgument(settings instanceof KafkaProducerSettings);
         BasicKafkaProducerConnection connection = env().connectionManager()
                 .getConnection(settings.getConnection(), BasicKafkaProducerConnection.class);
@@ -32,7 +31,7 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
             throw new Exception(
                     String.format("Kafka Producer connection not found. [name=%s]", settings.getConnection()));
         }
-        BasicKafkaProducer<M> producer = type.getDeclaredConstructor().newInstance();
+        BaseKafkaProducer<M> producer = type.getDeclaredConstructor().newInstance();
         producer.withConnection(connection);
         if (env().auditLogger() != null) {
             producer.withAuditLogger(env().auditLogger());
@@ -42,7 +41,10 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
                     .getPartitioner()
                     .getDeclaredConstructor()
                     .newInstance();
+            partitioner.init(config());
+            producer.partitioner(partitioner);
         }
-        return producer;
+
+        return (BaseKafkaProducer<M>) producer.init();
     }
 }

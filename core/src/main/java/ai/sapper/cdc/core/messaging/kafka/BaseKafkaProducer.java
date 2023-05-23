@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class BasicKafkaProducer<M> extends MessageSender<String, M> {
+public abstract class BaseKafkaProducer<M> extends MessageSender<String, M> {
     @Setter(AccessLevel.NONE)
     private BasicKafkaProducerConnection producer;
     @Setter(AccessLevel.NONE)

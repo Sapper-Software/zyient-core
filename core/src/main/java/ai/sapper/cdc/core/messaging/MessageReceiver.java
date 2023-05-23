@@ -2,7 +2,6 @@ package ai.sapper.cdc.core.messaging;
 
 import ai.sapper.cdc.common.audit.AuditLogger;
 import ai.sapper.cdc.core.connections.MessageConnection;
-import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.processing.ProcessorState;
 import ai.sapper.cdc.core.state.OffsetStateManager;
 import com.google.common.base.Preconditions;

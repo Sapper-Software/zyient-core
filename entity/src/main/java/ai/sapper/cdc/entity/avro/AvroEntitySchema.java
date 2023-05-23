@@ -1,7 +1,7 @@
 package ai.sapper.cdc.entity.avro;
 
 import ai.sapper.cdc.common.utils.ReflectionUtils;
-import ai.sapper.cdc.entity.*;
+import ai.sapper.cdc.entity.Metadata;
 import ai.sapper.cdc.entity.jdbc.DbEntitySchema;
 import ai.sapper.cdc.entity.model.DbDataType;
 import ai.sapper.cdc.entity.schema.EntityDiff;

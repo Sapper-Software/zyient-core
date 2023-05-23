@@ -1,7 +1,7 @@
 package ai.sapper.cdc.entity.jdbc;
 
 import ai.sapper.cdc.common.utils.ReflectionUtils;
-import ai.sapper.cdc.entity.*;
+import ai.sapper.cdc.entity.Metadata;
 import ai.sapper.cdc.entity.schema.ArraySchemaField;
 import ai.sapper.cdc.entity.schema.EntitySchema;
 import ai.sapper.cdc.entity.schema.MapSchemaField;

@@ -3,7 +3,6 @@ package ai.sapper.cdc.core.messaging.builders;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.messaging.MessageReceiver;
-import ai.sapper.cdc.core.messaging.MessageSender;
 import ai.sapper.cdc.core.messaging.MessagingError;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
