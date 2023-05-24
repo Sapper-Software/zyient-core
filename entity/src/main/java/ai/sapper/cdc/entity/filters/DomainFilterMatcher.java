@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common.filters;
+package ai.sapper.cdc.entity.filters;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;

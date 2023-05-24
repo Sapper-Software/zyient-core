@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common.schema;
+package ai.sapper.cdc.entity.schema;
 
 public class StaleDataError extends Exception {
     private static final String __PREFIX = "Stale Data: %s";

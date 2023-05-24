@@ -1,6 +1,6 @@
 package ai.sapper.cdc.entity.types;
 
-import ai.sapper.cdc.common.schema.SchemaEntity;
+import ai.sapper.cdc.entity.schema.SchemaEntity;
 import lombok.NonNull;
 
 public class BadEntityRecordError extends Exception {

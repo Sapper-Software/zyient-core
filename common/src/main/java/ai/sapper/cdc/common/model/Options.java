@@ -35,11 +35,13 @@ public class Options {
     }
 
     public Options(@NonNull Options source) {
+        this.configPath = source.configPath;
         if (!source.options.isEmpty())
             options.putAll(source.options);
     }
 
     public Options(@NonNull Map<String, Object> options) {
+        configPath = __CONFIG_PATH;
         if (!options.isEmpty())
             this.options.putAll(options);
     }

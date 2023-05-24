@@ -1,6 +1,5 @@
 package ai.sapper.cdc.entity.filters;
 
-import ai.sapper.cdc.common.filters.DomainFilterMatcher;
 import lombok.NonNull;
 
 public interface FilterAddCallback {

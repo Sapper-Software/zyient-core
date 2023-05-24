@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common.schema;
+package ai.sapper.cdc.entity.schema;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;

@@ -1,10 +1,6 @@
 package ai.sapper.cdc.entity.schema;
 
-import ai.sapper.cdc.common.schema.SchemaEntity;
-import ai.sapper.cdc.common.schema.SchemaHelper;
-import ai.sapper.cdc.common.schema.SchemaVersion;
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.entity.CDCSchemaEntity;
 import ai.sapper.cdc.entity.Metadata;
 import ai.sapper.cdc.entity.avro.AvroEntitySchema;
 import ai.sapper.cdc.entity.types.*;

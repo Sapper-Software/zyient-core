@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common.filters;
+package ai.sapper.cdc.entity.filters;
 
 import lombok.Getter;
 import lombok.NonNull;

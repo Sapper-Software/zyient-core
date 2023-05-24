@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common.schema;
+package ai.sapper.cdc.entity.schema;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.ReflectionUtils;

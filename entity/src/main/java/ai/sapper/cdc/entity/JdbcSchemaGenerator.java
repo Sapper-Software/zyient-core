@@ -1,6 +1,6 @@
 package ai.sapper.cdc.entity;
 
-import ai.sapper.cdc.common.schema.SchemaEntity;
+import ai.sapper.cdc.entity.schema.SchemaEntity;
 import ai.sapper.cdc.entity.jdbc.DbEntitySchema;
 import ai.sapper.cdc.entity.schema.EntitySchema;
 import ai.sapper.cdc.entity.schema.SchemaField;
