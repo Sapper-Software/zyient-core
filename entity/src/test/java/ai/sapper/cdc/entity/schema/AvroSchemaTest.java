@@ -1,10 +1,9 @@
-package ai.sapper.cdc.core.schema;
+package ai.sapper.cdc.entity.schema;
 
-import ai.sapper.cdc.common.schema.AvroSchema;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class AvroSchemaTest {
     private static final String SCHEMA_1 = "{\n" +
