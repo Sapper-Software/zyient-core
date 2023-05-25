@@ -1,7 +1,7 @@
-package ai.sapper.cdc.common.model;
+package ai.sapper.cdc.entity.model;
 
-import ai.sapper.cdc.common.schema.SchemaEntity;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
+import ai.sapper.cdc.entity.schema.SchemaEntity;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;

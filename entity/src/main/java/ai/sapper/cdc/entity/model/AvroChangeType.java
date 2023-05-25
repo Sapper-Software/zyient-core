@@ -1,4 +1,4 @@
-package ai.sapper.cdc.common.model;
+package ai.sapper.cdc.entity.model;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;

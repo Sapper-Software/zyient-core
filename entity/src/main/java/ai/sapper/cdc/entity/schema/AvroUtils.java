@@ -1,6 +1,6 @@
 package ai.sapper.cdc.entity.schema;
 
-import ai.sapper.cdc.common.model.AvroChangeRecord;
+import ai.sapper.cdc.entity.model.AvroChangeRecord;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import lombok.NonNull;
 import org.apache.avro.Schema;
