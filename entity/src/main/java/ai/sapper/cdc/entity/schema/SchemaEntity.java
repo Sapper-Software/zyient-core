@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.util.Map;
 import java.util.Objects;
@@ -18,7 +17,6 @@ public class SchemaEntity {
     private int group = -1;
     private String entity;
     private boolean enabled = false;
-    private String zkPath;
     private EntityOptions options;
     private long updatedTime;
 

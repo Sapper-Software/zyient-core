@@ -51,7 +51,6 @@ public abstract class EntitySchema {
     private Schema schema;
     @JsonIgnore
     private SchemaEntity schemaEntity;
-    private String entityZkPath;
     private String schemaStr;
     private SchemaVersion version;
     private String namespace;
@@ -64,6 +63,7 @@ public abstract class EntitySchema {
     private Class<? extends CustomDataTypeMapper> mapperClass;
     @JsonIgnore
     private CustomDataTypeMapper mapper;
+    private String uri;
 
     public EntitySchema(@NonNull DataType<?> recordType) {
         this.recordType = recordType;
@@ -89,7 +89,7 @@ public abstract class EntitySchema {
                 add(sf);
             }
         }
-        this.entityZkPath = source.entityZkPath;
+        this.uri = source.uri;
     }
 
     public EntitySchema withMapper(CustomDataTypeMapper mapper) {
@@ -348,7 +348,7 @@ public abstract class EntitySchema {
 
     public void update(@NonNull EntityDiff diff,
                        @NonNull BaseSchemaMapping mapping,
-                       @NonNull CDCSchemaEntity entity) throws Exception {
+                       @NonNull SchemaEntity entity) throws Exception {
         if (diff.diff() != null && !diff.diff().isEmpty()) {
             for (String key : diff.diff().keySet()) {
                 DiffElement de = diff.get(key);
@@ -360,7 +360,7 @@ public abstract class EntitySchema {
     public boolean checkSchemaOp(@NonNull ESchemaOp op,
                                  @NonNull SchemaField field,
                                  @NonNull BaseSchemaMapping mapping,
-                                 @NonNull CDCSchemaEntity entity) throws Exception {
+                                 @NonNull SchemaEntity entity) throws Exception {
         switch (op) {
             case ADD:
                 return addSchemaOp(field, mapping);
@@ -406,7 +406,7 @@ public abstract class EntitySchema {
 
     private boolean dropSchemaOp(@NonNull SchemaField field,
                                  @NonNull BaseSchemaMapping mapping,
-                                 @NonNull CDCSchemaEntity entity) throws Exception {
+                                 @NonNull SchemaEntity entity) throws Exception {
         SchemaField sf = mapping.getTargetField(field.getName());
         if (sf == null) return false;
         if (entity.getOptions().ignoreDroppedColumn()) {

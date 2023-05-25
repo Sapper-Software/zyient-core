@@ -6,6 +6,7 @@ import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.entity.schema.Domain;
 import ai.sapper.cdc.entity.schema.EntitySchema;
 import ai.sapper.cdc.entity.schema.SchemaEntity;
+import ai.sapper.cdc.entity.schema.SchemaVersion;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -13,12 +14,14 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.Closeable;
+
 @Getter
 @Accessors(fluent = true)
-public abstract class SchemaDataHandler {
+public abstract class SchemaDataHandler implements Closeable {
     private final Class<? extends SchemaDataHandlerSettings> settingsType;
     private BaseEnv<?> env;
-    private Connection connection;
+    protected Connection connection;
     private SchemaDataHandlerSettings settings;
 
     protected SchemaDataHandler(@NonNull Class<? extends SchemaDataHandlerSettings> settingsType) {
@@ -63,10 +66,14 @@ public abstract class SchemaDataHandler {
 
     protected abstract boolean deleteEntity(@NonNull SchemaEntity entity) throws Exception;
 
-    protected abstract EntitySchema fetchSchema(@NonNull SchemaEntity entity) throws Exception;
+    protected abstract EntitySchema fetchSchema(@NonNull SchemaEntity entity,
+                                                SchemaVersion version) throws Exception;
+
+    protected abstract EntitySchema fetchSchema(@NonNull String uri) throws Exception;
 
     protected abstract EntitySchema saveSchema(@NonNull EntitySchema schema) throws Exception;
 
-    protected abstract boolean deleteSchema(@NonNull SchemaEntity entity) throws Exception;
+    protected abstract boolean deleteSchema(@NonNull SchemaEntity entity,
+                                            @NonNull SchemaVersion version) throws Exception;
 
 }

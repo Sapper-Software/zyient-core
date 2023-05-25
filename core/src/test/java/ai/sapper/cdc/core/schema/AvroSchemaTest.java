@@ -4,7 +4,7 @@ import ai.sapper.cdc.common.schema.AvroSchema;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class AvroSchemaTest {
     private static final String SCHEMA_1 = "{\n" +

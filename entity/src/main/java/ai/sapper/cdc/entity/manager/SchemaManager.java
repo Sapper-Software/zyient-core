@@ -2,14 +2,11 @@ package ai.sapper.cdc.entity.manager;
 
 import ai.sapper.cdc.common.cache.LRUCache;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.model.InvalidDataError;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
-import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.processing.ProcessorState;
-import ai.sapper.cdc.entity.schema.Domain;
-import ai.sapper.cdc.entity.schema.EntitySchema;
-import ai.sapper.cdc.entity.schema.SchemaEntity;
-import ai.sapper.cdc.entity.schema.SchemaVersion;
+import ai.sapper.cdc.entity.schema.*;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,12 +26,13 @@ import java.util.Optional;
 public abstract class SchemaManager implements Closeable {
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends SchemaManagerSettings> settingsType;
-    private SchemaManagerSettings settings;
-    private BaseEnv<?> env;
-    private SchemaDataHandler handler;
     private final Map<String, CacheElement<Domain>> domainCache = new HashMap<>();
     private final Map<String, CacheElement<SchemaEntity>> entityCache = new HashMap<>();
     private LRUCache<String, CacheElement<EntitySchema>> schemaCache;
+
+    private SchemaManagerSettings settings;
+    private BaseEnv<?> env;
+    private SchemaDataHandler handler;
     private DistributedLock schemaLock;
 
     public SchemaManager(@NonNull Class<? extends SchemaManagerSettings> settingsType) {
@@ -104,8 +102,8 @@ public abstract class SchemaManager implements Closeable {
         return e.element;
     }
 
-    public Domain createDomain(@NonNull String name,
-                               @NonNull Class<? extends Domain> type) throws Exception {
+    protected Domain createDomain(@NonNull String name,
+                                  @NonNull Class<? extends Domain> type) throws Exception {
         Preconditions.checkState(state.isRunning());
         schemaLock.lock();
         try {
@@ -136,7 +134,7 @@ public abstract class SchemaManager implements Closeable {
             if (d == null) {
                 throw new Exception(String.format("Domain not found. [name=%s]", domain.getName()));
             } else if (d.getUpdatedTime() > domain.getUpdatedTime()) {
-                throw new Exception(String.format("Domain instance is stale. [nam%s]", domain.getName()));
+                throw new StaleDataError(String.format("Domain instance is stale. [nam%s]", domain.getName()));
             }
             domain = handler.saveDomain(domain);
             CacheElement<Domain> e = new CacheElement<>(domain);
@@ -180,9 +178,9 @@ public abstract class SchemaManager implements Closeable {
         return e.element;
     }
 
-    public SchemaEntity createEntity(@NonNull String domain,
-                                     @NonNull String name,
-                                     @NonNull Class<? extends SchemaEntity> type) throws Exception {
+    protected SchemaEntity createEntity(@NonNull String domain,
+                                        @NonNull String name,
+                                        @NonNull Class<? extends SchemaEntity> type) throws Exception {
         Preconditions.checkState(state.isRunning());
         SchemaEntity entity = getEntity(domain, name);
         if (entity != null) {
@@ -211,7 +209,7 @@ public abstract class SchemaManager implements Closeable {
                         String.format("Entity not found: [domain=%s][entity=%s]",
                                 entity.getDomain(), entity.getEntity()));
             } else if (entity.getUpdatedTime() > current.getUpdatedTime()) {
-                throw new Exception(String.format("Entity instance is stale: [domain=%s][entity=%s]",
+                throw new StaleDataError(String.format("Entity instance is stale: [domain=%s][entity=%s]",
                         entity.getDomain(), entity.getEntity()));
             }
             return handler.saveEntity(entity);
@@ -238,6 +236,11 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public EntitySchema getSchema(@NonNull SchemaEntity entity) throws Exception {
+        return getSchema(entity, null);
+    }
+
+    public EntitySchema getSchema(@NonNull SchemaEntity entity,
+                                  SchemaVersion version) throws Exception {
         Preconditions.checkState(state.isRunning());
         EntitySchema schema = null;
         String key = schemaCacheKey(entity);
@@ -249,9 +252,10 @@ public abstract class SchemaManager implements Closeable {
             }
         }
         if (schema == null) {
-            schema = handler.fetchSchema(entity);
+            schema = handler.fetchSchema(entity, version);
             if (schema == null) {
-                throw new Exception(String.format("Schema not found. [entity=%s]", entity.toString()));
+                throw new InvalidDataError(EntitySchema.class,
+                        String.format("Schema not found. [entity=%s]", entity.toString()));
             }
             CacheElement<EntitySchema> e = new CacheElement<>(schema);
             schemaCache.put(key, e);
@@ -259,12 +263,18 @@ public abstract class SchemaManager implements Closeable {
         return schema;
     }
 
-    public EntitySchema createSchema(@NonNull SchemaEntity entity,
-                                     @NonNull Class<? extends EntitySchema> type) throws Exception {
+    public EntitySchema getSchema(@NonNull String uri) throws Exception {
+        Preconditions.checkState(state.isRunning());
+        return handler.fetchSchema(uri);
+    }
+
+    protected EntitySchema createSchema(@NonNull SchemaEntity entity,
+                                        @NonNull Class<? extends EntitySchema> type) throws Exception {
         Preconditions.checkState(state.isRunning());
         EntitySchema schema = getSchema(entity);
         if (schema != null) {
-            throw new Exception(String.format("Schema already exists. [entity=%s]", entity.toString()));
+            throw new InvalidDataError(EntitySchema.class,
+                    String.format("Schema already exists. [entity=%s]", entity.toString()));
         }
         schemaLock.lock();
         try {
@@ -275,7 +285,7 @@ public abstract class SchemaManager implements Closeable {
             schema = handler.saveSchema(schema);
             synchronized (this) {
                 CacheElement<EntitySchema> e = new CacheElement<>(schema);
-                String key = schemaCacheKey(entity);
+                String key = schemaCacheKey(entity, schema.getVersion());
                 schemaCache.put(key, e);
             }
             return schema;
@@ -295,7 +305,7 @@ public abstract class SchemaManager implements Closeable {
                                 schema.getSchemaEntity().toString()));
             }
             if (current.getUpdatedTime() > schema.getUpdatedTime()) {
-                throw new Exception(String.format("Schema instance is stale. [entity=%s]",
+                throw new StaleDataError(String.format("Schema instance is stale. [entity=%s]",
                         schema.getSchemaEntity().toString()));
             }
             schema = handler.saveSchema(schema);
@@ -310,17 +320,25 @@ public abstract class SchemaManager implements Closeable {
         }
     }
 
-    public boolean deleteSchema(@NonNull SchemaEntity entity) throws Exception {
+    public boolean deleteSchema(@NonNull SchemaEntity entity,
+                                @NonNull SchemaVersion version) throws Exception {
         Preconditions.checkState(state.isRunning());
         schemaLock.lock();
         try {
-            String key = schemaCacheKey(entity);
+            String key = schemaCacheKey(entity, version);
             schemaCache.remove(key);
-            return handler.deleteSchema(entity);
+            return handler.deleteSchema(entity, version);
         } finally {
             schemaLock.unlock();
         }
     }
+
+    public abstract Domain createDomain(@NonNull String name) throws Exception;
+
+    public abstract SchemaEntity createEntity(@NonNull String domain,
+                                              @NonNull String name) throws Exception;
+
+    public abstract EntitySchema createSchema(@NonNull SchemaEntity entity) throws Exception;
 
     @Override
     public void close() throws IOException {
@@ -328,6 +346,10 @@ public abstract class SchemaManager implements Closeable {
             state.setState(ProcessorState.EProcessorState.Stopped);
         if (schemaLock != null) {
             schemaLock.close();
+        }
+        if (handler != null) {
+            handler.close();
+            handler = null;
         }
         domainCache.clear();
         entityCache.clear();
@@ -337,8 +359,14 @@ public abstract class SchemaManager implements Closeable {
         }
     }
 
-    private String schemaCacheKey(@NonNull SchemaEntity entity) {
+    private String schemaCacheKey(SchemaEntity entity) {
         return String.format("%s::%s", entity.getDomain(), entity.getEntity());
+    }
+
+    private String schemaCacheKey(SchemaEntity entity, SchemaVersion version) {
+        return String.format("%s::%s::%d.%d",
+                entity.getDomain(), entity.getEntity(),
+                version.getMajorVersion(), version.getMinorVersion());
     }
 
     protected abstract void init(@NonNull SchemaManagerSettings settings) throws ConfigurationException;
