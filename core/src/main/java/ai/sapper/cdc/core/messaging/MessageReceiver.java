@@ -1,8 +1,11 @@
 package ai.sapper.cdc.core.messaging;
 
 import ai.sapper.cdc.common.audit.AuditLogger;
+import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.core.connections.MessageConnection;
 import ai.sapper.cdc.core.processing.ProcessorState;
+import ai.sapper.cdc.core.state.Offset;
+import ai.sapper.cdc.core.state.OffsetState;
 import ai.sapper.cdc.core.state.OffsetStateManager;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -59,4 +62,8 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
     public abstract List<MessageObject<I, M>> nextBatch(long timeout) throws MessagingError;
 
     public abstract void ack(@NonNull List<I> messageIds) throws MessagingError;
+
+    public abstract OffsetState<?, ?> currentOffset(Context context) throws MessagingError;
+
+    public abstract void seek(@NonNull Offset offset, Context context) throws MessagingError;
 }

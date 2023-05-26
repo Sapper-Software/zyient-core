@@ -1,6 +1,7 @@
 package ai.sapper.cdc.entity.manager.zk;
 
 import ai.sapper.cdc.common.model.InvalidDataError;
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
@@ -21,10 +22,14 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Accessors(fluent = true)
 public class ZKSchemaDataHandler extends SchemaDataHandler {
+    public static final String ZK_PATH_DOMAINS = "domains";
+
     private String zkBasePath;
     private ZookeeperConnection zkConnection;
 
@@ -206,6 +211,32 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         return false;
     }
 
+    @Override
+    protected List<Domain> listDomains() throws Exception {
+        Preconditions.checkNotNull(zkConnection);
+        CuratorFramework client = zkConnection.client();
+        String path = new PathUtils.ZkPathBuilder(zkBasePath)
+                .withPath(ZK_PATH_DOMAINS)
+                .build();
+        List<String> nodes = client.getChildren().forPath(path);
+        if (nodes != null && !nodes.isEmpty()) {
+            List<Domain> domains = new ArrayList<>();
+            for (String node : nodes) {
+                String zp = new PathUtils.ZkPathBuilder(path)
+                        .withPath(node)
+                        .build();
+                Domain d = JSONUtils.read(client, zp, Domain.class);
+                if (d != null) {
+                    domains.add(d);
+                } else {
+                    throw new Exception(String.format("Invalid domain: [path=%s]", zp));
+                }
+            }
+            return domains;
+        }
+        return null;
+    }
+
     private SchemaVersion getLatestVersion(SchemaEntity entity,
                                            CuratorFramework client) throws Exception {
         String zp = getSchemaPath(entity.getDomain(), entity.getEntity())
@@ -215,6 +246,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
 
     private PathUtils.ZkPathBuilder getDomainPath(String domain) {
         return new PathUtils.ZkPathBuilder(zkBasePath)
+                .withPath(ZK_PATH_DOMAINS)
                 .withPath(domain);
     }
 

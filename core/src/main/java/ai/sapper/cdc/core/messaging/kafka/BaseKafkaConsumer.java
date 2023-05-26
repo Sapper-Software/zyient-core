@@ -1,11 +1,14 @@
 package ai.sapper.cdc.core.messaging.kafka;
 
+import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection;
 import ai.sapper.cdc.core.messaging.MessageObject;
 import ai.sapper.cdc.core.messaging.MessageReceiver;
 import ai.sapper.cdc.core.messaging.MessagingError;
 import ai.sapper.cdc.core.processing.ProcessorState;
+import ai.sapper.cdc.core.state.Offset;
+import ai.sapper.cdc.core.state.OffsetState;
 import com.google.common.base.Preconditions;
 import lombok.NonNull;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -35,12 +38,13 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         return this;
     }
 
-    private void seek(TopicPartition partition, long offset) {
+    private void seek(TopicPartition partition, long offset) throws Exception {
         if (offset > 0) {
             consumer.consumer().seek(partition, offset);
         } else {
             consumer.consumer().seekToBeginning(Collections.singletonList(partition));
         }
+        updateReadState(partition.partition(), offset);
     }
 
     @Override
@@ -145,6 +149,20 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         }
     }
 
+    private TopicPartition findPartition(int partition) throws MessagingError {
+        Set<TopicPartition> partitions = consumer.consumer().assignment();
+        if (partitions == null || partitions.isEmpty()) {
+            throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
+                    consumer.name(), topic));
+        }
+        for (TopicPartition p : partitions) {
+            if (p.partition() == partition) {
+                return p;
+            }
+        }
+        return null;
+    }
+
     @Override
     public MessageObject<String, M> receive() throws MessagingError {
         return receive(defaultReceiveTimeout);
@@ -205,7 +223,8 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         KafkaConsumerState s = stateManager.get(topic, partition);
         KafkaOffset o = s.getOffset();
         o.setOffsetRead(offset);
-        stateManager.update(s);
+        s = stateManager.update(s);
+        states.put(partition, s);
     }
 
     private void updateCommitState(int partition, long offset) throws Exception {
@@ -218,7 +237,45 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                             topic, partition, o.getOffsetRead(), offset));
         }
         o.setOffsetCommitted(offset);
-        stateManager.update(s);
+        s = stateManager.update(s);
+        states.put(partition, s);
+    }
+
+    @Override
+    public OffsetState<?, ?> currentOffset(Context context) throws MessagingError {
+        if (!stateful())
+            return null;
+        Preconditions.checkArgument(context instanceof KafkaContext);
+        Preconditions.checkArgument(topic.compareTo(((KafkaContext) context).getTopic()) == 0);
+        KafkaConsumerState s = states.get(((KafkaContext) context).getPartition());
+        if (s == null) {
+            throw new MessagingError(
+                    String.format("[%s] Partition not registered. [partition=%d]",
+                            topic, ((KafkaContext) context).getPartition()));
+        }
+        return s;
+    }
+
+    @Override
+    public void seek(@NonNull Offset offset, Context context) throws MessagingError {
+        Preconditions.checkArgument(context instanceof KafkaContext);
+        Preconditions.checkArgument(offset instanceof KafkaOffset);
+        KafkaConsumerState s = (KafkaConsumerState) currentOffset(context);
+        TopicPartition partition = findPartition(((KafkaContext) context).getPartition());
+        if (partition == null) {
+            throw new MessagingError(
+                    String.format("[%s] Partition not found. [partition=%d]",
+                            topic, ((KafkaContext) context).getPartition()));
+        }
+        try {
+            if (s.getOffset().getOffsetRead() <= ((KafkaOffset) offset).getOffsetCommitted()) {
+                seek(partition, s.getOffset().getOffsetRead());
+            } else {
+                seek(partition, ((KafkaOffset) offset).getOffsetCommitted());
+            }
+        } catch (Exception ex) {
+            throw new MessagingError(ex);
+        }
     }
 
     protected abstract M deserialize(byte[] message) throws MessagingError;

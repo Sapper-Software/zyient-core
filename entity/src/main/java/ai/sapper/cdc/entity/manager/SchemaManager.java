@@ -18,6 +18,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -158,6 +159,20 @@ public abstract class SchemaManager implements Closeable {
             }
         }
         return false;
+    }
+
+    public List<Domain> listDomains() throws Exception {
+        Preconditions.checkState(state.isRunning());
+        List<Domain> domains = handler.listDomains();
+        if (domains != null && !domains.isEmpty()) {
+            synchronized (this) {
+                for (Domain d : domains) {
+                    CacheElement<Domain> e = new CacheElement<>(d);
+                    domainCache.put(d.getName(), e);
+                }
+            }
+        }
+        return domains;
     }
 
     public SchemaEntity getEntity(@NonNull String domain,

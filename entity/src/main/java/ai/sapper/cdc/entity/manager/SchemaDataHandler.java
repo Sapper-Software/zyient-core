@@ -15,6 +15,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.Closeable;
+import java.util.List;
 
 @Getter
 @Accessors(fluent = true)
@@ -76,4 +77,5 @@ public abstract class SchemaDataHandler implements Closeable {
     protected abstract boolean deleteSchema(@NonNull SchemaEntity entity,
                                             @NonNull SchemaVersion version) throws Exception;
 
+    protected abstract List<Domain> listDomains() throws Exception;
 }

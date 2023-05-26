@@ -12,6 +12,14 @@ public final class DefaultLogger {
         LOGGER = logger;
     }
 
+    public static boolean isDebugEnabled() {
+        return LOGGER.isDebugEnabled();
+    }
+
+    public static boolean isTraceEnabled() {
+        return LOGGER.isTraceEnabled();
+    }
+
     public static boolean isGreaterOrEqual(Level l1, Level l2) {
         int i1 = l1.toInt();
         int i2 = l2.toInt();
@@ -40,7 +48,7 @@ public final class DefaultLogger {
         return buff.toString();
     }
 
-    public static void stacktrace( @NonNull Throwable error) {
+    public static void stacktrace(@NonNull Throwable error) {
         if (LOGGER.isDebugEnabled()) {
             LOGGER.debug(getStacktrace(error));
         }

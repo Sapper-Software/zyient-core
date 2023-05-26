@@ -57,4 +57,9 @@ public class ModuleInstance {
         }
         return ret;
     }
+
+    @Override
+    public String toString() {
+        return String.format("[module=%s][name=%s], ID=%s", module, name, instanceId);
+    }
 }
