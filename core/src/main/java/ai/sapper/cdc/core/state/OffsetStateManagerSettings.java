@@ -15,7 +15,7 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class OffsetStateManagerSettings extends Settings {
-    public static final String __CONFIG_PATH = "manager";
+    public static final String __CONFIG_PATH = "offsetManager";
 
     public static final class Constants {
         public static final short LOCK_RETRY_COUNT = 4;

@@ -26,11 +26,11 @@ public abstract class MessageSenderBuilder<I, M> {
         this.settingsType = settingsType;
     }
 
-    public MessageSender<I, M> build() throws MessagingError {
-        Preconditions.checkNotNull(config);
+    public MessageSender<I, M> build(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws MessagingError {
         try {
             ConfigReader reader = new ConfigReader(config, settingsType);
             reader.read();
+            this.config = reader.config();
             return build((MessageSenderSettings) reader.settings());
         } catch (Exception ex) {
             throw new MessagingError(ex);

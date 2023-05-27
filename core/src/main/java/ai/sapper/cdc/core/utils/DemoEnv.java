@@ -19,7 +19,7 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
     }
 
     public enum EDemoState {
-        Error
+        Error, Available, Stopped
     }
 
     public static class DemoState extends AbstractEnvState<EDemoState> {
@@ -30,7 +30,12 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
 
         @Override
         public boolean isAvailable() {
-            return false;
+            return getState() == EDemoState.Available;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return (getState() == EDemoState.Stopped || hasError());
         }
     }
 

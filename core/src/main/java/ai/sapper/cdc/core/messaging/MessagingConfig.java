@@ -16,4 +16,8 @@ public class MessagingConfig extends ConfigReader {
     public MessagingConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config, @NonNull String path) {
         super(config, path, MessagingConfigSettings.class);
     }
+
+    public MessagingConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
+        super(config, MessagingConfigSettings.class);
+    }
 }

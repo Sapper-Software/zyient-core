@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.messaging.kafka.builders;
 
+import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection;
 import ai.sapper.cdc.core.connections.settngs.EConnectionType;
@@ -8,6 +9,7 @@ import ai.sapper.cdc.core.messaging.builders.MessageReceiverSettings;
 import ai.sapper.cdc.core.messaging.kafka.BaseKafkaConsumer;
 import ai.sapper.cdc.core.messaging.kafka.KafkaStateManager;
 import ai.sapper.cdc.core.state.OffsetStateManager;
+import ai.sapper.cdc.core.state.OffsetStateManagerSettings;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.NonNull;
@@ -49,5 +51,25 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
             consumer.withReceiveTimeout(settings.getReceiverTimeout());
         }
         return (BaseKafkaConsumer<M>) consumer.init();
+    }
+
+    private void readOffsetManager(MessageReceiverSettings settings,
+                                   BaseKafkaConsumer<M> consumer) throws Exception {
+        if (ConfigReader.checkIfNodeExists(config, OffsetStateManagerSettings.__CONFIG_PATH)) {
+            Class<? extends OffsetStateManager<?>> cls = OffsetStateManager.parseManagerType(config);
+            OffsetStateManager<?> manager = cls
+                    .getDeclaredConstructor()
+                    .newInstance()
+                    .init(config, env());
+            consumer.withOffsetStateManager(manager);
+        } else if (!Strings.isNullOrEmpty(settings.getOffsetManager())) {
+            OffsetStateManager<?> offsetStateManager = env().stateManager()
+                    .getOffsetManager(settings.getOffsetManager(), KafkaStateManager.class);
+            if (offsetStateManager == null) {
+                throw new Exception(
+                        String.format("Kafka State manager not found. [name=%s]", settings.getOffsetManager()));
+            }
+            consumer.withOffsetStateManager(offsetStateManager);
+        }
     }
 }

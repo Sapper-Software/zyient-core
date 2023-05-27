@@ -17,7 +17,12 @@ public class UtilsEnv extends BaseEnv<UtilsEnv.EUtilsState> {
 
         @Override
         public boolean isAvailable() {
-            return false;
+            return getState() == EUtilsState.Available;
+        }
+
+        @Override
+        public boolean isTerminated() {
+            return (getState() == EUtilsState.Disposed || hasError());
         }
     }
 

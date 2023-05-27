@@ -168,6 +168,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     }
 
     public DistributedLock globalLock() throws Exception {
+
         return createLock(Constants.LOCK_GLOBAL);
     }
 
@@ -264,9 +265,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 callback.call(state);
             }
         }
-        if (dLockBuilder != null) {
-            dLockBuilder.close();
-        }
+        dLockBuilder.close();
     }
 
 
@@ -297,8 +296,13 @@ public abstract class BaseEnv<T extends Enum<?>> {
         __instances.put(name, env);
     }
 
-    public static BaseEnv<?> remove(@NonNull String name) {
-        return __instances.remove(name);
+    public static boolean remove(@NonNull String name) throws Exception {
+        BaseEnv<?> env = __instances.remove(name);
+        if (env != null) {
+            env.close();
+            return true;
+        }
+        return false;
     }
 
     public static void initLock() {
@@ -323,7 +327,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     public static class BaseEnvConfig extends ConfigReader {
 
         public BaseEnvConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                             @NonNull Class<? extends  BaseEnvSettings> type) {
+                             @NonNull Class<? extends BaseEnvSettings> type) {
             super(config, BaseEnv.Constants.__CONFIG_PATH_ENV, type);
         }
 

@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.processing;
 
+import ai.sapper.cdc.common.AbstractEnvState;
 import ai.sapper.cdc.common.AbstractState;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -10,7 +11,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ProcessorState extends AbstractState<ProcessorState.EProcessorState> {
+public class ProcessorState extends AbstractEnvState<ProcessorState.EProcessorState> {
     public ProcessorState() {
         super(EProcessorState.Error);
         setState(EProcessorState.Unknown);
@@ -23,8 +24,15 @@ public class ProcessorState extends AbstractState<ProcessorState.EProcessorState
     }
 
     @JsonIgnore
-    public boolean isRunning() {
+    @Override
+    public boolean isAvailable() {
         return (getState() == EProcessorState.Running);
+    }
+
+    @JsonIgnore
+    @Override
+    public boolean isTerminated() {
+        return (getState() == EProcessorState.Stopped || hasError());
     }
 
     public enum EProcessorState {

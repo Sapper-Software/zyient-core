@@ -13,12 +13,11 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public abstract class MessageReceiverBuilder<I, M> {
     private final Class<? extends MessageReceiverSettings> settingsType;
     private final BaseEnv<?> env;
-    private HierarchicalConfiguration<ImmutableNode> config;
+    protected HierarchicalConfiguration<ImmutableNode> config;
 
     protected MessageReceiverBuilder(@NonNull BaseEnv<?> env,
                                      @NonNull Class<? extends MessageReceiverSettings> settingsType) {
@@ -26,11 +25,11 @@ public abstract class MessageReceiverBuilder<I, M> {
         this.settingsType = settingsType;
     }
 
-    public MessageReceiver<I, M> build() throws MessagingError {
-        Preconditions.checkNotNull(config);
+    public MessageReceiver<I, M> build(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws MessagingError {
         try {
             ConfigReader reader = new ConfigReader(config, settingsType);
             reader.read();
+            this.config = reader.config();
             return build((MessageReceiverSettings) reader.settings());
         } catch (Exception ex) {
             throw new MessagingError(ex);
