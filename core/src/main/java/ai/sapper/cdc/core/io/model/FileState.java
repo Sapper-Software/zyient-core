@@ -11,7 +11,7 @@ import lombok.Setter;
         property = "@class")
 public class FileState extends AbstractState<EFileState> {
     public FileState() {
-        super(EFileState.Error);
+        super(EFileState.Error, EFileState.Synced);
     }
 
     public boolean markedForUpdate() {

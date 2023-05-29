@@ -20,7 +20,8 @@ public abstract class OffsetState<T extends Enum<?>, O extends Offset> extends A
     private long timeUpdated = 0;
     private ModuleInstance lastUpdatedBy;
 
-    public OffsetState(@NonNull T errorState) {
-        super(errorState);
+    public OffsetState(@NonNull T errorState,
+                       @NonNull T initState) {
+        super(errorState, initState);
     }
 }

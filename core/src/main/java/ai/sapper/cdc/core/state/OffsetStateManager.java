@@ -80,7 +80,7 @@ public abstract class OffsetStateManager<T extends Offset> {
 
     protected DistributedLock getLock(@NonNull String type,
                                       @NonNull CuratorFramework client) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         String zp = new PathUtils.ZkPathBuilder(zkPath)
                 .withPath(type)
                 .build();
@@ -93,7 +93,7 @@ public abstract class OffsetStateManager<T extends Offset> {
     protected DistributedLock getLock(@NonNull String type,
                                       @NonNull String name,
                                       @NonNull CuratorFramework client) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         String zp = new PathUtils.ZkPathBuilder(zkPath)
                 .withPath(type)
                 .withPath(name)
@@ -105,7 +105,7 @@ public abstract class OffsetStateManager<T extends Offset> {
     }
 
     protected String registerType(@NonNull String type) throws StateManagerError {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         String zp = new PathUtils.ZkPathBuilder(zkPath)
                 .withPath(type)
                 .build();
@@ -126,7 +126,7 @@ public abstract class OffsetStateManager<T extends Offset> {
     protected <R extends OffsetState<?, T>> R get(@NonNull String type,
                                                   @NonNull String name,
                                                   @NonNull Class<? extends R> offsetType) throws StateManagerError {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         CuratorFramework client = connection.client();
         return get(type, name, offsetType, client);
     }
@@ -149,7 +149,7 @@ public abstract class OffsetStateManager<T extends Offset> {
     protected <R extends OffsetState<?, T>> R create(@NonNull String type,
                                                      @NonNull String name,
                                                      @NonNull Class<? extends R> offsetType) throws StateManagerError {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         try {
             String zp = registerType(type);
             CuratorFramework client = connection.client();
@@ -189,7 +189,7 @@ public abstract class OffsetStateManager<T extends Offset> {
 
     @SuppressWarnings("unchecked")
     protected <R extends OffsetState<?, T>> R update(@NonNull R offset) throws StateManagerError {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         try {
             CuratorFramework client = connection.client();
             try (DistributedLock lock = getLock(offset.getType(), offset.getName(), client)) {
@@ -230,7 +230,7 @@ public abstract class OffsetStateManager<T extends Offset> {
     public boolean delete(@NonNull String type,
                           @NonNull String name,
                           @NonNull Class<? extends OffsetState<?, T>> offsetType) throws StateManagerError {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         try {
             CuratorFramework client = connection.client();
             try (DistributedLock lock = getLock(type, client)) {

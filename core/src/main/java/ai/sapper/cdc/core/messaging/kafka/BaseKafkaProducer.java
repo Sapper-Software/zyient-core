@@ -44,7 +44,7 @@ public abstract class BaseKafkaProducer<M> extends MessageSender<String, M> {
 
     @Override
     public MessageObject<String, M> send(@NonNull MessageObject<String, M> message) throws MessagingError {
-        Preconditions.checkArgument(state().isRunning());
+        Preconditions.checkArgument(state().isAvailable());
         try {
             message.queue(topic);
 
@@ -81,7 +81,7 @@ public abstract class BaseKafkaProducer<M> extends MessageSender<String, M> {
 
     @Override
     public List<MessageObject<String, M>> sent(@NonNull List<MessageObject<String, M>> messages) throws MessagingError {
-        Preconditions.checkArgument(state().isRunning());
+        Preconditions.checkArgument(state().isAvailable());
         List<MessageObject<String, M>> responses = new ArrayList<>(messages.size());
         for (MessageObject<String, M> message : messages) {
             MessageObject<String, M> response = send(message);
@@ -94,7 +94,7 @@ public abstract class BaseKafkaProducer<M> extends MessageSender<String, M> {
 
     @Override
     public void close() throws IOException {
-        if (state().isRunning()) {
+        if (state().isAvailable()) {
             state().setState(ProcessorState.EProcessorState.Stopped);
         }
     }

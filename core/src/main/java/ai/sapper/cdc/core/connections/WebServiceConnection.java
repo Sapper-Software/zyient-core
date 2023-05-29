@@ -88,7 +88,7 @@ public class WebServiceConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
 
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
@@ -108,6 +108,7 @@ public class WebServiceConnection implements Connection {
 
                 state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -128,6 +129,7 @@ public class WebServiceConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 state.error(ex);
                 throw new ConnectionError(ex);
             }

@@ -3,7 +3,6 @@ package ai.sapper.cdc.core.processing;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.core.state.BaseStateManager;
 import ai.sapper.cdc.core.state.Offset;
-import ai.sapper.cdc.core.state.OffsetState;
 import ai.sapper.cdc.core.state.StateManagerError;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

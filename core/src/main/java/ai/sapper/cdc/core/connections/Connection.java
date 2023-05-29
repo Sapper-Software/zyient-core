@@ -19,7 +19,7 @@ public interface Connection extends Closeable {
     class ConnectionState extends AbstractState<EConnectionState> {
 
         public ConnectionState() {
-            super(EConnectionState.Error);
+            super(EConnectionState.Error, EConnectionState.Unknown);
             setState(EConnectionState.Unknown);
         }
 

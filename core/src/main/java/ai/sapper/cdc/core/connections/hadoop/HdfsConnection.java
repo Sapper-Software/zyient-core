@@ -59,7 +59,7 @@ public class HdfsConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 config = new HdfsConfig(xmlConfig, HdfsConnectionSettings.HdfsSettings.class);
                 config.read();
 
@@ -96,7 +96,7 @@ public class HdfsConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
 
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
@@ -114,6 +114,7 @@ public class HdfsConnection implements Connection {
 
                 state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -131,8 +132,9 @@ public class HdfsConnection implements Connection {
                 }
                 this.settings = (HdfsConnectionSettings.HdfsBaseSettings) settings;
                 setupHadoopConfig();
-                state.clear(EConnectionState.Unknown);
+                state.clear();
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -161,7 +163,7 @@ public class HdfsConnection implements Connection {
             if (!state.isConnected()
                     && (state.getState() == EConnectionState.Initialized
                     || state.getState() == EConnectionState.Closed)) {
-                state.clear(EConnectionState.Initialized);
+                state.clear();
                 try {
                     fileSystem = FileSystem.get(hdfsConfig);
                     if (settings.isAdminEnabled()) {

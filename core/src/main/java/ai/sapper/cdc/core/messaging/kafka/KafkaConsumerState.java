@@ -18,7 +18,7 @@ public class KafkaConsumerState extends OffsetState<Connection.EConnectionState,
     private long updateTimestamp;
 
     public KafkaConsumerState() {
-        super(Connection.EConnectionState.Error);
+        super(Connection.EConnectionState.Error, Connection.EConnectionState.Initialized);
         setType(OFFSET_TYPE);
     }
 }

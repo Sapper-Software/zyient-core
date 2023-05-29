@@ -24,7 +24,7 @@ public class EntityReadState<T extends TransactionId> extends OffsetState<EEntit
     private long editsEventCount = 0;
 
     public EntityReadState() {
-        super(EEntityState.ERROR);
+        super(EEntityState.ERROR, EEntityState.UNKNOWN);
     }
 
     public boolean canProcess() {

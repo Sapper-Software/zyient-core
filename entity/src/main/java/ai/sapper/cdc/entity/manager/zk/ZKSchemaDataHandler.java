@@ -1,7 +1,6 @@
 package ai.sapper.cdc.entity.manager.zk;
 
 import ai.sapper.cdc.common.model.InvalidDataError;
-import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;

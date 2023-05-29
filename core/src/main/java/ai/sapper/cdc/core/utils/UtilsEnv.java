@@ -12,7 +12,7 @@ public class UtilsEnv extends BaseEnv<UtilsEnv.EUtilsState> {
     public static class UtilsState extends AbstractEnvState<EUtilsState> {
 
         public UtilsState() {
-            super(EUtilsState.Error);
+            super(EUtilsState.Error, EUtilsState.Unknown);
         }
 
         @Override

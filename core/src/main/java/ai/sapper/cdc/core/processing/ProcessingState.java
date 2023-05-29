@@ -19,12 +19,13 @@ public abstract class ProcessingState<E extends Enum<?>, O extends Offset> exten
     private O processedOffset;
     private long updatedTime;
 
-    public ProcessingState(@NonNull E errorState) {
-        super(errorState);
+    public ProcessingState(@NonNull E errorState,
+                           @NonNull E initState) {
+        super(errorState, initState);
     }
 
     public ProcessingState(@NonNull ProcessingState<E, O> state) {
-        super(state.getErrorState());
+        super(state.getErrorState(), state.getInitState());
         this.instance = state.instance;
         this.namespace = state.namespace;
         this.processedOffset = state.processedOffset;

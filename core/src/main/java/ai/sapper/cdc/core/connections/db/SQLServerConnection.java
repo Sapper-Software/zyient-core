@@ -36,7 +36,7 @@ public class SQLServerConnection extends DbConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.connectionManager = env.connectionManager();
                 config = new SQLServerConnectionConfig(xmlConfig);
                 config.read();
@@ -45,6 +45,7 @@ public class SQLServerConnection extends DbConnection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -92,6 +93,7 @@ public class SQLServerConnection extends DbConnection {
                 state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }

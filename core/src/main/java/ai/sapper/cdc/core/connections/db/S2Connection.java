@@ -36,7 +36,7 @@ public class S2Connection extends DbConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.connectionManager = env.connectionManager();
                 config = new S2ConnectionConfig(xmlConfig);
                 config.read();
@@ -44,6 +44,7 @@ public class S2Connection extends DbConnection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }

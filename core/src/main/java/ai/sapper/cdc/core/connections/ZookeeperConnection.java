@@ -52,7 +52,7 @@ public class ZookeeperConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
 
                 config = new ZookeeperConfig(xmlConfig);
                 config.read();
@@ -69,6 +69,7 @@ public class ZookeeperConnection implements Connection {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     private void setup() throws Exception {
         builder = CuratorFrameworkFactory.builder();
         builder.connectString(settings.getConnectionString());
@@ -78,7 +79,7 @@ public class ZookeeperConnection implements Connection {
         if (!Strings.isNullOrEmpty(settings.getAuthenticationHandler())) {
             Class<? extends ZookeeperAuthHandler> cls
                     = (Class<? extends ZookeeperAuthHandler>) Class.forName(settings.getAuthenticationHandler());
-            ZookeeperAuthHandler authHandler = cls.newInstance();
+            ZookeeperAuthHandler authHandler = cls.getDeclaredConstructor().newInstance();
             authHandler.setup(builder, config.config());
         }
         if (!Strings.isNullOrEmpty(settings.getNamespace())) {
@@ -102,7 +103,7 @@ public class ZookeeperConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
 
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
@@ -119,6 +120,7 @@ public class ZookeeperConnection implements Connection {
 
                 state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -134,12 +136,13 @@ public class ZookeeperConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.settings = (ZookeeperSettings) settings;
                 setup();
 
                 state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -156,7 +159,7 @@ public class ZookeeperConnection implements Connection {
             if (!state.isConnected()
                     && (state.getState() == EConnectionState.Initialized
                     || state.getState() == EConnectionState.Closed)) {
-                state.clear(EConnectionState.Initialized);
+                state.clear();
                 try {
                     client = builder.build();
                     client.start();

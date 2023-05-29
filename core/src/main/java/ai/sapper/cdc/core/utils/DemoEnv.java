@@ -25,7 +25,7 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
     public static class DemoState extends AbstractEnvState<EDemoState> {
 
         public DemoState() {
-            super(EDemoState.Error);
+            super(EDemoState.Error, EDemoState.Available);
         }
 
         @Override

@@ -46,7 +46,7 @@ public class AzureTableConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.connectionManager = env.connectionManager();
                 config = new AzureTableConnectionConfig(xmlConfig);
                 config.read();
@@ -55,6 +55,7 @@ public class AzureTableConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -70,7 +71,7 @@ public class AzureTableConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(AzureTableConnectionConfig.__CONFIG_PATH)
@@ -87,6 +88,7 @@ public class AzureTableConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -100,12 +102,13 @@ public class AzureTableConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.settings = (AzureTableConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -128,6 +131,7 @@ public class AzureTableConnection implements Connection {
                 return this;
             }
         } catch (Exception ex) {
+            state.error(ex);
             throw new ConnectionError(ex);
         }
     }

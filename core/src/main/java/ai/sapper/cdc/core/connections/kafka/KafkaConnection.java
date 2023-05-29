@@ -53,7 +53,7 @@ public abstract class KafkaConnection implements MessageConnection {
             if (state.isConnected()) {
                 close();
             }
-            state.clear(EConnectionState.Unknown);
+            state.clear();
             kafkaConfig = new KafkaConfig(xmlConfig);
             kafkaConfig.read();
             settings = (KafkaSettings) kafkaConfig.settings();
@@ -75,7 +75,7 @@ public abstract class KafkaConnection implements MessageConnection {
             if (state.isConnected()) {
                 close();
             }
-            state.clear(EConnectionState.Unknown);
+            state.clear();
 
             CuratorFramework client = connection.client();
             String zkPath = new PathUtils.ZkPathBuilder(path)
@@ -92,6 +92,7 @@ public abstract class KafkaConnection implements MessageConnection {
             if (Strings.isNullOrEmpty(settings.clientId()))
                 settings.clientId(env.moduleInstance().getInstanceId());
         } catch (Exception ex) {
+            state.error(ex);
             throw new ConnectionError(ex);
         }
         return this;
@@ -105,11 +106,12 @@ public abstract class KafkaConnection implements MessageConnection {
             if (state.isConnected()) {
                 close();
             }
-            state.clear(EConnectionState.Unknown);
+            state.clear();
             this.settings = (KafkaSettings) settings;
             if (Strings.isNullOrEmpty(((KafkaSettings) settings).clientId()))
                 ((KafkaSettings) settings).clientId(env.moduleInstance().getInstanceId());
         } catch (Exception ex) {
+            state.error(ex);
             throw new ConnectionError(ex);
         }
         return this;

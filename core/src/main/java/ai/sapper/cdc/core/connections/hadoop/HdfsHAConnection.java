@@ -55,7 +55,7 @@ public class HdfsHAConnection extends HdfsConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 config = new HdfsHAConfig(xmlConfig);
                 config.read();
                 settings = (HdfsConnectionSettings.HdfsBaseSettings) config.settings();
@@ -80,7 +80,7 @@ public class HdfsHAConnection extends HdfsConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.settings = (HdfsConnectionSettings.HdfsBaseSettings) settings;
 
                 setupHadoopConfig();
@@ -104,7 +104,7 @@ public class HdfsHAConnection extends HdfsConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
 
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
@@ -122,6 +122,7 @@ public class HdfsHAConnection extends HdfsConnection {
 
                 state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -162,7 +163,7 @@ public class HdfsHAConnection extends HdfsConnection {
             if (!state.isConnected()
                     && (state.getState() == EConnectionState.Initialized
                     || state.getState() == EConnectionState.Closed)) {
-                state.clear(EConnectionState.Initialized);
+                state.clear();
                 try {
                     fileSystem = FileSystem.get(URI.create(String.format("hdfs://%s",
                             ((HdfsConnectionSettings.HdfsHASettings) settings).getNameService())), hdfsConfig);

@@ -46,7 +46,7 @@ public class Db2Connection extends DbConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.connectionManager = env.connectionManager();
                 config = new Db2ConnectionConfig(xmlConfig);
                 config.read();
@@ -56,6 +56,7 @@ public class Db2Connection extends DbConnection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -71,7 +72,7 @@ public class Db2Connection extends DbConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(zkNode)
@@ -88,6 +89,7 @@ public class Db2Connection extends DbConnection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -139,6 +141,7 @@ public class Db2Connection extends DbConnection {
                 state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }

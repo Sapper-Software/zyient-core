@@ -13,8 +13,9 @@ import lombok.Setter;
 )
 public abstract class AbstractEnvState<T extends Enum<?>> extends AbstractState<T> {
 
-    public AbstractEnvState(@NonNull T errorState) {
-        super(errorState);
+    public AbstractEnvState(@NonNull T errorState,
+                            @NonNull T initState) {
+        super(errorState, initState);
     }
 
     @JsonIgnore

@@ -36,7 +36,7 @@ public class OracleConnection extends DbConnection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.connectionManager = env.connectionManager();
                 config = new OracleConnectionConfig(xmlConfig);
                 config.read();
@@ -44,6 +44,7 @@ public class OracleConnection extends DbConnection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -91,6 +92,7 @@ public class OracleConnection extends DbConnection {
                 state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }

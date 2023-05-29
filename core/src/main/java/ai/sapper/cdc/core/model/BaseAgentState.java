@@ -18,7 +18,7 @@ public class BaseAgentState {
     public static class AgentState extends AbstractState<EAgentState> {
 
         public AgentState() {
-            super(EAgentState.Error);
+            super(EAgentState.Error, EAgentState.Unknown);
             setState(EAgentState.Unknown);
         }
 

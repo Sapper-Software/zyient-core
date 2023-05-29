@@ -1,10 +1,8 @@
 package ai.sapper.cdc.core.processing;
 
 import ai.sapper.cdc.core.BaseEnv;
-import ai.sapper.cdc.core.messaging.MessageProcessorState;
 import ai.sapper.cdc.core.messaging.MessagingConfig;
 import ai.sapper.cdc.core.messaging.kafka.BaseKafkaConsumer;
-import ai.sapper.cdc.core.messaging.kafka.KafkaConsumerState;
 import ai.sapper.cdc.core.messaging.kafka.KafkaMessageProcessingState;
 import ai.sapper.cdc.core.messaging.kafka.KafkaOffset;
 import lombok.Getter;

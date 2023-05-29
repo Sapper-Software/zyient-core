@@ -58,7 +58,7 @@ public class MongoDbConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.connectionManager = env.connectionManager();
                 config = new MongoDbConnectionConfig(xmlConfig);
                 config.read();
@@ -67,6 +67,7 @@ public class MongoDbConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -82,7 +83,7 @@ public class MongoDbConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(zkNode)
@@ -99,6 +100,7 @@ public class MongoDbConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -112,12 +114,13 @@ public class MongoDbConnection implements Connection {
                 if (state.isConnected()) {
                     close();
                 }
-                state.clear(EConnectionState.Unknown);
+                state.clear();
                 this.settings = (MongoDbConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -136,6 +139,7 @@ public class MongoDbConnection implements Connection {
                 state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
+                state.error(ex);
                 throw new ConnectionError(ex);
             }
         }

@@ -1,7 +1,6 @@
 package ai.sapper.cdc.core.processing;
 
 import ai.sapper.cdc.common.AbstractEnvState;
-import ai.sapper.cdc.common.AbstractState;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -13,7 +12,7 @@ import lombok.Setter;
         property = "@class")
 public class ProcessorState extends AbstractEnvState<ProcessorState.EProcessorState> {
     public ProcessorState() {
-        super(EProcessorState.Error);
+        super(EProcessorState.Error, EProcessorState.Initialized);
         setState(EProcessorState.Unknown);
     }
 

@@ -50,7 +50,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public void ack(@NonNull String messageId) throws MessagingError {
-        Preconditions.checkState(state().isRunning());
+        Preconditions.checkState(state().isAvailable());
         try {
             if (offsetMap.containsKey(messageId)) {
                 Map<TopicPartition, OffsetAndMetadata> currentOffsets =
@@ -70,7 +70,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public void ack(@NonNull List<String> messageIds) throws MessagingError {
-        Preconditions.checkState(state().isRunning());
+        Preconditions.checkState(state().isAvailable());
         Preconditions.checkArgument(!messageIds.isEmpty());
         try {
             Map<TopicPartition, OffsetAndMetadata> currentOffsets =
@@ -175,7 +175,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public MessageObject<String, M> receive(long timeout) throws MessagingError {
-        Preconditions.checkState(state().isRunning());
+        Preconditions.checkState(state().isAvailable());
         if (cache.isEmpty()) {
             List<MessageObject<String, M>> batch = nextBatch(timeout);
             if (batch != null) {
@@ -195,7 +195,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public List<MessageObject<String, M>> nextBatch(long timeout) throws MessagingError {
-        Preconditions.checkState(state().isRunning());
+        Preconditions.checkState(state().isAvailable());
         try {
             ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(timeout));
             if (records != null && records.count() > 0) {
@@ -278,7 +278,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             cache.clear();
             cache = null;
         }
-        if (state().isRunning()) {
+        if (state().isAvailable()) {
             state().setState(ProcessorState.EProcessorState.Stopped);
         }
     }

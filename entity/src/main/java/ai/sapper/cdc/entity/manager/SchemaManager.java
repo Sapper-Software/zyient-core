@@ -88,7 +88,7 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public Domain getDomain(@NonNull String name) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         CacheElement<Domain> e = domainCache.get(name);
         if (e == null || e.expired(settings.getCacheTimeout())) {
             synchronized (this) {
@@ -105,7 +105,7 @@ public abstract class SchemaManager implements Closeable {
 
     protected Domain createDomain(@NonNull String name,
                                   @NonNull Class<? extends Domain> type) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
             Domain d = getDomain(name);
@@ -128,7 +128,7 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public Domain updateDomain(@NonNull Domain domain) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
             Domain d = getDomain(domain.getName());
@@ -147,7 +147,7 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public boolean deleteDomain(@NonNull String name) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         Domain d = getDomain(name);
         if (d != null) {
             schemaLock.lock();
@@ -162,7 +162,7 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public List<Domain> listDomains() throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         List<Domain> domains = handler.listDomains();
         if (domains != null && !domains.isEmpty()) {
             synchronized (this) {
@@ -177,7 +177,7 @@ public abstract class SchemaManager implements Closeable {
 
     public SchemaEntity getEntity(@NonNull String domain,
                                   @NonNull String name) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         String key = SchemaEntity.key(domain, name);
         CacheElement<SchemaEntity> e = entityCache.get(key);
         if (e == null || e.expired(settings.getCacheTimeout())) {
@@ -196,7 +196,7 @@ public abstract class SchemaManager implements Closeable {
     protected SchemaEntity createEntity(@NonNull String domain,
                                         @NonNull String name,
                                         @NonNull Class<? extends SchemaEntity> type) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         SchemaEntity entity = getEntity(domain, name);
         if (entity != null) {
             throw new Exception(
@@ -215,7 +215,7 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public SchemaEntity updateEntity(@NonNull SchemaEntity entity) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
             SchemaEntity current = getEntity(entity.getDomain(), entity.getEntity());
@@ -235,7 +235,7 @@ public abstract class SchemaManager implements Closeable {
 
     public boolean deleteEntity(@NonNull String domain,
                                 @NonNull String name) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         SchemaEntity entity = getEntity(domain, name);
         if (entity != null) {
             schemaLock.lock();
@@ -256,7 +256,7 @@ public abstract class SchemaManager implements Closeable {
 
     public EntitySchema getSchema(@NonNull SchemaEntity entity,
                                   SchemaVersion version) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         EntitySchema schema = null;
         String key = schemaCacheKey(entity);
         Optional<CacheElement<EntitySchema>> op = schemaCache.get(key);
@@ -279,13 +279,13 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public EntitySchema getSchema(@NonNull String uri) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         return handler.fetchSchema(uri);
     }
 
     protected EntitySchema createSchema(@NonNull SchemaEntity entity,
                                         @NonNull Class<? extends EntitySchema> type) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         EntitySchema schema = getSchema(entity);
         if (schema != null) {
             throw new InvalidDataError(EntitySchema.class,
@@ -310,7 +310,7 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public EntitySchema updateSchema(@NonNull EntitySchema schema) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
             EntitySchema current = getSchema(schema.getSchemaEntity());
@@ -337,7 +337,7 @@ public abstract class SchemaManager implements Closeable {
 
     public boolean deleteSchema(@NonNull SchemaEntity entity,
                                 @NonNull SchemaVersion version) throws Exception {
-        Preconditions.checkState(state.isRunning());
+        Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
             String key = schemaCacheKey(entity, version);
@@ -357,7 +357,7 @@ public abstract class SchemaManager implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if (state.isRunning() || state.isInitialized())
+        if (state.isAvailable() || state.isInitialized())
             state.setState(ProcessorState.EProcessorState.Stopped);
         if (schemaLock != null) {
             schemaLock.close();

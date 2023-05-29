@@ -16,6 +16,6 @@ import lombok.Setter;
 public class BaseTxState extends OffsetState<EOffsetState, BaseTxId> {
 
     public BaseTxState() {
-        super(EOffsetState.Error);
+        super(EOffsetState.Error, EOffsetState.Unknown);
     }
 }
