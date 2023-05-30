@@ -1,8 +1,10 @@
 package ai.sapper.cdc.core.processing;
 
 import ai.sapper.cdc.common.utils.JSONUtils;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.state.BaseStateManager;
 import ai.sapper.cdc.core.state.Offset;
+import ai.sapper.cdc.core.state.OffsetSequence;
 import ai.sapper.cdc.core.state.StateManagerError;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -14,8 +16,11 @@ import org.apache.curator.framework.CuratorFramework;
 @Getter
 @Accessors(fluent = true)
 public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> extends BaseStateManager {
+    public static final String __ZK_PATH_SEQUENCE = "sequence";
+
     private final Class<? extends ProcessingState<E, T>> processingStateType;
     private ProcessingState<E, T> processingState;
+    private String zkSequencePath;
 
     protected ProcessStateManager(@NonNull Class<? extends ProcessingState<E, T>> processingStateType) {
         this.processingStateType = processingStateType;
@@ -42,6 +47,14 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
             }
             processingState.setInstance(moduleInstance());
             processingState = update(processingState);
+            zkSequencePath = new PathUtils.ZkPathBuilder(zkAgentPath())
+                    .withPath(__ZK_PATH_SEQUENCE)
+                    .build();
+            if (client.checkExists().forPath(zkSequencePath) == null) {
+                client.create().forPath(zkSequencePath);
+                byte[] data = JSONUtils.asBytes(new OffsetSequence(), OffsetSequence.class);
+                client.setData().forPath(zkSequencePath, data);
+            }
         } finally {
             stateUnlock();
         }
@@ -70,6 +83,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
 
     @SuppressWarnings("unchecked")
     public ProcessingState<E, T> update(@NonNull ProcessingState<E, T> state) throws Exception {
+        checkState();
         ProcessingState<E, T> current = readState((Class<? extends ProcessingState<E, T>>) state.getClass());
         if (current.getUpdatedTime() > state.getUpdatedTime()) {
             throw new StateManagerError(String.format("Processing state is stale. [state=%s]", state));
@@ -93,6 +107,30 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
             if (state == null)
                 throw new StateManagerError(String.format("NameNode State not found. [path=%s]", zkAgentStatePath()));
             return state;
+        } catch (Exception ex) {
+            throw new StateManagerError(ex);
+        }
+    }
+
+    public long nextSequence(int blockSize) throws StateManagerError {
+        Preconditions.checkArgument(blockSize > 0);
+        checkState();
+        try {
+            stateLock();
+            try {
+                CuratorFramework client = connection().client();
+                OffsetSequence sequence = JSONUtils.read(client, zkSequencePath, OffsetSequence.class);
+                if (sequence == null) {
+                    throw new StateManagerError(String.format("Offset Sequence not found. [path=%s]", zkSequencePath));
+                }
+                long start = sequence.getSequence();
+                sequence.setSequence(start + blockSize);
+                byte[] data = JSONUtils.asBytes(sequence, OffsetSequence.class);
+                client.setData().forPath(zkSequencePath, data);
+                return start;
+            } finally {
+                stateUnlock();
+            }
         } catch (Exception ex) {
             throw new StateManagerError(ex);
         }

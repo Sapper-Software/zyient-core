@@ -25,6 +25,16 @@ public class ProcessorState extends AbstractEnvState<ProcessorState.EProcessorSt
     @JsonIgnore
     @Override
     public boolean isAvailable() {
+        return (getState() == EProcessorState.Running || getState() == EProcessorState.Paused);
+    }
+
+    @JsonIgnore
+    public boolean isPaused() {
+        return (getState() == EProcessorState.Paused);
+    }
+
+    @JsonIgnore
+    public boolean isRunning() {
         return (getState() == EProcessorState.Running);
     }
 

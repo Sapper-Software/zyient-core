@@ -11,6 +11,8 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class SchemaManagerSettings extends Settings {
+    public static final String __CONFIG_PATH = "schema";
+
     public static final int DEFAULT_SCHEMA_CACHE_SIZE = 128;
     public static final long DEFAULT_CACHE_TIMEOUT = 5 * 60 * 1000;
 

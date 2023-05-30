@@ -301,7 +301,7 @@ public abstract class BaseStateManager implements Closeable {
     public abstract BaseStateManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                           @NonNull BaseEnv<?> env) throws StateManagerError;
 
-    public synchronized void checkState() {
+    public void checkState() {
         Preconditions.checkNotNull(connection);
         Preconditions.checkState(connection.isConnected());
     }

@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-public final class DefaultLogger {
+public class DefaultLogger {
     private static Logger LOGGER = LoggerFactory.getLogger(DefaultLogger.class);
 
     public static void setDefaultLogger(@NonNull Logger logger) {

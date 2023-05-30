@@ -5,6 +5,7 @@ import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.state.Offset;
+import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -22,51 +23,143 @@ import java.io.Closeable;
 public abstract class Processor<E extends Enum<?>, O extends Offset> implements Runnable, Closeable {
     protected final Logger LOG;
     protected final ProcessorState state = new ProcessorState();
+    private String name;
+    private final ProcessStateManager<E, O> stateManager;
+    private ProcessingState<E, O> processingState;
+    private final Class<? extends ProcessingState<E, O>> stateType;
 
-    protected final ProcessStateManager<E, O> stateManager;
     protected BaseEnv<?> env;
-    @Getter(AccessLevel.PACKAGE)
+    @Getter(AccessLevel.PROTECTED)
     private DistributedLock __lock;
+    @Getter(AccessLevel.NONE)
+    private Thread executor;
 
-    protected Processor(@NonNull ProcessStateManager<E, O> stateManager) {
+    protected Processor(@NonNull ProcessStateManager<E, O> stateManager,
+                        @NonNull Class<? extends ProcessingState<E, O>> stateType) {
         this.stateManager = stateManager;
+        this.stateType = stateType;
         this.LOG = LoggerFactory.getLogger(getClass());
     }
 
     protected void init(@NonNull ProcessorSettings settings) throws Exception {
+        this.name = settings.getName();
         String lockPath = new PathUtils.ZkPathBuilder(String.format("processors/%s/%s/%s",
                 env.moduleInstance().getModule(),
                 env.moduleInstance().getName(),
                 settings.getName()))
                 .build();
         __lock = env.createLock(lockPath);
-        ProcessingState<E, O> s = stateManager.processingState();
-        s.clear();
-        stateManager.update(s);
+        __lock.lock();
+        try {
+            stateManager.checkAgentState(stateType);
+            processingState = stateManager.processingState();
+            processingState.clear();
+            processingState = stateManager.update(processingState);
+        } finally {
+            __lock.unlock();
+        }
     }
 
     public abstract Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                         String path,
-                                         @NonNull BaseEnv<?> env) throws ConfigurationException;
+                                         String path) throws ConfigurationException;
 
-    public Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                @NonNull BaseEnv<?> env) throws ConfigurationException {
-        return init(xmlConfig, null, env);
+    public Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        return init(xmlConfig, null);
+    }
+
+
+    @Override
+    public void run() {
+        Preconditions.checkState(state.isAvailable());
+        Preconditions.checkNotNull(env);
+        try {
+            doRun();
+        } catch (Throwable t) {
+            state.error(t);
+            DefaultLogger.error(LOG, "Message Processor terminated with error", t);
+            DefaultLogger.stacktrace(t);
+            try {
+                updateError(t);
+                BaseEnv.remove(env.name());
+            } catch (Exception ex) {
+                DefaultLogger.error(LOG, "Message Processor terminated with error", t);
+                DefaultLogger.stacktrace(t);
+            }
+        }
+    }
+
+    protected abstract void doRun() throws Throwable;
+
+    protected ProcessingState<E, O> updateState() throws Exception {
+        processingState = stateManager.update(processingState);
+        return processingState;
+    }
+
+    protected ProcessingState<E, O> updateState(@NonNull O offset) throws Exception {
+        processingState.setOffset(offset);
+        processingState = stateManager.update(processingState);
+        return processingState;
+    }
+
+    protected ProcessingState<E, O> updateError(@NonNull Throwable t) throws Exception {
+        processingState.error(t);
+        return updateState();
     }
 
     public ProcessorState.EProcessorState stop() {
-        try {
-            if (state.isAvailable()) {
-                state.setState(ProcessorState.EProcessorState.Stopped);
+        synchronized (state) {
+            try {
+                DefaultLogger.warn(LOG, String.format("[%s] Stopping processor...", name));
+                if (state.isAvailable()) {
+                    state.setState(ProcessorState.EProcessorState.Stopped);
+                }
+                close();
+                if (executor != null) {
+                    executor.join();
+                    DefaultLogger.info(LOG, String.format("[%s] Stopped executor thread...", name));
+                }
+                if (__lock != null) {
+                    __lock.close();
+                }
+            } catch (Exception ex) {
+                DefaultLogger.stacktrace(ex);
+                DefaultLogger.error(LOG, "Error stopping processor.", ex);
             }
-            close();
-            if (__lock != null) {
-                __lock.close();
-            }
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            DefaultLogger.error(LOG, "Error stopping processor.", ex);
+            return state.getState();
         }
-        return state.getState();
+    }
+
+    public void start() throws Exception {
+        synchronized (state) {
+            if (state.isAvailable()) return;
+            if (state.getState() != ProcessorState.EProcessorState.Initialized) {
+                throw new Exception("Processor not initialized...");
+            }
+            state.setState(ProcessorState.EProcessorState.Running);
+            executor = new Thread(this, String.format("PROCESSOR-[%s]", name));
+            executor.start();
+        }
+    }
+
+    public void pause() throws Exception {
+        synchronized (state) {
+            if (state.isRunning()) {
+                state.setState(ProcessorState.EProcessorState.Paused);
+            } else if (!state.isPaused()) {
+                throw new Exception(
+                        String.format("[%s] Invalid state: cannot pause. [state=%s]", name, state.getState().name()));
+            }
+        }
+    }
+
+    public void resume() throws Exception {
+        synchronized (state) {
+            if (state.isPaused()) {
+                state.setState(ProcessorState.EProcessorState.Running);
+            } else if (!state.isRunning()) {
+                throw new Exception(
+                        String.format("[%s] Invalid state: cannot resume. [state=%s]", name, state.getState().name()));
+            }
+        }
     }
 }

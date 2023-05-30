@@ -14,4 +14,9 @@ public abstract class Offset implements Comparable<Offset> {
     public abstract String asString();
 
     public abstract Offset fromString(@NonNull String source) throws Exception;
+
+    @Override
+    public String toString() {
+        return asString();
+    }
 }

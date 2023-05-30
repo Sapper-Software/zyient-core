@@ -14,7 +14,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class MessagingConfigSettings extends ProcessorSettings {
+public class MessagingProcessorSettings extends ProcessorSettings {
     public static class Constants {
         public static final String __CONFIG_PATH_RECEIVER = "queue";
         public static final String __CONFIG_PATH_ERRORS = "errors";

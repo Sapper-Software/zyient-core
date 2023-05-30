@@ -1,7 +1,7 @@
 package ai.sapper.cdc.core.processing;
 
 import ai.sapper.cdc.core.BaseEnv;
-import ai.sapper.cdc.core.messaging.MessagingConfig;
+import ai.sapper.cdc.core.messaging.MessagingProcessorConfig;
 import ai.sapper.cdc.core.messaging.kafka.BaseKafkaConsumer;
 import ai.sapper.cdc.core.messaging.kafka.KafkaMessageProcessingState;
 import ai.sapper.cdc.core.messaging.kafka.KafkaOffset;
@@ -18,7 +18,7 @@ public abstract class KafkaMessageProcessor<E extends Enum<?>, M> {
     private BaseKafkaConsumer<M> receiver;
     private KafkaMessageProcessingState<E> state;
     private BaseEnv<?> env;
-    private MessagingConfig receiverConfig;
+    private MessagingProcessorConfig receiverConfig;
     private final ProcessStateManager<E, KafkaOffset> stateManager;
 
     protected KafkaMessageProcessor(@NonNull ProcessStateManager<E, KafkaOffset> stateManager) {

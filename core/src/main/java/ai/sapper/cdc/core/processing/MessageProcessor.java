@@ -19,11 +19,11 @@ import java.util.List;
 public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset> extends Processor<E, O> {
     private MessageReceiver<K, M> receiver;
     private MessageSender<K, M> errorLogger;
-    private MessagingConfig receiverConfig;
-    private MessageProcessorState<E, O> processorState;
+    private MessagingProcessorConfig receiverConfig;
 
-    protected MessageProcessor(@NonNull ProcessStateManager<E, O> stateManager) {
-        super(stateManager);
+    protected MessageProcessor(@NonNull ProcessStateManager<E, O> stateManager,
+                               @NonNull Class<? extends ProcessingState<E, O>> stateType) {
+        super(stateManager, stateType);
     }
 
     @SuppressWarnings("unchecked")
@@ -35,34 +35,33 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         if (!Strings.isNullOrEmpty(path)) {
             config = xmlConfig.configurationAt(path);
         }
-        receiverConfig = new MessagingConfig(config);
+        receiverConfig = new MessagingProcessorConfig(config);
         receiverConfig.read();
         try {
-            MessagingConfigSettings settings = (MessagingConfigSettings) receiverConfig.settings();
+            MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
             super.init(settings);
             __lock().lock();
             try {
                 HierarchicalConfiguration<ImmutableNode> qConfig = receiverConfig
                         .config()
-                        .configurationAt(MessagingConfigSettings.Constants.__CONFIG_PATH_RECEIVER);
+                        .configurationAt(MessagingProcessorSettings.Constants.__CONFIG_PATH_RECEIVER);
                 if (qConfig == null) {
                     throw new ConfigurationException(
                             String.format("Receiver queue configuration not found. [path=%s]",
-                                    MessagingConfigSettings.Constants.__CONFIG_PATH_RECEIVER));
+                                    MessagingProcessorSettings.Constants.__CONFIG_PATH_RECEIVER));
                 }
                 MessageReceiverBuilder<K, M> builder = (MessageReceiverBuilder<K, M>) settings.getBuilderType()
                         .getDeclaredConstructor(BaseEnv.class, Class.class)
                         .newInstance(env, settings.getBuilderSettingsType());
                 receiver = builder.build(qConfig);
-                processorState = (MessageProcessorState<E, O>) stateManager.processingState();
                 if (settings.getErrorsBuilderType() != null) {
                     HierarchicalConfiguration<ImmutableNode> eConfig = receiverConfig
                             .config()
-                            .configurationAt(MessagingConfigSettings.Constants.__CONFIG_PATH_ERRORS);
+                            .configurationAt(MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS);
                     if (eConfig == null) {
                         throw new ConfigurationException(
                                 String.format("Errors queue configuration not found. [path=%s]",
-                                        MessagingConfigSettings.Constants.__CONFIG_PATH_ERRORS));
+                                        MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS));
                     }
                     MessageSenderBuilder<K, M> errorBuilder = (MessageSenderBuilder<K, M>) settings.getErrorsBuilderType()
                             .getDeclaredConstructor(BaseEnv.class, Class.class)
@@ -70,28 +69,37 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     errorLogger = errorBuilder.build(eConfig);
                 }
 
+                postInit(settings);
+                updateState();
+
                 return this;
             } finally {
                 __lock().unlock();
             }
         } catch (Exception ex) {
+            try {
+                updateError(ex);
+            } catch (Throwable t) {
+                DefaultLogger.stacktrace(t);
+                DefaultLogger.error(LOG, "Failed to save state...", t);
+            }
             throw new ConfigurationException(ex);
         }
     }
 
+
     @Override
     public void run() {
-        Preconditions.checkState(state.isInitialized());
+        Preconditions.checkState(state.isAvailable());
         Preconditions.checkNotNull(env);
         try {
-            state.setState(ProcessorState.EProcessorState.Running);
             doRun();
-            state.setState(ProcessorState.EProcessorState.Stopped);
         } catch (Throwable t) {
             state.error(t);
             DefaultLogger.error(LOG, "Message Processor terminated with error", t);
             DefaultLogger.stacktrace(t);
             try {
+                updateError(t);
                 BaseEnv.remove(env.name());
             } catch (Exception ex) {
                 DefaultLogger.error(LOG, "Message Processor terminated with error", t);
@@ -100,35 +108,47 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         }
     }
 
+
+    @Override
     @SuppressWarnings("unchecked")
-    private void doRun() throws Throwable {
-        MessagingConfigSettings settings = (MessagingConfigSettings) receiverConfig.settings();
+    protected void doRun() throws Throwable {
+        MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
         while (state.isAvailable()) {
             boolean sleep = false;
-            __lock().lock();
-            try {
-                List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
-                if (batch != null && !batch.isEmpty()) {
-                    LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
-                    OffsetState<E, O> offsetState = (OffsetState<E, O>) receiver.currentOffset(null);
-                    processorState.setMessageOffset(offsetState.getOffset());
-                    stateManager.update(processorState);
-                    for (MessageObject<K, M> message : batch) {
-                        try {
-                            process(message);
-                        } catch (InvalidMessageError me) {
-                            DefaultLogger.stacktrace(me);
-                            DefaultLogger.warn(LOG, me.getLocalizedMessage());
-                            if (errorLogger != null) {
-                                errorLogger.send(message);
+            if (!state.isPaused()) {
+                __lock().lock();
+                try {
+                    List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
+                    if (batch != null && !batch.isEmpty()) {
+                        LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
+                        MessageProcessorState<E, O> processorState = (MessageProcessorState<E, O>) stateManager().processingState();
+
+                        OffsetState<E, O> offsetState = (OffsetState<E, O>) receiver.currentOffset(null);
+                        processorState.setMessageOffset(offsetState.getOffset());
+                        batchStart(processorState);
+                        processorState = (MessageProcessorState<E, O>) updateState();
+
+                        for (MessageObject<K, M> message : batch) {
+                            try {
+                                process(message, processorState);
+                            } catch (InvalidMessageError me) {
+                                DefaultLogger.stacktrace(me);
+                                DefaultLogger.warn(LOG, me.getLocalizedMessage());
+                                if (errorLogger != null) {
+                                    errorLogger.send(message);
+                                }
                             }
                         }
+                        batchEnd(processorState);
+                        updateState();
+                    } else {
+                        sleep = true;
                     }
-                } else {
-                    sleep = true;
+                } finally {
+                    __lock().unlock();
                 }
-            } finally {
-                __lock().unlock();
+            } else {
+                sleep = true;
             }
             if (sleep) {
                 try {
@@ -141,9 +161,12 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         }
     }
 
-    protected abstract void process(@NonNull MessageObject<K, M> message) throws Exception;
+    protected abstract void process(@NonNull MessageObject<K, M> message,
+                                    @NonNull MessageProcessorState<E, O> processorState) throws Exception;
 
-    protected abstract void batchStart() throws Exception;
+    protected abstract void postInit(@NonNull MessagingProcessorSettings settings) throws Exception;
 
-    protected abstract void batchEnd() throws Exception;
+    protected abstract void batchStart(@NonNull MessageProcessorState<E, O> processorState) throws Exception;
+
+    protected abstract void batchEnd(@NonNull MessageProcessorState<E, O> processorState) throws Exception;
 }
