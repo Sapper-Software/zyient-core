@@ -60,4 +60,14 @@ public class JSONUtils {
         }
         return null;
     }
+
+    public static void write(@NonNull CuratorFramework client,
+                      @NonNull String path,
+                      @NonNull Object value) throws Exception {
+        if (client.checkExists().forPath(path) == null) {
+            client.create().forPath(path);
+        }
+        byte[] data = asBytes(value, value.getClass());
+        client.setData().forPath(path, data);
+    }
 }

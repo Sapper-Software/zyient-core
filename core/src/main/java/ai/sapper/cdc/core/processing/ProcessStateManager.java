@@ -52,8 +52,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
                     .build();
             if (client.checkExists().forPath(zkSequencePath) == null) {
                 client.create().forPath(zkSequencePath);
-                byte[] data = JSONUtils.asBytes(new OffsetSequence(), OffsetSequence.class);
-                client.setData().forPath(zkSequencePath, data);
+                JSONUtils.write(client, zkSequencePath, new OffsetSequence());
             }
         } finally {
             stateUnlock();
@@ -90,8 +89,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
         }
         state.setUpdatedTime(System.currentTimeMillis());
         CuratorFramework client = connection().client();
-        client.setData().forPath(zkAgentStatePath(),
-                JSONUtils.asBytes(processingState, processingState.getClass()));
+        JSONUtils.write(client, zkAgentStatePath(), processingState);
         return state;
     }
 
@@ -125,8 +123,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
                 }
                 long start = sequence.getSequence();
                 sequence.setSequence(start + blockSize);
-                byte[] data = JSONUtils.asBytes(sequence, OffsetSequence.class);
-                client.setData().forPath(zkSequencePath, data);
+                JSONUtils.write(client, zkSequencePath, sequence);
                 return start;
             } finally {
                 stateUnlock();
