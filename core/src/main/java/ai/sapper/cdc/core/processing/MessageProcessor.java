@@ -14,28 +14,41 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.IOException;
 import java.util.List;
 
 public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset> extends Processor<E, O> {
-    private MessageReceiver<K, M> receiver;
-    private MessageSender<K, M> errorLogger;
-    private MessagingProcessorConfig receiverConfig;
+    protected MessageReceiver<K, M> receiver;
+    protected MessageSender<K, M> errorLogger;
+    protected MessagingProcessorConfig receiverConfig;
+    protected final Class<? extends MessagingProcessorSettings> settingsType;
 
-    protected MessageProcessor(@NonNull ProcessStateManager<E, O> stateManager,
-                               @NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        super(stateManager, stateType);
+    protected MessageProcessor(@NonNull BaseEnv<?> env,
+                               @NonNull Class<? extends ProcessingState<E, O>> stateType,
+                               @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
+        super(env, stateType);
+        this.settingsType = settingsType;
     }
 
+    protected MessageProcessor(@NonNull BaseEnv<?> env,
+                               @NonNull Class<? extends ProcessingState<E, O>> stateType) {
+        super(env, stateType);
+        this.settingsType = null;
+    }
+
+
+    @Override
     @SuppressWarnings("unchecked")
     public Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                String path,
-                                @NonNull BaseEnv<?> env) throws ConfigurationException {
-        this.env = env;
+                                String path) throws ConfigurationException {
         HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
         if (!Strings.isNullOrEmpty(path)) {
             config = xmlConfig.configurationAt(path);
         }
-        receiverConfig = new MessagingProcessorConfig(config);
+        if (receiverConfig == null) {
+            Preconditions.checkNotNull(settingsType);
+            receiverConfig = new MessagingProcessorConfig(config, settingsType);
+        }
         receiverConfig.read();
         try {
             MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
@@ -158,6 +171,18 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                             settings.getName(), e.getLocalizedMessage()));
                 }
             }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (receiver != null) {
+            receiver.close();
+            receiver = null;
+        }
+        if (errorLogger != null) {
+            errorLogger.close();
+            errorLogger = null;
         }
     }
 

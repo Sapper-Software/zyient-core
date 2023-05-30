@@ -34,9 +34,12 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     @Getter(AccessLevel.NONE)
     private Thread executor;
 
-    protected Processor(@NonNull ProcessStateManager<E, O> stateManager,
+    @SuppressWarnings("unchecked")
+    protected Processor(@NonNull BaseEnv<?> env,
                         @NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        this.stateManager = stateManager;
+        Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
+        this.env = env;
+        this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
         this.stateType = stateType;
         this.LOG = LoggerFactory.getLogger(getClass());
     }
