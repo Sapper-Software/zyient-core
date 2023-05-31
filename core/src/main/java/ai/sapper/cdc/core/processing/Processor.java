@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.util.concurrent.ExecutorService;
 
 @Getter
 @Accessors(fluent = true)
@@ -110,25 +111,47 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     }
 
     public ProcessorState.EProcessorState stop() {
+        Preconditions.checkNotNull(__lock);
         synchronized (state) {
+            DefaultLogger.warn(LOG, String.format("[%s] Stopping processor...", name));
+            if (state.isAvailable()) {
+                state.setState(ProcessorState.EProcessorState.Stopped);
+            }
+        }
+        __lock.lock();
+        try {
             try {
-                DefaultLogger.warn(LOG, String.format("[%s] Stopping processor...", name));
-                if (state.isAvailable()) {
-                    state.setState(ProcessorState.EProcessorState.Stopped);
-                }
                 close();
                 if (executor != null) {
                     executor.join();
                     DefaultLogger.info(LOG, String.format("[%s] Stopped executor thread...", name));
-                }
-                if (__lock != null) {
-                    __lock.close();
                 }
             } catch (Exception ex) {
                 DefaultLogger.stacktrace(ex);
                 DefaultLogger.error(LOG, "Error stopping processor.", ex);
             }
             return state.getState();
+        } finally {
+            __lock.unlock();
+            try {
+                __lock.close();
+                __lock = null;
+            } catch (Exception ex) {
+                DefaultLogger.stacktrace(ex);
+                DefaultLogger.error(LOG, "Error disposing lock.", ex);
+            }
+        }
+    }
+
+    public void execute(@NonNull ExecutorService executor) throws Exception {
+        synchronized (state) {
+            if (state.isInitialized() || state.isAvailable()) {
+                executor.submit(this);
+            } else {
+                throw new Exception(
+                        String.format("[%s] Processor state is invalid: [state=%s]",
+                                name, state.getState().name()));
+            }
         }
     }
 
