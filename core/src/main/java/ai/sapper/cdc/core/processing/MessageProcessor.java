@@ -17,7 +17,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.io.IOException;
 import java.util.List;
 
-public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset> extends Processor<E, O> {
+public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset> extends Processor<E, O> {
     protected MessageReceiver<K, M> receiver;
     protected MessageSender<K, M> errorLogger;
     protected MessagingProcessorConfig receiverConfig;
@@ -134,12 +134,12 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
                     if (batch != null && !batch.isEmpty()) {
                         LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
-                        MessageProcessorState<E, O> processorState = (MessageProcessorState<E, O>) stateManager().processingState();
+                        MessageProcessorState<E, O, MO> processorState = (MessageProcessorState<E, O, MO>) stateManager().processingState();
 
-                        OffsetState<E, O> offsetState = (OffsetState<E, O>) receiver.currentOffset(null);
+                        OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
                         processorState.setMessageOffset(offsetState.getOffset());
                         batchStart(processorState);
-                        processorState = (MessageProcessorState<E, O>) updateState();
+                        processorState = (MessageProcessorState<E, O, MO>) updateState();
 
                         for (MessageObject<K, M> message : batch) {
                             try {
@@ -187,11 +187,11 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     }
 
     protected abstract void process(@NonNull MessageObject<K, M> message,
-                                    @NonNull MessageProcessorState<E, O> processorState) throws Exception;
+                                    @NonNull MessageProcessorState<E, O, MO> processorState) throws Exception;
 
     protected abstract void postInit(@NonNull MessagingProcessorSettings settings) throws Exception;
 
-    protected abstract void batchStart(@NonNull MessageProcessorState<E, O> processorState) throws Exception;
+    protected abstract void batchStart(@NonNull MessageProcessorState<E, O, MO> processorState) throws Exception;
 
-    protected abstract void batchEnd(@NonNull MessageProcessorState<E, O> processorState) throws Exception;
+    protected abstract void batchEnd(@NonNull MessageProcessorState<E, O, MO> processorState) throws Exception;
 }

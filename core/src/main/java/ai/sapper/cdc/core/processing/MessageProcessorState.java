@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.processing;
 
+import ai.sapper.cdc.core.messaging.ReceiverOffset;
 import ai.sapper.cdc.core.state.Offset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -10,15 +11,15 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class MessageProcessorState<E extends Enum<?>, O extends Offset> extends ProcessingState<E, O> {
-    private Offset messageOffset;
+public class MessageProcessorState<E extends Enum<?>, O extends Offset, M extends ReceiverOffset> extends ProcessingState<E, O> {
+    private M messageOffset;
 
     public MessageProcessorState(@NonNull E errorState,
                                  @NonNull E initState) {
         super(errorState, initState);
     }
 
-    public MessageProcessorState(@NonNull MessageProcessorState<E, O> state) {
+    public MessageProcessorState(@NonNull MessageProcessorState<E, O, M> state) {
         super(state);
         messageOffset = state.getMessageOffset();
     }
