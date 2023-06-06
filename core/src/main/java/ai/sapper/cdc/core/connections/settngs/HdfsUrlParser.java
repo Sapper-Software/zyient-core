@@ -41,7 +41,7 @@ public class HdfsUrlParser  implements ConfigValueParser<String[][]> {
                 builder.append(";");
             }
             if (nn.length != 2) {
-                throw new Exception(String.format("Invalid URL definition: [url=%s]", nn));
+                throw new Exception(String.format("Invalid URL definition: [url=%s]", (Object) nn));
             }
             builder.append(nn[0]).append("=").append(nn[1]);
         }
