@@ -215,6 +215,16 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
     }
 
     @Override
+    public String getSchemaEntityURI(@NonNull SchemaEntity entity,
+                                     SchemaVersion version) throws Exception {
+        if (version == null) {
+            CuratorFramework client = zkConnection().client();
+            version = getLatestVersion(entity, client);
+        }
+        return getSchemaPath(entity.getDomain(), entity.getEntity(), version).build();
+    }
+
+    @Override
     protected List<Domain> listDomains() throws Exception {
         Preconditions.checkNotNull(zkConnection);
         CuratorFramework client = zkConnection.client();

@@ -355,6 +355,15 @@ public abstract class SchemaManager implements Closeable {
         }
     }
 
+    public String getSchemaEntityURI(@NonNull SchemaEntity entity) throws Exception {
+        return getSchemaEntityURI(entity, null);
+    }
+
+    public String getSchemaEntityURI(@NonNull SchemaEntity entity, SchemaVersion version) throws Exception {
+        Preconditions.checkState(state.isAvailable());
+        return handler.getSchemaEntityURI(entity, version);
+    }
+
     public boolean deleteSchema(@NonNull SchemaEntity entity,
                                 @NonNull SchemaVersion version) throws Exception {
         Preconditions.checkState(state.isAvailable());

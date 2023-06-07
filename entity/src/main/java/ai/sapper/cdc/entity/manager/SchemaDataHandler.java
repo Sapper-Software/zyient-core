@@ -89,6 +89,10 @@ public abstract class SchemaDataHandler implements Closeable {
     protected abstract boolean deleteSchema(@NonNull SchemaEntity entity,
                                             @NonNull SchemaVersion version) throws Exception;
 
+
+    public abstract String getSchemaEntityURI(@NonNull SchemaEntity entity,
+                                              SchemaVersion version) throws Exception;
+
     protected abstract List<Domain> listDomains() throws Exception;
 
     protected abstract String schemaCacheKey(@NonNull SchemaEntity entity,
