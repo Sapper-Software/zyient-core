@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
@@ -16,6 +17,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.io.FileUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
@@ -113,6 +115,23 @@ public class S3FileSystem extends RemoteFileSystem {
         return super.create(pathInfo);
     }
 
+    @Override
+    public FileInode create(@NonNull DirectoryInode dir,
+                            @NonNull String name) throws IOException {
+        FileInode node = (FileInode) createInode(dir, name, InodeType.File);
+        if (node.getPathInfo() == null) {
+            PathInfo pi = parsePathInfo(node.getPath());
+            node.setPathInfo(pi);
+        }
+        S3PathInfo pi = (S3PathInfo) node.getPathInfo();
+        Preconditions.checkNotNull(pi);
+        if (node.getPath() == null)
+            node.setPath(pi.pathConfig());
+        if (node.getPathInfo() == null)
+            node.setPathInfo(pi);
+        return (FileInode) updateInode(node, pi);
+    }
+
     /**
      * @param path
      * @param recursive
@@ -156,6 +175,21 @@ public class S3FileSystem extends RemoteFileSystem {
             }
         }
         return false;
+    }
+
+    @Override
+    protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
+                                     @NonNull String path,
+                                     @NonNull InodeType type) throws IOException {
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        S3PathInfo pi = null;
+        if (parent.getPathInfo() == null) {
+            pi = (S3PathInfo) parsePathInfo(parent.getPath());
+            parent.setPathInfo(pi);
+        } else {
+            pi = (S3PathInfo) parent.getPathInfo();
+        }
+        return new S3PathInfo(this, parent.getDomain(), pi.bucket(), p, (type == InodeType.Directory));
     }
 
     @Override

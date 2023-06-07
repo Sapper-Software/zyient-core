@@ -136,7 +136,7 @@ public abstract class FileSystem implements Closeable {
     }
 
     protected DistributedLock getLock(@NonNull Inode inode,
-                                   @NonNull CuratorFramework client) throws Exception {
+                                      @NonNull CuratorFramework client) throws Exception {
         Preconditions.checkState(state.isConnected());
         String zp = inode.getZkPath();
         if (client.checkExists().forPath(zp) == null) {
@@ -152,7 +152,7 @@ public abstract class FileSystem implements Closeable {
     }
 
     public DistributedLock getDomainLock(@NonNull String domain,
-                                            @NonNull CuratorFramework client) throws Exception {
+                                         @NonNull CuratorFramework client) throws Exception {
         Preconditions.checkState(state.isConnected());
         String zp = new PathUtils.ZkPathBuilder(zkPath)
                 .withPath(domain)
@@ -208,6 +208,24 @@ public abstract class FileSystem implements Closeable {
         if (dnode == null) {
             throw new IOException(String.format("Domain directory node not found. [domain=%s]", path.domain()));
         }
+        String fpath = path.path().trim();
+        if (fpath.startsWith(dnode.getAbsolutePath())) {
+            int index = dnode.getAbsolutePath().length();
+            fpath = fpath.substring(index);
+        }
+        if (fpath.startsWith("/")) {
+            fpath = fpath.substring(1);
+        }
+        String[] parts = fpath.split("/");
+        CuratorFramework client = zkConnection.client();
+        return createInode(dnode, path, type, parts, 0, client);
+    }
+
+    protected Inode createInode(@NonNull DirectoryInode dnode,
+                                @NonNull String name,
+                                @NonNull InodeType type) throws IOException {
+        Preconditions.checkState(state.isConnected());
+        PathInfo path = parsePathInfo(dnode, name, type);
         String fpath = path.path().trim();
         if (fpath.startsWith(dnode.getAbsolutePath())) {
             int index = dnode.getAbsolutePath().length();
@@ -550,9 +568,13 @@ public abstract class FileSystem implements Closeable {
 
     public abstract FileInode create(@NonNull PathInfo pathInfo) throws IOException;
 
+    public abstract FileInode create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException;
 
     public abstract boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException;
 
+    protected abstract PathInfo parsePathInfo(@NonNull DirectoryInode parent,
+                                              @NonNull String path,
+                                              @NonNull InodeType type) throws IOException;
 
     public boolean delete(@NonNull PathInfo path) throws IOException {
         return delete(path, false);
@@ -776,6 +798,17 @@ public abstract class FileSystem implements Closeable {
             DefaultLogger.error(LOG, "Error closing file system", ex);
         }
     }
+
+    public FileInode upload(@NonNull File source,
+                            @NonNull FileInode path) throws IOException {
+        return upload(source, path, true);
+    }
+
+    public abstract FileInode upload(@NonNull File source,
+                                     @NonNull FileInode path,
+                                     boolean clearLock) throws IOException;
+
+    public abstract File download(@NonNull FileInode inode) throws IOException;
 
     @Getter
     @Accessors(fluent = true)

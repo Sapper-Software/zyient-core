@@ -16,6 +16,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.File;
 import java.io.IOException;
@@ -172,6 +173,31 @@ public class LocalFileSystem extends FileSystem {
         return (FileInode) updateInode(node, pi);
     }
 
+    @Override
+    public FileInode create(@NonNull DirectoryInode dir,
+                            @NonNull String name) throws IOException {
+        FileInode node = (FileInode) createInode(dir, name, InodeType.File);
+        if (node.getPathInfo() == null) {
+            PathInfo pi = parsePathInfo(node.getPath());
+            node.setPathInfo(pi);
+        }
+        LocalPathInfo pi = (LocalPathInfo) node.getPathInfo();
+        File pdir = pi.file().getParentFile();
+        if (!pdir.exists()) {
+            if (!pdir.mkdirs()) {
+                throw new IOException(
+                        String.format("Error creating directory. [path=%s]", dir.getAbsolutePath()));
+            }
+        }
+        if (node.getPath() == null)
+            node.setPath(pi.pathConfig());
+        if (node.getPathInfo() == null)
+            node.setPathInfo(pi);
+        if (node.isFile())
+            FileUtils.touch(pi.file);
+        return (FileInode) updateInode(node, pi);
+    }
+
     /**
      * @param path
      * @param recursive
@@ -193,6 +219,14 @@ public class LocalFileSystem extends FileSystem {
             }
         }
         return false;
+    }
+
+    @Override
+    protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
+                                     @NonNull String path,
+                                     @NonNull InodeType type) {
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        return new LocalPathInfo(this, p, parent.getDomain());
     }
 
     @Override
@@ -227,6 +261,59 @@ public class LocalFileSystem extends FileSystem {
             inode.setPathInfo(pi);
         }
         return new LocalWriter(inode, this, overwrite).open();
+    }
+
+    @Override
+    public FileInode upload(@NonNull File source,
+                            @NonNull FileInode inode,
+                            boolean clearLock) throws IOException {
+        LocalPathInfo pi = null;
+        if (inode.getPathInfo() == null) {
+            pi = (LocalPathInfo) parsePathInfo(inode.getPath());
+            inode.setPathInfo(pi);
+        } else {
+            pi = (LocalPathInfo) inode.getPathInfo();
+        }
+        if (pi.exists()) {
+            if (!delete(pi, false)) {
+                throw new IOException(
+                        String.format("Failed to delete existing file. [path=%s]", pi.file.getAbsolutePath()));
+            }
+        }
+        if (!source.renameTo(pi.file)) {
+            throw new IOException(
+                    String.format("Failed to move file. [source=%s][dest=%s]",
+                            source.getAbsolutePath(), pi.file.getAbsolutePath()));
+        }
+        try {
+            inode.setSyncedSize(pi.size());
+            inode.setSyncTimestamp(System.currentTimeMillis());
+            if (clearLock) {
+                inode.getState().setState(EFileState.Synced);
+                fileUnlock(inode);
+            } else {
+                inode.getState().setState(EFileState.Updating);
+                fileUpdateLock(inode);
+            }
+            return (FileInode) updateInode(inode, inode.getPathInfo());
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(
+                    String.format("Upload failed. [domain=%s][path=%s]", inode.getDomain(), inode.getPath()));
+            throw new IOException(ex);
+        }
+    }
+
+    @Override
+    public File download(@NonNull FileInode inode) throws IOException {
+        LocalPathInfo pi = null;
+        if (inode.getPathInfo() == null) {
+            pi = (LocalPathInfo) parsePathInfo(inode.getPath());
+            inode.setPathInfo(pi);
+        } else {
+            pi = (LocalPathInfo) inode.getPathInfo();
+        }
+        return pi.file();
     }
 
     public static class LocalFileSystemConfigReader extends FileSystemConfigReader {

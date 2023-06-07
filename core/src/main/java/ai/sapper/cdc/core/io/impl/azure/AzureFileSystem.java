@@ -1,12 +1,14 @@
 package ai.sapper.cdc.core.io.impl.azure;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.impl.FileUploadCallback;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
+import ai.sapper.cdc.core.io.impl.s3.S3PathInfo;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.core.http.rest.Response;
@@ -105,6 +107,22 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
+    public FileInode create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException {
+        FileInode node = (FileInode) createInode(dir, name, InodeType.File);
+        if (node.getPathInfo() == null) {
+            PathInfo pi = parsePathInfo(node.getPath());
+            node.setPathInfo(pi);
+        }
+        AzurePathInfo pi = (AzurePathInfo) node.getPathInfo();
+        Preconditions.checkNotNull(pi);
+        if (node.getPath() == null)
+            node.setPath(pi.pathConfig());
+        if (node.getPathInfo() == null)
+            node.setPathInfo(pi);
+        return (FileInode) updateInode(node, pi);
+    }
+
+    @Override
     public boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException {
         Preconditions.checkArgument(path instanceof AzurePathInfo);
         boolean ret = false;
@@ -130,6 +148,21 @@ public class AzureFileSystem extends RemoteFileSystem {
             }
         }
         return ret;
+    }
+
+    @Override
+    protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
+                                     @NonNull String path,
+                                     @NonNull InodeType type) throws IOException {
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        AzurePathInfo pi = null;
+        if (parent.getPathInfo() == null) {
+            pi = (AzurePathInfo) parsePathInfo(parent.getPath());
+            parent.setPathInfo(pi);
+        } else {
+            pi = (AzurePathInfo) parent.getPathInfo();
+        }
+        return new AzurePathInfo(this, pi.domain(), pi.container(), p);
     }
 
     @Override

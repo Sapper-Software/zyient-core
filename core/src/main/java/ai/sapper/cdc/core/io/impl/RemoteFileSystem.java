@@ -134,12 +134,6 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
 
     public abstract PathInfo createPath(@NonNull String domain, @NonNull Container container, @NonNull String path);
 
-    public abstract FileInode upload(@NonNull File source,
-                                     @NonNull FileInode path,
-                                     boolean clearLock) throws IOException;
-
-    public abstract File download(@NonNull FileInode inode) throws IOException;
-
     public abstract long size(@NonNull PathInfo path) throws IOException;
 
     public void debug(Object mesg) {
