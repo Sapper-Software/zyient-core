@@ -3,6 +3,7 @@ package ai.sapper.cdc.entity.manager;
 import ai.sapper.cdc.common.cache.LRUCache;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.InvalidDataError;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.processing.ProcessorState;
@@ -250,15 +251,18 @@ public abstract class SchemaManager implements Closeable {
         return false;
     }
 
-    public EntitySchema getSchema(@NonNull SchemaEntity entity) throws Exception {
-        return getSchema(entity, null);
+    public <T extends EntitySchema> T getSchema(@NonNull SchemaEntity entity,
+                                                @NonNull Class<? extends T> type) throws Exception {
+        return getSchema(entity, (SchemaVersion) null, type);
     }
 
-    public EntitySchema getSchema(@NonNull SchemaEntity entity,
-                                  SchemaVersion version) throws Exception {
+    @SuppressWarnings("unchecked")
+    public <T extends EntitySchema> T getSchema(@NonNull SchemaEntity entity,
+                                                SchemaVersion version,
+                                                @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkState(state.isAvailable());
         EntitySchema schema = null;
-        String key = schemaCacheKey(entity);
+        String key = handler.schemaCacheKey(entity);
         Optional<CacheElement<EntitySchema>> op = schemaCache.get(key);
         if (op.isPresent()) {
             CacheElement<EntitySchema> e = op.get();
@@ -275,18 +279,33 @@ public abstract class SchemaManager implements Closeable {
             CacheElement<EntitySchema> e = new CacheElement<>(schema);
             schemaCache.put(key, e);
         }
-        return schema;
+        if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
+            throw new InvalidDataError(EntitySchema.class,
+                    String.format("Schema Type mismatch: [expected=%s][actual=%s]",
+                            type.getCanonicalName(), schema.getClass().getCanonicalName()));
+        }
+        return (T) schema;
     }
 
-    public EntitySchema getSchema(@NonNull String uri) throws Exception {
+    @SuppressWarnings("unchecked")
+    public <T extends EntitySchema> T getSchema(@NonNull SchemaEntity entity,
+                                                @NonNull String uri,
+                                                @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkState(state.isAvailable());
-        return handler.fetchSchema(uri);
+        EntitySchema schema = handler.fetchSchema(entity, uri);
+        if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
+            throw new InvalidDataError(EntitySchema.class,
+                    String.format("Schema Type mismatch: [expected=%s][actual=%s]",
+                            type.getCanonicalName(), schema.getClass().getCanonicalName()));
+        }
+        return (T) schema;
     }
 
-    protected EntitySchema createSchema(@NonNull SchemaEntity entity,
-                                        @NonNull Class<? extends EntitySchema> type) throws Exception {
+    @SuppressWarnings("unchecked")
+    protected <T extends EntitySchema> T createSchema(@NonNull SchemaEntity entity,
+                                                      @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkState(state.isAvailable());
-        EntitySchema schema = getSchema(entity);
+        EntitySchema schema = getSchema(entity, type);
         if (schema != null) {
             throw new InvalidDataError(EntitySchema.class,
                     String.format("Schema already exists. [entity=%s]", entity.toString()));
@@ -300,20 +319,21 @@ public abstract class SchemaManager implements Closeable {
             schema = handler.saveSchema(schema);
             synchronized (this) {
                 CacheElement<EntitySchema> e = new CacheElement<>(schema);
-                String key = schemaCacheKey(entity, schema.getVersion());
+                String key = handler.schemaCacheKey(entity, schema.getVersion());
                 schemaCache.put(key, e);
             }
-            return schema;
+            return (T) schema;
         } finally {
             schemaLock.unlock();
         }
     }
 
-    public EntitySchema updateSchema(@NonNull EntitySchema schema) throws Exception {
+    @SuppressWarnings("unchecked")
+    public <T extends EntitySchema> T updateSchema(@NonNull T schema) throws Exception {
         Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
-            EntitySchema current = getSchema(schema.getSchemaEntity());
+            EntitySchema current = getSchema(schema.getSchemaEntity(), schema.getClass());
             if (current == null) {
                 throw new Exception(
                         String.format("Schema not found. [entity=%s]",
@@ -323,10 +343,10 @@ public abstract class SchemaManager implements Closeable {
                 throw new StaleDataError(String.format("Schema instance is stale. [entity=%s]",
                         schema.getSchemaEntity().toString()));
             }
-            schema = handler.saveSchema(schema);
+            schema = (T) handler.saveSchema(schema);
             synchronized (this) {
                 CacheElement<EntitySchema> e = new CacheElement<>(schema);
-                String key = schemaCacheKey(schema.getSchemaEntity());
+                String key = handler.schemaCacheKey(schema.getSchemaEntity());
                 schemaCache.put(key, e);
             }
             return schema;
@@ -340,7 +360,7 @@ public abstract class SchemaManager implements Closeable {
         Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
-            String key = schemaCacheKey(entity, version);
+            String key = handler.schemaCacheKey(entity, version);
             schemaCache.remove(key);
             return handler.deleteSchema(entity, version);
         } finally {
@@ -372,16 +392,6 @@ public abstract class SchemaManager implements Closeable {
             schemaCache.clear();
             schemaCache = null;
         }
-    }
-
-    private String schemaCacheKey(SchemaEntity entity) {
-        return String.format("%s::%s", entity.getDomain(), entity.getEntity());
-    }
-
-    private String schemaCacheKey(SchemaEntity entity, SchemaVersion version) {
-        return String.format("%s::%s::%d.%d",
-                entity.getDomain(), entity.getEntity(),
-                version.getMajorVersion(), version.getMinorVersion());
     }
 
     protected abstract void init(@NonNull SchemaManagerSettings settings) throws ConfigurationException;

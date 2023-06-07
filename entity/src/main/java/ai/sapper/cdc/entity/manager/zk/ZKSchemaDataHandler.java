@@ -23,10 +23,13 @@ import org.apache.curator.framework.CuratorFramework;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Getter
 @Accessors(fluent = true)
 public class ZKSchemaDataHandler extends SchemaDataHandler {
+    public static final String REGEX_PATH_VERSION = "(/.*)/(\\d+)/(\\d+)$";
     public static final String ZK_PATH_DOMAINS = "domains";
 
     private String zkBasePath;
@@ -160,7 +163,8 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
     }
 
     @Override
-    protected EntitySchema fetchSchema(@NonNull String uri) throws Exception {
+    protected EntitySchema fetchSchema(@NonNull SchemaEntity entity,
+                                       @NonNull String uri) throws Exception {
         Preconditions.checkNotNull(zkConnection);
         CuratorFramework client = zkConnection().client();
         return JSONUtils.read(client, uri, EntitySchema.class);
@@ -234,6 +238,27 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
             return domains;
         }
         return null;
+    }
+
+    @Override
+    protected String schemaCacheKey(@NonNull SchemaEntity entity,
+                                    @NonNull String uri) throws Exception {
+        SchemaVersion version = null;
+        Pattern p = Pattern.compile(REGEX_PATH_VERSION);
+        Matcher m = p.matcher(uri);
+        if (m.matches()) {
+            String mjv = m.group(2);
+            String mnv = m.group(3);
+            if (!Strings.isNullOrEmpty(mjv) && !Strings.isNullOrEmpty(mnv)) {
+                version = new SchemaVersion();
+                version.setMajorVersion(Integer.parseInt(mjv));
+                version.setMinorVersion(Integer.parseInt(mnv));
+            }
+        }
+        if (version == null) {
+            throw new Exception(String.format("Failed to extract schema version. [URI=%s]", uri));
+        }
+        return schemaCacheKey(entity, version);
     }
 
     private SchemaVersion getLatestVersion(SchemaEntity entity,
