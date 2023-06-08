@@ -67,20 +67,6 @@ public class LocalFileSystem extends FileSystem {
         return new LocalPathInfo(this, values);
     }
 
-    /**
-     * @param path
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public Inode get(@NonNull PathInfo path) throws IOException {
-        Inode node = getInode(path);
-        if (node != null) {
-            node.setPathInfo(parsePathInfo(node.getPath()));
-        }
-        return node;
-    }
-
     @Override
     protected String getAbsolutePath(@NonNull String path,
                                      @NonNull String domain) throws IOException {
@@ -231,7 +217,7 @@ public class LocalFileSystem extends FileSystem {
 
     @Override
     public boolean exists(@NonNull PathInfo path) throws IOException {
-        Inode node = get(path);
+        Inode node = getInode(path);
         if (node != null) {
             LocalPathInfo pi = (LocalPathInfo) parsePathInfo(node.getPath());
             return pi.exists();

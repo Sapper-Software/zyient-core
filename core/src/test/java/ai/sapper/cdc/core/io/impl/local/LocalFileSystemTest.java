@@ -101,7 +101,7 @@ class LocalFileSystemTest {
             assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
-            fi = (FileInode) fs.get(fi.getPathInfo());
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
             d = new File(fi.getAbsolutePath());
             assertTrue(d.exists() && d.isFile());
@@ -127,7 +127,7 @@ class LocalFileSystemTest {
             assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
-            fi = (FileInode) fs.get(fi.getPathInfo());
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
             d = new File(fi.getAbsolutePath());
             assertTrue(d.exists() && d.isFile());

@@ -74,11 +74,11 @@ class AzureFileSystemTest {
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
-            fi = (FileInode) fs.get(fi.getPathInfo());
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
 
             assertTrue(fs.delete(fi.getPathInfo()));
-            fi = (FileInode) fs.get(fi.getPathInfo());
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNull(fi);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -96,7 +96,7 @@ class AzureFileSystemTest {
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
-            fi = (FileInode) fs.get(fi.getPathInfo());
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
             long written = 0;
             try (Writer writer = fs.writer(fi)) {

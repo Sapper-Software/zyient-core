@@ -156,21 +156,6 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         }
     }
 
-
-    /**
-     * @param path
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public Inode get(@NonNull PathInfo path) throws IOException {
-        Inode node = getInode(path);
-        if (node != null) {
-            node.setPathInfo(parsePathInfo(node.getPath()));
-        }
-        return node;
-    }
-
     @Override
     protected String getAbsolutePath(@NonNull String path,
                                      @NonNull String domain) throws IOException {

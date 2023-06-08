@@ -410,13 +410,11 @@ public abstract class FileSystem implements Closeable {
         }
     }
 
-    public abstract Inode get(@NonNull PathInfo path) throws IOException;
-
-    protected Inode getInode(@NonNull PathInfo path) throws IOException {
+    public Inode getInode(@NonNull PathInfo path) throws IOException {
         return getInode(path.domain(), path.path());
     }
 
-    protected Inode getInode(@NonNull String domain, @NonNull String path) throws IOException {
+    public Inode getInode(@NonNull String domain, @NonNull String path) throws IOException {
         Preconditions.checkState(state.isConnected());
         DirectoryInode dnode = domains.get(domain);
         if (dnode == null) {
@@ -693,7 +691,7 @@ public abstract class FileSystem implements Closeable {
     public abstract boolean exists(@NonNull PathInfo path) throws IOException;
 
     public boolean isDirectory(@NonNull PathInfo path) throws IOException {
-        Inode pi = get(path);
+        Inode pi = getInode(path);
         if (pi != null) return pi.isDirectory();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
@@ -701,7 +699,7 @@ public abstract class FileSystem implements Closeable {
     }
 
     public boolean isFile(@NonNull PathInfo path) throws IOException {
-        Inode pi = get(path);
+        Inode pi = getInode(path);
         if (pi != null) return pi.isFile();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
@@ -709,7 +707,7 @@ public abstract class FileSystem implements Closeable {
     }
 
     public boolean isArchive(@NonNull PathInfo path) throws IOException {
-        Inode pi = get(path);
+        Inode pi = getInode(path);
         if (pi != null) return pi.isArchive();
         else {
             throw new IOException(String.format("File not found. [path=%s]", path));
@@ -722,7 +720,7 @@ public abstract class FileSystem implements Closeable {
 
     public final Writer writer(@NonNull PathInfo path,
                                boolean overwrite) throws IOException {
-        Inode node = get(path);
+        Inode node = getInode(path);
         if (node == null) {
             node = createInode(InodeType.File, path);
         }
@@ -740,7 +738,7 @@ public abstract class FileSystem implements Closeable {
     }
 
     public final Reader reader(@NonNull PathInfo path) throws IOException {
-        Inode node = get(path);
+        Inode node = getInode(path);
         if (node == null) {
             throw new IOException(String.format("File does not exist. [path=%s]", path));
         }

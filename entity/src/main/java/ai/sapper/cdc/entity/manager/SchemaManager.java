@@ -305,13 +305,14 @@ public abstract class SchemaManager implements Closeable {
     protected <T extends EntitySchema> T createSchema(@NonNull SchemaEntity entity,
                                                       @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkState(state.isAvailable());
-        EntitySchema schema = getSchema(entity, type);
-        if (schema != null) {
-            throw new InvalidDataError(EntitySchema.class,
-                    String.format("Schema already exists. [entity=%s]", entity.toString()));
-        }
         schemaLock.lock();
         try {
+            EntitySchema schema = getSchema(entity, type);
+            if (schema != null) {
+                throw new InvalidDataError(EntitySchema.class,
+                        String.format("Schema already exists. [entity=%s]", entity.toString()));
+            }
+
             schema = type.getDeclaredConstructor().newInstance();
             schema.setSchemaEntity(entity);
             schema.setVersion(new SchemaVersion());
