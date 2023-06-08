@@ -40,6 +40,17 @@ public class ConfigReader {
     private final Class<? extends Settings> type;
     private Settings settings;
 
+    public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
+        this.config = config;
+        this.type = null;
+    }
+
+    public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                        @NonNull String path) {
+        this.config = config.configurationAt(path);
+        this.type = null;
+    }
+
     public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                         @NonNull Class<? extends Settings> type) {
         this.config = config;
@@ -61,7 +72,20 @@ public class ConfigReader {
         this.settings = settings;
     }
 
+    public String read(@NonNull String name) throws ConfigurationException {
+        return read(name, true);
+    }
+
+    public String read(@NonNull String name, boolean required) throws ConfigurationException {
+        String value = config.getString(name);
+        if (required) {
+            checkStringValue(value, getClass(), name);
+        }
+        return value;
+    }
+
     public void read() throws ConfigurationException {
+        Preconditions.checkNotNull(type);
         try {
             settings = type.getDeclaredConstructor().newInstance();
             settings = read(settings, config);
@@ -73,6 +97,7 @@ public class ConfigReader {
     public Settings read(@NonNull Settings settings,
                          @NonNull HierarchicalConfiguration<ImmutableNode> config)
             throws ConfigurationException {
+        Preconditions.checkNotNull(type);
         try {
             Field[] fields = ReflectionUtils.getAllFields(settings.getClass());
             if (fields != null) {
