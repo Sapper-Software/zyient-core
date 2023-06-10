@@ -26,6 +26,7 @@ public abstract class FileSystemSettings extends Settings {
     public static final String CONFIG_ZK_CONNECTION = "zk.connection";
     public static final String CONFIG_ZK_PATH = "zk.path";
     public static final String CONFIG_ZK_LOCK_TIMEOUT = "zk.lockTimeout";
+    public static final String CONFIG_DEFAULT_COMPRESSED = "compressed";
     public static final int LOCK_TIMEOUT = 60 * 1000;
 
     @Config(name = CONFIG_FS_CLASS)
@@ -44,6 +45,8 @@ public abstract class FileSystemSettings extends Settings {
     private long tempTTL = 15 * 60 * 1000;
     @Config(name = CONFIG_ZK_LOCK_TIMEOUT, required = false, type = Integer.class)
     private int lockTimeout = LOCK_TIMEOUT;
+    @Config(name = CONFIG_DEFAULT_COMPRESSED, required = false, type = Boolean.class)
+    private boolean compressed = false;
     private Container defaultContainer;
     private Map<String, Container> containers;
     private ESettingsSource source = ESettingsSource.File;

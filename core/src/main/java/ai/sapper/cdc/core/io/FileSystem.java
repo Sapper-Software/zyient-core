@@ -363,6 +363,7 @@ public abstract class FileSystem implements Closeable {
                             fi.setUpdateTimestamp(System.currentTimeMillis());
                             fi.setZkPath(zpath);
                             fi.setPathInfo(path);
+                            fi.setCompressed(settings.isCompressed());
                             fi.getState().setState(EFileState.New);
                             client.setData().forPath(zpath, JSONUtils.asBytes(fi, FileInode.class));
                             return fi;

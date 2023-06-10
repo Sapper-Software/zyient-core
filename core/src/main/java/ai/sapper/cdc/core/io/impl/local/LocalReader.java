@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.io.impl.local;
 
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.model.FileInode;
@@ -14,6 +15,7 @@ import java.io.*;
 public class LocalReader extends Reader {
     private RandomAccessFile inputStream;
     private final LocalPathInfo path;
+    private File temp = null;
 
     public LocalReader(@NonNull FileInode inode,
                        @NonNull FileSystem fs) throws IOException {
@@ -35,9 +37,12 @@ public class LocalReader extends Reader {
         if (!path.exists()) {
             throw new IOException(String.format("File not found. [path=%s]", path.file().getAbsolutePath()));
         }
-
-        inputStream = new RandomAccessFile(path.file(), "r");
-
+        if (!inode().isCompressed()) {
+            inputStream = new RandomAccessFile(path.file(), "r");
+        } else {
+            temp = fs.decompress(path.file);
+            inputStream = new RandomAccessFile(temp, "r");
+        }
         return this;
     }
 
@@ -107,6 +112,13 @@ public class LocalReader extends Reader {
         if (inputStream != null) {
             inputStream.close();
             inputStream = null;
+        }
+        if (temp != null) {
+            if (!temp.delete()) {
+                DefaultLogger.error(
+                        String.format("Failed to delete temporary file. [path=%s]", temp.getAbsolutePath()));
+            }
+            temp = null;
         }
     }
 }
