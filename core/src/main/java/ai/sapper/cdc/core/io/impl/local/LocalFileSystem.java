@@ -16,7 +16,6 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
-import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 
 import java.io.File;
 import java.io.IOException;

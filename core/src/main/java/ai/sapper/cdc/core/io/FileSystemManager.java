@@ -1,8 +1,6 @@
 package ai.sapper.cdc.core.io;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
@@ -12,12 +10,10 @@ import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.FileSystemManagerSettings;
 import ai.sapper.cdc.core.io.model.FileSystemSettings;
 import ai.sapper.cdc.core.model.ESettingsSource;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

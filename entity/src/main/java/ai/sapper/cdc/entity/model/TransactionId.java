@@ -14,6 +14,7 @@ import lombok.Setter;
 public abstract class TransactionId extends Offset {
     private EngineType type;
     private long sequence = 0;
+    private boolean snapshot;
 
     public TransactionId() {
     }
@@ -21,8 +22,6 @@ public abstract class TransactionId extends Offset {
     public TransactionId(@NonNull TransactionId source) {
         this.type = source.type;
         this.sequence = source.sequence;
+        this.snapshot = source.snapshot;
     }
-
-    public abstract int compare(@NonNull TransactionId next, boolean snapshot);
-
 }

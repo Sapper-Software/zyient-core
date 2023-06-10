@@ -8,7 +8,6 @@ import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.impl.FileUploadCallback;
 import ai.sapper.cdc.core.io.impl.RemoteFileSystem;
-import ai.sapper.cdc.core.io.impl.s3.S3PathInfo;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.core.http.rest.Response;
