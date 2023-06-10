@@ -15,7 +15,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class BaseEnvSettings extends Settings {
+public class BaseEnvSettings extends Settings {
     public static class Constants {
         public static final String __CONFIG_PATH_MANAGERS = "managers";
         private static final String CONFIG_MODULE = "module";

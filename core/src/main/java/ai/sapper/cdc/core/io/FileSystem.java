@@ -840,7 +840,8 @@ public abstract class FileSystem implements Closeable {
     }
 
     public interface FileSystemMocker {
-        FileSystem create(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws Exception;
+        FileSystem create(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                          @NonNull BaseEnv<?> env) throws Exception;
     }
 
     public static class TmpCleaner implements Runnable {

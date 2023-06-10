@@ -9,6 +9,7 @@ import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
+import ai.sapper.cdc.core.io.model.FileSystemManagerSettings;
 import ai.sapper.cdc.core.io.model.FileSystemSettings;
 import ai.sapper.cdc.core.model.ESettingsSource;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -48,15 +49,15 @@ public class FileSystemManager {
             ConfigReader reader = new ConfigReader(config, __CONFIG_PATH, FileSystemManagerSettings.class);
             reader.read();
             settings = (FileSystemManagerSettings) reader.settings();
-            zkConnection = env.connectionManager().getConnection(settings.zkConnection, ZookeeperConnection.class);
+            zkConnection = env.connectionManager().getConnection(settings.getZkConnection(), ZookeeperConnection.class);
             if (zkConnection == null) {
                 throw new IOException(
-                        String.format("ZooKeeper connection not found. [name=%s]", settings.zkConnection));
+                        String.format("ZooKeeper connection not found. [name=%s]", settings.getZkConnection()));
             }
             if (!zkConnection.isConnected()) {
                 zkConnection.connect();
             }
-            zkBasePath = new PathUtils.ZkPathBuilder(settings.zkBasePath)
+            zkBasePath = new PathUtils.ZkPathBuilder(settings.getZkBasePath())
                     .withPath(__CONFIG_PATH)
                     .build();
             try (DistributedLock lock = getLock()) {
@@ -64,7 +65,7 @@ public class FileSystemManager {
                 try {
                     readConfig(reader.config());
                     readConfig();
-                    if (settings.autoSave) {
+                    if (settings.isAutoSave()) {
                         save();
                     }
                 } finally {
@@ -132,6 +133,24 @@ public class FileSystemManager {
         DefaultLogger.info(String.format("Loaded file system. [name=%s][id=%s]", settings.getName(), fs.id()));
 
         return fs;
+    }
+
+    @SuppressWarnings("unchecked")
+    public FileSystem read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        HierarchicalConfiguration<ImmutableNode> node = xmlConfig.configurationAt(__CONFIG_PATH_DEF);
+        if (node == null) {
+            throw new Exception(String.format("File System configuration not found. [name=%s]", __CONFIG_PATH_DEF));
+        }
+        String name = node.getString(FileSystemSettings.CONFIG_NAME);
+        if (!fileSystems.containsKey(name)) {
+            String type = node.getString(FileSystemSettings.CONFIG_FS_CLASS);
+            Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(type);
+            FileSystem fs = cls.getDeclaredConstructor().newInstance();
+            fs.init(node, env);
+            fileSystems.put(fs.settings.getName(), fs);
+            DefaultLogger.info(String.format("Loaded file system. [name=%s][id=%s]", fs.settings.getName(), fs.id()));
+        }
+        return fileSystems.get(name);
     }
 
     @SuppressWarnings("unchecked")
@@ -259,16 +278,5 @@ public class FileSystemManager {
         return null;
     }
 
-    @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class FileSystemManagerSettings extends Settings {
-        @Config(name = "zkPath")
-        private String zkBasePath;
-        @Config(name = "zkConnection")
-        private String zkConnection;
-        @Config(name = "autoSave", required = false, type = Boolean.class)
-        private boolean autoSave = true;
-    }
+
 }

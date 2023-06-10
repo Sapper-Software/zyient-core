@@ -34,6 +34,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     private DistributedLock __lock;
     @Getter(AccessLevel.NONE)
     private Thread executor;
+    private ProcessorSettings settings;
 
     @SuppressWarnings("unchecked")
     protected Processor(@NonNull BaseEnv<?> env,
@@ -46,6 +47,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     }
 
     protected void init(@NonNull ProcessorSettings settings) throws Exception {
+        this.settings = settings;
         this.name = settings.getName();
         String lockPath = new PathUtils.ZkPathBuilder(String.format("processors/%s/%s/%s",
                 env.moduleInstance().getModule(),
