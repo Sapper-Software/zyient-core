@@ -15,6 +15,7 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 
 @Getter
@@ -45,7 +46,7 @@ public class LocalWriter extends Writer {
             lock.lock();
             try {
                 inode = (FileInode) fs.fileLock(inode);
-                checkLockCopy(overwrite);
+                checkLocalCopy(overwrite);
                 inode.getLock().setLocalPath(temp.getAbsolutePath());
                 outputStream = new FileOutputStream(temp, !overwrite);
                 inode.getState().setState(EFileState.Updating);
@@ -69,6 +70,14 @@ public class LocalWriter extends Writer {
             FileUtils.copyFile(path.file, temp);
             temp = Reader.checkDecompress(temp, inode, fs);
         }
+    }
+
+    @Override
+    public OutputStream getOutputStream() throws Exception {
+        if (!isOpen()) {
+            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
+        }
+        return outputStream;
     }
 
     /**

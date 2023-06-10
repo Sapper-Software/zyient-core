@@ -12,6 +12,7 @@ import lombok.experimental.Accessors;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -73,7 +74,7 @@ public abstract class Writer implements Closeable {
     public abstract void commit(boolean clearLock) throws IOException;
 
 
-    protected void checkLockCopy(boolean overwrite) throws Exception {
+    protected void checkLocalCopy(boolean overwrite) throws Exception {
         if (!Strings.isNullOrEmpty(inode.getLock().getLocalPath())) {
             temp = new File(inode.getLock().getLocalPath());
         } else {
@@ -116,4 +117,6 @@ public abstract class Writer implements Closeable {
     }
 
     protected abstract void getLocalCopy() throws Exception;
+
+    public abstract OutputStream getOutputStream() throws Exception;
 }

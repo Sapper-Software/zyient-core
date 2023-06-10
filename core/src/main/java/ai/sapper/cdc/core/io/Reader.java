@@ -8,6 +8,7 @@ import lombok.experimental.Accessors;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Getter
 @Accessors(fluent = true)
@@ -47,4 +48,5 @@ public abstract class Reader implements Closeable {
         return infile;
     }
 
+    public abstract InputStream getInputStream() throws Exception;
 }

@@ -6,9 +6,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 
 @Getter
 @Accessors(fluent = true)
@@ -89,5 +87,13 @@ public abstract class RemoteReader extends Reader {
         }
         cacheFile = null;
         inputStream = null;
+    }
+
+    @Override
+    public InputStream getInputStream() throws Exception {
+        if (!isOpen()) {
+            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
+        }
+        return new FileInputStream(cacheFile);
     }
 }

@@ -11,6 +11,7 @@ import lombok.experimental.Accessors;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 
 @Getter
@@ -34,7 +35,7 @@ public abstract class RemoteWriter extends Writer {
             lock.lock();
             try {
                 inode = (FileInode) fs.fileLock(inode);
-                checkLockCopy(overwrite);
+                checkLocalCopy(overwrite);
                 inode.getLock().setLocalPath(temp.getAbsolutePath());
                 outputStream = new FileOutputStream(temp, !overwrite);
                 inode.getState().setState(EFileState.Updating);
@@ -189,6 +190,14 @@ public abstract class RemoteWriter extends Writer {
             outputStream.close();
             outputStream = null;
         }
+    }
+
+    @Override
+    public OutputStream getOutputStream() throws Exception {
+        if (!isOpen()) {
+            throw new IOException(String.format("Writer not open: [path=%s]", inode.toString()));
+        }
+        return outputStream;
     }
 
     protected abstract String getTmpPath();
