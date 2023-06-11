@@ -86,7 +86,7 @@ public abstract class FileSystem implements Closeable {
         this.env = env;
         this.configReader = configReader;
         configReader.read();
-        settings = (FileSystemSettings) configReader.settings();
+        this.settings = (FileSystemSettings) configReader.settings();
         setup();
     }
 

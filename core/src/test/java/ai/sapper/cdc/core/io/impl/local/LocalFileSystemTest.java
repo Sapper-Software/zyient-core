@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LocalFileSystemTest {
-    private static final String __CONFIG_FILE = "src/test/resources/fs-local-test.xml";
+    private static final String __CONFIG_FILE = "src/test/resources/local/fs-local-test.xml";
     private static final String FS_DEMO = "local-test-1";
     private static final String FS_DEMO_DOMAIN = "local-demo-1";
 

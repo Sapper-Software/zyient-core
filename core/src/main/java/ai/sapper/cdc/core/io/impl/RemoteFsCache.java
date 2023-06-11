@@ -33,9 +33,6 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
         private long updatedTime;
     }
 
-    private static final int CACHE_SIZE = 128;
-    private static final long CACHE_TIMEOUT = 5 * 60 * 1000;
-
     private final Map<String, LRUCache<String, FsCacheEntry>> cache = new HashMap<>();
     private final RemoteFileSystem fs;
     private FsCacheSettings settings;
@@ -46,12 +43,15 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
 
     public RemoteFsCache init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            ConfigReader reader = new ConfigReader(xmlConfig,
-                    FsCacheSettings.__CONFIG_PATH,
-                    FsCacheSettings.class);
-            reader.read();
-            settings = (FsCacheSettings) reader.settings();
-
+            if (ConfigReader.checkIfNodeExists(xmlConfig, FsCacheSettings.__CONFIG_PATH)) {
+                ConfigReader reader = new ConfigReader(xmlConfig,
+                        FsCacheSettings.__CONFIG_PATH,
+                        FsCacheSettings.class);
+                reader.read();
+                settings = (FsCacheSettings) reader.settings();
+            } else {
+                settings = new FsCacheSettings();
+            }
             return this;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
@@ -71,7 +71,7 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
             boolean fetch = false;
             if (entry == null) {
                 fetch = true;
-            } else if ((System.currentTimeMillis() - entry.updatedTime) > settings.cacheTimeout) {
+            } else if ((System.currentTimeMillis() - entry.updatedTime) > settings.getCacheTimeout()) {
                 fetch = true;
             }
             if (fetch) {
@@ -119,7 +119,7 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
     private LRUCache<String, FsCacheEntry> getDomainCache(String domain) {
         LRUCache<String, FsCacheEntry> cache = this.cache.get(domain);
         if (cache == null) {
-            cache = new LRUCache<String, FsCacheEntry>(settings.cacheSize)
+            cache = new LRUCache<String, FsCacheEntry>(settings.getCacheSize())
                     .withEvictionCallback(this);
             this.cache.put(domain, cache);
         }
@@ -136,14 +136,4 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
         }
     }
 
-    @Getter
-    @Setter
-    public static class FsCacheSettings extends Settings {
-        public static final String __CONFIG_PATH = "cache";
-
-        @Config(name = "size", required = false, type = Integer.class)
-        private int cacheSize = CACHE_SIZE;
-        @Config(name = "timeout", required = false, type = Long.class)
-        private long cacheTimeout = CACHE_TIMEOUT;
-    }
 }

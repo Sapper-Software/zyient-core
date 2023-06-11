@@ -37,7 +37,6 @@ public class S3FileSystem extends RemoteFileSystem {
 
     @Getter(AccessLevel.PACKAGE)
     private S3Client client;
-    private S3FileSystemSettings settings;
 
     public S3FileSystem withClient(@NonNull S3Client client) {
         this.client = client;
@@ -66,7 +65,7 @@ public class S3FileSystem extends RemoteFileSystem {
                            @NonNull BaseEnv<?> env) throws IOException {
         try {
             super.init(config, env, new S3FileSystemConfigReader(config));
-            settings = (S3FileSystemSettings) configReader().settings();
+            S3FileSystemSettings settings = (S3FileSystemSettings) configReader().settings();
             if (client == null) {
                 Region region = Region.of(settings.getRegion());
                 client = S3Client.builder()
@@ -87,9 +86,9 @@ public class S3FileSystem extends RemoteFileSystem {
         Preconditions.checkArgument(settings instanceof S3FileSystemSettings);
         super.init(settings, env);
         try {
-            this.settings = (S3FileSystemSettings) settings;
+            S3FileSystemSettings s3settings = (S3FileSystemSettings) this.settings;
             if (client == null) {
-                Region region = Region.of(this.settings.getRegion());
+                Region region = Region.of(s3settings.getRegion());
                 client = S3Client.builder()
                         .region(region)
                         .build();

@@ -22,7 +22,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AzureFileSystemTest {
-    private static final String __CONFIG_FILE = "src/test/resources/fs-azure-test.xml";
+    private static final String __CONFIG_FILE = "src/test/resources/azure/fs-azure-test.xml";
     private static final String FS_DEMO = "azure-test-1";
     private static final String FS_DEMO_DOMAIN = "azure-demo-1";
 
@@ -124,9 +124,5 @@ class AzureFileSystemTest {
             DefaultLogger.error(ex.getLocalizedMessage());
             fail(ex);
         }
-    }
-
-    @Test
-    void getWriter() {
     }
 }

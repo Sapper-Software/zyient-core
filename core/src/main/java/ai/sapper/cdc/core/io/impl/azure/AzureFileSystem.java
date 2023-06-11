@@ -37,7 +37,6 @@ public class AzureFileSystem extends RemoteFileSystem {
     public static final String DELIMITER = "/";
 
     private AzureFsClient client;
-    private AzureFileSystemSettings settings;
 
     public static AzurePathInfo checkPath(PathInfo pathInfo) throws IOException {
         if (!(pathInfo instanceof AzurePathInfo)) {
@@ -58,11 +57,11 @@ public class AzureFileSystem extends RemoteFileSystem {
         try {
             AzureFileSystemConfigReader configReader = new AzureFileSystemConfigReader(config);
             super.init(config, env, configReader);
-            settings = (AzureFileSystemSettings) configReader.settings();
             KeyStore keyStore = env.keyStore();
             Preconditions.checkNotNull(keyStore);
             client = new AzureFsClient()
                     .init(configReader.config(), keyStore);
+            AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
             settings.setClientSettings(client.settings());
             return postInit();
         } catch (Throwable t) {
@@ -253,8 +252,9 @@ public class AzureFileSystem extends RemoteFileSystem {
                     String.format("Path information not set in inode. [domain=%s, path=%s]",
                             inode.getDomain(), inode.getAbsolutePath()));
         }
+        AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
         AzureFileUploader task = new AzureFileUploader(this, client, inode,
-                this, clearLock, settings().getUploadTimeout());
+                this, clearLock, settings.getUploadTimeout());
         uploader.submit(task);
         return inode;
     }

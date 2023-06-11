@@ -39,6 +39,7 @@ import lombok.Setter;
  *                     </flush>
  *                     <threads>[Max #of upload threads, default = 4]</threads>
  *                 </writer>
+ *                 <uploadTimeout>[File Upload timeout, default = 15 sec.]</uploadTimeout>
  *                 <compressed>[true|false, default=false]</compressed>
  *                 <containers>
  *                     <container>
