@@ -78,11 +78,13 @@ class LocalFileSystemTest {
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
             File d = new File(di.getAbsolutePath());
             assertTrue(d.exists() && d.isDirectory());
-            FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            FileInode fi = fs.create(di, String.format("test/%s.tmp", UUID.randomUUID().toString()));
             assertNotNull(fi);
             DefaultLogger.info(String.format("Created directory. [path=%s]", fi.getAbsolutePath()));
             d = new File(fi.getAbsolutePath());
             assertTrue(d.exists() && d.isFile());
+
+            assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
@@ -99,7 +101,7 @@ class LocalFileSystemTest {
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
             File d = new File(di.getAbsolutePath());
             assertTrue(d.exists() && d.isDirectory());
-            FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            FileInode fi = fs.create(di, String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
@@ -108,6 +110,8 @@ class LocalFileSystemTest {
 
             assertTrue(fs.delete(fi.getPathInfo()));
             assertFalse(d.exists());
+
+            assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
@@ -154,6 +158,8 @@ class LocalFileSystemTest {
                 }
                 assertEquals(size, written);
             }
+
+            assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());

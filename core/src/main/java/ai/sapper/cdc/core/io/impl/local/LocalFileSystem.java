@@ -197,7 +197,7 @@ public class LocalFileSystem extends FileSystem {
             if (path.exists()) {
                 if (((LocalPathInfo) path).file().isDirectory() && recursive) {
                     FileUtils.deleteDirectory(((LocalPathInfo) path).file());
-                    return path.exists();
+                    return !path.exists();
                 } else {
                     return ((LocalPathInfo) path).file().delete();
                 }

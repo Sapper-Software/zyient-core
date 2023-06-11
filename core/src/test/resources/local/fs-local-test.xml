@@ -12,7 +12,7 @@
         </demo>
         <keystore>
             <class>ai.sapper.cdc.core.keystore.JavaKeyStore</class>
-            <path>src/test/resources/test-keystore.jks</path>
+            <path>src/test/resources/azure/azure-keystore.ks</path>
         </keystore>
         <fs>
             <zkPath>/test/filesystem/admin</zkPath>

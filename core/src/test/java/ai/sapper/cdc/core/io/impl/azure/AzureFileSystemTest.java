@@ -88,6 +88,8 @@ class AzureFileSystemTest {
             assertTrue(fs.delete(fi.getPathInfo()));
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNull(fi);
+
+            assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
@@ -130,6 +132,7 @@ class AzureFileSystemTest {
                 assertEquals(size, written);
             }
             assertTrue(fs.delete(fi.getPathInfo()));
+            assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
