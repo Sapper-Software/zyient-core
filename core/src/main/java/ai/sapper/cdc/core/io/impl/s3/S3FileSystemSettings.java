@@ -7,7 +7,7 @@ import lombok.Setter;
 
 
 /**
- * <code>
+ * <pre>
  *     <fs>
  *         <fileSystems>
  *             <fileSystem>
@@ -45,7 +45,7 @@ import lombok.Setter;
  *             ...
  *         </fileSystems>
  *     </fs>
- * </code>
+ * </pre>
  */
 @Getter
 @Setter

@@ -122,6 +122,7 @@ public abstract class FileSystem implements Closeable {
         CuratorFramework client = zkConnection.client();
         if (client.checkExists().forPath(zkPath) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(zkPath);
+            client.setData().forPath(zkPath, null);
         }
         try {
             Collection<Container> domains = domainMap.getDomains();
@@ -240,7 +241,7 @@ public abstract class FileSystem implements Closeable {
         }
         String[] parts = fpath.split("/");
         CuratorFramework client = zkConnection.client();
-        return createInode(dnode, path, type, parts, 0, client);
+        return createInode(dnode, type, parts, 0, client);
     }
 
     protected Inode createInode(@NonNull DirectoryInode dnode,
@@ -258,12 +259,12 @@ public abstract class FileSystem implements Closeable {
         }
         String[] parts = fpath.split("/");
         CuratorFramework client = zkConnection.client();
-        return createInode(dnode, path, type, parts, 0, client);
+        return createInode(dnode, type, parts, 0, client);
     }
 
-    public Inode updateInode(@NonNull Inode inode,
-                             @NonNull PathInfo path) throws IOException {
+    public Inode updateInode(@NonNull Inode inode) throws IOException {
         Preconditions.checkState(state.isConnected());
+        PathInfo path = parsePathInfo(inode.getPath());
         Inode current = getInode(path);
         if (current == null) {
             throw new IOException(String.format("Inode not found: [path=%s]", inode.getZkPath()));
@@ -279,10 +280,20 @@ public abstract class FileSystem implements Closeable {
         inode.setUpdateTimestamp(System.currentTimeMillis());
         CuratorFramework client = zkConnection.client();
         try {
-            try (DistributedLock lock = getLock(current, client)) {
+            client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+        return inode;
+    }
+
+    public Inode updateInodeWithLock(@NonNull Inode inode) throws IOException {
+        CuratorFramework client = zkConnection.client();
+        try {
+            try (DistributedLock lock = getLock(inode, client)) {
                 lock.lock();
                 try {
-                    client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
+                    return updateInode(inode);
                 } finally {
                     lock.unlock();
                 }
@@ -290,7 +301,6 @@ public abstract class FileSystem implements Closeable {
         } catch (Exception ex) {
             throw new IOException(ex);
         }
-        return inode;
     }
 
     protected boolean deleteInode(@NonNull PathInfo path,
@@ -333,7 +343,6 @@ public abstract class FileSystem implements Closeable {
     }
 
     private Inode createInode(DirectoryInode parent,
-                              PathInfo path,
                               InodeType type,
                               String[] parts,
                               int index,
@@ -360,31 +369,33 @@ public abstract class FileSystem implements Closeable {
                                 }
                             } else {
                                 client.create().forPath(zpath);
+                                PathInfo pi = parsePathInfo(parent, parts[index], InodeType.Directory);
                                 DirectoryInode di = new DirectoryInode(parent.getDomain(), parts[index]);
                                 di.setParent(parent);
-                                di.setPath(path.pathConfig());
-                                di.setAbsolutePath(path.path());
-                                di.setUuid(UUID.randomUUID().toString());
+                                di.setPath(pi.pathConfig());
+                                di.setAbsolutePath(pi.path());
+                                di.setUuid(pi.uuid());
                                 di.setCreateTimestamp(System.currentTimeMillis());
                                 di.setUpdateTimestamp(System.currentTimeMillis());
                                 di.setSynced(true);
                                 di.setZkPath(zpath);
-                                di.setPathInfo(path);
+                                di.setPathInfo(pi);
 
                                 client.setData().forPath(zpath, JSONUtils.asBytes(di, DirectoryInode.class));
                                 return di;
                             }
                         } else {
                             client.create().forPath(zpath);
+                            PathInfo pi = parsePathInfo(parent, parts[index], InodeType.File);
                             FileInode fi = new FileInode(parent.getDomain(), parts[index]);
                             fi.setParent(parent);
-                            fi.setPath(path.pathConfig());
-                            fi.setAbsolutePath(path.path());
-                            fi.setUuid(UUID.randomUUID().toString());
+                            fi.setPath(pi.pathConfig());
+                            fi.setAbsolutePath(pi.path());
+                            fi.setUuid(pi.uuid());
                             fi.setCreateTimestamp(System.currentTimeMillis());
                             fi.setUpdateTimestamp(System.currentTimeMillis());
                             fi.setZkPath(zpath);
-                            fi.setPathInfo(path);
+                            fi.setPathInfo(pi);
                             fi.setCompressed(settings.isCompressed());
                             fi.getState().setState(EFileState.New);
                             client.setData().forPath(zpath, JSONUtils.asBytes(fi, FileInode.class));
@@ -409,16 +420,17 @@ public abstract class FileSystem implements Closeable {
                         lock.lock();
                         try {
                             client.create().forPath(zpath);
+                            PathInfo pi = parsePathInfo(parent, parts[index], InodeType.Directory);
                             dnode = new DirectoryInode(parent.getDomain(), parts[index]);
                             dnode.setParent(parent);
-                            dnode.setPath(path.pathConfig());
-                            dnode.setAbsolutePath(path.path());
-                            dnode.setUuid(UUID.randomUUID().toString());
+                            dnode.setPath(pi.pathConfig());
+                            dnode.setAbsolutePath(pi.path());
+                            dnode.setUuid(pi.uuid());
                             dnode.setCreateTimestamp(System.currentTimeMillis());
                             dnode.setUpdateTimestamp(System.currentTimeMillis());
                             dnode.setSynced(true);
                             dnode.setZkPath(zpath);
-                            dnode.setPathInfo(path);
+                            dnode.setPathInfo(pi);
 
                             client.setData().forPath(zpath, JSONUtils.asBytes(dnode, DirectoryInode.class));
                         } finally {
@@ -426,7 +438,7 @@ public abstract class FileSystem implements Closeable {
                         }
                     }
                 }
-                return createInode(dnode, path, type, parts, index + 1, client);
+                return createInode(dnode, type, parts, index + 1, client);
             }
         } catch (Exception ex) {
             throw new IOException(ex);
@@ -528,7 +540,7 @@ public abstract class FileSystem implements Closeable {
             node.getLock().setLocalPath(temp.getAbsolutePath());
         }
         node.getLock().setTimeUpdated(System.currentTimeMillis());
-        return updateInode(node, node.getPathInfo());
+        return updateInode(node);
     }
 
     public Inode fileUnlock(@NonNull FileInode node) throws Exception {
@@ -545,7 +557,7 @@ public abstract class FileSystem implements Closeable {
                             settings.getName(), current.getLock().getClientId()));
         }
         node.setLock(null);
-        return updateInode(node, node.getPathInfo());
+        return updateInode(node);
     }
 
     public Inode fileUpdateLock(@NonNull FileInode node) throws Exception {
@@ -563,7 +575,7 @@ public abstract class FileSystem implements Closeable {
         }
         node.setLock(current.getLock());
         node.getLock().setTimeUpdated(System.currentTimeMillis());
-        return updateInode(node, node.getPathInfo());
+        return updateInode(node);
     }
 
     public boolean isFileLocked(@NonNull FileInode node) throws Exception {

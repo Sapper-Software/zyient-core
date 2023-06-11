@@ -57,11 +57,11 @@ public class AzureFileSystem extends RemoteFileSystem {
         try {
             AzureFileSystemConfigReader configReader = new AzureFileSystemConfigReader(config);
             super.init(config, env, configReader);
-            KeyStore keyStore = env.keyStore();
+            AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+            KeyStore keyStore = env().keyStore();
             Preconditions.checkNotNull(keyStore);
             client = new AzureFsClient()
                     .init(configReader.config(), keyStore);
-            AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
             settings.setClientSettings(client.settings());
             return postInit();
         } catch (Throwable t) {
@@ -78,12 +78,12 @@ public class AzureFileSystem extends RemoteFileSystem {
         Preconditions.checkArgument(settings instanceof AzureFileSystemSettings);
         super.init(settings, env);
         try {
-            this.settings = (AzureFileSystemSettings) settings;
-            KeyStore keyStore = env.keyStore();
-            Preconditions.checkNotNull(keyStore);
             Preconditions.checkNotNull(((AzureFileSystemSettings) settings).getClientSettings());
+            KeyStore keyStore = env().keyStore();
+            Preconditions.checkNotNull(keyStore);
+            AzureFileSystemSettings afs = (AzureFileSystemSettings) this.settings;
             client = new AzureFsClient()
-                    .init(((AzureFileSystemSettings) settings).getClientSettings(), keyStore);
+                    .init(afs.getClientSettings(), keyStore);
             return postInit();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
@@ -117,7 +117,7 @@ public class AzureFileSystem extends RemoteFileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (FileInode) updateInode(node, pi);
+        return (FileInode) updateInodeWithLock(node);
     }
 
     @Override
@@ -160,7 +160,7 @@ public class AzureFileSystem extends RemoteFileSystem {
         } else {
             pi = (AzurePathInfo) parent.getPathInfo();
         }
-        return new AzurePathInfo(this, pi.domain(), pi.container(), p);
+        return new AzurePathInfo(this, pi.domain(), pi.container(), p, type);
     }
 
     @Override
@@ -171,10 +171,20 @@ public class AzureFileSystem extends RemoteFileSystem {
             }
             AzurePathInfo pi = (AzurePathInfo) path;
             BlobContainerClient cc = client.getContainer(pi.container());
-            if (cc != null && cc.exists())
-                return cc.getBlobClient(pi.path()).exists();
+            if (cc != null && cc.exists()) {
+                AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+                String name = pi.path();
+                if (!settings.isUseHierarchical()) {
+                    name = getBlobName(pi);
+                }
+                return cc.getBlobClient(name).exists();
+            }
         }
         return false;
+    }
+
+    private static String getBlobName(AzurePathInfo pathInfo) {
+        return String.format("%s.blob", pathInfo.uuid());
     }
 
     @Override
@@ -184,9 +194,6 @@ public class AzureFileSystem extends RemoteFileSystem {
             AzureContainer container = (AzureContainer) domainMap.get(inode.getDomain());
             pi = new AzurePathInfo(this, inode, container.getContainer());
             inode.setPathInfo(pi);
-        }
-        if (!pi.exists()) {
-            throw new IOException(String.format("Local file not found. [path=%s]", inode.getAbsolutePath()));
         }
         return new AzureReader(this, inode).open();
     }
@@ -220,7 +227,7 @@ public class AzureFileSystem extends RemoteFileSystem {
                 inode.getState().setState(EFileState.Updating);
                 fileUpdateLock(inode);
             }
-            updateInode(inode, inode.getPathInfo());
+            updateInodeWithLock(inode);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(LOG, ex.getLocalizedMessage());
@@ -232,14 +239,21 @@ public class AzureFileSystem extends RemoteFileSystem {
     public PathInfo createSubPath(@NonNull PathInfo parent, @NonNull String path) {
         Preconditions.checkArgument(parent instanceof AzurePathInfo);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        return new AzurePathInfo(this, parent.domain(), ((AzurePathInfo) parent).container(), path);
+        return new AzurePathInfo(this,
+                parent.domain(),
+                ((AzurePathInfo) parent).container(),
+                path,
+                InodeType.Directory);
     }
 
     @Override
-    public PathInfo createPath(@NonNull String domain, @NonNull Container container, @NonNull String path) {
+    public PathInfo createPath(@NonNull String domain,
+                               @NonNull Container container,
+                               @NonNull String path,
+                               @NonNull InodeType type) {
         Preconditions.checkArgument(container instanceof AzureContainer);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        return new AzurePathInfo(this, domain, ((AzureContainer) container).getContainer(), path);
+        return new AzurePathInfo(this, domain, ((AzureContainer) container).getContainer(), path, type);
     }
 
     @Override
@@ -254,7 +268,8 @@ public class AzureFileSystem extends RemoteFileSystem {
         }
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
         AzureFileUploader task = new AzureFileUploader(this, client, inode,
-                this, clearLock, settings.getUploadTimeout());
+                this, clearLock,
+                settings.getUploadTimeout(), settings.isUseHierarchical());
         uploader.submit(task);
         return inode;
     }
@@ -280,7 +295,12 @@ public class AzureFileSystem extends RemoteFileSystem {
             }
             BlobContainerClient cc = client.getContainer(path.container());
             if (cc != null && cc.exists()) {
-                BlobClient bc = cc.getBlobClient(path.path());
+                AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+                String name = path.path();
+                if (!settings.isUseHierarchical()) {
+                    name = getBlobName(path);
+                }
+                BlobClient bc = cc.getBlobClient(name);
                 if (bc != null && bc.exists()) {
                     try (FileOutputStream fos = new FileOutputStream(path.temp())) {
                         bc.downloadStream(fos);
@@ -306,16 +326,19 @@ public class AzureFileSystem extends RemoteFileSystem {
     public static class AzureFileUploader extends FileUploader {
         private final AzureFsClient client;
         private final long uploadTimeout;
+        private final boolean useHierarchical;
 
         protected AzureFileUploader(@NonNull RemoteFileSystem fs,
                                     @NonNull AzureFsClient client,
                                     @NonNull FileInode inode,
                                     @NonNull FileUploadCallback callback,
                                     boolean clearLock,
-                                    long uploadTimeout) {
+                                    long uploadTimeout,
+                                    boolean useHierarchical) {
             super(fs, inode, callback, clearLock);
             this.client = client;
             this.uploadTimeout = uploadTimeout;
+            this.useHierarchical = useHierarchical;
         }
 
         @Override
@@ -324,22 +347,28 @@ public class AzureFileSystem extends RemoteFileSystem {
             if (pi == null) {
                 throw new Exception("Azure Path information not specified...");
             }
-            File source = pi.temp();
-            if (source == null) {
-                throw new Exception("File to upload not specified...");
-            }
+            File source = new File(inode.getLock().getLocalPath());
             if (!source.exists()) {
                 throw new IOException(String.format("Source file not found. [path=%s]", source.getAbsolutePath()));
             }
-            BlobContainerClient cc = client.getContainer(pi.container());
-            if (cc == null || !cc.exists()) {
-                throw new IOException(String.format("Azure Container not found. [container=%s]", pi.container()));
+            try {
+                BlobContainerClient cc = client.getContainer(pi.container());
+                if (cc == null || !cc.exists()) {
+                    throw new IOException(String.format("Azure Container not found. [container=%s]", pi.container()));
+                }
+                BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(source.getAbsolutePath());
+                options.setTags(pi.pathConfig());
+                Duration timeout = Duration.ofSeconds(uploadTimeout);
+                String name = pi.path();
+                if (!useHierarchical) {
+                    name = getBlobName(pi);
+                }
+                BlobClient bc = cc.getBlobClient(name);
+                return bc.uploadFromFileWithResponse(options, timeout, null);
+            } catch (RuntimeException re) {
+                DefaultLogger.stacktrace(re);
+                throw new Exception(re);
             }
-            BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(source.getAbsolutePath());
-            options.setTags(pi.pathConfig());
-            Duration timeout = Duration.ofSeconds(uploadTimeout);
-            BlobClient bc = cc.getBlobClient(pi.path());
-            return bc.uploadFromFileWithResponse(options, timeout, null);
         }
     }
 

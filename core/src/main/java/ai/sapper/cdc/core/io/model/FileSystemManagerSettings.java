@@ -7,13 +7,13 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * <code>
+ * <pre>
  *     <fs>
  *         <zkPath>[zookeeper path]</zkPath>
  *         <zkConnection>[zookeeper connection name]</zkConnection>
  *         <autoSave>[true|false, default=true]</autoSave>
  *     </fs>
- * </code>
+ * </pre>
  */
 @Getter
 @Setter

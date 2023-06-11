@@ -3,6 +3,7 @@ package ai.sapper.cdc.core.io.impl.azure;
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.model.Container;
+import ai.sapper.cdc.core.io.model.InodeType;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -19,6 +20,6 @@ public class AzureContainer extends Container {
 
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
-        return new AzurePathInfo(fs, getDomain(), getContainer(), getPath());
+        return new AzurePathInfo(fs, getDomain(), getContainer(), getPath(), InodeType.Directory);
     }
 }

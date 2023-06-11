@@ -11,6 +11,7 @@ import ai.sapper.cdc.core.io.model.FileSystemManagerSettings;
 import ai.sapper.cdc.core.io.model.FileSystemSettings;
 import ai.sapper.cdc.core.model.ESettingsSource;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -224,28 +225,36 @@ public class FileSystemManager {
         }
     }
 
-    public void save() throws IOException {
-        Preconditions.checkNotNull(zkConnection);
+    public void saveWithLock() throws IOException {
         try {
-            if (!fileSystems.isEmpty()) {
-                try (DistributedLock lock = getLock()) {
-                    lock.lock();
-                    try {
-                        CuratorFramework client = zkConnection.client();
-                        for (String name : fileSystems.keySet()) {
-                            FileSystem fs = fileSystems.get(name);
-                            FileSystemSettings settings = fs.settings;
-                            if (settings.getSource() == ESettingsSource.ZooKeeper) continue;
-                            save(name, settings, client);
-                            DefaultLogger.info(String.format("Saved fileSystem settings. [name=%s]", name));
-                        }
-                    } finally {
-                        lock.unlock();
-                    }
+            try (DistributedLock lock = getLock()) {
+                lock.lock();
+                try {
+                    save();
+                } finally {
+                    lock.unlock();
                 }
             }
         } catch (Exception ex) {
             throw new IOException(ex);
+        }
+    }
+
+    public void save() throws IOException {
+        Preconditions.checkNotNull(zkConnection);
+        if (!fileSystems.isEmpty()) {
+            try {
+                CuratorFramework client = zkConnection.client();
+                for (String name : fileSystems.keySet()) {
+                    FileSystem fs = fileSystems.get(name);
+                    FileSystemSettings settings = fs.settings;
+                    if (settings.getSource() == ESettingsSource.ZooKeeper) continue;
+                    save(name, settings, client);
+                    DefaultLogger.info(String.format("Saved fileSystem settings. [name=%s]", name));
+                }
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
         }
     }
 
@@ -270,6 +279,12 @@ public class FileSystemManager {
             if (data != null && data.length > 0) {
                 FileSystemSettings settings = JSONUtils.read(data, FileSystemSettings.class);
                 settings.setSource(ESettingsSource.ZooKeeper);
+                if (Strings.isNullOrEmpty(settings.getZkConnection())) {
+                    settings.setZkConnection(this.settings.getZkConnection());
+                }
+                if (Strings.isNullOrEmpty(settings.getZkPath())) {
+                    settings.setZkPath(this.zkBasePath);
+                }
                 return settings;
             }
         }

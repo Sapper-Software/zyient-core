@@ -40,7 +40,7 @@ public abstract class RemoteWriter extends Writer {
                 outputStream = new FileOutputStream(temp, !overwrite);
                 inode.getState().setState(EFileState.Updating);
 
-                inode = (FileInode) fs.updateInode(inode, inode.getPathInfo());
+                inode = (FileInode) fs.updateInode(inode);
                 lastFlushTimestamp = System.currentTimeMillis();
                 lastFlushSize = fileSize(temp);
 
@@ -158,7 +158,7 @@ public abstract class RemoteWriter extends Writer {
                                         inode.getDomain(), inode.getAbsolutePath()));
                     }
                     String path = inode.getLock().getLocalPath();
-                    if (path.compareTo(temp.getAbsolutePath()) == 0) {
+                    if (path.compareTo(temp.getAbsolutePath()) != 0) {
                         throw new IOException(String.format("[%s][%s] Local path mismatch. [expected=%s][locked=%s]",
                                 inode.getDomain(), inode.getAbsolutePath(),
                                 temp.getAbsolutePath(), path));
@@ -167,7 +167,7 @@ public abstract class RemoteWriter extends Writer {
                     inode.setSyncTimestamp(getLocalUpdateTime());
                     inode.getState().setState(EFileState.PendingSync);
 
-                    inode = (FileInode) fs.updateInode(inode, inode.getPathInfo());
+                    inode = (FileInode) fs.updateInode(inode);
 
                     RemoteFileSystem rfs = (RemoteFileSystem) fs;
                     inode = rfs.upload(toUpload, inode, clearLock);

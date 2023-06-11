@@ -51,7 +51,7 @@ public class LocalWriter extends Writer {
                 outputStream = new FileOutputStream(temp, !overwrite);
                 inode.getState().setState(EFileState.Updating);
 
-                inode = (FileInode) fs.updateInode(inode, path);
+                inode = (FileInode) fs.updateInode(inode);
 
                 return this;
             } finally {
@@ -178,7 +178,7 @@ public class LocalWriter extends Writer {
                     } else {
                         inode = (FileInode) fs.fileUpdateLock(inode);
                     }
-                    fs.updateInode(inode, inode.getPathInfo());
+                    fs.updateInode(inode);
                 } finally {
                     lock.unlock();
                 }

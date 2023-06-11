@@ -108,7 +108,7 @@ public class LocalFileSystem extends FileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (DirectoryInode) updateInode(node, pi);
+        return (DirectoryInode) updateInodeWithLock(node);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class LocalFileSystem extends FileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (DirectoryInode) updateInode(node, pi);
+        return (DirectoryInode) updateInodeWithLock(node);
     }
 
     @Override
@@ -155,7 +155,7 @@ public class LocalFileSystem extends FileSystem {
             node.setPathInfo(pi);
         if (node.isFile())
             FileUtils.touch(pi.file);
-        return (FileInode) updateInode(node, pi);
+        return (FileInode) updateInodeWithLock(node);
     }
 
     @Override
@@ -180,7 +180,7 @@ public class LocalFileSystem extends FileSystem {
             node.setPathInfo(pi);
         if (node.isFile())
             FileUtils.touch(pi.file);
-        return (FileInode) updateInode(node, pi);
+        return (FileInode) updateInodeWithLock(node);
     }
 
     /**
@@ -280,7 +280,7 @@ public class LocalFileSystem extends FileSystem {
                 inode.getState().setState(EFileState.Updating);
                 fileUpdateLock(inode);
             }
-            return (FileInode) updateInode(inode, inode.getPathInfo());
+            return (FileInode) updateInodeWithLock(inode);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(

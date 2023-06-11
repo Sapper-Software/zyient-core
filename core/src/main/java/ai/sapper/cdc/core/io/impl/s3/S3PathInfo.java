@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.model.Inode;
+import ai.sapper.cdc.core.io.model.InodeType;
 import ai.sapper.cdc.core.io.model.PathInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -38,24 +39,13 @@ public class S3PathInfo extends PathInfo {
     protected S3PathInfo(@NonNull FileSystem fs,
                          @NonNull String domain,
                          @NonNull String bucket,
-                         @NonNull String path) {
-        super(fs, path, domain);
-        Preconditions.checkArgument(fs instanceof S3FileSystem);
-        this.client = ((S3FileSystem) fs).client();
-        this.bucket = bucket;
-        directory = false;
-    }
-
-    protected S3PathInfo(@NonNull FileSystem fs,
-                         @NonNull String domain,
-                         @NonNull String bucket,
                          @NonNull String path,
-                         boolean directory) {
+                         @NonNull InodeType type) {
         super(fs, path, domain);
         Preconditions.checkArgument(fs instanceof S3FileSystem);
         this.client = ((S3FileSystem) fs).client();
         this.bucket = bucket;
-        this.directory = directory;
+        directory = (type == InodeType.Directory);
     }
 
     protected S3PathInfo(@NonNull FileSystem fs,

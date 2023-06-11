@@ -38,6 +38,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         cache = new RemoteFsCache(this);
         cache.init(config);
         RemoteFileSystemSettings settings = (RemoteFileSystemSettings) settings();
+        settings.setCacheSettings(cache.settings());
         uploader =
                 new ThreadPoolExecutor(settings.getUploadThreadCount(),
                         settings.getUploadThreadCount(),
@@ -46,6 +47,26 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
                         new LinkedBlockingQueue<>());
     }
 
+    @Override
+    public FileSystem init(@NonNull FileSystemSettings settings,
+                           @NonNull BaseEnv<?> env) throws IOException {
+        super.init(settings, env);
+        RemoteFileSystemSettings rfs = (RemoteFileSystemSettings) settings();
+        try {
+            cache = new RemoteFsCache(this);
+            cache.init(rfs.getCacheSettings());
+
+            uploader =
+                    new ThreadPoolExecutor(rfs.getUploadThreadCount(),
+                            rfs.getUploadThreadCount(),
+                            0L,
+                            TimeUnit.MILLISECONDS,
+                            new LinkedBlockingQueue<>());
+            return this;
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+    }
 
     @Override
     public DirectoryInode mkdir(@NonNull DirectoryInode parent, @NonNull String name) throws IOException {
@@ -57,7 +78,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (DirectoryInode) updateInode(node, pi);
+        return (DirectoryInode) updateInodeWithLock(node);
     }
 
     @Override
@@ -65,18 +86,18 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         path = getAbsolutePath(path, domain);
         Container container = domainMap.get(domain);
-        if (!(container instanceof S3Container)) {
+        if (container == null) {
             throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
         }
 
-        PathInfo pi = createPath(domain, container, path);
+        PathInfo pi = createPath(domain, container, path, InodeType.Directory);
         Inode node = createInode(InodeType.Directory, pi);
 
         if (node.getPath() == null)
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (DirectoryInode) updateInode(node, pi);
+        return (DirectoryInode) updateInodeWithLock(node);
     }
 
 
@@ -84,7 +105,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
         path = getAbsolutePath(path, domain);
         Container container = domainMap.get(domain);
-        PathInfo pi = createPath(domain, container, path);
+        PathInfo pi = createPath(domain, container, path, InodeType.File);
         return create(pi);
     }
 
@@ -95,7 +116,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
             node.setPath(pathInfo.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pathInfo);
-        return (FileInode) updateInode(node, pathInfo);
+        return (FileInode) updateInodeWithLock(node);
     }
 
 
@@ -114,7 +135,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
                             error.getLocalizedMessage()));
             DefaultLogger.stacktrace(error);
             inode.getState().error(error);
-            updateInode(inode, inode.getPathInfo());
+            updateInodeWithLock(inode);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(LOG, ex.getLocalizedMessage());
@@ -132,7 +153,10 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
 
     public abstract PathInfo createSubPath(@NonNull PathInfo parent, @NonNull String path);
 
-    public abstract PathInfo createPath(@NonNull String domain, @NonNull Container container, @NonNull String path);
+    public abstract PathInfo createPath(@NonNull String domain,
+                                        @NonNull Container container,
+                                        @NonNull String path,
+                                        @NonNull InodeType type);
 
     public abstract long size(@NonNull PathInfo path) throws IOException;
 
@@ -162,13 +186,13 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         Container container = domainMap.get(domain);
-        if (!(container instanceof LocalContainer)) {
+        if (container == null) {
             throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
         }
-        String pp = ((LocalContainer) container).getPath();
+        String pp = container.getPath();
 
-        return PathUtils.formatPath(String.format("/%s/%s/%s",
-                pp, domain, path));
+        return PathUtils.formatPath(String.format("/%s/%s",
+                pp, path));
     }
 
     @Override

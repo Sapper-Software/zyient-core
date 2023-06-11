@@ -8,7 +8,7 @@ import lombok.Setter;
 
 
 /**
- * <code>
+ * <pre>
  *     <fs>
  *         <fileSystems>
  *             <fileSystem>
@@ -24,6 +24,7 @@ import lombok.Setter;
  *                     <path>[zookeeper path]</path>
  *                     <lockTimeout>[distributed lock timeout (optional)</lockTimeout>
  *                 </zk>
+ *                 <hierarchical>[true|false, default = false]</hierarchical>
  *                 <client>
  *                     <endpointUrl>[End-point URL]</endpointUrl>
  *                     <authClass>[Authentication implementing class (ai.sapper.cdc.core.io.impl.azure.SharedKeyAuth)]</authClass>
@@ -54,13 +55,15 @@ import lombok.Setter;
  *             ...
  *         </fileSystems>
  *     </fs>
- * </code>
+ * </pre>
  */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public  class AzureFileSystemSettings extends RemoteFileSystemSettings {
+public class AzureFileSystemSettings extends RemoteFileSystemSettings {
+    @Config(name = "hierarchical", required = false, type = Boolean.class)
+    private boolean useHierarchical = false;
     @Config(name = "uploadTimeout", required = false, type = Long.class)
     private long uploadTimeout = 15; // 15 Seconds
     private AzureFsClientSettings clientSettings;

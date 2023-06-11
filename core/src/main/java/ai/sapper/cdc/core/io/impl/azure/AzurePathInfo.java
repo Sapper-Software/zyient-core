@@ -3,6 +3,7 @@ package ai.sapper.cdc.core.io.impl.azure;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.impl.local.LocalPathInfo;
 import ai.sapper.cdc.core.io.model.Inode;
+import ai.sapper.cdc.core.io.model.InodeType;
 import com.azure.storage.blob.BlobClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -16,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Accessors(fluent = true)
@@ -24,11 +26,12 @@ public class AzurePathInfo extends LocalPathInfo {
 
     private final AzureFsClient client;
     private final String container;
+
     private File temp;
 
     protected AzurePathInfo(@NonNull FileSystem fs,
-                         @NonNull Inode node,
-                         @NonNull String container) {
+                            @NonNull Inode node,
+                            @NonNull String container) {
         super(fs, node);
         Preconditions.checkArgument(fs instanceof AzureFileSystem);
         client = ((AzureFileSystem) fs).client();
@@ -36,17 +39,19 @@ public class AzurePathInfo extends LocalPathInfo {
     }
 
     protected AzurePathInfo(@NonNull FileSystem fs,
-                         @NonNull String domain,
-                         @NonNull String container,
-                         @NonNull String path) {
+                            @NonNull String domain,
+                            @NonNull String container,
+                            @NonNull String path,
+                            @NonNull InodeType type) {
         super(fs, path, domain);
         Preconditions.checkArgument(fs instanceof AzureFileSystem);
         client = ((AzureFileSystem) fs).client();
         this.container = container;
+        directory(type == InodeType.Directory);
     }
 
     protected AzurePathInfo(@NonNull FileSystem fs,
-                         @NonNull Map<String, String> config) {
+                            @NonNull Map<String, String> config) {
         super(fs, config);
         Preconditions.checkArgument(fs instanceof AzureFileSystem);
         client = ((AzureFileSystem) fs).client();
@@ -79,7 +84,7 @@ public class AzurePathInfo extends LocalPathInfo {
      */
     @Override
     public long size() throws IOException {
-        if (temp.exists()) {
+        if (temp != null && temp.exists()) {
             Path p = Paths.get(temp.toURI());
             dataSize(Files.size(p));
         } else {

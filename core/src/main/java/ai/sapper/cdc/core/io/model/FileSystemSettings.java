@@ -10,7 +10,7 @@ import lombok.Setter;
 import java.util.Map;
 
 /**
- * <code>
+ * <pre>
  *     <fs>
  *         <fileSystems>
  *             <fileSystem>
@@ -38,7 +38,7 @@ import java.util.Map;
  *             ...
  *         </fileSystems>
  *     </fs>
- * </code>
+ * </pre>
  */
 @Getter
 @Setter

@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+@Getter
+@Accessors(fluent = true)
 public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsCacheEntry> {
 
     @Getter
@@ -56,6 +58,15 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
+    }
+
+    public RemoteFsCache init(FsCacheSettings settings) throws ConfigurationException {
+        if (settings != null) {
+            this.settings = settings;
+        } else {
+            this.settings = new FsCacheSettings();
+        }
+        return this;
     }
 
     public File get(@NonNull FileInode inode) throws Exception {

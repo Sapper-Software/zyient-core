@@ -280,11 +280,12 @@ public class DistributedLock extends ReentrantLock implements Closeable {
     public void unlock() {
         Preconditions.checkState(mutex != null);
         try {
-            if (mutex.isAcquiredInThisProcess()) {
-                if (getHoldCount() == 1)
+            if (getHoldCount() == 1) {
+                if (mutex.isAcquiredInThisProcess()) {
                     mutex.release();
-            } else {
-                throw new LockError(String.format("[%s][%s] Lock not held by current thread.", id.namespace, id.name));
+                } else {
+                    throw new LockError(String.format("[%s][%s] Lock not held by current thread.", id.namespace, id.name));
+                }
             }
             super.unlock();
         } catch (Throwable t) {

@@ -8,7 +8,7 @@ import lombok.Setter;
 
 
 /**
- * <code>
+ * <pre>
  *     <fs>
  *         <fileSystems>
  *             <fileSystem>
@@ -43,7 +43,7 @@ import lombok.Setter;
  *             ...
  *         </fileSystems>
  *     </fs>
- * </code>
+ * </pre>
  */
 @Getter
 @Setter
@@ -63,4 +63,5 @@ public class RemoteFileSystemSettings extends FileSystemSettings {
     private long writerFlushSize = DEFAULT_WRITER_FLUSH_SIZE;
     @Config(name = CONFIG_WRITER_UPLOAD_THREADS, required = false, type = Integer.class)
     private int uploadThreadCount = DEFAULT_UPLOAD_THREAD_COUNT;
+    private FsCacheSettings cacheSettings;
 }

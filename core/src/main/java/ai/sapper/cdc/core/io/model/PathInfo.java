@@ -13,6 +13,7 @@ import org.apache.commons.io.FilenameUtils;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -22,10 +23,12 @@ public abstract class PathInfo {
     public static final String CONFIG_KEY_DOMAIN = "domain";
     public static final String CONFIG_KEY_PATH = "path";
     public static final String CONFIG_IS_DIRECTORY = "isDirectory";
+    public static final String CONFIG_KEY_UUID = "UUID";
 
     private final FileSystem fs;
     private final String domain;
     private final String path;
+    private final String uuid;
     protected boolean directory = false;
     private long dataSize = -1;
 
@@ -37,6 +40,8 @@ public abstract class PathInfo {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
         path = node.getAbsolutePath();
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
+        uuid = node.getUuid();
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(uuid));
     }
 
     protected PathInfo(@NonNull FileSystem fs,
@@ -45,6 +50,7 @@ public abstract class PathInfo {
         this.fs = fs;
         this.path = PathUtils.formatPath(path);
         this.domain = domain;
+        this.uuid = UUID.randomUUID().toString();
     }
 
     protected PathInfo(@NonNull FileSystem fs,
@@ -55,6 +61,8 @@ public abstract class PathInfo {
         path = config.get(CONFIG_KEY_PATH);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         directory = Boolean.parseBoolean(config.get(CONFIG_IS_DIRECTORY));
+        uuid = config.get(CONFIG_KEY_UUID);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(uuid));
     }
 
     public String parent() {
@@ -79,6 +87,7 @@ public abstract class PathInfo {
         config.put(CONFIG_KEY_TYPE, getClass().getCanonicalName());
         config.put(CONFIG_KEY_DOMAIN, domain);
         config.put(CONFIG_KEY_PATH, path);
+        config.put(CONFIG_KEY_UUID, uuid);
         config.put(CONFIG_IS_DIRECTORY, String.valueOf(directory));
 
         return config;

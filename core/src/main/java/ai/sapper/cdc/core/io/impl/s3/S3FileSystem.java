@@ -127,7 +127,7 @@ public class S3FileSystem extends RemoteFileSystem {
             node.setPath(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
-        return (FileInode) updateInode(node, pi);
+        return (FileInode) updateInodeWithLock(node);
     }
 
     /**
@@ -187,7 +187,7 @@ public class S3FileSystem extends RemoteFileSystem {
         } else {
             pi = (S3PathInfo) parent.getPathInfo();
         }
-        return new S3PathInfo(this, parent.getDomain(), pi.bucket(), p, (type == InodeType.Directory));
+        return new S3PathInfo(this, parent.getDomain(), pi.bucket(), p, type);
     }
 
     @Override
@@ -266,14 +266,17 @@ public class S3FileSystem extends RemoteFileSystem {
     public PathInfo createSubPath(@NonNull PathInfo parent, @NonNull String path) {
         Preconditions.checkArgument(parent instanceof S3PathInfo);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        return new S3PathInfo(this, parent.domain(), ((S3PathInfo) parent).bucket(), path);
+        return new S3PathInfo(this, parent.domain(), ((S3PathInfo) parent).bucket(), path, InodeType.Directory);
     }
 
     @Override
-    public PathInfo createPath(@NonNull String domain, @NonNull Container container, @NonNull String path) {
+    public PathInfo createPath(@NonNull String domain,
+                               @NonNull Container container,
+                               @NonNull String path,
+                               @NonNull InodeType type) {
         Preconditions.checkArgument(container instanceof S3Container);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        return new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path);
+        return new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path, type);
     }
 
     @Override
@@ -358,7 +361,7 @@ public class S3FileSystem extends RemoteFileSystem {
                 inode.getState().setState(EFileState.Updating);
                 fileUpdateLock(inode);
             }
-            updateInode(inode, inode.getPathInfo());
+            updateInodeWithLock(inode);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(LOG, ex.getLocalizedMessage());
