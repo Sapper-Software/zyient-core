@@ -128,18 +128,38 @@ public class AzureFileSystem extends RemoteFileSystem {
             AzurePathInfo pi = (AzurePathInfo) path;
             BlobContainerClient cc = client.getContainer(pi.container());
             if (cc != null && cc.exists()) {
-                ListBlobsOptions options = new ListBlobsOptions()
-                        .setPrefix(path.path());
-                Iterable<BlobItem> blobs = cc.listBlobsByHierarchy(DELIMITER, options, null);
-                if (blobs != null) {
-                    while (blobs.iterator().hasNext()) {
-                        BlobItem bi = blobs.iterator().next();
-                        if (bi.isDeleted()) continue;
-                        BlobClient bc = cc.getBlobClient(bi.getName());
-                        if (bc != null) {
-                            DefaultLogger.trace(String.format("Deleting Azure BLOB: [name=%s]", bi.getName()));
+                AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+                if (!settings.isUseHierarchical()) {
+                    if (!pi.directory()) {
+                        String name = getBlobName(pi);
+                        BlobClient bc = cc.getBlobClient(name);
+                        if (bc.exists()) {
+                            DefaultLogger.trace(String.format("Deleting Azure BLOB: [name=%s]", bc.getBlobName()));
                             bc.delete();
-                            ret = true;
+                            return true;
+                        }
+                    } else {
+                        return true;
+                    }
+                } else {
+                    ListBlobsOptions options = new ListBlobsOptions()
+                            .setPrefix(path.path());
+                    Iterable<BlobItem> blobs = cc.listBlobsByHierarchy(DELIMITER, options, null);
+                    if (blobs != null) {
+                        while (blobs.iterator().hasNext()) {
+                            BlobItem bi = blobs.iterator().next();
+                            if (bi.isDeleted()) continue;
+                            if (!recursive) {
+                                if (bi.getName().compareTo(pi.path()) != 0) {
+                                    continue;
+                                }
+                            }
+                            BlobClient bc = cc.getBlobClient(bi.getName());
+                            if (bc != null) {
+                                DefaultLogger.trace(String.format("Deleting Azure BLOB: [name=%s]", bi.getName()));
+                                bc.delete();
+                                ret = true;
+                            }
                         }
                     }
                 }
@@ -357,7 +377,6 @@ public class AzureFileSystem extends RemoteFileSystem {
                     throw new IOException(String.format("Azure Container not found. [container=%s]", pi.container()));
                 }
                 BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(source.getAbsolutePath());
-                options.setTags(pi.pathConfig());
                 Duration timeout = Duration.ofSeconds(uploadTimeout);
                 String name = pi.path();
                 if (!useHierarchical) {

@@ -76,7 +76,15 @@ class AzureFileSystemTest {
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
-
+            long written = 0;
+            try (Writer writer = fs.writer(fi)) {
+                for (int ii = 0; ii < 200; ii++) {
+                    String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
+                    written = writer.write(str.getBytes(StandardCharsets.UTF_8));
+                }
+                writer.commit(true);
+            }
+            Thread.sleep(5000);
             assertTrue(fs.delete(fi.getPathInfo()));
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNull(fi);
@@ -102,12 +110,12 @@ class AzureFileSystemTest {
             try (Writer writer = fs.writer(fi)) {
                 for (int ii = 0; ii < 200; ii++) {
                     String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
-                    written = writer.write(str.getBytes(StandardCharsets.UTF_8));
+                    written += writer.write(str.getBytes(StandardCharsets.UTF_8));
                 }
                 writer.commit(true);
             }
-            Thread.sleep(1000);
-            /*
+            Thread.sleep(5000);
+
             try (Reader reader = fs.reader(fi)) {
                 int size = 0;
                 byte[] buffer = new byte[512];
@@ -121,7 +129,7 @@ class AzureFileSystemTest {
                 }
                 assertEquals(size, written);
             }
-             */
+            assertTrue(fs.delete(fi.getPathInfo()));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
