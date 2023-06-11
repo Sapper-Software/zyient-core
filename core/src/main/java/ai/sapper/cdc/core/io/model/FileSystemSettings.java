@@ -9,6 +9,37 @@ import lombok.Setter;
 
 import java.util.Map;
 
+/**
+ * <code>
+ *     <fs>
+ *         <fileSystems>
+ *             <fileSystem>
+ *                 <type>[FS class]</type>
+ *                 <name>[File System name, must be unique in a namespace]</name>
+ *                 <tmp>
+ *                     <path>[temporary storage path (optional)</path>
+ *                     <clean>[true|false, default=true]</clean>
+ *                     <ttl>[Clean files after, in milliseconds]</ttl>
+ *                 </tmp>
+ *                 <zk> -- Optional
+ *                     <connection>[zookeeper connection name]</connection>
+ *                     <path>[zookeeper path]</path>
+ *                     <lockTimeout>[distributed lock timeout (optional)</lockTimeout>
+ *                 </zk>
+ *                 <compressed>[true|false, default=false]</compressed>
+ *                 <containers>
+ *                     <container>
+ *                         ...
+ *                     </container>
+ *                     ...
+ *                     <default>[Default domain]</default>
+ *                 </containers>
+ *             </fileSystem>
+ *             ...
+ *         </fileSystems>
+ *     </fs>
+ * </code>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -33,9 +64,9 @@ public abstract class FileSystemSettings extends Settings {
     private String type;
     @Config(name = CONFIG_NAME)
     private String name;
-    @Config(name = CONFIG_ZK_CONNECTION)
+    @Config(name = CONFIG_ZK_CONNECTION, required = false)
     private String zkConnection;
-    @Config(name = CONFIG_ZK_PATH)
+    @Config(name = CONFIG_ZK_PATH, required = false)
     private String zkPath;
     @Config(name = CONFIG_TEMP_FOLDER, required = false)
     private String tempDir = TEMP_PATH;

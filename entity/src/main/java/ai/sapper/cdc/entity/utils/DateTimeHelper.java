@@ -5,9 +5,16 @@ import lombok.NonNull;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DateTimeHelper {
+
+    public static String dateString(@NonNull String fmt) {
+        SimpleDateFormat f = new SimpleDateFormat(fmt);
+        Date dt = new Date(System.currentTimeMillis());
+        return f.format(dt);
+    }
 
     public static DateTime parseISO8601(@NonNull String txt) {
         try {

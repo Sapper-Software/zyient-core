@@ -53,6 +53,16 @@ public abstract class FileSystem implements Closeable {
     private FileSystemConfigReader configReader;
     private String id;
 
+    protected FileSystem withZkConnection(@NonNull ZookeeperConnection connection) {
+        this.zkConnection = connection;
+        return this;
+    }
+
+    protected FileSystem withZkPath(@NonNull String zkPath) {
+        this.zkPath = zkPath;
+        return this;
+    }
+
     public abstract Class<? extends FileSystemSettings> getSettingsType();
 
     public abstract FileSystem init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
@@ -81,20 +91,32 @@ public abstract class FileSystem implements Closeable {
     }
 
     private void setup() throws Exception {
-        zkConnection = env.connectionManager()
-                .getConnection(settings.getZkConnection(),
-                        ZookeeperConnection.class);
         if (zkConnection == null) {
-            throw new Exception(String.format("ZooKeeper connection not found. [name=%s]", settings.getZkConnection()));
+            zkConnection = env.connectionManager()
+                    .getConnection(settings.getZkConnection(),
+                            ZookeeperConnection.class);
+            if (zkConnection == null) {
+                throw new Exception(String.format("ZooKeeper connection not found. [name=%s]", settings.getZkConnection()));
+            }
         }
         if (!zkConnection.isConnected()) {
             zkConnection.connect();
         }
         ModuleInstance instance = env.moduleInstance();
         id = String.format("%s/%s/%s", settings.getName(), instance.getName(), instance.getInstanceId());
-        zkPath = new PathUtils.ZkPathBuilder(settings.getZkPath())
-                .withPath(settings.getName())
-                .build();
+        if (Strings.isNullOrEmpty(zkPath)) {
+            if (Strings.isNullOrEmpty(settings.getZkPath())) {
+                throw new Exception(
+                        String.format("[%s] ZooKeeper path not specified in configuration.", settings.getName()));
+            }
+            zkPath = new PathUtils.ZkPathBuilder(settings.getZkPath())
+                    .withPath(settings.getName())
+                    .build();
+        } else {
+            zkPath = new PathUtils.ZkPathBuilder(zkPath)
+                    .withPath(settings.getName())
+                    .build();
+        }
         Preconditions.checkState(settings.getContainers() != null && !settings.getContainers().isEmpty());
         domainMap = new FSDomainMap(settings.getDefaultContainer(), settings.getContainers());
         CuratorFramework client = zkConnection.client();

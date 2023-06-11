@@ -1,23 +1,18 @@
 package ai.sapper.cdc.core.io.impl.azure;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.common.StorageSharedKeyCredential;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
 
 public class SharedKeyAuth implements AzureStorageAuth {
-    public static final String CONFIG_AUTH_KEY = "authKey";
 
     private String account;
     private StorageSharedKeyCredential credential;
@@ -39,9 +34,9 @@ public class SharedKeyAuth implements AzureStorageAuth {
                     SharedKeyAuthSettings.class);
             reader.read();
             settings = (SharedKeyAuthSettings) reader.settings();
-            String accountKey = keyStore.read(settings.authKey);
+            String accountKey = keyStore.read(settings.getAuthKey());
             if (Strings.isNullOrEmpty(accountKey)) {
-                throw new IOException(String.format("Storage Account Key not found. [key=%s]", settings.authKey));
+                throw new IOException(String.format("Storage Account Key not found. [key=%s]", settings.getAuthKey()));
             }
             credential = new StorageSharedKeyCredential(account, accountKey);
             return this;
@@ -57,9 +52,10 @@ public class SharedKeyAuth implements AzureStorageAuth {
         Preconditions.checkArgument(settings instanceof SharedKeyAuthSettings);
         try {
             this.settings = (SharedKeyAuthSettings) settings;
-            String accountKey = keyStore.read(this.settings.authKey);
+            String accountKey = keyStore.read(this.settings.getAuthKey());
             if (Strings.isNullOrEmpty(accountKey)) {
-                throw new IOException(String.format("Storage Account Key not found. [key=%s]", this.settings.authKey));
+                throw new IOException(
+                        String.format("Storage Account Key not found. [key=%s]", this.settings.getAuthKey()));
             }
             credential = new StorageSharedKeyCredential(account, accountKey);
             return this;
@@ -77,14 +73,5 @@ public class SharedKeyAuth implements AzureStorageAuth {
     public BlobServiceClientBuilder credentials(@NonNull BlobServiceClientBuilder builder) throws Exception {
         Preconditions.checkNotNull(credential);
         return builder.credential(credential);
-    }
-
-    @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class SharedKeyAuthSettings extends AzureStorageAuthSettings {
-        @Config(name = CONFIG_AUTH_KEY)
-        private String authKey;
     }
 }

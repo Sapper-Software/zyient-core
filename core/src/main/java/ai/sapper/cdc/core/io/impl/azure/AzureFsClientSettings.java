@@ -19,5 +19,5 @@ public class AzureFsClientSettings extends Settings {
     private String authClass;
     @Config(name = "account")
     private String authAccount;
-    private AzureStorageAuth.AzureStorageAuthSettings authSettings;
+    private AzureStorageAuthSettings authSettings;
 }

@@ -6,6 +6,15 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <code>
+ *     <fs>
+ *         <zkPath>[zookeeper path]</zkPath>
+ *         <zkConnection>[zookeeper connection name]</zkConnection>
+ *         <autoSave>[true|false, default=true]</autoSave>
+ *     </fs>
+ * </code>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

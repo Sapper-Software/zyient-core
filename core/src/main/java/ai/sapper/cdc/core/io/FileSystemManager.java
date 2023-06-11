@@ -92,7 +92,9 @@ public class FileSystemManager {
                     String type = node.getString(FileSystemSettings.CONFIG_FS_CLASS);
                     Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(type);
                     FileSystem fs = cls.getDeclaredConstructor().newInstance();
-                    fs.init(node, env);
+                    fs.withZkConnection(zkConnection)
+                            .withZkPath(zkBasePath)
+                            .init(node, env);
                     fileSystems.put(fs.settings.getName(), fs);
                     DefaultLogger.info(String.format("Loaded file system. [name=%s][id=%s]", fs.settings.getName(), fs.id()));
                 }
