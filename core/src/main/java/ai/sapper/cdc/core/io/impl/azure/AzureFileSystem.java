@@ -164,12 +164,7 @@ public class AzureFileSystem extends RemoteFileSystem {
                         BlobClient bc = cc.getBlobClient(name);
                         if (bc.exists()) {
                             DefaultLogger.trace(String.format("Deleting Azure BLOB: [name=%s]", name));
-                            try {
-                                bc.delete();
-                            } catch (RuntimeException re) {
-                                DefaultLogger.error(String.format("Failed to delete resource. [name=%s]", name), re);
-                                continue;
-                            }
+                            bc.delete();
                             ret = true;
                         }
                     }
