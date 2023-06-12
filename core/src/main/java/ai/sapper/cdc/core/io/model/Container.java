@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.io.Archiver;
 import ai.sapper.cdc.core.io.FileSystem;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -21,4 +22,6 @@ public abstract class Container extends Settings {
     private String path;
 
     public abstract PathInfo pathInfo(@NonNull FileSystem fs);
+
+    public abstract ArchivePathInfo pathInfo(@NonNull Archiver archiver);
 }

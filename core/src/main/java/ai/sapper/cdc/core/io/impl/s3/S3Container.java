@@ -1,7 +1,9 @@
 package ai.sapper.cdc.core.io.impl.s3;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.io.Archiver;
 import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.ArchivePathInfo;
 import ai.sapper.cdc.core.io.model.Container;
 import ai.sapper.cdc.core.io.model.InodeType;
 import ai.sapper.cdc.core.io.model.PathInfo;
@@ -21,5 +23,10 @@ public class S3Container extends Container {
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
         return new S3PathInfo(fs, getDomain(), getBucket(), getPath(), InodeType.Directory);
+    }
+
+    @Override
+    public ArchivePathInfo pathInfo(@NonNull Archiver archiver) {
+        return null;
     }
 }
