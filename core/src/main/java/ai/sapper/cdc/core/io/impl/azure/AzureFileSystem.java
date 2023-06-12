@@ -29,6 +29,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Getter
@@ -145,21 +147,30 @@ public class AzureFileSystem extends RemoteFileSystem {
                     ListBlobsOptions options = new ListBlobsOptions()
                             .setPrefix(path.path());
                     Iterable<BlobItem> blobs = cc.listBlobsByHierarchy(DELIMITER, options, null);
-                    if (blobs != null) {
-                        while (blobs.iterator().hasNext()) {
-                            BlobItem bi = blobs.iterator().next();
-                            if (bi.isDeleted()) continue;
-                            if (!recursive) {
-                                if (bi.getName().compareTo(pi.path()) != 0) {
-                                    continue;
-                                }
+                    for (BlobItem bi : blobs) {
+                        String name = bi.getName();
+                        if (!name.startsWith(DELIMITER)) {
+                            name = String.format("%s%s", DELIMITER, name);
+                        }
+                        if (bi.isDeleted()) continue;
+                        if (!recursive) {
+                            if (name.compareTo(pi.path()) != 0) {
+                                continue;
                             }
-                            BlobClient bc = cc.getBlobClient(bi.getName());
-                            if (bc != null) {
-                                DefaultLogger.trace(String.format("Deleting Azure BLOB: [name=%s]", bi.getName()));
+                        } else if (bi.isPrefix()) {
+                            ret = true;
+                            continue;
+                        }
+                        BlobClient bc = cc.getBlobClient(name);
+                        if (bc.exists()) {
+                            DefaultLogger.trace(String.format("Deleting Azure BLOB: [name=%s]", name));
+                            try {
                                 bc.delete();
-                                ret = true;
+                            } catch (RuntimeException re) {
+                                DefaultLogger.error(String.format("Failed to delete resource. [name=%s]", name), re);
+                                continue;
                             }
+                            ret = true;
                         }
                     }
                 }
