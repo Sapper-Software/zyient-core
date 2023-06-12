@@ -18,6 +18,7 @@
             <zkPath>/test/filesystem/admin</zkPath>
             <zkConnection>test-zk</zkConnection>
             <autoSave>true</autoSave>
+            <overwrite>true</overwrite>
             <fileSystems>
                 <fileSystem>
                     <type>ai.sapper.cdc.core.io.impl.azure.AzureFileSystem</type>
@@ -26,6 +27,7 @@
                         <path>/tmp/test/fs</path>
                         <clean>true</clean>
                     </tmp>
+                    <compressed>true</compressed>
                     <client>
                         <endpointUrl>https://cdcdevblob01.blob.core.windows.net/</endpointUrl>
                         <authClass>ai.sapper.cdc.core.io.impl.azure.SharedKeyAuth</authClass>

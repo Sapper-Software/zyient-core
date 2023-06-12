@@ -2,9 +2,7 @@ package ai.sapper.cdc.core.io.impl;
 
 import ai.sapper.cdc.common.cache.EvictionCallback;
 import ai.sapper.cdc.common.cache.LRUCache;
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.io.model.FileInode;
 import lombok.Getter;

@@ -26,4 +26,6 @@ public class FileSystemManagerSettings extends Settings {
     private String zkConnection;
     @Config(name = "autoSave", required = false, type = Boolean.class)
     private boolean autoSave = true;
+    @Config(name = "overwrite", required = false, type = Boolean.class)
+    private boolean overwriteSettings = false;
 }

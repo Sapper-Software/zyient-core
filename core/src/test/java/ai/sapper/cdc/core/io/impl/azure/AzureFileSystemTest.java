@@ -129,7 +129,59 @@ class AzureFileSystemTest {
                     }
                     size += s;
                 }
-                assertEquals(size, written);
+                assertEquals(written, size);
+            }
+            assertTrue(fs.delete(fi.getPathInfo()));
+            assertTrue(fs.delete(di.getPathInfo(), true));
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(ex.getLocalizedMessage());
+            fail(ex);
+        }
+    }
+
+
+    @Test
+    void getWriter() {
+        try {
+            String dir = String.format("demo/azure/%s", UUID.randomUUID().toString());
+            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
+            assertNotNull(di);
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            FileInode fi = fs.create(di, String.format("test/%s.tmp", UUID.randomUUID().toString()));
+
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
+            assertNotNull(fi);
+            long written = 0;
+            try (Writer writer = fs.writer(fi)) {
+                for (int ii = 0; ii < 200; ii++) {
+                    String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
+                    written += writer.write(str.getBytes(StandardCharsets.UTF_8));
+                }
+                writer.commit(false);
+            }
+            Thread.sleep(5000);
+            try (Writer writer = fs.writer(fi)) {
+                for (int ii = 0; ii < 200; ii++) {
+                    String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
+                    written += writer.write(str.getBytes(StandardCharsets.UTF_8));
+                }
+                writer.commit(true);
+            }
+            Thread.sleep(5000);
+
+            try (Reader reader = fs.reader(fi)) {
+                int size = 0;
+                byte[] buffer = new byte[512];
+                while (true) {
+                    int s = reader.read(buffer);
+                    if (s < 512) {
+                        size += s;
+                        break;
+                    }
+                    size += s;
+                }
+                assertEquals(written, size);
             }
             assertTrue(fs.delete(fi.getPathInfo()));
             assertTrue(fs.delete(di.getPathInfo(), true));

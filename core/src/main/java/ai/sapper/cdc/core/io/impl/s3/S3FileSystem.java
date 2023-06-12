@@ -289,7 +289,7 @@ public class S3FileSystem extends RemoteFileSystem {
                     String.format("Path information not set in inode. [domain=%s, path=%s]",
                             inode.getDomain(), inode.getAbsolutePath()));
         }
-        S3FileUploader task = new S3FileUploader(this, client, inode, this, clearLock);
+        S3FileUploader task = new S3FileUploader(this, client, inode, source, this, clearLock);
         uploader.submit(task);
         return inode;
     }
@@ -379,14 +379,17 @@ public class S3FileSystem extends RemoteFileSystem {
 
     public static class S3FileUploader extends FileUploader {
         private final S3Client client;
+        private final File source;
 
         protected S3FileUploader(@NonNull RemoteFileSystem fs,
                                  @NonNull S3Client client,
                                  @NonNull FileInode inode,
+                                 @NonNull File source,
                                  @NonNull FileUploadCallback callback,
                                  boolean clearLock) {
             super(fs, inode, callback, clearLock);
             this.client = client;
+            this.source = source;
         }
 
         @Override
@@ -394,10 +397,6 @@ public class S3FileSystem extends RemoteFileSystem {
             S3PathInfo pi = (S3PathInfo) inode.getPathInfo();
             if (pi == null) {
                 throw new Exception("S3 Path information not specified...");
-            }
-            File source = pi.temp();
-            if (source == null) {
-                throw new Exception("File to upload not specified...");
             }
             if (!source.exists()) {
                 throw new IOException(String.format("Source file not found. [path=%s]", source.getAbsolutePath()));

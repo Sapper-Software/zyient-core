@@ -4,8 +4,6 @@ import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.io.FileSystem;
-import ai.sapper.cdc.core.io.impl.local.LocalContainer;
-import ai.sapper.cdc.core.io.impl.s3.S3Container;
 import ai.sapper.cdc.core.io.model.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

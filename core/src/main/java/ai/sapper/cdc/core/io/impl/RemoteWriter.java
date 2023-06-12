@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.io.impl;
 
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.model.EFileState;
@@ -56,7 +57,18 @@ public abstract class RemoteWriter extends Writer {
     @Override
     protected void getLocalCopy() throws Exception {
         if (fs.exists(inode.getPathInfo())) {
-            temp = ((RemoteFileSystem) fs).download(inode);
+            File file = fs.download(inode);
+            if (file == null) return;
+            if (inode.isCompressed()) {
+                File outf = fs.decompress(file);
+                if (!file.delete()) {
+                    throw new IOException(String.format("Failed to delete file. [path=%s]", file.getAbsolutePath()));
+                }
+                if (!outf.renameTo(file)) {
+                    throw new IOException(String.format("Filed to rename file. [path=%s]", outf.getAbsolutePath()));
+                }
+            }
+            temp = file;
         }
     }
 
@@ -189,6 +201,11 @@ public abstract class RemoteWriter extends Writer {
         if (outputStream != null) {
             outputStream.close();
             outputStream = null;
+        }
+        if (temp != null && temp.exists()) {
+            if (!temp.delete()) {
+                DefaultLogger.warn(String.format("Failed to delete local copy. [path=%s]", temp.getAbsolutePath()));
+            }
         }
     }
 

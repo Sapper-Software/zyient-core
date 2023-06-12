@@ -1,5 +1,6 @@
 package ai.sapper.cdc.core.io;
 
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.io.model.FileInode;
 import com.google.common.base.Preconditions;
@@ -92,7 +93,12 @@ public abstract class Writer implements Closeable {
                 if (fs.exists(inode.getPathInfo())) {
                     long uts = getLocalUpdateTime();
                     if (uts < inode.getSyncTimestamp()) {
-                        throw new IOException(String.format("Local copy is stale. [inode=%s]", inode.toString()));
+                        DefaultLogger.info(String.format("Local copy is stale. [inode=%s]", inode.toString()));
+                        if (!temp.delete()) {
+                            DefaultLogger.warn(
+                                    String.format("Failed to delete stale copy. [path=%s]", temp.getAbsolutePath()));
+                        }
+                        getLocalCopy();
                     }
                 }
             } else {

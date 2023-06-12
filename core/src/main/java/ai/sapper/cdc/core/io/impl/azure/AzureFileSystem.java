@@ -287,7 +287,7 @@ public class AzureFileSystem extends RemoteFileSystem {
                             inode.getDomain(), inode.getAbsolutePath()));
         }
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
-        AzureFileUploader task = new AzureFileUploader(this, client, inode,
+        AzureFileUploader task = new AzureFileUploader(this, client, inode, source,
                 this, clearLock,
                 settings.getUploadTimeout(), settings.isUseHierarchical());
         uploader.submit(task);
@@ -347,16 +347,19 @@ public class AzureFileSystem extends RemoteFileSystem {
         private final AzureFsClient client;
         private final long uploadTimeout;
         private final boolean useHierarchical;
+        private final File source;
 
         protected AzureFileUploader(@NonNull RemoteFileSystem fs,
                                     @NonNull AzureFsClient client,
                                     @NonNull FileInode inode,
+                                    @NonNull File source,
                                     @NonNull FileUploadCallback callback,
                                     boolean clearLock,
                                     long uploadTimeout,
                                     boolean useHierarchical) {
             super(fs, inode, callback, clearLock);
             this.client = client;
+            this.source = source;
             this.uploadTimeout = uploadTimeout;
             this.useHierarchical = useHierarchical;
         }
@@ -367,7 +370,6 @@ public class AzureFileSystem extends RemoteFileSystem {
             if (pi == null) {
                 throw new Exception("Azure Path information not specified...");
             }
-            File source = new File(inode.getLock().getLocalPath());
             if (!source.exists()) {
                 throw new IOException(String.format("Source file not found. [path=%s]", source.getAbsolutePath()));
             }

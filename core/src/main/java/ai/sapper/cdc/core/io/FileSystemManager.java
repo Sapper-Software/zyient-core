@@ -90,7 +90,7 @@ public class FileSystemManager {
             List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_PATH_DEF);
             if (nodes != null && !nodes.isEmpty()) {
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                    String type = node.getString(FileSystemSettings.CONFIG_FS_CLASS);
+                    String type = node.getString(FileSystemSettings.Constants.CONFIG_FS_CLASS);
                     Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(type);
                     FileSystem fs = cls.getDeclaredConstructor().newInstance();
                     fs.withZkConnection(zkConnection)
@@ -118,6 +118,13 @@ public class FileSystemManager {
                         .build();
                 FileSystemSettings settings = read(path, client);
                 if (settings != null) {
+                    if (this.settings.isOverwriteSettings()) {
+                        if (fileSystems.containsKey(settings.getName())) {
+                            DefaultLogger.info(
+                                    String.format("Overwriting with Local settings. [name=%s]", settings.getName()));
+                            continue;
+                        }
+                    }
                     Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(settings.getType());
                     FileSystem fs = cls.getDeclaredConstructor().newInstance();
                     addFs(settings, fs);
@@ -130,7 +137,6 @@ public class FileSystemManager {
         fs.init(settings, env);
         fileSystems.put(settings.getName(), fs);
         DefaultLogger.info(String.format("Loaded file system. [name=%s][id=%s]", settings.getName(), fs.id()));
-
         return fs;
     }
 
@@ -140,9 +146,9 @@ public class FileSystemManager {
         if (node == null) {
             throw new Exception(String.format("File System configuration not found. [name=%s]", __CONFIG_PATH_DEF));
         }
-        String name = node.getString(FileSystemSettings.CONFIG_NAME);
+        String name = node.getString(FileSystemSettings.Constants.CONFIG_NAME);
         if (!fileSystems.containsKey(name)) {
-            String type = node.getString(FileSystemSettings.CONFIG_FS_CLASS);
+            String type = node.getString(FileSystemSettings.Constants.CONFIG_FS_CLASS);
             Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(type);
             FileSystem fs = cls.getDeclaredConstructor().newInstance();
             fs.init(node, env);

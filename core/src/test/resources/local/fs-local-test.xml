@@ -18,6 +18,7 @@
             <zkPath>/test/filesystem/admin</zkPath>
             <zkConnection>test-zk</zkConnection>
             <autoSave>true</autoSave>
+            <overwrite>true</overwrite>
             <fileSystems>
                 <fileSystem>
                     <type>ai.sapper.cdc.core.io.impl.local.LocalFileSystem</type>
@@ -26,6 +27,7 @@
                         <path>/tmp/test/fs</path>
                         <clean>true</clean>
                     </tmp>
+                    <compressed>true</compressed>
                     <zk>
                         <connection>test-zk</connection>
                         <path>/test/filesystem/demo/</path>

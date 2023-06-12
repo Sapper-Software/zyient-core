@@ -169,5 +169,57 @@ class LocalFileSystemTest {
 
     @Test
     void getWriter() {
+        try {
+            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
+            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
+            assertNotNull(di);
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            File d = new File(di.getAbsolutePath());
+            assertTrue(d.exists() && d.isDirectory());
+            FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
+
+            fi = (FileInode) fs.getInode(fi.getPathInfo());
+            assertNotNull(fi);
+            d = new File(fi.getAbsolutePath());
+            assertTrue(d.exists() && d.isFile());
+            long written = 0;
+            try (Writer writer = fs.writer(fi)) {
+                for (int ii = 0; ii < 200; ii++) {
+                    String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
+                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                    writer.write(bytes);
+                    written += bytes.length;
+                }
+                writer.commit(false);
+            }
+            try (Writer writer = fs.writer(fi)) {
+                for (int ii = 0; ii < 200; ii++) {
+                    String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
+                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                    writer.write(bytes);
+                    written += bytes.length;
+                }
+                writer.commit(true);
+            }
+            try (Reader reader = fs.reader(fi)) {
+                int size = 0;
+                byte[] buffer = new byte[512];
+                while (true) {
+                    int s = reader.read(buffer);
+                    if (s < 512) {
+                        size += s;
+                        break;
+                    }
+                    size += s;
+                }
+                assertEquals(size, written);
+            }
+
+            assertTrue(fs.delete(di.getPathInfo(), true));
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(ex.getLocalizedMessage());
+            fail(ex);
+        }
     }
 }
