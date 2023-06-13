@@ -15,10 +15,9 @@ message DbSource {
     SQLServer = 4;
     Db2 = 5;
     Cassandra = 6;
-    Vitess = 7;
-    HBase = 8;
-    Kudu = 9;
-    HDFS = 10;
+    HBase = 7;
+    HDFS = 8;
+    Salesforce = 9;
   }
 
   required string name = 1;
@@ -292,6 +291,7 @@ message Transaction {
   required Sequence sequence = 2;
   required int64 timestamp = 3;
   required string class = 4;
+  required bool snapshot = 5;
 }
 
 message AdminEvent {
@@ -329,7 +329,6 @@ message ChangeEvent {
   required DbEntity entity = 2;
   required EventType type = 3;
   required Transaction tnx = 4;
-  required bool snapshot = 5;
   oneof change {
     DbSchemaChange schemaChange = 6;
     DbChangeRecord changeRecord = 7;

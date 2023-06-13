@@ -165,7 +165,6 @@ public abstract class EntitySchema {
     }
 
     public SchemaField getJdbcField(@NonNull String name) {
-        name = name.toUpperCase();
         SchemaField sf = get(name);
         if (sf != null && sf.isDeleted()) return null;
         return sf;
@@ -219,7 +218,6 @@ public abstract class EntitySchema {
             } else
                 sf = new SchemaField();
             String name = SchemaHelper.checkFieldName(field.name());
-            name = name.toUpperCase();
             sf.setName(name);
             sf.setDataType(dt);
             sf.setDefaultVal(defaultVal(field));
@@ -444,7 +442,7 @@ public abstract class EntitySchema {
         if (fields == null) {
             fields = new HashMap<>();
         }
-        String key = field.getName().toUpperCase();
+        String key = field.getName();
         fields.put(key, field);
 
         return this;
@@ -481,23 +479,6 @@ public abstract class EntitySchema {
             }
         }
         return this;
-    }
-
-    public void toUpperCase() {
-        if (!Strings.isNullOrEmpty(name))
-            name = name.toUpperCase();
-        if (!Strings.isNullOrEmpty(namespace))
-            namespace = namespace.toUpperCase();
-
-        if (fields != null && !fields.isEmpty()) {
-            Map<String, SchemaField> fs = new HashMap<>(fields.size());
-            for (String name : fields.keySet()) {
-                SchemaField sf = fields.get(name);
-                sf.setName(sf.getName().toUpperCase());
-                fs.put(sf.getName(), sf);
-            }
-            fields = fs;
-        }
     }
 
     public Object defaultVal(Schema.Field field) {

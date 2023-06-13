@@ -109,7 +109,7 @@ public class SchemaHelper {
                 }
             }
 
-            String name = String.format("%s_%d__", field.name().toUpperCase(), index);
+            String name = String.format("%s_%d__", field.name(), index);
             field.reference(name);
             index++;
 

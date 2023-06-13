@@ -1,0 +1,759 @@
+[
+  {
+    "type": "enum",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "EngineType",
+    "symbols": [
+      "MySQL",
+      "MongoDB",
+      "PostgresSQL",
+      "Oracle",
+      "SQLServer",
+      "Db2",
+      "Cassandra",
+      "HBase",
+      "HDFS",
+      "Salesforce"
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbSource",
+    "fields": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "type",
+        "type": "ai.sapper.cdc.avro.EngineType"
+      },
+      {
+        "name": "hostname",
+        "type": "string"
+      },
+      {
+        "name": "port",
+        "type": "int"
+      },
+      {
+        "name": "username",
+        "type": "string"
+      },
+      {
+        "name": "charset",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbEntity",
+    "fields": [
+      {
+        "name": "database",
+        "type": "string"
+      },
+      {
+        "name": "table",
+        "type": "string"
+      },
+      {
+        "name": "group",
+        "type": "int",
+        "default": 0
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "Version",
+    "fields": [
+      {
+        "name": "major",
+        "type": "long"
+      },
+      {
+        "name": "minor",
+        "type": "long"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "EDbDataType",
+    "symbols": [
+      "BOOLEAN",
+      "TINYINT",
+      "SMALLINT",
+      "INTEGER",
+      "BIGINT",
+      "FLOAT",
+      "DOUBLE",
+      "DECIMAL",
+      "VARCHAR",
+      "TEXT",
+      "LONGTEXT",
+      "CHAR",
+      "BLOB",
+      "LONGBLOB",
+      "BINARY",
+      "VARBINARY",
+      "DATE",
+      "TIME",
+      "DATETIME",
+      "TIMESTAMP",
+      "RECORD",
+      "ARRAY",
+      "MAP",
+      "NULL",
+      "JSON"
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbDataType",
+    "fields": [
+      {
+        "name": "type",
+        "type": "ai.sapper.cdc.avro.EDbDataType"
+      },
+      {
+        "name": "size",
+        "type": [
+          "long",
+          "null"
+        ],
+        "default": null
+      },
+      {
+        "name": "scale",
+        "type": [
+          "int",
+          "null"
+        ],
+        "default": null
+      },
+      {
+        "name": "precision",
+        "type": [
+          "int",
+          "null"
+        ],
+        "default": null
+      },
+      {
+        "name": "jdbcType",
+        "type": [
+          "int",
+          "null"
+        ],
+        "default": null
+      },
+      {
+        "name": "rangeMin",
+        "type": [
+          "int",
+          "null"
+        ],
+        "default": null
+      },
+      {
+        "name": "rangeMax",
+        "type": [
+          "int",
+          "null"
+        ],
+        "default": null
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbColumn",
+    "fields": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "type",
+        "type": "ai.sapper.cdc.avro.DbDataType"
+      },
+      {
+        "name": "position",
+        "type": "int"
+      },
+      {
+        "name": "nullable",
+        "type": "boolean"
+      },
+      {
+        "name": "charset",
+        "type": [
+          "string",
+          "null"
+        ],
+        "default": null
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbKeyColumn",
+    "fields": [
+      {
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "name": "position",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbPrimaryKey",
+    "fields": [
+      {
+        "name": "columns",
+        "type": {
+          "type": "array",
+          "items": "ai.sapper.cdc.avro.DbKeyColumn"
+        }
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbTable",
+    "fields": [
+      {
+        "name": "entity",
+        "type": "ai.sapper.cdc.avro.DbEntity"
+      },
+      {
+        "name": "columns",
+        "type": {
+          "type": "array",
+          "items": "ai.sapper.cdc.avro.DbColumn"
+        }
+      },
+      {
+        "name": "keys",
+        "type": "ai.sapper.cdc.avro.DbPrimaryKey"
+      },
+      {
+        "name": "charset",
+        "type": [
+          "string",
+          "null"
+        ],
+        "default": null
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "BooleanColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "boolean"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "IntegerColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "BigIntColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "LongColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "long"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "FloatColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "float"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DoubleColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "double"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "BigDecColumnData",
+    "fields": [
+      {
+        "name": "value",
+        "type": "ai.sapper.cdc.avro.BigIntColumnData"
+      },
+      {
+        "name": "scale",
+        "type": "int"
+      },
+      {
+        "name": "precision",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "StringColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "string"
+      },
+      {
+        "name": "encoding",
+        "type": [
+          "string",
+          "null"
+        ],
+        "default": null
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "BinaryColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "bytes"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "NullColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "null"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "JsonColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": "bytes",
+      },
+      {
+        "name": "type",
+        "type": "string"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbPrimitiveValue",
+    "fields": [
+      {
+        "name": "data",
+        "type": [
+          "ai.sapper.cdc.avro.BooleanColumnData",
+          "ai.sapper.cdc.avro.IntegerColumnData",
+          "ai.sapper.cdc.avro.BigIntColumnData",
+          "ai.sapper.cdc.avro.LongColumnData",
+          "ai.sapper.cdc.avro.FloatColumnData",
+          "ai.sapper.cdc.avro.DoubleColumnData",
+          "ai.sapper.cdc.avro.BigDecColumnData",
+          "ai.sapper.cdc.avro.StringColumnData",
+          "ai.sapper.cdc.avro.BinaryColumnData",
+          "ai.sapper.cdc.avro.NullColumnData"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbValue",
+    "fields": [
+      {
+        "name": "data",
+        "type": [
+          "ai.sapper.cdc.avro.DbPrimitiveValue",
+          "ai.sapper.cdc.avro.JsonColumnData"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbColumnData",
+    "fields": [
+      {
+        "name": "data",
+        "type": [
+          "ai.sapper.cdc.avro.DbPrimitiveValue",
+          "ai.sapper.cdc.avro.JsonColumnData"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbRecord",
+    "fields": [
+      {
+        "name": "data",
+        "type": {
+          "type": "array",
+          "items": "ai.sapper.cdc.avro.DbColumnData"
+        }
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbKey",
+    "fields": [
+      {
+        "name": "values",
+        "type": {
+          "type": "array",
+          "items": "ai.sapper.cdc.avro.DbColumnData"
+        }
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "ChangeType",
+    "symbols": [
+      "CREATE",
+      "UPDATE",
+      "DELETE"
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbChangeRecord",
+    "fields": [
+      {
+        "name": "entity",
+        "type": "ai.sapper.cdc.avro.DbEntity"
+      },
+      {
+        "name": "version",
+        "type": "ai.sapper.cdc.avro.Version"
+      },
+      {
+        "name": "type",
+        "type": "ai.sapper.cdc.avro.ChangeType"
+      },
+      {
+        "name": "before",
+        "type": [
+          "ai.sapper.cdc.avro.DbRecord",
+          "null"
+        ]
+      },
+      {
+        "name": "after",
+        "type": [
+          "ai.sapper.cdc.avro.DbRecord",
+          "null"
+        ]
+      },
+      {
+        "name": "filter",
+        "type": [
+          "ai.sapper.cdc.avro.DbRecord",
+          "null"
+        ]
+      },
+      {
+        "name": "filter",
+        "type": [
+          "ai.sapper.cdc.avro.DbKey",
+          "null"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "ColumnOp",
+    "symbols": [
+      "ADD",
+      "DROP",
+      "MODIFY",
+      "RENAME"
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbDropTable",
+    "fields": [
+      {
+        "name": "exists",
+        "type": "boolean"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbAlterColumn",
+    "fields": [
+      {
+        "name": "op",
+        "type": "ai.sapper.cdc.avro.ColumnOp"
+      },
+      {
+        "name": "column",
+        "type": "ai.sapper.cdc.avro.DbColumn"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbAlteredColumns",
+    "fields": [
+      {
+        "name": "column",
+        "type": {
+          "type": "array",
+          "items": "ai.sapper.cdc.avro.DbAlterColumn"
+        }
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbAlterKey",
+    "fields": [
+      {
+        "name": "column",
+        "type": {
+          "type": "array",
+          "items": "ai.sapper.cdc.avro.DbAlterColumn"
+        }
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbAlterTable",
+    "fields": [
+      {
+        "name": "entity",
+        "type": "ai.sapper.cdc.avro.DbEntity"
+      },
+      {
+        "name": "columns",
+        "type": [
+          "ai.sapper.cdc.avro.DbAlteredColumns",
+          "null"
+        ]
+      },
+      {
+        "name": "columns",
+        "type": [
+          "ai.sapper.cdc.avro.DbAlterKey",
+          "null"
+        ]
+      },
+      {
+        "name": "charset",
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "SchemaChangeType",
+    "symbols": [
+      "CREATE",
+      "DROP",
+      "ALTER",
+      "CONFIG"
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "DbSchemaChange",
+    "fields": [
+      {
+        "name": "entity",
+        "type": "ai.sapper.cdc.avro.DbEntity"
+      },
+      {
+        "name": "type",
+        "type": "ai.sapper.cdc.avro.SchemaChangeType"
+      },
+      {
+        "name": "version",
+        "type": "ai.sapper.cdc.avro.Version"
+      },
+      {
+        "name": "op",
+        "type": [
+          "ai.sapper.cdc.avro.DbTable",
+          "ai.sapper.cdc.avro.DbDropTable",
+          "ai.sapper.cdc.avro.DbAlterTable"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "Sequence",
+    "fields": [
+      {
+        "name": "major",
+        "type": "long"
+      },
+      {
+        "name": "minor",
+        "type": "int"
+      }
+    ]
+  },
+  {
+    "type": "enum",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "EventType",
+    "symbols": [
+      "SCHEMA",
+      "DATA",
+      "ADMIN",
+      "ERROR"
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "Transaction",
+    "fields": [
+      {
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "name": "sequence",
+        "type": "ai.sapper.cdc.avro.Sequence"
+      },
+      {
+        "name": "timestamp",
+        "type": "long"
+      },
+      {
+        "name": "class",
+        "type": "string"
+      }
+    ]
+  },
+  {
+    "type": "record",
+    "namespace": "ai.sapper.cdc.avro",
+    "name": "ChangeEvent",
+    "fields": [
+      {
+        "name": "source",
+        "type": "ai.sapper.cdc.avro.DbSource"
+      },
+      {
+        "name": "entity",
+        "type": "ai.sapper.cdc.avro.DbEntity"
+      },
+      {
+        "name": "type",
+        "type": "ai.sapper.cdc.avro.EventType"
+      },
+      {
+        "name": "tnx",
+        "type": "ai.sapper.cdc.avro.Transaction"
+      },
+      {
+        "name": "change",
+        "type": [
+          "ai.sapper.cdc.avro.DbSchemaChange",
+          "ai.sapper.cdc.avro.DbChangeRecord"
+        ]
+      }
+    ]
+  }
+]
