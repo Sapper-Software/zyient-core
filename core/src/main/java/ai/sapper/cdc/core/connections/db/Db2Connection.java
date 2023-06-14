@@ -1,20 +1,18 @@
 package ai.sapper.cdc.core.connections.db;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
-import ai.sapper.cdc.core.connections.settngs.JdbcConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.Db2ConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.JdbcConnectionSettings;
 import ai.sapper.cdc.core.keystore.KeyStore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -28,9 +26,6 @@ import java.util.Properties;
 @Getter
 @Accessors(fluent = true)
 public class Db2Connection extends DbConnection {
-    public static final String TYPE_DB2_Z = "DB2/z";
-    public static final String TYPE_DB2_LUW = "DB2/LUW";
-
     private Db2ConnectionConfig config;
     private Properties connectionProps;
 
@@ -96,7 +91,7 @@ public class Db2Connection extends DbConnection {
     }
 
     public String db2Type() {
-        return ((Db2ConnectionSettings) config.settings()).db2Type;
+        return ((Db2ConnectionSettings) config.settings()).getDb2Type();
     }
 
     protected String createJdbcUrl() throws Exception {
@@ -177,15 +172,6 @@ public class Db2Connection extends DbConnection {
     @Override
     public String path() {
         return Db2ConnectionConfig.__CONFIG_PATH;
-    }
-
-    @Getter
-    @Setter
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class Db2ConnectionSettings extends JdbcConnectionSettings {
-        @Config(name = "db2type", required = false)
-        private String db2Type = TYPE_DB2_LUW;
     }
 
     @Getter

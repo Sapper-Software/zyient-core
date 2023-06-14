@@ -2,8 +2,8 @@ package ai.sapper.cdc.core.connections;
 
 import ai.sapper.cdc.common.AbstractState;
 import ai.sapper.cdc.core.BaseEnv;
-import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
-import ai.sapper.cdc.core.connections.settngs.EConnectionType;
+import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;

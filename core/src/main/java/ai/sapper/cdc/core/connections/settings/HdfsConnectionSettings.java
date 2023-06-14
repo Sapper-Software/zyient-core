@@ -1,10 +1,7 @@
-package ai.sapper.cdc.core.connections.settngs;
+package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
-import ai.sapper.cdc.core.connections.Connection;
-import ai.sapper.cdc.core.connections.hadoop.HdfsConnection;
-import ai.sapper.cdc.core.connections.hadoop.HdfsHAConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.connections.settngs;
+package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import org.junit.jupiter.api.Test;

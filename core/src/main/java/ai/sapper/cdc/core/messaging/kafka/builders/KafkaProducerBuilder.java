@@ -2,7 +2,7 @@ package ai.sapper.cdc.core.messaging.kafka.builders;
 
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection;
-import ai.sapper.cdc.core.connections.settngs.EConnectionType;
+import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.messaging.builders.MessageSenderBuilder;
 import ai.sapper.cdc.core.messaging.builders.MessageSenderSettings;
 import ai.sapper.cdc.core.messaging.kafka.BaseKafkaProducer;

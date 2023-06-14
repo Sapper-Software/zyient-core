@@ -1,7 +1,7 @@
 package ai.sapper.cdc.core.connections.db;
 
 import ai.sapper.cdc.core.connections.ConnectionConfig;
-import ai.sapper.cdc.core.connections.settngs.MongoDbConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.MongoDbConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

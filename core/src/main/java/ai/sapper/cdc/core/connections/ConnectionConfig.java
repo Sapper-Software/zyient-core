@@ -2,7 +2,7 @@ package ai.sapper.cdc.core.connections;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.config.Settings;
-import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

@@ -93,15 +93,15 @@
                         <topic>hcdc-test</topic>
                     </kafka>
                 </connection>
-                <!--connection>
+                <connection>
                     <class>ai.sapper.cdc.core.connections.db.S2Connection</class>
                     <s2>
                         <name>test-s2</name>
                         <jdbcUrl>jdbc:singlestore://localhost:3306</jdbcUrl>
                         <user>root</user>
-                        <passwordKay>s2-test-password</passwordKay>
+                        <passwordKey>s2-test-password</passwordKey>
                     </s2>
-                </connection -->
+                </connection>
                 <connection>
                     <class>ai.sapper.cdc.core.connections.db.JdbcConnection</class>
                     <jdbc>

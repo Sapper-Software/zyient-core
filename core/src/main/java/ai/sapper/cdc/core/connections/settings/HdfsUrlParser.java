@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.connections.settngs;
+package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.ConfigValueParser;
 import ai.sapper.cdc.common.utils.DefaultLogger;

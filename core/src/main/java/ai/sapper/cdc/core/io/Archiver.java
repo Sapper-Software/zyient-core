@@ -7,7 +7,6 @@ import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.model.*;
-import ai.sapper.cdc.core.model.ModuleInstance;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;

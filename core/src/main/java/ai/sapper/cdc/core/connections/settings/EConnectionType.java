@@ -1,4 +1,4 @@
-package ai.sapper.cdc.core.connections.settngs;
+package ai.sapper.cdc.core.connections.settings;
 
 public enum EConnectionType {
     kafka, zookeeper, db, rest, hadoop, debezium, others;

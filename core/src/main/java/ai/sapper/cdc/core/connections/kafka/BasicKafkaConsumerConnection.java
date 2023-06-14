@@ -4,7 +4,7 @@ import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
-import ai.sapper.cdc.core.connections.settngs.ConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

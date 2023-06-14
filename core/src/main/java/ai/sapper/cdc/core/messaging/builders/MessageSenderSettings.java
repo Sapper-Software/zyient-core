@@ -2,7 +2,7 @@ package ai.sapper.cdc.core.messaging.builders;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
-import ai.sapper.cdc.core.connections.settngs.EConnectionType;
+import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -1,9 +1,7 @@
-package ai.sapper.cdc.core.connections.settngs;
+package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Exists;
-import ai.sapper.cdc.core.connections.Connection;
-import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;

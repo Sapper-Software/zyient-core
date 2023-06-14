@@ -1,8 +1,6 @@
-package ai.sapper.cdc.core.connections.settngs;
+package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.connections.Connection;
-import ai.sapper.cdc.core.connections.db.JdbcConnection;
 import ai.sapper.cdc.core.model.Encrypted;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -48,7 +46,7 @@ public class JdbcConnectionSettings extends ConnectionSettings {
         public static final String CONFIG_DB_NAME = "db";
     }
 
-    @Config(name = Constants.CONFIG_DRIVER)
+    @Config(name = Constants.CONFIG_DRIVER, required = false)
     private String jdbcDriver;
     @Config(name = Constants.CONFIG_DIALECT, required = false)
     private String jdbcDialect;
