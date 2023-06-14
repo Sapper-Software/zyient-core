@@ -112,6 +112,16 @@
                         <driver>com.mysql.jdbc.Driver</driver>
                     </jdbc>
                 </connection>
+                <connection>
+                    <class>ai.sapper.cdc.core.connections.db.MongoDbConnection</class>
+                    <mongodb>
+                        <name>test-mongodb</name>
+                        <host>192.168.2.30</host>
+                        <user>debezium</user>
+                        <passwordKey>s2-test-password</passwordKey>
+                        <db>cdc</db>
+                    </mongodb>
+                </connection>
             </connections>
         </config>
     </env>
