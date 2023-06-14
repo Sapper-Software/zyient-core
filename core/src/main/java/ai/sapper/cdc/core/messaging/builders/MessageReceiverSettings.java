@@ -7,6 +7,19 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <receiver> -- Or root name
+ *         <type>[EConnectionType]</type>
+ *         <connection>[Message Connection name]</connection>
+ *         <offset>
+ *             <manager>[Offset Manager name]</manager>
+ *         </offset>
+ *         <batchSize>[Receive batch size, default = -1(ignore)]</batchSize>
+ *         <receiverTimeout>[Receiver timeout, default = -1(ignore)]</receiverTimeout>
+ *     </receiver>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

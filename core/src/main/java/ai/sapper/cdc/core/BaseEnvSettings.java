@@ -11,6 +11,22 @@ import lombok.Setter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+/**
+ * <pre>
+ *     <module>[Module name]</module>
+ *     <instance>[Instance name, must be unique]</instance>
+ *     <enableHeartbeat>[Enable heartbeat]</enableHeartbeat>
+ *     <state>
+ *         <stateManagerClass>[State Manager class]</stateManagerClass>
+ *     </state>
+ *     <paths>
+ *         <connections>[Path for connection definitions]</connections>
+ *     </paths>
+ *     <managers>
+ *         ...
+ *     </managers>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

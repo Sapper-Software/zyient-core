@@ -10,6 +10,21 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <offsetManager>
+ *         <name>[Name]</name>
+ *         <type>[Class extends OffsetStateManager]</type>
+ *         <connection>ZooKeeper connection name</connection>
+ *         <basePath>ZooKeeper base path</basePath>
+ *         <locking>
+ *             -- optional
+ *             <retry>[Retry count]</retry>
+ *             <timeout>Lock acquire timeout</timeout>
+ *         </locking>
+ *     </offsetManager>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -31,8 +46,8 @@ public abstract class OffsetStateManagerSettings extends Settings {
 
     @Config(name = Constants.CONFIG_NAME)
     private String name;
-    @Config(name = Constants.CONFIG_TYPE)
-    private String type;
+    @Config(name = Constants.CONFIG_TYPE, type = Class.class)
+    private Class<? extends OffsetStateManager<?>> type;
     @Config(name = Constants.CONFIG_ZK_BASE)
     private String basePath;
     @Config(name = Constants.CONFIG_ZK_CONNECTION)

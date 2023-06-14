@@ -198,11 +198,14 @@ public class HdfsHAConnection extends HdfsConnection {
     @Getter
     @Accessors(fluent = true)
     public static final class HdfsHAConfig extends HdfsConfig {
-        private static final String __CONFIG_PATH = "hdfs_ha";
+        private static final String __CONFIG_PATH = "hdfs-ha";
 
 
         public HdfsHAConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, HdfsConnectionSettings.HdfsHASettings.class);
+            super(config,
+                    __CONFIG_PATH,
+                    HdfsConnectionSettings.HdfsHASettings.class,
+                    HdfsHAConnection.class);
         }
     }
 }

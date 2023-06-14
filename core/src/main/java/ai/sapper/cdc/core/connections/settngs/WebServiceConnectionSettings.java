@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.WebServiceConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -8,6 +9,23 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+
+/**
+ * <pre>
+ *     <connections>
+ *         <connection>
+ *              <class>[Connection class]</class>
+ *              <rest>
+ *                  <name>[Connection name, must be unique]</name>
+ *                  <endpoint>[Service End Point URL]</endpoint>
+ *             </rest>
+ *         </connection>
+ *     </connections>
+ *     ...
+ *     <save>[Save connections to ZooKeeper, default=false]</save>
+ *     <override>[Override saved connections, default = true]</override>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -22,7 +40,6 @@ public class WebServiceConnectionSettings extends ConnectionSettings {
     private String endpoint;
 
     public WebServiceConnectionSettings() {
-        super(WebServiceConnection.class);
         setType(EConnectionType.rest);
     }
 

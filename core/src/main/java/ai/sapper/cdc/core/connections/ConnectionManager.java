@@ -34,7 +34,7 @@ public class ConnectionManager implements Closeable {
     public static class Constants {
         public static final String __CONFIG_PATH = "connections";
         public static final String CONFIG_CONNECTION_LIST = "connection";
-        public static final String CONFIG_TYPE = "type";
+        public static final String CONFIG_CLASS = "class";
         public static final String CONFIG_SHARED = "shared";
         public static final String CONFIG_SHARED_ZK = String.format("%s.connection", CONFIG_SHARED);
         public static final String CONFIG_SHARED_ZK_PATH = String.format("%s.path", CONFIG_SHARED);
@@ -184,7 +184,8 @@ public class ConnectionManager implements Closeable {
             if (!nodes.isEmpty()) {
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
                     Connection connection = initConnection(node);
-                    LOG.info(String.format("Initialized connection: [name=%s][type=%s]...", connection.name(), connection.getClass().getCanonicalName()));
+                    LOG.info(String.format("Initialized connection: [name=%s][type=%s]...",
+                            connection.name(), connection.getClass().getCanonicalName()));
                 }
             }
         }
@@ -193,7 +194,7 @@ public class ConnectionManager implements Closeable {
 
     @SuppressWarnings("unchecked")
     private Connection initConnection(HierarchicalConfiguration<ImmutableNode> node) throws Exception {
-        String type = node.getString(Constants.CONFIG_TYPE);
+        String type = node.getString(Constants.CONFIG_CLASS);
         if (Strings.isNullOrEmpty(type)) {
             throw new ConnectionError(String.format("Connection type not found. [node=%s]", node.toString()));
         }

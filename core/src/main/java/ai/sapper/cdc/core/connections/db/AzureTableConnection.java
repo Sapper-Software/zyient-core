@@ -184,7 +184,10 @@ public class AzureTableConnection implements Connection {
         public static final String __CONFIG_PATH = "azure.table";
 
         public AzureTableConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, AzureTableConnectionSettings.class);
+            super(config,
+                    __CONFIG_PATH,
+                    AzureTableConnectionSettings.class,
+                    AzureTableConnection.class);
         }
     }
 }

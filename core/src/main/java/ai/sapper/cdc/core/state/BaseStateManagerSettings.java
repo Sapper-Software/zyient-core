@@ -8,11 +8,29 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *      <state>
+ *          <stateManagerClass>[State Manager class]</stateManagerClass>
+ *          <connection>[ZooKeeper connection name]</connection>
+ *          <locking> -- Optional
+ *              <retry>[Lock retry count, default = 4]</retry>
+ *              <timeout>[Lock timeout, default = 15sec</timeout>
+ *          </locking>
+ *          <offsets>
+ *              <offsetManager>
+ *                  ...
+ *              </offsetManager>
+ *              ...
+ *          </offsets>
+ *      </state>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class BaseStateManagerSettings extends Settings  {
+public class BaseStateManagerSettings extends Settings {
     public static final String __CONFIG_PATH = "state";
     public static final String __CONFIG_PATH_OFFSET_MANAGERS = "offsets";
 
@@ -24,7 +42,7 @@ public class BaseStateManagerSettings extends Settings  {
         public static final String CONFIG_ZK_CONNECTION = "connection";
         public static final String CONFIG_LOCK_RETRY = "locking.retry";
         public static final String CONFIG_LOCK_TIMEOUT = "locking.timeout";
-        public static final String CONFIG_SAVE_OFFSETS = String.format("%s.save", __CONFIG_PATH_OFFSET_MANAGERS);
+        public static final String CONFIG_SAVE_OFFSETS = "offsets.save";
     }
 
     @Config(name = Constants.CONFIG_ZK_BASE)
@@ -35,6 +53,7 @@ public class BaseStateManagerSettings extends Settings  {
     private short lockRetryCount = Constants.LOCK_RETRY_COUNT;
     @Config(name = Constants.CONFIG_LOCK_TIMEOUT, required = false, type = Long.class)
     private long lockTimeout = Constants.LOCK_TIMEOUT;
+    @Config(name = Constants.CONFIG_SAVE_OFFSETS, required = false, type = Boolean.class)
     private boolean saveOffsetManager = true;
 
     public BaseStateManagerSettings() {

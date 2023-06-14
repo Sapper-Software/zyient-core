@@ -237,7 +237,7 @@ public class ZookeeperConnection implements Connection {
         private static final String __CONFIG_PATH = "zookeeper";
 
         public ZookeeperConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, ZookeeperSettings.class);
+            super(config, __CONFIG_PATH, ZookeeperSettings.class, ZookeeperConnection.class);
         }
     }
 }

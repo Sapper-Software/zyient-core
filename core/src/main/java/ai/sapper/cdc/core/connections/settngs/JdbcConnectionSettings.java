@@ -10,6 +10,29 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+
+/**
+ * <pre>
+ *     <connections>
+ *         <connection>
+ *             <class>[Connection class]</class>
+ *             <jdbc>
+ *                  <name>[Connection name, must be unique]</name>
+ *                  <driver>[JDBC Driver class]</driver>
+ *                  <dialect>[JDBC Dialect (optional)</dialect>
+ *                  <jdbcUrl>[JDBC Connection URL]</jdbcUrl>
+ *                  <user>[DB User name]</user>
+ *                  <passwordKey>[Password Key in the KeyStore]</passwordKey>
+ *                  <poolSize>[Connection Pool Size, default = 32]</poolSize>
+ *                  <db>[Database name (optional)]</db>
+ *             </jdbc>
+ *         </connection>
+ *     </connections>
+ *     ...
+ *     <save>[Save connections to ZooKeeper, default=false]</save>
+ *     <override>[Override saved connections, default = true]</override>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -42,12 +65,6 @@ public class JdbcConnectionSettings extends ConnectionSettings {
     private int poolSize = 32;
 
     public JdbcConnectionSettings() {
-        super(JdbcConnection.class);
-        setType(EConnectionType.db);
-    }
-
-    public JdbcConnectionSettings(@NonNull Class<? extends Connection> type) {
-        super(type);
         setType(EConnectionType.db);
     }
 

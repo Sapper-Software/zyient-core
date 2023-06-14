@@ -6,6 +6,12 @@ import ai.sapper.cdc.core.connections.settngs.EConnectionType;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <type>[EConnectionType]</type>
+ *     <connection>[Message connection name]</connection>
+ * </pre>
+ */
 @Getter
 @Setter
 public class MessageSenderSettings extends Settings {

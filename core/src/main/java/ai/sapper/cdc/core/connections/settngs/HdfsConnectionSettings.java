@@ -19,12 +19,29 @@ import java.io.IOException;
 
 public class HdfsConnectionSettings {
     public static final class Constants {
-        public static final String CONN_PRI_NAME_NODE_URI = "namenode.primary.URI";
-        public static final String CONN_SEC_NAME_NODE_URI = "namenode.secondary.URI";
+        public static final String CONN_PRI_NAME_NODE_URI = "namenode.URI.primary";
+        public static final String CONN_SEC_NAME_NODE_URI = "namenode.URI.secondary";
         public static final String CONN_SECURITY_ENABLED = "security.enabled";
         public static final String CONN_ADMIN_CLIENT_ENABLED = "enableAdmin";
     }
 
+    /**
+     * <pre>
+     *     <connections>
+     *         <connection>
+     *             <class>[Connection class]</class>
+     *             <hdfs(-ha)>
+     *                  <name>[Connection name, must be unique]</name>
+     *                  <security>
+     *                      <enabled>[Enable secured connection, default = false]</enabled>
+     *                      ...
+     *                  </security>
+     *                  <enableAdmin>[Enable NameNode Admin connection, default = false]</enableAdmin>
+     *             </hdfs(-ha)>
+     *         </connection>
+     *     </connections>
+     * </pre>
+     */
     @Getter
     @Setter
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -36,8 +53,7 @@ public class HdfsConnectionSettings {
         protected boolean adminEnabled = false;
         protected HdfsSecuritySettings securitySettings;
 
-        public HdfsBaseSettings(@NonNull Class<? extends Connection> type) {
-            super(type);
+        public HdfsBaseSettings() {
             setType(EConnectionType.hadoop);
         }
 
@@ -46,9 +62,33 @@ public class HdfsConnectionSettings {
             Preconditions.checkArgument(settings instanceof HdfsBaseSettings);
             securityEnabled = ((HdfsBaseSettings) settings).securityEnabled;
             adminEnabled = ((HdfsBaseSettings) settings).adminEnabled;
+            securitySettings = ((HdfsBaseSettings) settings).securitySettings;
         }
     }
 
+    /**
+     * <pre>
+     *     <connections>
+     *         <connection>
+     *             <class>[Connection class]</class>
+     *             <hdfs>
+     *                  <name>[Connection name, must be unique]</name>
+     *                  <security>
+     *                      <enabled>[Enable secured connection, default = false]</enabled>
+     *                      ...
+     *                  </security>
+     *                  <enableAdmin>[Enable NameNode Admin connection, default = false]</enableAdmin>
+     *                  <namenode>
+     *                          <URI>
+     *                              <primary>[Primary NameNode URI]</primary>
+     *                              <secondary>[Primary NameNode URI (Optional)]</secondary>
+     *                          </URI>
+     *                  </namenode>
+     *             </hdfs>
+     *         </connection>
+     *     </connections>
+     * </pre>
+     */
     @Getter
     @Setter
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -60,7 +100,7 @@ public class HdfsConnectionSettings {
         private String secondaryNameNodeUri;
 
         public HdfsSettings() {
-            super(HdfsConnection.class);
+
         }
 
         public HdfsSettings(@NonNull ConnectionSettings settings) {
@@ -72,6 +112,26 @@ public class HdfsConnectionSettings {
     }
 
 
+    /**
+     * <pre>
+     *     <connections>
+     *         <connection>
+     *             <class>[Connection class]</class>
+     *             <hdfs-ha>
+     *                  <name>[Connection name, must be unique]</name>
+     *                  <security>
+     *                      <enabled>[Enable secured connection, default = false]</enabled>
+     *                      ...
+     *                  </security>
+     *                  <enableAdmin>[Enable NameNode Admin connection, default = false]</enableAdmin>
+     *                  <nameservice>[NameNode NameService name]</nameservice>
+     *                  <failoverProvider>[NameNode Failover Provider class (org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider)]</failoverProvider>
+     *                  <namenodes>[Comma seperated list of NameNode URLs (nn1=192.168.2.2:9820;nn2=192.168.2.3:9820)</namenodes>
+     *             </hdfs-ha>
+     *         </connection>
+     *     </connections>
+     * </pre>
+     */
     @Getter
     @Setter
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -91,10 +151,29 @@ public class HdfsConnectionSettings {
         private String[][] nameNodeAddresses;
 
         public HdfsHASettings() {
-            super(HdfsHAConnection.class);
+
+        }
+
+        public HdfsHASettings(@NonNull ConnectionSettings settings) {
+            super(settings);
+            Preconditions.checkArgument(settings instanceof HdfsHASettings);
+            this.nameService = ((HdfsHASettings) settings).nameService;
+            this.failoverProvider = ((HdfsHASettings) settings).failoverProvider;
+            this.nameNodeAddresses = ((HdfsHASettings) settings).nameNodeAddresses;
         }
     }
 
+    /**
+     * TODO: Configuration not tested
+     * <pre>
+     *     <security>
+     *         <enabled>[Enable secured connection, default = false]</enabled>
+     *         <hadoop>
+     *             <security></security>
+     *         </hadoop>
+     *     </security>
+     * </pre>
+     */
     @Getter
     @Setter
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

@@ -1,6 +1,7 @@
 package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.db.MongoDbConnection;
 import ai.sapper.cdc.core.model.Encrypted;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -9,6 +10,27 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <connections>
+ *         <connection>
+ *             <class>[Connection class]</class>
+ *             <mongodb>
+ *                  <name>[Connection name, must be unique]</name>
+ *                  <host>[MongoDB Host (name or IP)</host>
+ *                  <port>[MongoDB port, default = 27017]</port>
+ *                  <user>[DB User name]</user>
+ *                  <passwordKey>[Password Key in the KeyStore]</passwordKey>
+ *                  <db>[Collection name]</db>
+ *                  <poolSize>[Connection Pool Size, default = 32]</poolSize>
+ *             </mongodb>
+ *         </connection>
+ *     </connections>
+ *     ...
+ *     <save>[Save connections to ZooKeeper, default=false]</save>
+ *     <override>[Override saved connections, default = true]</override>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -35,7 +57,6 @@ public class MongoDbConnectionSettings extends ConnectionSettings {
     private int poolSize = 32;
 
     public MongoDbConnectionSettings() {
-        super(MongoDbConnection.class);
         setType(EConnectionType.db);
     }
 

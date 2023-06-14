@@ -18,6 +18,9 @@ public class MongoDbConnectionConfig extends ConnectionConfig {
     }
 
     public MongoDbConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-        super(config, Constants.__CONFIG_PATH, MongoDbConnectionSettings.class);
+        super(config,
+                Constants.__CONFIG_PATH,
+                MongoDbConnectionSettings.class,
+                MongoDbConnection.class);
     }
 }

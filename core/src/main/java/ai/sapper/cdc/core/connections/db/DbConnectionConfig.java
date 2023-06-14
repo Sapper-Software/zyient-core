@@ -15,27 +15,17 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Setter
 @Accessors(fluent = true)
 public class DbConnectionConfig extends ConnectionConfig {
-    private final Class<? extends DbConnection> connectionClass;
-
     public DbConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                               @NonNull String path,
                               @NonNull Class<? extends DbConnection> connectionClass) {
-        super(config, path, JdbcConnectionSettings.class);
-        this.connectionClass = connectionClass;
+        super(config, path, JdbcConnectionSettings.class, connectionClass);
     }
 
     public DbConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                               @NonNull String path,
                               @NonNull Class<? extends ConnectionSettings> type,
                               @NonNull Class<? extends DbConnection> connectionClass) {
-        super(config, path, type);
-        this.connectionClass = connectionClass;
+        super(config, path, type, connectionClass);
     }
 
-    @Override
-    public void read() throws ConfigurationException {
-        super.read();
-        JdbcConnectionSettings settings = (JdbcConnectionSettings) settings();
-        settings.setConnectionClass(connectionClass);
-    }
 }

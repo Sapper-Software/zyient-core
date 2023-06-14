@@ -13,6 +13,26 @@ import lombok.Setter;
 
 import java.lang.reflect.Field;
 
+/**
+ * <pre>
+ *     <connections>
+ *         <shared>
+ *              <connection>[ZooKeeper connection name]</connection>
+ *              <path>[Connections registry path]</path>
+ *         </shared>
+ *         <connection>
+ *             <class>[Connection class]</class>
+ *             <[type]>
+ *                 <name>[Connection name, must be unique]</name>
+ *                 ...
+ *             </[type]>
+ *         </connection>
+ *     </connections>
+ *     ...
+ *     <save>[Save connections to ZooKeeper, default=false]</save>
+ *     <override>[Override saved connections, default = true]</override>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -25,9 +45,13 @@ public abstract class ConnectionSettings extends Settings {
     private String name;
     private Class<? extends Connection> connectionClass;
 
-    public ConnectionSettings(@NonNull Class<? extends Connection> type) {
-        connectionClass = type;
+    public ConnectionSettings() {
         source = ESettingsSource.File;
+    }
+
+    public ConnectionSettings withConnectionClass(@NonNull Class<? extends Connection> connectionClass) {
+        this.connectionClass = connectionClass;
+        return this;
     }
 
     public ConnectionSettings(@NonNull ConnectionSettings settings) {

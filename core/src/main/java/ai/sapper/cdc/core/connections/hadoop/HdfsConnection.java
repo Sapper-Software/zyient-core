@@ -60,9 +60,9 @@ public class HdfsConnection implements Connection {
                     close();
                 }
                 state.clear();
-                config = new HdfsConfig(xmlConfig, HdfsConnectionSettings.HdfsSettings.class);
+                config = new HdfsConfig(xmlConfig, HdfsConnectionSettings.HdfsSettings.class, HdfsConnection.class);
                 config.read();
-
+                settings = (HdfsConnectionSettings.HdfsBaseSettings) config.settings();
                 setupHadoopConfig();
 
                 state.setState(EConnectionState.Initialized);
@@ -260,14 +260,16 @@ public class HdfsConnection implements Connection {
         private static final String __CONFIG_PATH = "hdfs";
 
         public HdfsConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                          @NonNull Class<? extends HdfsConnectionSettings.HdfsBaseSettings> type) {
-            super(config, __CONFIG_PATH, type);
+                          @NonNull Class<? extends HdfsConnectionSettings.HdfsBaseSettings> type,
+                          @NonNull Class<? extends HdfsConnection> connectionClass) {
+            super(config, __CONFIG_PATH, type, connectionClass);
         }
 
         public HdfsConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                           @NonNull String path,
-                          @NonNull Class<? extends HdfsConnectionSettings.HdfsBaseSettings> type) {
-            super(config, path, type);
+                          @NonNull Class<? extends HdfsConnectionSettings.HdfsBaseSettings> type,
+                          @NonNull Class<? extends HdfsConnection> connectionClass) {
+            super(config, path, type, connectionClass);
         }
     }
 }

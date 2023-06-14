@@ -4,7 +4,6 @@
         <name>TEST</name>
         <module>TEST-ENV</module>
         <instance>Test</instance>
-        <source>demo</source>
         <paths>
             <connections>config</connections>
         </paths>
@@ -20,17 +19,15 @@
                     <connection>test-zk</connection>
                     <path>/test/env/connections</path>
                 </shared>
-                <!--connection>
-                    <type>ai.sapper.cdc.core.connections.hadoop.HdfsConnection</type>
+                <connection>
+                    <class>ai.sapper.cdc.core.connections.hadoop.HdfsConnection</class>
                     <hdfs>
                         <name>test-hdfs</name>
                         <namenode>
-                            <primary>
-                                <URI>hdfs://192.168.2.2:9820</URI>
-                            </primary>
-                            <secondary>
-                                <URI>hdfs://192.168.2.3:9820</URI>
-                            </secondary>
+                            <URI>
+                                <primary>hdfs://192.168.2.2:9820</primary>
+                                <secondary>hdfs://192.168.2.3:9820</secondary>
+                            </URI>
                         </namenode>
                         <security>
                             <enabled>false</enabled>
@@ -39,8 +36,8 @@
                     </hdfs>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.hadoop.HdfsHAConnection</type>
-                    <hdfs_ha>
+                    <class>ai.sapper.cdc.core.connections.hadoop.HdfsHAConnection</class>
+                    <hdfs-ha>
                         <name>test-hdfs-ha</name>
                         <nameservice>ha-cluster</nameservice>
                         <failoverProvider>org.apache.hadoop.hdfs.server.namenode.ha.ConfiguredFailoverProxyProvider
@@ -50,10 +47,10 @@
                             <enabled>false</enabled>
                         </security>
                         <enableAdmin>true</enableAdmin>
-                    </hdfs_ha>
-                </connection -->
+                    </hdfs-ha>
+                </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.ZookeeperConnection</type>
+                    <class>ai.sapper.cdc.core.connections.ZookeeperConnection</class>
                     <zookeeper>
                         <name>test-zk</name>
                         <connectionString>192.168.2.16:2181</connectionString>
@@ -65,7 +62,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.WebServiceConnection</type>
+                    <class>ai.sapper.cdc.core.connections.WebServiceConnection</class>
                     <rest>
                         <name>test-ws</name>
                         <endpoint>https://howtodoinjava.com/</endpoint>
@@ -75,48 +72,46 @@
                         </paths>
                     </rest>
                 </connection>
-                <!--connection>
-                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection</type>
+                <connection>
+                    <class>ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection</class>
                     <kafka>
                         <name>test-kafka-producer</name>
                         <mode>Producer</mode>
-                        <producer>
-                            <config>src/test/resources/producer.properties</config>
-                        </producer>
+                        <config>src/test/resources/producer.properties</config>
                         <topic>hcdc-test</topic>
                     </kafka>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection</type>
+                    <class>ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection</class>
                     <kafka>
                         <name>test-kafka-consumer</name>
                         <mode>Consumer</mode>
+                        <config>src/test/resources/consumer.properties</config>
                         <consumer>
-                            <config>src/test/resources/consumer.properties</config>
                             <partitions>0</partitions>
                         </consumer>
                         <topic>hcdc-test</topic>
                     </kafka>
                 </connection>
-                <connection>
-                    <type>ai.sapper.cdc.core.connections.db.S2Connection</type>
+                <!--connection>
+                    <class>ai.sapper.cdc.core.connections.db.S2Connection</class>
                     <s2>
                         <name>test-s2</name>
                         <jdbcUrl>jdbc:singlestore://localhost:3306</jdbcUrl>
                         <user>root</user>
                         <passwordKay>s2-test-password</passwordKay>
                     </s2>
-                </connection>
+                </connection -->
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.db.JdbcConnection</type>
+                    <class>ai.sapper.cdc.core.connections.db.JdbcConnection</class>
                     <jdbc>
                         <name>test-jdbc</name>
                         <jdbcUrl>jdbc:mysql://192.168.2.19:3306</jdbcUrl>
                         <user>debezium</user>
-                        <passwordKay>s2-test-password</passwordKay>
+                        <passwordKey>s2-test-password</passwordKey>
                         <driver>com.mysql.jdbc.Driver</driver>
                     </jdbc>
-                </connection-->
+                </connection>
             </connections>
         </config>
     </env>

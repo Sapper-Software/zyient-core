@@ -21,6 +21,7 @@ import org.apache.curator.framework.CuratorFramework;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.Properties;
 
 @Getter
@@ -54,7 +55,7 @@ public abstract class KafkaConnection implements MessageConnection {
                 close();
             }
             state.clear();
-            kafkaConfig = new KafkaConfig(xmlConfig);
+            kafkaConfig = new KafkaConfig(xmlConfig, getClass());
             kafkaConfig.read();
             settings = (KafkaSettings) kafkaConfig.settings();
             if (Strings.isNullOrEmpty(settings.clientId()))
@@ -166,8 +167,9 @@ public abstract class KafkaConnection implements MessageConnection {
     public static class KafkaConfig extends ConnectionConfig {
         private static final String __CONFIG_PATH = "kafka";
 
-        public KafkaConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, KafkaSettings.class);
+        public KafkaConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                           @NonNull Class<? extends KafkaConnection> connectionClass) {
+            super(config, __CONFIG_PATH, KafkaSettings.class, connectionClass);
         }
 
         public void read() throws ConfigurationException {
@@ -176,30 +178,24 @@ public abstract class KafkaConnection implements MessageConnection {
                 KafkaSettings settings = (KafkaSettings) settings();
 
                 if (settings.getMode() == EKafkaClientMode.Producer) {
-                    File configFile = ConfigReader.readFileNode(get(), KafkaSettings.Constants.CONFIG_PRODUCER_CONFIG);
+                    File configFile = ConfigReader.readFileNode(settings.getConfigPath());
                     if (configFile == null || !configFile.exists()) {
                         throw new ConfigurationException(String.format("Kafka Configuration Error: missing [%s]",
                                 KafkaSettings.Constants.CONFIG_FILE_CONFIG));
                     }
-                    settings.setConfigPath(get().getString(KafkaSettings.Constants.CONFIG_PRODUCER_CONFIG));
                     settings.setProperties(new Properties());
                     settings.getProperties().load(new FileInputStream(configFile));
                 } else if (settings.getMode() == EKafkaClientMode.Consumer) {
-                    HierarchicalConfiguration<ImmutableNode> cnode = get().configurationAt(KafkaSettings.Constants.CONFIG_CONSUMER);
-                    if (cnode == null) {
-                        throw new ConfigurationException(
-                                String.format("Invalid Consumer configuration: missing path. [path=%s]",
-                                        KafkaSettings.Constants.CONFIG_CONSUMER));
-                    }
-                    File configFile = ConfigReader.readFileNode(cnode, KafkaSettings.Constants.CONFIG_FILE_CONFIG);
+                    File configFile = ConfigReader.readFileNode(settings.getConfigPath());
                     if (configFile == null || !configFile.exists()) {
                         throw new ConfigurationException(String.format("Kafka Configuration Error: missing [%s]",
                                 KafkaSettings.Constants.CONFIG_FILE_CONFIG));
                     }
-                    settings.setConfigPath(cnode.getString(KafkaSettings.Constants.CONFIG_FILE_CONFIG));
                     settings.setProperties(new Properties());
                     settings.getProperties().load(new FileInputStream(configFile));
-
+                    if (settings.getPartitions() == null) {
+                        settings.setPartitions(new ArrayList<>());
+                    }
                     if (settings.getPartitions().isEmpty()) {
                         settings.getPartitions().add(0);
                     }

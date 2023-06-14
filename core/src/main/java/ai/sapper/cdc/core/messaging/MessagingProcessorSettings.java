@@ -10,6 +10,27 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <processor>
+ *         <name>[Processor Name]</name>
+ *         <type>[Processor Class]</type>
+ *         <builder>
+ *             <type>[Message Builder class]</type>
+ *             <settingsType>[Message Builder Settings class]</settingsType>
+ *             <queue>[Queue Configuration]</queue>
+ *         </builder>
+ *         <errors>
+ *             <builder>
+ *                <type>[Message Builder class]</type>
+ *                <settingsType>[Message Builder Settings class]</settingsType>
+ *                <errors>[Error Queue Configuration]</errors>
+ *             </builder>
+ *             <readBatchTimeout>[Batch read timeout, optional]</readBatchTimeout>
+ *         </errors>
+ *     </processor>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

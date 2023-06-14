@@ -212,7 +212,10 @@ public class WebServiceConnection implements Connection {
         private static final String __CONFIG_PATH = "rest";
 
         public WebServiceConnectionConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
-            super(config, __CONFIG_PATH, WebServiceConnectionSettings.class);
+            super(config,
+                    __CONFIG_PATH,
+                    WebServiceConnectionSettings.class,
+                    WebServiceConnection.class);
         }
     }
 }

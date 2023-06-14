@@ -2,6 +2,7 @@ package ai.sapper.cdc.core.connections.settngs;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Exists;
+import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -9,6 +10,31 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+
+/**
+ * <pre>
+ *     <connections>
+ *         <connection>
+ *             <class>[Connection class]</class>
+ *             <zookeeper>
+ *                  <name>[Connection name, must be unique]</name>
+ *                  <connectionString>[ZooKeeper connection string]</connectionString>
+ *                  <authenticationHandler>[ZK Authentication handler class (optional)</authenticationHandler>
+ *                  <retry>
+ *                      <retries>[# of retries, default = 3]</retries>
+ *                      <interval>[interval between retries, default = 1sec]</interval>
+ *                  </retry>
+ *                  <connectionTimeout>[Connection timeout, default = ignore]</connectionTimeout>
+ *                  <sessionTimeout>[Session timeout, default = ignore]</sessionTimeout>
+ *                  <namespace>[Namespace (optional)</namespace>
+ *             </zookeeper>
+ *         </connection>
+ *     </connections>
+ *     ...
+ *     <save>[Save connections to ZooKeeper, default=false]</save>
+ *     <override>[Override saved connections, default = true]</override>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -44,7 +70,6 @@ public class ZookeeperSettings extends ConnectionSettings {
     private int sessionTimeout = -1;
 
     public ZookeeperSettings() {
-        super(ZookeeperConnection.class);
         setType(EConnectionType.zookeeper);
     }
 

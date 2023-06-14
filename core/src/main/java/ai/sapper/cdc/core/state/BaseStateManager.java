@@ -165,7 +165,7 @@ public abstract class BaseStateManager implements Closeable {
             readOffsetManagers(config);
         }
         readOffsetManagers(client);
-        if (settings.isSaveOffsetManager()) {
+        if (settings.isSaveOffsetManager() && !offsetManagers.isEmpty()) {
             stateLock.lock();
             try {
                 for (String name : offsetManagers.keySet()) {
@@ -221,9 +221,7 @@ public abstract class BaseStateManager implements Closeable {
                 OffsetStateManagerSettings os = JSONUtils.read(client, cp, OffsetStateManagerSettings.class);
                 if (os != null) {
                     os.setSource(ESettingsSource.ZooKeeper);
-                    Class<? extends OffsetStateManager<?>> cls
-                            = (Class<? extends OffsetStateManager<?>>) Class.forName(os.getType());
-                    OffsetStateManager<?> manager = cls
+                    OffsetStateManager<?> manager = os.getType()
                             .getDeclaredConstructor()
                             .newInstance()
                             .init(os, env);
