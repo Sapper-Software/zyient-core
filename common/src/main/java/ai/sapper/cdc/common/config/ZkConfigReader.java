@@ -39,7 +39,8 @@ public final class ZkConfigReader {
             if (client.checkExists().forPath(path) != null) {
                 byte[] data = client.getData().forPath(path);
                 if (data != null && data.length > 0) {
-                    settings = JSONUtils.read(data, settings.getClass());
+                    settings = JSONUtils.read(data, type);
+                    return true;
                 }
             }
             return false;

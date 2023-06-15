@@ -40,7 +40,7 @@ public class BaseEnvSettings extends Settings {
         private static final String CONFIG_STATE_MANAGER_TYPE
                 = BaseStateManagerSettings.__CONFIG_PATH + ".stateManagerClass";
         private static final String CONFIG_CONNECTIONS = "paths.connections";
-
+        private static final String CONFIG_REGISTRY_PATH = "paths.registry";
     }
 
     @Config(name = Constants.CONFIG_MODULE)
@@ -49,6 +49,8 @@ public class BaseEnvSettings extends Settings {
     private String instance;
     @Config(name = Constants.CONFIG_CONNECTIONS)
     private String connectionConfigPath;
+    @Config(name = Constants.CONFIG_REGISTRY_PATH, required = false)
+    private String registryPath;
     @Config(name = Constants.CONFIG_HEARTBEAT, required = false, type = Boolean.class)
     private boolean enableHeartbeat = false;
     @Config(name = Constants.CONFIG_STATE_MANAGER_TYPE, required = false, type = Class.class)

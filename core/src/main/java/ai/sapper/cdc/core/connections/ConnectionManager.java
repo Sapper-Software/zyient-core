@@ -107,10 +107,14 @@ public class ConnectionManager implements Closeable {
     private int initSharedConnections() throws Exception {
         int count = 0;
         if (ConfigReader.checkIfNodeExists(config, Constants.CONFIG_SHARED)) {
+
             String zk = config.getString(Constants.CONFIG_SHARED_ZK);
             if (Strings.isNullOrEmpty(zk)) {
-                throw new Exception(
-                        String.format("ZooKeeper connection name not found. [path=%s]", Constants.CONFIG_SHARED_ZK));
+                zk = env.settings().getRegistryPath();
+                if (Strings.isNullOrEmpty(zk))
+                    throw new Exception(
+                            String.format("ZooKeeper connection name not found. [path=%s]",
+                                    Constants.CONFIG_SHARED_ZK));
             }
             connection = getConnection(zk, ZookeeperConnection.class);
             if (connection == null) {

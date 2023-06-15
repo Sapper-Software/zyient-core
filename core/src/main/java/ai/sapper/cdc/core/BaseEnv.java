@@ -77,6 +77,10 @@ public abstract class BaseEnv<T extends Enum<?>> {
                            @NonNull AbstractEnvState<T> state) throws ConfigurationException {
         try {
             this.config = config;
+            settings = (BaseEnvSettings) config.settings();
+            if (settings == null) {
+                throw new ConfigurationException("Environment settings not initialized...");
+            }
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
@@ -102,6 +106,9 @@ public abstract class BaseEnv<T extends Enum<?>> {
             if (!tdir.exists()) {
                 tdir.mkdirs();
             }
+
+            this.state = state;
+
             System.setProperty("java.io.tmpdir", temp);
             environment = xmlConfig.getString(Constants.CONFIG_ENV_NAME);
             if (Strings.isNullOrEmpty(environment)) {
@@ -109,8 +116,8 @@ public abstract class BaseEnv<T extends Enum<?>> {
                         String.format("Base Env: missing parameter. [name=%s]", Constants.CONFIG_ENV_NAME));
             }
 
-            rootConfig = config.config();
-            baseConfig = xmlConfig;
+            rootConfig = xmlConfig;
+            baseConfig = config.config();
 
             hostIPs = NetUtils.getInetAddresses();
 
@@ -129,12 +136,12 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 stateManager.withEnvironment(environment(), name)
                         .withModuleInstance(moduleInstance);
                 stateManager
-                        .init(rootConfig,
+                        .init(baseConfig,
                                 this);
             }
-            if (ConfigReader.checkIfNodeExists(rootConfig,
+            if (ConfigReader.checkIfNodeExists(baseConfig,
                     AuditLogger.__CONFIG_PATH)) {
-                String c = rootConfig.getString(AuditLogger.CONFIG_AUDIT_CLASS);
+                String c = baseConfig.getString(AuditLogger.CONFIG_AUDIT_CLASS);
                 if (Strings.isNullOrEmpty(c)) {
                     throw new ConfigurationException(
                             String.format("Audit Logger class not specified. [node=%s]",
@@ -142,16 +149,14 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 }
                 Class<? extends AuditLogger> cls = (Class<? extends AuditLogger>) Class.forName(c);
                 auditLogger = cls.getDeclaredConstructor().newInstance();
-                auditLogger.init(rootConfig);
+                auditLogger.init(baseConfig);
             }
 
-            if (ConfigReader.checkIfNodeExists(rootConfig, FileSystemManager.__CONFIG_PATH)) {
+            if (ConfigReader.checkIfNodeExists(baseConfig, FileSystemManager.__CONFIG_PATH)) {
                 fileSystemManager = new FileSystemManager();
-                fileSystemManager.init(rootConfig, this);
+                fileSystemManager.init(baseConfig, this);
             }
             DefaultExports.initialize();
-
-            this.state = state;
 
             return this;
         } catch (Exception ex) {
@@ -193,8 +198,8 @@ public abstract class BaseEnv<T extends Enum<?>> {
                       @NonNull String connectionsConfigPath) throws ConfigurationException {
         try {
 
-            if (ConfigReader.checkIfNodeExists(rootConfig, KeyStore.__CONFIG_PATH)) {
-                String c = rootConfig.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
+            if (ConfigReader.checkIfNodeExists(baseConfig, KeyStore.__CONFIG_PATH)) {
+                String c = baseConfig.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
                 if (Strings.isNullOrEmpty(c)) {
                     throw new ConfigurationException(
                             String.format("Key Store class not defined. [config=%s]", KeyStore.CONFIG_KEYSTORE_CLASS));
@@ -202,17 +207,17 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 Class<? extends KeyStore> cls = (Class<? extends KeyStore>) Class.forName(c);
                 keyStore = cls.getDeclaredConstructor().newInstance();
                 keyStore.withPassword(storeKey)
-                        .init(rootConfig);
+                        .init(baseConfig);
             }
             this.storeKey = null;
 
             connectionManager = new ConnectionManager()
                     .withKeyStore(keyStore);
-            connectionManager.init(rootConfig, this, connectionsConfigPath);
+            connectionManager.init(baseConfig, this, connectionsConfigPath);
 
-            if (ConfigReader.checkIfNodeExists(rootConfig, DistributedLockBuilder.Constants.CONFIG_LOCKS)) {
+            if (ConfigReader.checkIfNodeExists(baseConfig, DistributedLockBuilder.Constants.CONFIG_LOCKS)) {
                 dLockBuilder.withEnv(environment)
-                        .init(rootConfig, module, connectionManager);
+                        .init(baseConfig, module, connectionManager);
             }
         } catch (Exception ex) {
             throw new ConfigurationException(ex);

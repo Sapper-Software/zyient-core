@@ -56,7 +56,7 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
         withStoreKey(TEST_PASSWD);
         super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
 
-        configNode = rootConfig().configurationAt(__CONFIG_PATH);
+        configNode = baseConfig().configurationAt(__CONFIG_PATH);
 
         return this;
     }
