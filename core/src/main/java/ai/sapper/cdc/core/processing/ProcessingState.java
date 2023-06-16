@@ -17,7 +17,6 @@ public abstract class ProcessingState<E extends Enum<?>, O extends Offset> exten
     private ModuleInstance instance;
     private String namespace;
     private O processedOffset;
-    private long updatedTime;
 
     public ProcessingState(@NonNull E errorState,
                            @NonNull E initState) {
@@ -29,7 +28,6 @@ public abstract class ProcessingState<E extends Enum<?>, O extends Offset> exten
         this.instance = state.instance;
         this.namespace = state.namespace;
         this.processedOffset = state.processedOffset;
-        this.updatedTime = state.updatedTime;
     }
 
     public int compareTx(@NonNull O target) {

@@ -35,6 +35,8 @@ class ConfigReaderTest {
         private Map<String, String> domains;
         @Config(name = "int-list", type = List.class)
         private List<Integer> intValues;
+        @Config(name = "test.class", type = Class.class)
+        private Class<? extends ConfigReaderTest> testClass;
     }
 
     private static final String __CONFIG_FILE = "src/test/resources/config-test.xml";

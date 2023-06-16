@@ -26,5 +26,8 @@
                 <value>123</value>
             </values>
         </int-list>
+        <test>
+            <class>ai.sapper.cdc.common.config.ConfigReaderTest</class>
+        </test>
     </test>
 </configuration>

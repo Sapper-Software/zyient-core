@@ -18,6 +18,7 @@ public abstract class AbstractState<T extends Enum<?>> {
                          @NonNull T initState) {
         this.errorState = errorState;
         this.initState = initState;
+        this.state = initState;
     }
 
     public AbstractState<T> error(@NonNull Throwable error) {

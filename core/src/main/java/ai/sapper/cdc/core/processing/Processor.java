@@ -57,7 +57,6 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         __lock = env.createLock(lockPath);
         __lock.lock();
         try {
-            stateManager.checkAgentState(stateType);
             processingState = stateManager.processingState();
             processingState.clear();
             processingState = stateManager.update(processingState);

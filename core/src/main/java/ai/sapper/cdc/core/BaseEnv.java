@@ -50,6 +50,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private String environment;
     private HierarchicalConfiguration<ImmutableNode> rootConfig;
     private HierarchicalConfiguration<ImmutableNode> baseConfig;
+    private HierarchicalConfiguration<ImmutableNode> managersConfig;
     private List<ExitCallback<T>> exitCallbacks;
     private AbstractEnvState<T> state;
     private ModuleInstance moduleInstance;
@@ -118,7 +119,9 @@ public abstract class BaseEnv<T extends Enum<?>> {
 
             rootConfig = xmlConfig;
             baseConfig = config.config();
-
+            if (ConfigReader.checkIfNodeExists(baseConfig, BaseEnvSettings.Constants.__CONFIG_PATH_MANAGERS)) {
+                managersConfig = baseConfig.configurationAt(BaseEnvSettings.Constants.__CONFIG_PATH_MANAGERS);
+            }
             hostIPs = NetUtils.getInetAddresses();
 
             moduleInstance = new ModuleInstance()
@@ -136,7 +139,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 stateManager.withEnvironment(environment(), name)
                         .withModuleInstance(moduleInstance);
                 stateManager
-                        .init(baseConfig,
+                        .init(managersConfig,
                                 this);
             }
             if (ConfigReader.checkIfNodeExists(baseConfig,

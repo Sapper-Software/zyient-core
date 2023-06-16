@@ -38,7 +38,7 @@ public class BaseEnvSettings extends Settings {
         private static final String CONFIG_INSTANCE = "instance";
         private static final String CONFIG_HEARTBEAT = "enableHeartbeat";
         private static final String CONFIG_STATE_MANAGER_TYPE
-                = BaseStateManagerSettings.__CONFIG_PATH + ".stateManagerClass";
+                = __CONFIG_PATH_MANAGERS + "." + BaseStateManagerSettings.__CONFIG_PATH + ".stateManagerClass";
         private static final String CONFIG_CONNECTIONS = "paths.connections";
         private static final String CONFIG_REGISTRY_PATH = "paths.registry";
     }

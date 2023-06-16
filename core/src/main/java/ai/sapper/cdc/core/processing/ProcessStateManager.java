@@ -2,15 +2,15 @@ package ai.sapper.cdc.core.processing;
 
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
-import ai.sapper.cdc.core.state.BaseStateManager;
-import ai.sapper.cdc.core.state.Offset;
-import ai.sapper.cdc.core.state.OffsetSequence;
-import ai.sapper.cdc.core.state.StateManagerError;
+import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.state.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
 
 @Getter
@@ -37,8 +37,11 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
                     throw new StateManagerError(String.format("Error creating ZK base path. [path=%s]", basePath()));
                 }
                 processingState = processingStateType.getDeclaredConstructor().newInstance();
+                processingState.setType(type.getCanonicalName());
                 processingState.setNamespace(moduleInstance().getModule());
-                processingState.setUpdatedTime(System.currentTimeMillis());
+                processingState.setName(moduleInstance().getName());
+                processingState.setTimeCreated(System.currentTimeMillis());
+                processingState.setTimeUpdated(processingState().getTimeCreated());
 
                 client.setData().forPath(zkAgentStatePath(),
                         JSONUtils.asBytes(processingState, processingState.getClass()));
@@ -59,6 +62,15 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
         }
     }
 
+    @Override
+    protected void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                        @NonNull String path,
+                        @NonNull BaseEnv<?> env,
+                        @NonNull Class<? extends BaseStateManagerSettings> settingsType) throws Exception {
+        super.init(xmlConfig, path, env, settingsType);
+        checkAgentState(processingStateType);
+    }
+
     public ProcessingState<E, T> initState(T txId) throws StateManagerError {
         checkState();
         Preconditions.checkNotNull(processingState);
@@ -69,7 +81,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
             try {
                 processingState = readState(processingStateType);
                 processingState.setProcessedOffset(txId);
-                processingState.setUpdatedTime(System.currentTimeMillis());
+                processingState.setTimeUpdated(System.currentTimeMillis());
 
                 return update(processingState);
             } finally {
@@ -84,10 +96,11 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
     public ProcessingState<E, T> update(@NonNull ProcessingState<E, T> state) throws Exception {
         checkState();
         ProcessingState<E, T> current = readState((Class<? extends ProcessingState<E, T>>) state.getClass());
-        if (current.getUpdatedTime() > state.getUpdatedTime()) {
+        if (current.getTimeUpdated() > state.getTimeUpdated()) {
             throw new StateManagerError(String.format("Processing state is stale. [state=%s]", state));
         }
-        state.setUpdatedTime(System.currentTimeMillis());
+        state.setTimeUpdated(System.currentTimeMillis());
+        state.setLastUpdatedBy(moduleInstance());
         CuratorFramework client = connection().client();
         JSONUtils.write(client, zkAgentStatePath(), processingState);
         return state;
