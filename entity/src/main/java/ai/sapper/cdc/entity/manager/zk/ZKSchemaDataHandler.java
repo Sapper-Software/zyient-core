@@ -35,7 +35,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
     private String zkBasePath;
     private ZookeeperConnection zkConnection;
 
-    protected ZKSchemaDataHandler() {
+    public ZKSchemaDataHandler() {
         super(ZKSchemaDataHandlerSettings.class);
     }
 
@@ -65,7 +65,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         String zp = path.build();
         CuratorFramework client = zkConnection().client();
         if (client.checkExists().forPath(zp) == null) {
-            client.create().forPath(zp);
+            client.create().creatingParentContainersIfNeeded().forPath(zp);
         }
         domain.setUpdatedTime(System.currentTimeMillis());
         client.setData().forPath(zp, JSONUtils.asBytes(domain, domain.getClass()));
@@ -231,21 +231,23 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         String path = new PathUtils.ZkPathBuilder(zkBasePath)
                 .withPath(ZK_PATH_DOMAINS)
                 .build();
-        List<String> nodes = client.getChildren().forPath(path);
-        if (nodes != null && !nodes.isEmpty()) {
-            List<Domain> domains = new ArrayList<>();
-            for (String node : nodes) {
-                String zp = new PathUtils.ZkPathBuilder(path)
-                        .withPath(node)
-                        .build();
-                Domain d = JSONUtils.read(client, zp, Domain.class);
-                if (d != null) {
-                    domains.add(d);
-                } else {
-                    throw new Exception(String.format("Invalid domain: [path=%s]", zp));
+        if (client.checkExists().forPath(path) != null) {
+            List<String> nodes = client.getChildren().forPath(path);
+            if (nodes != null && !nodes.isEmpty()) {
+                List<Domain> domains = new ArrayList<>();
+                for (String node : nodes) {
+                    String zp = new PathUtils.ZkPathBuilder(path)
+                            .withPath(node)
+                            .build();
+                    Domain d = JSONUtils.read(client, zp, Domain.class);
+                    if (d != null) {
+                        domains.add(d);
+                    } else {
+                        throw new Exception(String.format("Invalid domain: [path=%s]", zp));
+                    }
                 }
+                return domains;
             }
-            return domains;
         }
         return null;
     }

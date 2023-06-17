@@ -42,13 +42,14 @@ public abstract class SchemaManager implements Closeable {
     }
 
     public SchemaManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                              @NonNull String path,
                               @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
-            ConfigReader reader = new ConfigReader(xmlConfig, settingsType);
+            ConfigReader reader = new ConfigReader(xmlConfig, path, settingsType);
             reader.read();
             this.settings = (SchemaManagerSettings) reader.settings();
 
-            SchemaDataHandlerSettings hs = readHandlerSettings(xmlConfig, settings);
+            SchemaDataHandlerSettings hs = readHandlerSettings(reader.config(), settings);
             settings.setHandlerSettings(hs);
 
             return init((SchemaManagerSettings) reader.settings(), env);
@@ -56,6 +57,11 @@ public abstract class SchemaManager implements Closeable {
             state.error(ex);
             throw new ConfigurationException(ex);
         }
+    }
+
+    public SchemaManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                              @NonNull BaseEnv<?> env) throws ConfigurationException {
+        return init(xmlConfig, SchemaManagerSettings.__CONFIG_PATH, env);
     }
 
     public SchemaManager init(@NonNull SchemaManagerSettings settings,
@@ -95,7 +101,7 @@ public abstract class SchemaManager implements Closeable {
             synchronized (this) {
                 Domain d = handler.fetchDomain(name);
                 if (d == null) {
-                    throw new Exception(String.format("Domain not found. [name=%s]", name));
+                    return null;
                 }
                 e = new CacheElement<>(d);
                 domainCache.put(d.getName(), e);

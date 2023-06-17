@@ -15,6 +15,6 @@ public class SchemaDataHandlerSettings extends Settings {
 
     @Config(name = "connection")
     private String connection;
-    @Config(name = "source")
+    @Config(name = "schema")
     private String source;
 }
