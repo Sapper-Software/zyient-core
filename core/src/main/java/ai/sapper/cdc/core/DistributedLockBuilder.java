@@ -44,36 +44,31 @@ public class DistributedLockBuilder implements Closeable {
     public static class Constants {
         public static final String CONFIG_LOCKS = "locks";
         public static final String CONFIG_ZK_CONN = String.format("%s.connection", CONFIG_LOCKS);
-        public static final String CONFIG_ZK_NODE_PATH = String.format("%s.path", CONFIG_LOCKS);
         public static final String CONFIG_LOCK = String.format("%s.lock", CONFIG_LOCKS);
         public static final String CONFIG_LOCK_NAME = "name";
         public static final String CONFIG_LOCK_NODE = "lock-node";
     }
 
     private ZookeeperConnection connection;
-    private String environment;
+    private BaseEnv<?> env;
     private String zkPath;
     private final Map<String, LockDef> lockDefs = new HashMap<>();
     private final Map<String, DistributedLock> locks = new HashMap<>();
 
-    public DistributedLockBuilder withEnv(@NonNull String environment) {
-        this.environment = environment;
-        return this;
-    }
-
     public DistributedLockBuilder init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                                        @NonNull String module,
-                                       @NonNull ConnectionManager connectionManager) throws Exception {
+                                       @NonNull BaseEnv<?> env) throws Exception {
+        this.env = env;
         String zkConn = configNode.getString(Constants.CONFIG_ZK_CONN);
         if (Strings.isNullOrEmpty(zkConn)) {
             throw new Exception(String.format("ZooKeeper connection not defined. [path=%s]", Constants.CONFIG_ZK_CONN));
         }
-        connection = connectionManager.getConnection(zkConn, ZookeeperConnection.class);
+        connection = env.connectionManager().getConnection(zkConn, ZookeeperConnection.class);
         Preconditions.checkNotNull(connection);
         if (!connection.isConnected()) connection.connect();
 
-        readLocks(configNode, module);
-        readZkLocks(configNode, module);
+        readLocks(configNode);
+        readZkLocks();
         return this;
     }
 
@@ -81,8 +76,7 @@ public class DistributedLockBuilder implements Closeable {
         return String.format("%s:%s", module, name);
     }
 
-    private void readLocks(HierarchicalConfiguration<ImmutableNode> configNode,
-                           String module) throws Exception {
+    private void readLocks(HierarchicalConfiguration<ImmutableNode> configNode) throws Exception {
         List<HierarchicalConfiguration<ImmutableNode>> nodes = configNode.configurationsAt(Constants.CONFIG_LOCK);
         for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
             String name = node.getString(Constants.CONFIG_LOCK_NAME);
@@ -92,20 +86,16 @@ public class DistributedLockBuilder implements Closeable {
             }
             LockDef def = new LockDef();
             def.setName(name);
-            def.setModule(module);
+            def.setModule(env.module());
             def.setPath(path);
 
-            lockDefs.put(getLockKey(module, name), def);
+            lockDefs.put(getLockKey(env.module(), name), def);
         }
     }
 
-    private void readZkLocks(HierarchicalConfiguration<ImmutableNode> configNode,
-                             String module) throws Exception {
-        zkPath = configNode.getString(Constants.CONFIG_ZK_NODE_PATH);
-        if (Strings.isNullOrEmpty(zkPath)) return;
-
-        zkPath = new PathUtils.ZkPathBuilder(zkPath)
-                .withPath(environment)
+    private void readZkLocks() throws Exception {
+        zkPath = new PathUtils.ZkPathBuilder(env.settings().getRegistryPath())
+                .withPath(env.environment())
                 .withPath(Constants.CONFIG_LOCKS)
                 .build();
         CuratorFramework client = connection.client();

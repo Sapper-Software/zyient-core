@@ -237,8 +237,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
             connectionManager.init(baseConfig, this, connectionsConfigPath);
 
             if (ConfigReader.checkIfNodeExists(baseConfig, DistributedLockBuilder.Constants.CONFIG_LOCKS)) {
-                dLockBuilder.withEnv(environment)
-                        .init(baseConfig, module, connectionManager);
+                dLockBuilder.init(baseConfig, module, this);
             }
         } catch (Exception ex) {
             throw new ConfigurationException(ex);

@@ -98,19 +98,22 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             try {
                 doRun(false);
                 processingState = stateManager.update(processingState);
+                processingState = finished(processingState);
             } finally {
                 __lock.unlock();
             }
+            close();
         } catch (Throwable t) {
             DefaultLogger.error(LOG, "Message Processor terminated with error", t);
             DefaultLogger.stacktrace(t);
-            state.error(t);
             try {
                 updateError(t);
                 BaseEnv.remove(env.name());
             } catch (Exception ex) {
                 DefaultLogger.error(LOG, "Message Processor terminated with error", t);
                 DefaultLogger.stacktrace(t);
+            } finally {
+                state.error(t);
             }
         }
     }
@@ -122,6 +125,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             __lock.lock();
             try {
                 doRun(true);
+                processingState = finished(processingState);
                 processingState = stateManager.update(processingState);
             } finally {
                 __lock.unlock();
@@ -129,10 +133,13 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         } catch (Throwable t) {
             DefaultLogger.error(LOG, "Message Processor terminated with error", t);
             DefaultLogger.stacktrace(t);
+            updateError(t);
             state.error(t);
             throw t;
         }
     }
+
+    protected abstract ProcessingState<E, O> finished(@NonNull ProcessingState<E, O> processingState);
 
     protected abstract void doRun(boolean runOnce) throws Throwable;
 

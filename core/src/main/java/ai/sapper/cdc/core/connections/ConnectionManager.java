@@ -53,7 +53,6 @@ public class ConnectionManager implements Closeable {
         public static final String CONFIG_CLASS = "class";
         public static final String CONFIG_SHARED = "shared";
         public static final String CONFIG_SHARED_ZK = String.format("%s.connection", CONFIG_SHARED);
-        public static final String CONFIG_SHARED_ZK_PATH = String.format("%s.path", CONFIG_SHARED);
         public static final String PATH_ZK_CLASS = "class";
         public static final String CONFIG_SAVE_CONNECTIONS = "save";
         public static final String CONFIG_OVERRIDE_FROM_FILE = "override";
@@ -136,16 +135,11 @@ public class ConnectionManager implements Closeable {
             if (connection == null) {
                 throw new Exception(String.format("ZooKeeper connection not found. [name=%s]", zk));
             }
-            String bp = config.getString(Constants.CONFIG_SHARED_ZK_PATH);
 
-            String path = new PathUtils.ZkPathBuilder(bp)
+            String path = new PathUtils.ZkPathBuilder(env.settings().getRegistryPath())
                     .withPath(environment)
                     .withPath(Constants.__CONFIG_PATH)
                     .build();
-            if (Strings.isNullOrEmpty(path)) {
-                throw new Exception(
-                        String.format("ZooKeeper path not found. [path=%s]", Constants.CONFIG_SHARED_ZK_PATH));
-            }
             if (!connection.isConnected()) connection.connect();
             CuratorFramework client = connection.client();
             if (client.checkExists().forPath(path) != null) {

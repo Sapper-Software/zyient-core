@@ -65,8 +65,16 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
                     String.format("ZooKeeper connection not found. [name=%s]", settings.getConnection()));
         }
         zkConnection = (ZookeeperConnection) connection;
-        zkBasePath = new PathUtils.ZkPathBuilder(((ZKSchemaDataHandlerSettings) settings).getBasePath())
-                .withPath((settings).getSource())
+        String bp = ((ZKSchemaDataHandlerSettings) settings).getBasePath();
+        if (Strings.isNullOrEmpty(bp)) {
+            bp = env().settings().getRegistryPath();
+        } else {
+            bp = new PathUtils.ZkPathBuilder(env().settings().getRegistryPath())
+                    .withPath(bp)
+                    .build();
+        }
+        zkBasePath = new PathUtils.ZkPathBuilder(bp)
+                .withPath((settings).getSchema())
                 .build();
         CuratorFramework client = zkConnection().client();
         if (client.checkExists().forPath(zkBasePath) == null) {

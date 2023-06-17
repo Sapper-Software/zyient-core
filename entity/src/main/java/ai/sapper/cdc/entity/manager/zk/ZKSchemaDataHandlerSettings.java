@@ -27,6 +27,6 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class ZKSchemaDataHandlerSettings extends SchemaDataHandlerSettings {
-    @Config(name = "basePath")
+    @Config(name = "basePath", required = false)
     private String basePath;
 }
