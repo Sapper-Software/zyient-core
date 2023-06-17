@@ -39,6 +39,7 @@ public abstract class BaseStateManager implements Closeable {
         public static final String ZK_PATH_PROCESS_STATE = "state";
 
         public static final String LOCK_STATE = "__state";
+        public static final String ZK_PATH_SHARED_OFFSETS = "offsets";
     }
 
     private ZookeeperConnection connection;
@@ -128,6 +129,11 @@ public abstract class BaseStateManager implements Closeable {
         Preconditions.checkNotNull(connection);
         if (!connection.isConnected()) connection.connect();
         CuratorFramework client = connection().client();
+        String zp = new PathUtils.ZkPathBuilder(env.zkBasePath())
+                .withPath(settings.getBasePath())
+                .build();
+        settings.setBasePath(zp);
+
         zkPath = new PathUtils.ZkPathBuilder(basePath())
                 .withPath(environment)
                 .build();
@@ -294,6 +300,82 @@ public abstract class BaseStateManager implements Closeable {
                 .withPath(OffsetStateManagerSettings.__CONFIG_PATH)
                 .withPath(name)
                 .build();
+    }
+
+    public <T extends Offset> T readOffset(@NonNull String name,
+                                           @NonNull Class<? extends T> type) throws StateManagerError {
+        checkState();
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        String path = new PathUtils.ZkPathBuilder(zkModulePath)
+                .withPath(Constants.ZK_PATH_SHARED_OFFSETS)
+                .withPath(name)
+                .build();
+        try {
+            CuratorFramework client = connection.client();
+            return JSONUtils.read(client, path, type);
+        } catch (Exception ex) {
+            throw new StateManagerError(ex);
+        }
+    }
+
+    public <T extends Offset> T checkAndCreateOffset(@NonNull String name,
+                                                     @NonNull Class<? extends T> type) throws StateManagerError {
+        checkState();
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        try {
+            stateLock.lock();
+            try {
+                T offset = readOffset(name, type);
+                if (offset != null) {
+                    return offset;
+                }
+                offset = type.getDeclaredConstructor().newInstance();
+                return saveOffset(name, offset);
+            } finally {
+                stateLock.unlock();
+            }
+        } catch (Exception ex) {
+            throw new StateManagerError(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends Offset> T updateOffset(@NonNull String name,
+                                             @NonNull T offset) throws StateManagerError {
+        checkState();
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        try {
+            stateLock.lock();
+            try {
+                T current = (T) readOffset(name, offset.getClass());
+                if (current == null) {
+                    throw new StateManagerError(String.format("Offset not found. [name=%s]", name));
+                }
+                if (current.getTimeUpdated() > offset.getTimeUpdated()) {
+                    throw new StateManagerError(String.format("[%s] Offset instance is stale...", name));
+                }
+                return saveOffset(name, offset);
+            } finally {
+                stateLock.unlock();
+            }
+        } catch (Exception ex) {
+            throw new StateManagerError(ex);
+        }
+    }
+
+    private <T extends Offset> T saveOffset(@NonNull String name,
+                                            @NonNull T offset) throws Exception {
+        String path = new PathUtils.ZkPathBuilder(zkModulePath)
+                .withPath(Constants.ZK_PATH_SHARED_OFFSETS)
+                .withPath(name)
+                .build();
+        CuratorFramework client = connection.client();
+        if (client.checkExists().forPath(path) == null) {
+            client.create().creatingParentContainersIfNeeded().forPath(path);
+        }
+        offset.setTimeUpdated(System.currentTimeMillis());
+        client.setData().forPath(path, JSONUtils.asBytes(offset, offset.getClass()));
+        return offset;
     }
 
     public abstract BaseStateManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,

@@ -63,6 +63,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
     private FileSystemManager fileSystemManager;
+    private String zkBasePath;
 
     public BaseEnv(@NonNull String name) {
         this.name = name;
@@ -131,6 +132,8 @@ public abstract class BaseEnv<T extends Enum<?>> {
             moduleInstance.setName(settings().getInstance());
             moduleInstance.setInstanceId(moduleInstance.id());
 
+            zkBasePath = settings.getBasePath();
+
             setup(settings.getModule(), settings.getConnectionConfigPath());
 
             if (settings.getStateManagerClass() != null) {
@@ -176,7 +179,6 @@ public abstract class BaseEnv<T extends Enum<?>> {
     }
 
     public DistributedLock globalLock() throws Exception {
-
         return createLock(Constants.LOCK_GLOBAL);
     }
 

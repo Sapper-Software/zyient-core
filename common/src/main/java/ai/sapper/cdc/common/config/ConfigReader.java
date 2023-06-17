@@ -171,6 +171,12 @@ public class ConfigReader {
                                     throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
                                 }
                             }
+                            if (c.required()) {
+                                Object v = ReflectionUtils.getFieldValue(settings, field);
+                                if (v == null) {
+                                    throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
+                                }
+                            }
                         } else if (c.required()) {
                             throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
                         }

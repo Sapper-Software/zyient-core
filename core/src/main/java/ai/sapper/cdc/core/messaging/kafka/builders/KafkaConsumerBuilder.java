@@ -1,7 +1,6 @@
 package ai.sapper.cdc.core.messaging.kafka.builders;
 
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.messaging.builders.MessageReceiverBuilder;
@@ -18,9 +17,8 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
     private final Class<? extends BaseKafkaConsumer<M>> type;
 
     protected KafkaConsumerBuilder(@NonNull Class<? extends BaseKafkaConsumer<M>> type,
-                                   @NonNull BaseEnv<?> env,
                                    @NonNull Class<? extends MessageReceiverSettings> settingsType) {
-        super(env, settingsType);
+        super(settingsType);
         this.type = type;
     }
 
@@ -32,6 +30,9 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
         if (connection == null) {
             throw new Exception(
                     String.format("Kafka Consumer connection not found. [name=%s]", settings.getConnection()));
+        }
+        if (!connection.isConnected()) {
+            connection.connect();
         }
         BaseKafkaConsumer<M> consumer = type.getDeclaredConstructor().newInstance();
         consumer.withConnection(connection);

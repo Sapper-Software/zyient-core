@@ -64,9 +64,9 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                                     MessagingProcessorSettings.Constants.__CONFIG_PATH_RECEIVER));
                 }
                 MessageReceiverBuilder<K, M> builder = (MessageReceiverBuilder<K, M>) settings.getBuilderType()
-                        .getDeclaredConstructor(BaseEnv.class, Class.class)
-                        .newInstance(env, settings.getBuilderSettingsType());
-                receiver = builder.build(qConfig);
+                        .getDeclaredConstructor(Class.class)
+                        .newInstance(settings.getBuilderSettingsType());
+                receiver = builder.withEnv(env).build(qConfig);
                 if (settings.getErrorsBuilderType() != null) {
                     HierarchicalConfiguration<ImmutableNode> eConfig = receiverConfig
                             .config()
@@ -77,9 +77,9 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                                         MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS));
                     }
                     MessageSenderBuilder<K, M> errorBuilder = (MessageSenderBuilder<K, M>) settings.getErrorsBuilderType()
-                            .getDeclaredConstructor(BaseEnv.class, Class.class)
-                            .newInstance(env, settings.getErrorsBuilderSettingsType());
-                    errorLogger = errorBuilder.build(eConfig);
+                            .getDeclaredConstructor(Class.class)
+                            .newInstance(settings.getErrorsBuilderSettingsType());
+                    errorLogger = errorBuilder.withEnv(env).build(eConfig);
                 }
 
                 postInit(settings);
@@ -106,7 +106,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         Preconditions.checkState(state.isAvailable());
         Preconditions.checkNotNull(env);
         try {
-            doRun();
+            doRun(false);
         } catch (Throwable t) {
             state.error(t);
             DefaultLogger.error(LOG, "Message Processor terminated with error", t);
@@ -124,20 +124,25 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
     @Override
     @SuppressWarnings("unchecked")
-    protected void doRun() throws Throwable {
+    protected void doRun(boolean runOnce) throws Throwable {
+        Preconditions.checkArgument(!runOnce);
         MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
         while (state.isAvailable()) {
             boolean sleep = false;
             if (!state.isPaused()) {
                 __lock().lock();
                 try {
+                    MessageProcessorState<E, O, MO> processorState = (MessageProcessorState<E, O, MO>) stateManager().processingState();
+                    MO pOffset = processorState.getMessageOffset();
+                    OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
+                    MO rOffset = offsetState.getOffset();
+                    if (pOffset.compareTo(rOffset) != 0) {
+                        receiver.seek(pOffset, null);
+                    }
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
                     if (batch != null && !batch.isEmpty()) {
                         LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
-                        MessageProcessorState<E, O, MO> processorState = (MessageProcessorState<E, O, MO>) stateManager().processingState();
-
-                        OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
-                        processorState.setMessageOffset(offsetState.getOffset());
+                        offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
                         batchStart(processorState);
                         processorState = (MessageProcessorState<E, O, MO>) updateState();
 
@@ -152,6 +157,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                                 }
                             }
                         }
+                        processorState.setMessageOffset(offsetState.getOffset());
+
                         batchEnd(processorState);
                         updateState();
                     } else {

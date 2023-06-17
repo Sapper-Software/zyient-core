@@ -16,7 +16,6 @@ import lombok.Setter;
 public abstract class ProcessingState<E extends Enum<?>, O extends Offset> extends OffsetState<E, O> {
     private ModuleInstance instance;
     private String namespace;
-    private O processedOffset;
 
     public ProcessingState(@NonNull E errorState,
                            @NonNull E initState) {
@@ -27,12 +26,11 @@ public abstract class ProcessingState<E extends Enum<?>, O extends Offset> exten
         super(state.getErrorState(), state.getInitState());
         this.instance = state.instance;
         this.namespace = state.namespace;
-        this.processedOffset = state.processedOffset;
     }
 
     public int compareTx(@NonNull O target) {
-        if (processedOffset != null) {
-            return processedOffset.compareTo(target);
+        if (getOffset() != null) {
+            return getOffset().compareTo(target);
         }
         return -1;
     }

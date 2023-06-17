@@ -10,8 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ConfigReaderTest {
     public enum Type {
@@ -56,6 +55,12 @@ class ConfigReaderTest {
             reader.read();
             TestSettings settings = (TestSettings) reader.settings();
             assertNotNull(settings);
+            assertNotNull(settings.type);
+            assertNotNull(settings.testClass);
+            assertNotNull(settings.domains);
+            assertFalse(settings.domains.isEmpty());
+            assertNotNull(settings.intValues);
+            assertFalse(settings.intValues.isEmpty());
         } catch (Exception ex) {
             ex.printStackTrace();
             fail(ex);

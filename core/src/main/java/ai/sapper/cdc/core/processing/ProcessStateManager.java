@@ -80,7 +80,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
             stateLock();
             try {
                 processingState = readState(processingStateType);
-                processingState.setProcessedOffset(txId);
+                processingState.setOffset(txId);
                 processingState.setTimeUpdated(System.currentTimeMillis());
 
                 return update(processingState);
@@ -107,7 +107,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
     }
 
     public ProcessingState<E, T> update(@NonNull T value) throws Exception {
-        processingState.setProcessedOffset(value);
+        processingState.setOffset(value);
         return update(processingState);
     }
 

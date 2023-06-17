@@ -15,7 +15,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class MessageSenderSettings extends Settings {
-    @Config(name = "type", type = Enum.class)
+    @Config(name = "type", type = EConnectionType.class)
     private EConnectionType type;
     @Config(name = "connection")
     private String connection;

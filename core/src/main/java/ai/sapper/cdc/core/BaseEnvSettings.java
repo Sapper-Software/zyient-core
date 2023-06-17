@@ -41,6 +41,7 @@ public class BaseEnvSettings extends Settings {
                 = __CONFIG_PATH_MANAGERS + "." + BaseStateManagerSettings.__CONFIG_PATH + ".stateManagerClass";
         private static final String CONFIG_CONNECTIONS = "paths.connections";
         private static final String CONFIG_REGISTRY_PATH = "paths.registry";
+        private static final String CONFIG_BASE_PATH = "paths.root";
     }
 
     @Config(name = Constants.CONFIG_MODULE)
@@ -55,6 +56,8 @@ public class BaseEnvSettings extends Settings {
     private boolean enableHeartbeat = false;
     @Config(name = Constants.CONFIG_STATE_MANAGER_TYPE, required = false, type = Class.class)
     private Class<? extends BaseStateManager> stateManagerClass;
+    @Config(name = Constants.CONFIG_BASE_PATH)
+    private String basePath;
     @JsonIgnore
     private HierarchicalConfiguration<ImmutableNode> managersConfig;
 }

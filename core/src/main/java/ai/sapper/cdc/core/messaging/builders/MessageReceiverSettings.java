@@ -25,7 +25,7 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class MessageReceiverSettings extends Settings {
-    @Config(name = "type", type = Enum.class)
+    @Config(name = "type", type = EConnectionType.class)
     private EConnectionType type;
     @Config(name = "connection")
     private String connection;

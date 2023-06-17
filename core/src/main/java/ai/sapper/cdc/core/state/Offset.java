@@ -11,6 +11,8 @@ import lombok.Setter;
         use = JsonTypeInfo.Id.CLASS
 )
 public abstract class Offset implements Comparable<Offset> {
+    private long timeUpdated;
+
     public abstract String asString();
 
     public abstract Offset fromString(@NonNull String source) throws Exception;

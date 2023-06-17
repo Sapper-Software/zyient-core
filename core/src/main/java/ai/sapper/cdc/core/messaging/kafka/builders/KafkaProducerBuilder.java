@@ -1,6 +1,5 @@
 package ai.sapper.cdc.core.messaging.kafka.builders;
 
-import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.messaging.builders.MessageSenderBuilder;
@@ -14,9 +13,8 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
     private final Class<? extends BaseKafkaProducer<M>> type;
 
     protected KafkaProducerBuilder(@NonNull Class<? extends BaseKafkaProducer<M>> type,
-                                   @NonNull BaseEnv<?> env,
                                    @NonNull Class<? extends MessageSenderSettings> settingsType) {
-        super(env, settingsType);
+        super(settingsType);
         this.type = type;
     }
 
@@ -30,6 +28,9 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
         if (connection == null) {
             throw new Exception(
                     String.format("Kafka Producer connection not found. [name=%s]", settings.getConnection()));
+        }
+        if (!connection.isConnected()) {
+            connection.connect();
         }
         BaseKafkaProducer<M> producer = type.getDeclaredConstructor().newInstance();
         producer.withConnection(connection);

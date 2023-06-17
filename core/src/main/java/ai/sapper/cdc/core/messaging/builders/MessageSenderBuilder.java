@@ -4,6 +4,7 @@ import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.messaging.MessageSender;
 import ai.sapper.cdc.core.messaging.MessagingError;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -16,16 +17,20 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Accessors(fluent = true)
 public abstract class MessageSenderBuilder<I, M> {
     private final Class<? extends MessageSenderSettings> settingsType;
-    private final BaseEnv<?> env;
+    private BaseEnv<?> env;
     private HierarchicalConfiguration<ImmutableNode> config;
 
-    protected MessageSenderBuilder(@NonNull BaseEnv<?> env,
-                                   @NonNull Class<? extends MessageSenderSettings> settingsType) {
-        this.env = env;
+    protected MessageSenderBuilder(@NonNull Class<? extends MessageSenderSettings> settingsType) {
         this.settingsType = settingsType;
     }
 
+    public MessageSenderBuilder<I, M> withEnv(@NonNull BaseEnv<?> env) {
+        this.env = env;
+        return this;
+    }
+
     public MessageSender<I, M> build(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws MessagingError {
+        Preconditions.checkNotNull(env);
         try {
             ConfigReader reader = new ConfigReader(config, settingsType);
             reader.read();
