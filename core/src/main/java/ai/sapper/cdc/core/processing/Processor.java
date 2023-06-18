@@ -74,7 +74,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         __lock.lock();
         try {
             processingState = stateManager.processingState();
-            processingState.clear();
+            initState(processingState);
             processingState = stateManager.update(processingState);
         } finally {
             __lock.unlock();
@@ -88,6 +88,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         return init(xmlConfig, null);
     }
 
+    protected abstract void initState(@NonNull ProcessingState<E, O> processingState) throws Exception;
 
     @Override
     public void run() {

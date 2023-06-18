@@ -16,6 +16,7 @@
 
 package ai.sapper.cdc.core.state;
 
+import ai.sapper.cdc.common.AbstractState;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
@@ -24,7 +25,6 @@ import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
-import ai.sapper.cdc.core.model.BaseAgentState;
 import ai.sapper.cdc.core.model.ESettingsSource;
 import ai.sapper.cdc.core.model.Heartbeat;
 import ai.sapper.cdc.core.model.ModuleInstance;
@@ -412,7 +412,8 @@ public abstract class BaseStateManager implements Closeable {
     public abstract Heartbeat heartbeat(@NonNull String instance) throws StateManagerError;
 
     public Heartbeat heartbeat(@NonNull String name,
-                               @NonNull BaseAgentState.AgentState state) throws StateManagerError {
+                               @NonNull Class<?> caller,
+                               @NonNull AbstractState<?> state) throws StateManagerError {
         checkState();
         synchronized (this) {
             try {
@@ -426,7 +427,7 @@ public abstract class BaseStateManager implements Closeable {
                 }
                 Heartbeat heartbeat = new Heartbeat();
                 heartbeat.setName(name);
-                heartbeat.setType(state.getClass().getCanonicalName());
+                heartbeat.setType(caller.getCanonicalName());
                 heartbeat.setState(state.getState().name());
                 if (state.hasError()) {
                     heartbeat.setError(state.getError());
