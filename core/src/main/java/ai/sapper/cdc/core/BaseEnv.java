@@ -26,6 +26,7 @@ import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.FileSystemManager;
 import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.model.ModuleInstance;
+import ai.sapper.cdc.core.processing.Processor;
 import ai.sapper.cdc.core.state.BaseStateManager;
 import ai.sapper.cdc.core.state.HeartbeatThread;
 import com.google.common.base.Preconditions;
@@ -80,6 +81,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private BaseEnvSettings settings;
     private FileSystemManager fileSystemManager;
     private String zkBasePath;
+    private Processor<?, ?> processor;
 
     public BaseEnv(@NonNull String name) {
         this.name = name;
@@ -87,6 +89,11 @@ public abstract class BaseEnv<T extends Enum<?>> {
 
     public BaseEnv<T> withStoreKey(@NonNull String storeKey) {
         this.storeKey = storeKey;
+        return this;
+    }
+
+    public BaseEnv<?> withProcessor(@NonNull Processor<?, ?> processor) {
+        this.processor = processor;
         return this;
     }
 
@@ -274,6 +281,10 @@ public abstract class BaseEnv<T extends Enum<?>> {
     }
 
     public void close() throws Exception {
+        if (processor != null) {
+            processor.close();
+            processor = null;
+        }
         if (heartbeatThread != null) {
             heartbeat().terminate();
             heartbeatThread().join();
@@ -328,6 +339,22 @@ public abstract class BaseEnv<T extends Enum<?>> {
             return true;
         }
         return false;
+    }
+
+    public static int disposeAll() throws Exception {
+        __instanceLock.lock();
+        try {
+            int count = 0;
+            for (String name : __instances.keySet()) {
+                BaseEnv<?> env = __instances.get(name);
+                env.close();
+                count++;
+            }
+            __instances.clear();
+            return count;
+        } finally {
+            __instanceLock.unlock();
+        }
     }
 
     public static void initLock() {

@@ -33,4 +33,6 @@ public interface Service<E extends Enum<?>> {
     AbstractState<E> status();
 
     String name();
+
+    void checkState() throws Exception;
 }
