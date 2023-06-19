@@ -214,7 +214,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         ze.setSchema(schema);
         String sp = getSchemaPath(se.getDomain(), se.getEntity()).build();
         if (client.checkExists().forPath(sp) == null) {
-            client.create().forPath(sp);
+            client.create().creatingParentContainersIfNeeded().forPath(sp);
         }
         client.setData().forPath(sp, JSONUtils.asBytes(schema.getVersion(), SchemaVersion.class));
         if (client.checkExists().forPath(zp) == null) {

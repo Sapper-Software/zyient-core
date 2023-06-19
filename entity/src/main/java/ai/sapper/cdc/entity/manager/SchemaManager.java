@@ -295,8 +295,7 @@ public abstract class SchemaManager implements Closeable {
         if (schema == null) {
             schema = handler.fetchSchema(entity, version);
             if (schema == null) {
-                throw new InvalidDataError(EntitySchema.class,
-                        String.format("Schema not found. [entity=%s]", entity.toString()));
+                return null;
             }
             CacheElement<EntitySchema> e = new CacheElement<>(schema);
             schemaCache.put(key, e);
