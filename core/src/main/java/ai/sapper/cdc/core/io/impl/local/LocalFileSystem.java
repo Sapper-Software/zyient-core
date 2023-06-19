@@ -306,7 +306,7 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
-    public File download(@NonNull FileInode inode) throws IOException {
+    public File download(@NonNull FileInode inode, long timeout) throws IOException {
         LocalPathInfo pi = null;
         if (inode.getPathInfo() == null) {
             pi = (LocalPathInfo) parsePathInfo(inode.getPath());

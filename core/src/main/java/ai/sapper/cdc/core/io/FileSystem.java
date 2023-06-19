@@ -804,6 +804,29 @@ public abstract class FileSystem implements Closeable {
         return getReader(inode);
     }
 
+    protected boolean checkInodeAvailable(@NonNull FileInode inode, long timeout) throws IOException {
+        long start = System.currentTimeMillis();
+        while (true) {
+            long d = System.currentTimeMillis() - start;
+            if (d > timeout) {
+                break;
+            }
+            FileInode current = (FileInode) getInode(inode.getPathInfo());
+            FileState state = current.getState();
+            if (state.hasError()) {
+                throw new IOException(state.getError());
+            }
+            if (state.available()) {
+                return true;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException ie) {
+                // Do nothing...
+            }
+        }
+        return false;
+    }
 
     public File compress(@NonNull File file) throws IOException {
         Preconditions.checkArgument(file.exists());
@@ -857,7 +880,7 @@ public abstract class FileSystem implements Closeable {
                                      @NonNull FileInode path,
                                      boolean clearLock) throws IOException;
 
-    public abstract File download(@NonNull FileInode inode) throws IOException;
+    public abstract File download(@NonNull FileInode inode, long timeout) throws IOException;
 
     @Getter
     @Accessors(fluent = true)

@@ -73,7 +73,7 @@ public abstract class RemoteWriter extends Writer {
     @Override
     protected void getLocalCopy() throws Exception {
         if (fs.exists(inode.getPathInfo())) {
-            File file = fs.download(inode);
+            File file = fs.download(inode, cache.settings().getDownloadTimeout());
             if (file == null) return;
             if (inode.isCompressed()) {
                 File outf = fs.decompress(file);

@@ -100,7 +100,7 @@ public class RemoteFsCache implements EvictionCallback<String, RemoteFsCache.FsC
                 fetch = true;
             }
             if (fetch) {
-                File file = fs.download(inode);
+                File file = fs.download(inode, settings.getDownloadTimeout());
                 if (file == null) return null;
                 if (inode.isCompressed()) {
                     File outf = fs.decompress(file);

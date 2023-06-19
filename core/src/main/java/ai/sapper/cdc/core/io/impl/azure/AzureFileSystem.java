@@ -315,7 +315,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public File download(@NonNull FileInode inode) throws IOException {
+    public File download(@NonNull FileInode inode, long timeout) throws IOException {
         AzurePathInfo path = (AzurePathInfo) inode.getPathInfo();
         if (path == null) {
             throw new IOException(
@@ -332,6 +332,11 @@ public class AzureFileSystem extends RemoteFileSystem {
                     }
                 }
                 path.withTemp(tmp);
+            }
+            if (!checkInodeAvailable(inode, timeout)) {
+                throw new IOException(
+                        String.format("Download operation timeout: File not available for download. [path=%s]",
+                                inode.getPath()));
             }
             BlobContainerClient cc = client.getContainer(path.container());
             if (cc != null && cc.exists()) {

@@ -39,4 +39,8 @@ public class FileState extends AbstractState<EFileState> {
     public boolean synced() {
         return getState() == EFileState.Synced;
     }
+
+    public boolean available() {
+        return getState() == EFileState.Updating || synced();
+    }
 }

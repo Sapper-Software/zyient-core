@@ -311,7 +311,7 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public File download(@NonNull FileInode inode) throws IOException {
+    public File download(@NonNull FileInode inode, long timeout) throws IOException {
         S3PathInfo path = (S3PathInfo) inode.getPathInfo();
         if (path == null) {
             throw new IOException(
@@ -328,6 +328,11 @@ public class S3FileSystem extends RemoteFileSystem {
                     }
                 }
                 path.withTemp(tmp);
+            }
+            if (!checkInodeAvailable(inode, timeout)) {
+                throw new IOException(
+                        String.format("Download operation timeout: File not available for download. [path=%s]",
+                                inode.getPath()));
             }
             GetObjectRequest request = GetObjectRequest.builder()
                     .bucket(path.bucket())
