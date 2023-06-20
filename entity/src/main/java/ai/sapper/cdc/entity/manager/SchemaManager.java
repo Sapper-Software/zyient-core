@@ -319,6 +319,9 @@ public abstract class SchemaManager implements Closeable {
                                                 @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkState(state.isAvailable());
         EntitySchema schema = handler.fetchSchema(entity, uri);
+        if (schema == null) {
+            return null;
+        }
         if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
             throw new InvalidDataError(EntitySchema.class,
                     String.format("Schema Type mismatch: [expected=%s][actual=%s]",
@@ -361,7 +364,7 @@ public abstract class SchemaManager implements Closeable {
         Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
-            EntitySchema current = getSchema(entity, schema.getClass());
+            EntitySchema current = getSchema(entity, schema.getVersion(), schema.getClass());
             if (current != null) {
                 throw new InvalidDataError(EntitySchema.class,
                         String.format("Schema already exists. [entity=%s]", entity.toString()));
@@ -384,7 +387,7 @@ public abstract class SchemaManager implements Closeable {
         Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
-            EntitySchema current = getSchema(schema.getSchemaEntity(), schema.getClass());
+            EntitySchema current = getSchema(schema.getSchemaEntity(), schema.getVersion(), schema.getClass());
             if (current == null) {
                 throw new Exception(
                         String.format("Schema not found. [entity=%s]",

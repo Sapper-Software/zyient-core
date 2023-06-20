@@ -18,6 +18,7 @@ package ai.sapper.cdc.entity.manager;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.entity.schema.Domain;
 import ai.sapper.cdc.entity.schema.EntitySchema;
@@ -113,4 +114,5 @@ public abstract class SchemaDataHandler implements Closeable {
 
     protected abstract String schemaCacheKey(@NonNull SchemaEntity entity,
                                              @NonNull String uri) throws Exception;
+    public abstract DistributedLock schemaLock(@NonNull SchemaEntity entity) throws Exception;
 }

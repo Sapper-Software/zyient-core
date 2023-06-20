@@ -19,6 +19,7 @@ package ai.sapper.cdc.entity.manager.zk;
 import ai.sapper.cdc.common.model.InvalidDataError;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
+import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.entity.manager.SchemaDataHandler;
 import ai.sapper.cdc.entity.manager.SchemaDataHandlerSettings;
@@ -300,6 +301,14 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
             throw new Exception(String.format("Failed to extract schema version. [URI=%s]", uri));
         }
         return schemaCacheKey(entity, version);
+    }
+
+    @Override
+    public DistributedLock schemaLock(@NonNull SchemaEntity entity) throws Exception {
+        PathUtils.ZkPathBuilder zp = getEntityPath(entity.getDomain(), entity.getEntity())
+                .withPath("__lock");
+        String name = String.format("%s.%s", entity.getDomain(), entity.getEntity());
+        return env().createCustomLock(name, zp.build(), zkConnection, 10000);
     }
 
     protected SchemaVersion getLatestVersion(SchemaEntity entity,
