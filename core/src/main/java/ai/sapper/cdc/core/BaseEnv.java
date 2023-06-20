@@ -193,7 +193,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
         }
     }
 
-    public void postInit() {
+    public void postInit() throws Exception {
         if (settings.isEnableHeartbeat()) {
             heartbeat = new HeartbeatThread(name()).withStateManager(stateManager);
             heartbeatThread = new Thread(heartbeat);

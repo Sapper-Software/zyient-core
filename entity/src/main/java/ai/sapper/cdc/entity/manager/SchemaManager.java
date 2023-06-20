@@ -207,7 +207,7 @@ public abstract class SchemaManager implements Closeable {
             synchronized (this) {
                 SchemaEntity entity = handler.fetchEntity(domain, name);
                 if (entity == null) {
-                    throw new Exception(String.format("Entity not found. [domain=%s][entity=%s]", domain, name));
+                    return null;
                 }
                 e = new CacheElement<>(entity);
                 entityCache.put(key, e);
@@ -228,9 +228,14 @@ public abstract class SchemaManager implements Closeable {
         }
         schemaLock.lock();
         try {
+            Domain d = getDomain(domain);
+            if (d == null) {
+                throw new Exception(String.format("Domain not found. [domain=%s]", domain));
+            }
             entity = type.getDeclaredConstructor().newInstance();
             entity.setDomain(domain);
             entity.setEntity(name);
+            entity.setOptions(d.getDefaultOptions());
             return handler.saveEntity(entity);
         } finally {
             schemaLock.unlock();
@@ -339,6 +344,30 @@ public abstract class SchemaManager implements Closeable {
             schema.setVersion(new SchemaVersion());
 
             schema = handler.saveSchema(schema);
+            synchronized (this) {
+                CacheElement<EntitySchema> e = new CacheElement<>(schema);
+                String key = handler.schemaCacheKey(entity, schema.getVersion());
+                schemaCache.put(key, e);
+            }
+            return (T) schema;
+        } finally {
+            schemaLock.unlock();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected <T extends EntitySchema> T createSchema(@NonNull T schema,
+                                                      @NonNull SchemaEntity entity) throws Exception {
+        Preconditions.checkState(state.isAvailable());
+        schemaLock.lock();
+        try {
+            EntitySchema current = getSchema(entity, schema.getClass());
+            if (current != null) {
+                throw new InvalidDataError(EntitySchema.class,
+                        String.format("Schema already exists. [entity=%s]", entity.toString()));
+            }
+
+            schema = (T) handler.saveSchema(schema);
             synchronized (this) {
                 CacheElement<EntitySchema> e = new CacheElement<>(schema);
                 String key = handler.schemaCacheKey(entity, schema.getVersion());

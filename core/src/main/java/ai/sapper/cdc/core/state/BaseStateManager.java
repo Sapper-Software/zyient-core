@@ -50,6 +50,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 public abstract class BaseStateManager implements Closeable {
     public static class Constants {
+        public static final String ZK_PROCESSORS_NODE = "processors";
         public static final int LOCK_RETRY_COUNT = 8;
         public static final String ZK_PATH_HEARTBEAT = "/heartbeat";
         public static final String ZK_PATH_PROCESS_STATE = "state";
@@ -157,6 +158,7 @@ public abstract class BaseStateManager implements Closeable {
                 .withPath(moduleInstance.getModule())
                 .build();
         zkAgentPath = new PathUtils.ZkPathBuilder(zkModulePath)
+                .withPath(Constants.ZK_PROCESSORS_NODE)
                 .withPath(moduleInstance.getName())
                 .build();
 

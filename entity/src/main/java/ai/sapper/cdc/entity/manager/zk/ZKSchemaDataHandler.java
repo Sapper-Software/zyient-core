@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 @Accessors(fluent = true)
 public class ZKSchemaDataHandler extends SchemaDataHandler {
     public static final String REGEX_PATH_VERSION = "(/.*)/(\\d+)/(\\d+)$";
-    public static final String ZK_PATH_DOMAINS = "domains";
+    public static final String ZK_PATH_DOMAINS = "entities";
 
     private String zkBasePath;
     private ZookeeperConnection zkConnection;
@@ -177,7 +177,12 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
             if (ze != null) {
                 SchemaEntity se = entity;
                 if (!Strings.isNullOrEmpty(ze.getZkEntityPath())) {
-                    se = JSONUtils.read(client, ze.getZkEntityPath(), SchemaEntity.class);
+                    ZkSchemaEntity zse = JSONUtils.read(client, ze.getZkEntityPath(), ZkSchemaEntity.class);
+                    if (zse == null) {
+                        throw new Exception(
+                                String.format("[zookeeper] Entity not found. [entity=%s]", ze.getZkEntityPath()));
+                    }
+                    se = zse.getEntity();
                 }
                 ze.getSchema().setSchemaEntity(se);
                 return ze.getSchema();
@@ -297,30 +302,30 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         return schemaCacheKey(entity, version);
     }
 
-    private SchemaVersion getLatestVersion(SchemaEntity entity,
-                                           CuratorFramework client) throws Exception {
+    protected SchemaVersion getLatestVersion(SchemaEntity entity,
+                                             CuratorFramework client) throws Exception {
         String zp = getSchemaPath(entity.getDomain(), entity.getEntity())
                 .build();
         return JSONUtils.read(client, zp, SchemaVersion.class);
     }
 
-    private PathUtils.ZkPathBuilder getDomainPath(String domain) {
+    protected PathUtils.ZkPathBuilder getDomainPath(String domain) {
         return new PathUtils.ZkPathBuilder(zkBasePath)
                 .withPath(ZK_PATH_DOMAINS)
                 .withPath(domain);
     }
 
-    private PathUtils.ZkPathBuilder getEntityPath(String domain, String entity) {
+    protected PathUtils.ZkPathBuilder getEntityPath(String domain, String entity) {
         return getDomainPath(domain)
                 .withPath(entity);
     }
 
-    private PathUtils.ZkPathBuilder getSchemaPath(String domain, String entity) {
+    protected PathUtils.ZkPathBuilder getSchemaPath(String domain, String entity) {
         return getEntityPath(domain, entity)
                 .withPath("schema");
     }
 
-    private PathUtils.ZkPathBuilder getSchemaPath(String domain, String entity, SchemaVersion version) {
+    protected PathUtils.ZkPathBuilder getSchemaPath(String domain, String entity, SchemaVersion version) {
         return getSchemaPath(domain, entity)
                 .withPath(String.valueOf(version.getMajorVersion()))
                 .withPath(String.valueOf(version.getMinorVersion()));
