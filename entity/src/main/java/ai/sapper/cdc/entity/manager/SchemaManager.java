@@ -16,6 +16,7 @@
 
 package ai.sapper.cdc.entity.manager;
 
+import ai.sapper.cdc.common.cache.Expireable;
 import ai.sapper.cdc.common.cache.LRUCache;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.InvalidDataError;
@@ -28,6 +29,7 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.apache.avro.Schema;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -44,14 +46,14 @@ import java.util.Optional;
 public abstract class SchemaManager implements Closeable {
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends SchemaManagerSettings> settingsType;
-    private final Map<String, CacheElement<Domain>> domainCache = new HashMap<>();
-    private final Map<String, CacheElement<SchemaEntity>> entityCache = new HashMap<>();
-    private LRUCache<String, CacheElement<EntitySchema>> schemaCache;
+    private final Map<String, Expireable<Domain>> domainCache = new HashMap<>();
+    private final Map<String, Expireable<SchemaEntity>> entityCache = new HashMap<>();
 
     private SchemaManagerSettings settings;
     private BaseEnv<?> env;
     private SchemaDataHandler handler;
     private DistributedLock schemaLock;
+    private SchemaCache schemaCache;
 
     public SchemaManager(@NonNull Class<? extends SchemaManagerSettings> settingsType) {
         this.settingsType = settingsType;
@@ -91,7 +93,8 @@ public abstract class SchemaManager implements Closeable {
                     .init(settings.getHandlerSettings(), env);
             init(settings);
             this.settings = settings;
-            schemaCache = new LRUCache<>(settings.getSchemaCacheSize());
+            schemaCache = new SchemaCache(settings.getSchemaCacheSize(),
+                    settings.getCacheTimeout());
             schemaLock = env.createLock(String.format("SCHEMA_MANAGER-%s", settings.getName()));
             state.setState(ProcessorState.EProcessorState.Running);
             return this;
@@ -112,18 +115,18 @@ public abstract class SchemaManager implements Closeable {
 
     public Domain getDomain(@NonNull String name) throws Exception {
         Preconditions.checkState(state.isAvailable());
-        CacheElement<Domain> e = domainCache.get(name);
+        Expireable<Domain> e = domainCache.get(name);
         if (e == null || e.expired(settings.getCacheTimeout())) {
             synchronized (this) {
                 Domain d = handler.fetchDomain(name);
                 if (d == null) {
                     return null;
                 }
-                e = new CacheElement<>(d);
+                e = new Expireable<>(d);
                 domainCache.put(d.getName(), e);
             }
         }
-        return e.element;
+        return e.element();
     }
 
     protected Domain createDomain(@NonNull String name,
@@ -142,7 +145,7 @@ public abstract class SchemaManager implements Closeable {
                 d.setName(name);
                 d = handler.saveDomain(d);
             }
-            CacheElement<Domain> e = new CacheElement<>(d);
+            Expireable<Domain> e = new Expireable<>(d);
             domainCache.put(d.getName(), e);
             return d;
         } finally {
@@ -161,7 +164,7 @@ public abstract class SchemaManager implements Closeable {
                 throw new StaleDataError(String.format("Domain instance is stale. [nam%s]", domain.getName()));
             }
             domain = handler.saveDomain(domain);
-            CacheElement<Domain> e = new CacheElement<>(domain);
+            Expireable<Domain> e = new Expireable<>(domain);
             domainCache.put(domain.getName(), e);
             return domain;
         } finally {
@@ -190,7 +193,7 @@ public abstract class SchemaManager implements Closeable {
         if (domains != null && !domains.isEmpty()) {
             synchronized (this) {
                 for (Domain d : domains) {
-                    CacheElement<Domain> e = new CacheElement<>(d);
+                    Expireable<Domain> e = new Expireable<>(d);
                     domainCache.put(d.getName(), e);
                 }
             }
@@ -202,18 +205,18 @@ public abstract class SchemaManager implements Closeable {
                                   @NonNull String name) throws Exception {
         Preconditions.checkState(state.isAvailable());
         String key = SchemaEntity.key(domain, name);
-        CacheElement<SchemaEntity> e = entityCache.get(key);
+        Expireable<SchemaEntity> e = entityCache.get(key);
         if (e == null || e.expired(settings.getCacheTimeout())) {
             synchronized (this) {
                 SchemaEntity entity = handler.fetchEntity(domain, name);
                 if (entity == null) {
                     return null;
                 }
-                e = new CacheElement<>(entity);
+                e = new Expireable<>(entity);
                 entityCache.put(key, e);
             }
         }
-        return e.element;
+        return e.element();
     }
 
     protected SchemaEntity createEntity(@NonNull String domain,
@@ -288,22 +291,17 @@ public abstract class SchemaManager implements Closeable {
                                                 SchemaVersion version,
                                                 @NonNull Class<? extends T> type) throws Exception {
         Preconditions.checkState(state.isAvailable());
-        EntitySchema schema = null;
-        String key = handler.schemaCacheKey(entity);
-        Optional<CacheElement<EntitySchema>> op = schemaCache.get(key);
-        if (op.isPresent()) {
-            CacheElement<EntitySchema> e = op.get();
-            if (!e.expired(settings.getCacheTimeout())) {
-                schema = e.element;
-            }
-        }
+        EntitySchema schema = schemaCache.get(entity, version);
         if (schema == null) {
             schema = handler.fetchSchema(entity, version);
             if (schema == null) {
                 return null;
             }
-            CacheElement<EntitySchema> e = new CacheElement<>(schema);
-            schemaCache.put(key, e);
+            if (schema.getSchema() == null) {
+                Schema avs = new Schema.Parser().parse(schema.getSchemaStr());
+                schema.setSchema(avs);
+            }
+            schemaCache.addSchema(entity, schema);
         }
         if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
             throw new InvalidDataError(EntitySchema.class,
@@ -321,6 +319,10 @@ public abstract class SchemaManager implements Closeable {
         EntitySchema schema = handler.fetchSchema(entity, uri);
         if (schema == null) {
             return null;
+        }
+        if (schema.getSchema() == null) {
+            Schema avs = new Schema.Parser().parse(schema.getSchemaStr());
+            schema.setSchema(avs);
         }
         if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
             throw new InvalidDataError(EntitySchema.class,
@@ -347,11 +349,7 @@ public abstract class SchemaManager implements Closeable {
             schema.setVersion(new SchemaVersion());
 
             schema = handler.saveSchema(schema);
-            synchronized (this) {
-                CacheElement<EntitySchema> e = new CacheElement<>(schema);
-                String key = handler.schemaCacheKey(entity, schema.getVersion());
-                schemaCache.put(key, e);
-            }
+            schemaCache.addSchema(entity, schema);
             return (T) schema;
         } finally {
             schemaLock.unlock();
@@ -371,11 +369,7 @@ public abstract class SchemaManager implements Closeable {
             }
 
             schema = (T) handler.saveSchema(schema);
-            synchronized (this) {
-                CacheElement<EntitySchema> e = new CacheElement<>(schema);
-                String key = handler.schemaCacheKey(entity, schema.getVersion());
-                schemaCache.put(key, e);
-            }
+            schemaCache.addSchema(entity, schema);
             return (T) schema;
         } finally {
             schemaLock.unlock();
@@ -388,21 +382,15 @@ public abstract class SchemaManager implements Closeable {
         schemaLock.lock();
         try {
             EntitySchema current = getSchema(schema.getSchemaEntity(), schema.getVersion(), schema.getClass());
-            if (current == null) {
-                throw new Exception(
-                        String.format("Schema not found. [entity=%s]",
-                                schema.getSchemaEntity().toString()));
+            if (current != null) {
+                if (current.getUpdatedTime() > schema.getUpdatedTime()) {
+                    throw new StaleDataError(String.format("Schema instance is stale. [entity=%s]",
+                            schema.getSchemaEntity().toString()));
+                }
             }
-            if (current.getUpdatedTime() > schema.getUpdatedTime()) {
-                throw new StaleDataError(String.format("Schema instance is stale. [entity=%s]",
-                        schema.getSchemaEntity().toString()));
-            }
+
             schema = (T) handler.saveSchema(schema);
-            synchronized (this) {
-                CacheElement<EntitySchema> e = new CacheElement<>(schema);
-                String key = handler.schemaCacheKey(schema.getSchemaEntity());
-                schemaCache.put(key, e);
-            }
+            schemaCache.addSchema(schema.getSchemaEntity(), schema);
             return schema;
         } finally {
             schemaLock.unlock();
@@ -423,8 +411,7 @@ public abstract class SchemaManager implements Closeable {
         Preconditions.checkState(state.isAvailable());
         schemaLock.lock();
         try {
-            String key = handler.schemaCacheKey(entity, version);
-            schemaCache.remove(key);
+            schemaCache.removeSchema(entity, version);
             return handler.deleteSchema(entity, version);
         } finally {
             schemaLock.unlock();
@@ -458,19 +445,4 @@ public abstract class SchemaManager implements Closeable {
     }
 
     protected abstract void init(@NonNull SchemaManagerSettings settings) throws ConfigurationException;
-
-    public static class CacheElement<T> {
-        private final T element;
-        private final long timestamp;
-
-        public CacheElement(@NonNull T element) {
-            this.element = element;
-            timestamp = System.currentTimeMillis();
-        }
-
-        public boolean expired(long timeout) {
-            long delta = System.currentTimeMillis() - timestamp;
-            return (delta > timeout);
-        }
-    }
 }

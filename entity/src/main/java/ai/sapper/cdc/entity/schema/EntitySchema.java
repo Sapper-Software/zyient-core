@@ -72,7 +72,6 @@ public abstract class EntitySchema {
     private String namespace;
     private String name;
     private long updatedTime;
-    private String zkPath;
     private DataType<?> recordType;
     private Map<String, RecordSchemaField> recordTypes = new LinkedHashMap<>();
     private Map<String, SchemaField> fields;
@@ -93,7 +92,6 @@ public abstract class EntitySchema {
         this.namespace = source.namespace;
         this.name = source.name;
         this.updatedTime = source.updatedTime;
-        this.zkPath = source.zkPath;
         this.recordType = source.recordType;
         this.recordTypes = source.recordTypes;
         this.mapper = source.mapper;

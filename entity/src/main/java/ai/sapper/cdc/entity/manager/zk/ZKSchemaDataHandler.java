@@ -226,6 +226,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         if (client.checkExists().forPath(zp) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(zp);
         }
+        schema.setUri(zp);
         client.setData().forPath(zp, JSONUtils.asBytes(ze, ze.getClass()));
         return schema;
     }
@@ -283,7 +284,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
     }
 
     @Override
-    protected String schemaCacheKey(@NonNull SchemaEntity entity,
+    protected SchemaVersion parseVersion(@NonNull SchemaEntity entity,
                                     @NonNull String uri) throws Exception {
         SchemaVersion version = null;
         Pattern p = Pattern.compile(REGEX_PATH_VERSION);
@@ -300,7 +301,7 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         if (version == null) {
             throw new Exception(String.format("Failed to extract schema version. [URI=%s]", uri));
         }
-        return schemaCacheKey(entity, version);
+        return version;
     }
 
     @Override

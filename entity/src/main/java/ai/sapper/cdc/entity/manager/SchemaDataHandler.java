@@ -69,17 +69,6 @@ public abstract class SchemaDataHandler implements Closeable {
         }
     }
 
-
-    protected String schemaCacheKey(SchemaEntity entity) {
-        return String.format("%s::%s", entity.getDomain(), entity.getEntity());
-    }
-
-    protected String schemaCacheKey(SchemaEntity entity, SchemaVersion version) {
-        return String.format("%s::%s::%d.%d",
-                entity.getDomain(), entity.getEntity(),
-                version.getMajorVersion(), version.getMinorVersion());
-    }
-
     public abstract void init(@NonNull SchemaDataHandlerSettings settings) throws Exception;
 
 
@@ -112,7 +101,8 @@ public abstract class SchemaDataHandler implements Closeable {
 
     protected abstract List<Domain> listDomains() throws Exception;
 
-    protected abstract String schemaCacheKey(@NonNull SchemaEntity entity,
-                                             @NonNull String uri) throws Exception;
+    protected abstract SchemaVersion parseVersion(@NonNull SchemaEntity entity,
+                                                  @NonNull String uri) throws Exception;
+
     public abstract DistributedLock schemaLock(@NonNull SchemaEntity entity) throws Exception;
 }
