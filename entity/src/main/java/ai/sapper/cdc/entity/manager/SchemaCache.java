@@ -85,7 +85,10 @@ public class SchemaCache {
     }
 
     public EntitySchema get(@NonNull SchemaEntity entity,
-                            @NonNull SchemaVersion version) {
+                            SchemaVersion version) {
+        if (version == null) {
+            return get(entity);
+        }
         String key = schemaCacheKey(entity, version);
         if (schemaCache.containsKey(key)) {
             Optional<Expireable<EntitySchema>> o = schemaCache.get(key);
