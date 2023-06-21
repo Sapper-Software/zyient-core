@@ -128,8 +128,8 @@ public abstract class BaseStateManager implements Closeable {
     protected void init(@NonNull BaseEnv<?> env,
                         @NonNull ConfigReader reader) throws Exception {
         reader.read();
-        init(env, (BaseStateManagerSettings) reader.settings());
         config = reader.config();
+        init(env, (BaseStateManagerSettings) reader.settings());
     }
 
     protected void init(@NonNull BaseEnv<?> env,
@@ -220,6 +220,7 @@ public abstract class BaseStateManager implements Closeable {
                     OffsetStateManager<?> manager = cls
                             .getDeclaredConstructor()
                             .newInstance()
+                            .withStateManager(this)
                             .init(node, env);
                     offsetManagers.put(manager.name(), manager);
                     DefaultLogger.info(String.format("[Offset Manager] Read from file: [type=%s][name=%s]",
@@ -248,6 +249,7 @@ public abstract class BaseStateManager implements Closeable {
                     OffsetStateManager<?> manager = os.getType()
                             .getDeclaredConstructor()
                             .newInstance()
+                            .withStateManager(this)
                             .init(os, env);
                     offsetManagers.put(manager.name(), manager);
                     DefaultLogger.info(String.format("[Offset Manager] Read from ZooKeeper: [type=%s][name=%s]",
@@ -320,14 +322,18 @@ public abstract class BaseStateManager implements Closeable {
                 .build();
     }
 
-    public <T extends Offset> T readOffset(@NonNull String name,
-                                           @NonNull Class<? extends T> type) throws StateManagerError {
-        checkState();
+    public String getOffsetPath(@NonNull String name) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        String path = new PathUtils.ZkPathBuilder(zkModulePath)
+        return new PathUtils.ZkPathBuilder(zkModulePath)
                 .withPath(Constants.ZK_PATH_SHARED_OFFSETS)
                 .withPath(name)
                 .build();
+    }
+
+    public <T extends Offset> T readOffset(@NonNull String name,
+                                           @NonNull Class<? extends T> type) throws StateManagerError {
+        checkState();
+        String path = getOffsetPath(name);
         try {
             CuratorFramework client = connection.client();
             return JSONUtils.read(client, path, type);
@@ -383,10 +389,7 @@ public abstract class BaseStateManager implements Closeable {
 
     private <T extends Offset> T saveOffset(@NonNull String name,
                                             @NonNull T offset) throws Exception {
-        String path = new PathUtils.ZkPathBuilder(zkModulePath)
-                .withPath(Constants.ZK_PATH_SHARED_OFFSETS)
-                .withPath(name)
-                .build();
+        String path = getOffsetPath(name);
         CuratorFramework client = connection.client();
         if (client.checkExists().forPath(path) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(path);

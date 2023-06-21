@@ -64,7 +64,7 @@ public abstract class OffsetStateManagerSettings extends Settings {
     private String name;
     @Config(name = Constants.CONFIG_TYPE, type = Class.class)
     private Class<? extends OffsetStateManager<?>> type;
-    @Config(name = Constants.CONFIG_ZK_BASE)
+    @Config(name = Constants.CONFIG_ZK_BASE, required = false)
     private String basePath;
     @Config(name = Constants.CONFIG_ZK_CONNECTION)
     private String zkConnection;

@@ -31,11 +31,13 @@ import lombok.Setter;
  *     <processor>
  *         <name>[Processor Name]</name>
  *         <type>[Processor Class]</type>
- *         <builder>
- *             <type>[Message Builder class]</type>
- *             <settingsType>[Message Builder Settings class]</settingsType>
- *             <queue>[Queue Configuration]</queue>
- *         </builder>
+ *         <queue>
+ *              <builder>
+ *                  <type>[Message Builder class]</type>
+ *                  <settingsType>[Message Builder Settings class]</settingsType>
+ *                  <queue>[Queue Configuration]</queue>
+ *              </builder>
+ *         </queue>
  *         <errors>
  *             <builder>
  *                <type>[Message Builder class]</type>

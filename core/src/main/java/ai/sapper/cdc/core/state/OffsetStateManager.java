@@ -24,6 +24,7 @@ import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.processing.ProcessorState;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -42,6 +43,12 @@ public abstract class OffsetStateManager<T extends Offset> {
     private BaseEnv<?> env;
     @Getter(AccessLevel.NONE)
     protected DistributedLock stateLock;
+    protected BaseStateManager stateManager;
+
+    public OffsetStateManager<T> withStateManager(@NonNull BaseStateManager stateManager) {
+        this.stateManager = stateManager;
+        return this;
+    }
 
     public abstract OffsetStateManager<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                                @NonNull BaseEnv<?> env) throws StateManagerError;
@@ -64,7 +71,9 @@ public abstract class OffsetStateManager<T extends Offset> {
 
     protected void setup(@NonNull OffsetStateManagerSettings settings,
                          @NonNull BaseEnv<?> env) throws Exception {
+        Preconditions.checkNotNull(stateManager);
         this.settings = settings;
+        this.env = env;
 
         connection = env.connectionManager().getConnection(settings.getZkConnection(), ZookeeperConnection.class);
         if (connection == null) {
@@ -73,16 +82,19 @@ public abstract class OffsetStateManager<T extends Offset> {
         if (!connection.isConnected()) {
             connection.connect();
         }
-        zkPath = new PathUtils.ZkPathBuilder(settings.getBasePath())
-                .withPath(settings.getName())
-                .build();
+        if (Strings.isNullOrEmpty(settings.getBasePath())) {
+            zkPath = stateManager.getOffsetPath(settings().getName());
+        } else {
+            zkPath = stateManager.getOffsetPath(String.format("%s/%s", settings.getBasePath(), settings.getName()));
+        }
         CuratorFramework client = connection.client();
         if (client.checkExists().forPath(zkPath) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(zkPath);
         }
 
         stateLock = getStateLock(client);
-        this.env = env;
+
+        state.setState(ProcessorState.EProcessorState.Running);
     }
 
     private DistributedLock getStateLock(@NonNull CuratorFramework client) throws Exception {
