@@ -17,7 +17,6 @@
 package ai.sapper.cdc.entity.manager;
 
 import ai.sapper.cdc.common.cache.Expireable;
-import ai.sapper.cdc.common.cache.LRUCache;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.InvalidDataError;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
@@ -39,7 +38,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Getter
 @Accessors(fluent = true)

@@ -163,8 +163,10 @@ public class FileSystemManager {
             throw new Exception(String.format("File System configuration not found. [name=%s]", __CONFIG_PATH_DEF));
         }
         String name = node.getString(FileSystemSettings.Constants.CONFIG_NAME);
+        ConfigReader.checkStringValue(name, getClass(), FileSystemSettings.Constants.CONFIG_NAME);
         if (!fileSystems.containsKey(name)) {
             String type = node.getString(FileSystemSettings.Constants.CONFIG_FS_CLASS);
+            ConfigReader.checkStringValue(type, getClass(), FileSystemSettings.Constants.CONFIG_FS_CLASS);
             Class<? extends FileSystem> cls = (Class<? extends FileSystem>) Class.forName(type);
             FileSystem fs = cls.getDeclaredConstructor().newInstance();
             fs.init(node, env);

@@ -18,7 +18,6 @@ package ai.sapper.cdc.core;
 
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
-import ai.sapper.cdc.core.connections.ConnectionManager;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.model.LockDef;
 import com.google.common.base.Preconditions;

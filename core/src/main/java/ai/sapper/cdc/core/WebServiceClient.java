@@ -310,7 +310,7 @@ public class WebServiceClient {
         private String name;
         @Config(name = Constants.CONFIG_CONNECTION)
         private String connection;
-        @Config(name = Constants.CONFIG_PATH_MAP)
+        @Config(name = Constants.CONFIG_PATH_MAP, type = Map.class)
         private Map<String, String> pathMap;
         @Config(name = Constants.CONFIG_RETRIES, required = false, type = Integer.class)
         private int retryCount = 0;

@@ -60,8 +60,8 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
         checkAgentState(processingStateType);
     }
 
-    protected ProcessingState<E, T> initState(@NonNull Class<? extends ProcessingState<E, T>> type,
-                                              T txId) throws Exception {
+    public ProcessingState<E, T> initState(@NonNull Class<? extends ProcessingState<E, T>> type,
+                                           T txId) throws Exception {
         CuratorFramework client = connection().client();
 
         if (client.checkExists().forPath(zkAgentStatePath()) == null) {
