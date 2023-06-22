@@ -45,34 +45,7 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
     public void checkAgentState(@NonNull Class<? extends ProcessingState<E, T>> type) throws Exception {
         stateLock();
         try {
-            CuratorFramework client = connection().client();
-
-            if (client.checkExists().forPath(zkAgentStatePath()) == null) {
-                String path = client.create().creatingParentContainersIfNeeded().forPath(zkAgentStatePath());
-                if (Strings.isNullOrEmpty(path)) {
-                    throw new StateManagerError(String.format("Error creating ZK base path. [path=%s]", basePath()));
-                }
-                processingState = processingStateType.getDeclaredConstructor().newInstance();
-                processingState.setType(type.getCanonicalName());
-                processingState.setNamespace(moduleInstance().getModule());
-                processingState.setName(moduleInstance().getName());
-                processingState.setTimeCreated(System.currentTimeMillis());
-                processingState.setTimeUpdated(processingState().getTimeCreated());
-
-                client.setData().forPath(zkAgentStatePath(),
-                        JSONUtils.asBytes(processingState, processingState.getClass()));
-            } else {
-                processingState = readState(type);
-            }
-            processingState.setInstance(moduleInstance());
-            processingState = update(processingState);
-            zkSequencePath = new PathUtils.ZkPathBuilder(zkAgentPath())
-                    .withPath(__ZK_PATH_SEQUENCE)
-                    .build();
-            if (client.checkExists().forPath(zkSequencePath) == null) {
-                client.create().forPath(zkSequencePath);
-                JSONUtils.write(client, zkSequencePath, new OffsetSequence());
-            }
+            processingState = initState(type, null);
         } finally {
             stateUnlock();
         }
@@ -87,25 +60,42 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
         checkAgentState(processingStateType);
     }
 
-    public ProcessingState<E, T> initState(T txId) throws StateManagerError {
-        checkState();
-        Preconditions.checkNotNull(processingState);
-        if (processingState.compareTx(txId) >= 0) return processingState;
+    protected ProcessingState<E, T> initState(@NonNull Class<? extends ProcessingState<E, T>> type,
+                                              T txId) throws Exception {
+        CuratorFramework client = connection().client();
 
-        try {
-            stateLock();
-            try {
-                processingState = readState(processingStateType);
-                processingState.setOffset(txId);
-                processingState.setTimeUpdated(System.currentTimeMillis());
-
-                return update(processingState);
-            } finally {
-                stateUnlock();
+        if (client.checkExists().forPath(zkAgentStatePath()) == null) {
+            String path = client.create().creatingParentContainersIfNeeded().forPath(zkAgentStatePath());
+            if (Strings.isNullOrEmpty(path)) {
+                throw new StateManagerError(String.format("Error creating ZK base path. [path=%s]", basePath()));
             }
-        } catch (Exception ex) {
-            throw new StateManagerError(ex);
+            processingState = processingStateType.getDeclaredConstructor().newInstance();
+            processingState.setType(type.getCanonicalName());
+            processingState.setNamespace(moduleInstance().getModule());
+            processingState.setName(moduleInstance().getName());
+            processingState.setTimeCreated(System.currentTimeMillis());
+            processingState.setTimeUpdated(processingState().getTimeCreated());
+            processingState.setOffset(txId);
+            client.setData().forPath(zkAgentStatePath(),
+                    JSONUtils.asBytes(processingState, processingState.getClass()));
+        } else {
+            processingState = readState(type);
+            if (txId != null) {
+                processingState.setOffset(txId);
+                client.setData().forPath(zkAgentStatePath(),
+                        JSONUtils.asBytes(processingState, processingState.getClass()));
+            }
         }
+        processingState.setInstance(moduleInstance());
+        processingState = update(processingState);
+        zkSequencePath = new PathUtils.ZkPathBuilder(zkAgentPath())
+                .withPath(__ZK_PATH_SEQUENCE)
+                .build();
+        if (client.checkExists().forPath(zkSequencePath) == null) {
+            client.create().forPath(zkSequencePath);
+            JSONUtils.write(client, zkSequencePath, new OffsetSequence());
+        }
+        return processingState;
     }
 
     @SuppressWarnings("unchecked")

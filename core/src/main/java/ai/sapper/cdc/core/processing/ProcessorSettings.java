@@ -38,8 +38,4 @@ import lombok.Setter;
 public class ProcessorSettings extends Settings {
     public static final String __CONFIG_PATH = "processor";
 
-    @Config(name = "name")
-    private String name;
-    @Config(name = "type", type = Class.class)
-    private Class<? extends Processor<?, ?>> processorType;
 }

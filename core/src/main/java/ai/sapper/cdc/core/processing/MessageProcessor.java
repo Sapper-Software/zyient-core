@@ -55,7 +55,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
     @Override
     @SuppressWarnings("unchecked")
-    public Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+    public Processor<E, O> init(@NonNull String name,
+                                @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 String path) throws ConfigurationException {
         HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
         if (!Strings.isNullOrEmpty(path)) {
@@ -68,7 +69,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         receiverConfig.read();
         try {
             MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
-            super.init(settings);
+            super.init(settings, name);
             __lock().lock();
             try {
                 HierarchicalConfiguration<ImmutableNode> qConfig = receiverConfig
@@ -152,7 +153,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     MO pOffset = processorState.getMessageOffset();
                     OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
                     MO rOffset = offsetState.getOffset();
-                    if (pOffset.compareTo(rOffset) != 0) {
+                    if (pOffset != null && pOffset.compareTo(rOffset) != 0) {
                         receiver.seek(pOffset, null);
                     }
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
@@ -191,7 +192,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     Thread.sleep(settings.getReceiveBatchTimeout());
                 } catch (InterruptedException e) {
                     LOG.info(String.format("[%s] Thread interrupted. [%s]",
-                            settings.getName(), e.getLocalizedMessage()));
+                            name(), e.getLocalizedMessage()));
                 }
             }
         }

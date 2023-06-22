@@ -62,13 +62,14 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         this.LOG = LoggerFactory.getLogger(getClass());
     }
 
-    protected void init(@NonNull ProcessorSettings settings) throws Exception {
+    protected void init(@NonNull ProcessorSettings settings,
+                        @NonNull String name) throws Exception {
         this.settings = settings;
-        this.name = settings.getName();
+        this.name = name;
         String lockPath = new PathUtils.ZkPathBuilder(String.format("processors/%s/%s/%s",
                 env.moduleInstance().getModule(),
                 env.moduleInstance().getName(),
-                settings.getName()))
+                name))
                 .build();
         __lock = env.createLock(lockPath);
         __lock.lock();
@@ -81,11 +82,13 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         }
     }
 
-    public abstract Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+    public abstract Processor<E, O> init(@NonNull String name,
+                                         @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                          String path) throws ConfigurationException;
 
-    public Processor<E, O> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        return init(xmlConfig, null);
+    public Processor<E, O> init(@NonNull String name,
+                                @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        return init(name, xmlConfig, null);
     }
 
     protected abstract void initState(@NonNull ProcessingState<E, O> processingState) throws Exception;

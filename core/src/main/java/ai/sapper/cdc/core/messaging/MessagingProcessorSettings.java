@@ -58,8 +58,8 @@ public class MessagingProcessorSettings extends ProcessorSettings {
         public static final String __CONFIG_PATH_RECEIVER = "queue";
         public static final String __CONFIG_PATH_ERRORS = "errors";
 
-        public static final String CONFIG_BUILDER_TYPE = "builder.type";
-        public static final String CONFIG_MESSAGING_SETTINGS_TYPE = "builder.settingsType";
+        public static final String CONFIG_BUILDER_TYPE = "queue.builder.type";
+        public static final String CONFIG_MESSAGING_SETTINGS_TYPE = "queue.builder.settingsType";
         public static final String CONFIG_ERRORS_BUILDER_TYPE = "errors.builder.type";
         public static final String CONFIG_ERRORS_MESSAGING_SETTINGS_TYPE = "errors.builder.settingsType";
         public static final String CONFIG_BATCH_RECEIVE_TIMEOUT = "readBatchTimeout";
