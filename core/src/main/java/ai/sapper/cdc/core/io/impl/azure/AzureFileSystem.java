@@ -361,9 +361,17 @@ public class AzureFileSystem extends RemoteFileSystem {
     public long size(@NonNull PathInfo path) throws IOException {
         if (path instanceof AzurePathInfo) {
             AzurePathInfo ap = (AzurePathInfo) path;
-            BlobClient c = client.getContainer(ap.container()).getBlobClient(ap.path());
-            if (c != null && c.exists())
+            String name = path.path();
+            AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+            if (!settings.isUseHierarchical()) {
+                name = getBlobName(ap);
+            }
+            BlobClient c = client.getContainer(ap.container()).getBlobClient(name);
+            if (c.exists())
                 return c.getProperties().getBlobSize();
+            else  {
+                throw new IOException(String.format("File not found. [path=%s]", path.pathConfig()));
+            }
         }
         throw new IOException(String.format("Invalid Path handle. [type=%s]", path.getClass().getCanonicalName()));
     }

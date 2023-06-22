@@ -23,6 +23,8 @@
         <source>demo</source>
         <paths>
             <connections>config</connections>
+            <registry>/test/cdc-core/registry</registry>
+            <root>/test/cdc-core</root>
         </paths>
         <demo>
         </demo>
@@ -71,10 +73,9 @@
             <connections>
                 <shared>
                     <connection>test-zk</connection>
-                    <path>/test/env/connections</path>
                 </shared>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.ZookeeperConnection</type>
+                    <class>ai.sapper.cdc.core.connections.ZookeeperConnection</class>
                     <zookeeper>
                         <name>test-zk</name>
                         <connectionString>192.168.2.16:2181</connectionString>
@@ -86,7 +87,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.WebServiceConnection</type>
+                    <class>ai.sapper.cdc.core.connections.WebServiceConnection</class>
                     <rest>
                         <name>test-ws</name>
                         <endpoint>https://howtodoinjava.com/</endpoint>
