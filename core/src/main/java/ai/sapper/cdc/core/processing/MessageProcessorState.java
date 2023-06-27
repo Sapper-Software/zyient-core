@@ -27,12 +27,13 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class MessageProcessorState<E extends Enum<?>, O extends Offset, M extends ReceiverOffset> extends ProcessingState<E, O> {
+public abstract class MessageProcessorState<E extends Enum<?>, O extends Offset, M extends ReceiverOffset> extends ProcessingState<E, O> {
     private M messageOffset;
 
     public MessageProcessorState(@NonNull E errorState,
-                                 @NonNull E initState) {
-        super(errorState, initState);
+                                 @NonNull E initState,
+                                 @NonNull String type) {
+        super(errorState, initState, type);
     }
 
     public MessageProcessorState(@NonNull MessageProcessorState<E, O, M> state) {

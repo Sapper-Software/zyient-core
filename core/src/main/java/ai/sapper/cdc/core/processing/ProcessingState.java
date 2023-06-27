@@ -34,12 +34,13 @@ public abstract class ProcessingState<E extends Enum<?>, O extends Offset> exten
     private String namespace;
 
     public ProcessingState(@NonNull E errorState,
-                           @NonNull E initState) {
-        super(errorState, initState);
+                           @NonNull E initState,
+                           @NonNull String type) {
+        super(errorState, initState, type);
     }
 
     public ProcessingState(@NonNull ProcessingState<E, O> state) {
-        super(state.getErrorState(), state.getInitState());
+        super(state.getErrorState(), state.getInitState(), state.getType());
         this.instance = state.instance;
         this.namespace = state.namespace;
     }

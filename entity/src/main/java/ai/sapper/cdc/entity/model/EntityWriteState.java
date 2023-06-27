@@ -28,10 +28,15 @@ import lombok.Setter;
         property = "@class"
 )
 public class EntityWriteState<T extends TransactionId> extends EntityReadState<T> {
+    public static final String OFFSET_TYPE = "entity/write";
+
     private T committedTxId;
     private String currentEditsPath;
     private String editsBasePath;
     private boolean snapshotCommitted = false;
     private long committedEventCount = 0;
 
+    public EntityWriteState() {
+        super(OFFSET_TYPE);
+    }
 }

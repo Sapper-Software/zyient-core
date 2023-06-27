@@ -19,6 +19,7 @@ package ai.sapper.cdc.entity.model;
 import ai.sapper.cdc.core.state.OffsetState;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -29,6 +30,8 @@ import lombok.Setter;
         property = "@class"
 )
 public class EntityReadState<T extends TransactionId> extends OffsetState<EEntityState, T> {
+    public static final String OFFSET_TYPE = "entity/read";
+
     private String domain;
     private String entity;
     private T processedTxId;
@@ -40,7 +43,11 @@ public class EntityReadState<T extends TransactionId> extends OffsetState<EEntit
     private long editsEventCount = 0;
 
     public EntityReadState() {
-        super(EEntityState.ERROR, EEntityState.UNKNOWN);
+        super(EEntityState.ERROR, EEntityState.UNKNOWN, OFFSET_TYPE);
+    }
+
+    public EntityReadState(@NonNull String type) {
+        super(EEntityState.ERROR, EEntityState.UNKNOWN, type);
     }
 
     public boolean canProcess() {

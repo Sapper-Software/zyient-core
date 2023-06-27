@@ -30,7 +30,7 @@ import lombok.Setter;
 public class KafkaMessageProcessingState<E extends Enum<?>, O extends Offset> extends MessageProcessorState<E, O, KafkaOffset> {
     public KafkaMessageProcessingState(@NonNull E errorState,
                                        @NonNull E initState) {
-        super(errorState, initState);
+        super(errorState, initState, KafkaConsumerState.OFFSET_TYPE);
     }
 
     public KafkaMessageProcessingState(@NonNull MessageProcessorState<E, O, KafkaOffset> state) {

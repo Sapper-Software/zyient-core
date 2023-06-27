@@ -37,7 +37,9 @@ public abstract class OffsetState<T extends Enum<?>, O extends Offset> extends A
     private ModuleInstance lastUpdatedBy;
 
     public OffsetState(@NonNull T errorState,
-                       @NonNull T initState) {
+                       @NonNull T initState,
+                       @NonNull String type) {
         super(errorState, initState);
+        this.type = type;
     }
 }
