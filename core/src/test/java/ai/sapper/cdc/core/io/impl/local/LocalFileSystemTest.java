@@ -77,6 +77,9 @@ class LocalFileSystemTest {
             assertNotNull(cdi);
             DefaultLogger.info(String.format("Created directory. [path=%s]", cdi.getAbsolutePath()));
             d = new File(cdi.getAbsolutePath());
+            String cdir = String.format("%s/", cdi.getFsPath());
+            cdi = (DirectoryInode) fs.getInode(cdi.getDomain(), cdir);
+            assertNotNull(cdi);
             assertTrue(d.exists() && d.isDirectory());
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -94,11 +97,14 @@ class LocalFileSystemTest {
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
             File d = new File(di.getAbsolutePath());
             assertTrue(d.exists() && d.isDirectory());
-            FileInode fi = fs.create(di, String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            String name = String.format("test/%s.tmp", UUID.randomUUID().toString());
+            FileInode fi = fs.create(di, name);
             assertNotNull(fi);
             DefaultLogger.info(String.format("Created directory. [path=%s]", fi.getAbsolutePath()));
             d = new File(fi.getAbsolutePath());
             assertTrue(d.exists() && d.isFile());
+            fi = (FileInode) fs.getInode(di.getDomain(), fi.getFsPath());
+            assertNotNull(fi);
 
             assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {

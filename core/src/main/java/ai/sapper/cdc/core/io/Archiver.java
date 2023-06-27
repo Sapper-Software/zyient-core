@@ -139,7 +139,7 @@ public abstract class Archiver implements Closeable {
             }
         } else {
             client.create().creatingParentContainersIfNeeded().forPath(path);
-            DirectoryInode di = new DirectoryInode(container.getDomain(), "root");
+            DirectoryInode di = new DirectoryInode(container.getDomain(), "/", "root");
             di.setParent(null);
             di.setPath(container.pathInfo(this).pathConfig());
             di.setUuid(UUID.randomUUID().toString());

@@ -126,7 +126,7 @@ public class PathUtils {
         public static String formatZkPath(@NonNull String path) {
             path = path.replaceAll("/\\s*/", "/");
             if (path.endsWith("/")) {
-                path = path.substring(0, path.length() - 2);
+                path = path.substring(0, path.length() - 1);
             }
             return path;
         }

@@ -33,6 +33,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Getter
 @Accessors(fluent = true)
@@ -150,12 +153,19 @@ public class LocalWriter extends Writer {
     @Override
     public void commit(boolean clearLock) throws IOException {
         try {
+            Path tp = Paths.get(temp.toURI());
+            if (Files.size(tp) <= 0) {
+                return;
+            }
             File toUpload = null;
             if (inode.isCompressed()) {
                 toUpload = fs.compress(temp);
             } else {
                 toUpload = fs.createTmpFile();
                 FileUtils.copyFile(temp, toUpload);
+            }
+            if (toUpload == null) {
+                throw new IOException(String.format("Failed to generate upload file. [path=%s]", path.pathConfig()));
             }
             if (path.exists()) {
                 if (!path.file.delete()) {

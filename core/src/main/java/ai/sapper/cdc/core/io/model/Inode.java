@@ -30,6 +30,7 @@ import java.util.UUID;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public abstract class Inode {
+    private String fsPath;
     private String uuid;
     private String domain;
     private Map<String, String> path;
@@ -52,11 +53,13 @@ public abstract class Inode {
 
     public Inode(@NonNull InodeType type,
                  @NonNull String domain,
+                 @NonNull String fsPath,
                  @NonNull String name) {
         uuid = UUID.randomUUID().toString();
         this.type = type;
         this.name = name;
         this.domain = domain;
+        this.fsPath = fsPath;
     }
 
     public void setParent(Inode parent) {

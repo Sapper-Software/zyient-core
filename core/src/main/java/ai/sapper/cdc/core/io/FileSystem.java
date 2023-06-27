@@ -223,7 +223,7 @@ public abstract class FileSystem implements Closeable {
             }
         } else {
             client.create().creatingParentContainersIfNeeded().forPath(path);
-            DirectoryInode di = new DirectoryInode(container.getDomain(), "root");
+            DirectoryInode di = new DirectoryInode(container.getDomain(), "/", "root");
             di.setParent(null);
             di.setPath(container.pathInfo(this).pathConfig());
             di.setUuid(UUID.randomUUID().toString());
@@ -385,8 +385,9 @@ public abstract class FileSystem implements Closeable {
                                 }
                             } else {
                                 client.create().forPath(zpath);
+                                String fsp = PathUtils.formatPath(String.format("%s/%s", parent.getFsPath(), parts[index]));
                                 PathInfo pi = parsePathInfo(parent, parts[index], InodeType.Directory);
-                                DirectoryInode di = new DirectoryInode(parent.getDomain(), parts[index]);
+                                DirectoryInode di = new DirectoryInode(parent.getDomain(), fsp, parts[index]);
                                 di.setParent(parent);
                                 di.setPath(pi.pathConfig());
                                 di.setAbsolutePath(pi.path());
@@ -403,7 +404,8 @@ public abstract class FileSystem implements Closeable {
                         } else {
                             client.create().forPath(zpath);
                             PathInfo pi = parsePathInfo(parent, parts[index], InodeType.File);
-                            FileInode fi = new FileInode(parent.getDomain(), parts[index]);
+                            String fsp = PathUtils.formatPath(String.format("%s/%s", parent.getFsPath(), parts[index]));
+                            FileInode fi = new FileInode(parent.getDomain(), fsp, parts[index]);
                             fi.setParent(parent);
                             fi.setPath(pi.pathConfig());
                             fi.setAbsolutePath(pi.path());
@@ -437,7 +439,8 @@ public abstract class FileSystem implements Closeable {
                         try {
                             client.create().forPath(zpath);
                             PathInfo pi = parsePathInfo(parent, parts[index], InodeType.Directory);
-                            dnode = new DirectoryInode(parent.getDomain(), parts[index]);
+                            String fsp = PathUtils.formatPath(String.format("%s/%s", parent.getFsPath(), parts[index]));
+                            dnode = new DirectoryInode(parent.getDomain(), fsp, parts[index]);
                             dnode.setParent(parent);
                             dnode.setPath(pi.pathConfig());
                             dnode.setAbsolutePath(pi.path());
@@ -475,7 +478,10 @@ public abstract class FileSystem implements Closeable {
             String zpath = getInodeZkPath(dnode, path);
             CuratorFramework client = zkConnection.client();
             if (client.checkExists().forPath(zpath) != null) {
+                DefaultLogger.trace(String.format("Path found. [domain=%s][path=%s]", domain, path));
                 return getInode(zpath, Inode.class, client);
+            } else {
+                DefaultLogger.trace(String.format("Path not found. [domain=%s][path=%s]", domain, path));
             }
             return null;
         } catch (Exception ex) {
