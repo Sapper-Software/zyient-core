@@ -140,7 +140,11 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
         String zp = path.build();
         CuratorFramework client = zkConnection().client();
         if (client.checkExists().forPath(zp) == null) {
-            client.create().forPath(zp);
+            Domain d = fetchDomain(entity.getDomain());
+            if (d == null) {
+                throw new Exception(String.format("Domain not found. [domain=%s]", entity.getDomain()));
+            }
+            client.create().creatingParentContainersIfNeeded().forPath(zp);
         }
         entity.setUpdatedTime(System.currentTimeMillis());
         ZkSchemaEntity ze = new ZkSchemaEntity();
