@@ -201,7 +201,21 @@ public class ZKSchemaDataHandler extends SchemaDataHandler {
                                        @NonNull String uri) throws Exception {
         Preconditions.checkNotNull(zkConnection);
         CuratorFramework client = zkConnection().client();
-        return JSONUtils.read(client, uri, EntitySchema.class);
+        ZkEntitySchema ze = JSONUtils.read(client, uri, ZkEntitySchema.class);
+        if (ze != null) {
+            SchemaEntity se = entity;
+            if (!Strings.isNullOrEmpty(ze.getZkEntityPath())) {
+                ZkSchemaEntity zse = JSONUtils.read(client, ze.getZkEntityPath(), ZkSchemaEntity.class);
+                if (zse == null) {
+                    throw new Exception(
+                            String.format("[zookeeper] Entity not found. [entity=%s]", ze.getZkEntityPath()));
+                }
+                se = zse.getEntity();
+            }
+            ze.getSchema().setSchemaEntity(se);
+            return ze.getSchema();
+        }
+        return null;
     }
 
     @Override
