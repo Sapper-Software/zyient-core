@@ -1,12 +1,9 @@
-package ai.sapper.cdc.entity.executor;
+package ai.sapper.cdc.core.executor;
 
-import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.processing.ProcessorState;
-import ai.sapper.cdc.entity.model.TransactionId;
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -27,15 +24,15 @@ import java.util.concurrent.locks.ReentrantLock;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class Scheduler<T extends TransactionId> implements Closeable, Runnable, CompletionCallback<T> {
+public abstract class BaseScheduler<T> implements Closeable, Runnable, CompletionCallback<T> {
     private final ProcessorState state = new ProcessorState();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private ReentrantLock __lock = new ReentrantLock();
-    private final List<Task<T, ?, ?>> tasks = new ArrayList<>();
+    private final List<BaseTask<T>> tasks = new ArrayList<>();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    private final Queue<Task<T, ?, ?>> taskQueue = new LinkedBlockingQueue<>();
+    private final Queue<BaseTask<T>> taskQueue = new LinkedBlockingQueue<>();
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private final Queue<Future<?>> responseQueue = new LinkedBlockingQueue<>();
@@ -59,8 +56,8 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
     @Setter(AccessLevel.NONE)
     private ThreadGroup group;
 
-    public Scheduler<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                             @NonNull BaseEnv<?> env) throws ConfigurationException {
+    public BaseScheduler<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                 @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             this.env = env;
             ConfigReader reader = new ConfigReader(xmlConfig, SchedulerSettings.__CONFIG_PATH, SchedulerSettings.class);
@@ -91,7 +88,7 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
         state.setState(ProcessorState.EProcessorState.Running);
         __lock.lock();
         try {
-            for (Task<T, ?, ?> task : tasks) {
+            for (BaseTask<T> task : tasks) {
                 queue(task, ETaskState.WAITING);
             }
             group = new ThreadGroup("SCHEDULER");
@@ -158,7 +155,7 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
         }
     }
 
-    public void add(@NonNull Task<T, ?, ?> task) {
+    public void add(@NonNull BaseTask<T> task) {
         Preconditions.checkArgument(state.isInitialized() || state.isRunning());
         __lock.lock();
         try {
@@ -170,7 +167,7 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
         }
     }
 
-    private void queue(Task<T, ?, ?> task, ETaskState taskState) {
+    private void queue(BaseTask<T> task, ETaskState taskState) {
         if (!state.isRunning()) return;
         while (true) {
             task.state().setState(taskState);
@@ -196,7 +193,7 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
      * @param task
      */
     @Override
-    public void finished(@NonNull Task<T, ?, ?> task) {
+    public void finished(@NonNull BaseTask<T> task) {
         // DefaultLogger.LOGGER.debug(String.format("Finished task: [id=%s]", task.id()));
         queue(task, ETaskState.WAITING);
         notifyFinished();
@@ -207,7 +204,7 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
      * @param error
      */
     @Override
-    public void error(@NonNull Task<T, ?, ?> task, @NonNull Throwable error) {
+    public void error(@NonNull BaseTask<T> task, @NonNull Throwable error) {
         //DefaultLogger.LOGGER.debug(String.format("Finished task with error: [id=%s]", task.id()));
         if (error instanceof FatalError) {
             try {
@@ -240,7 +237,7 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
             while (state.isRunning()) {
                 int size = maxExecutorQueueSize - executorService.getQueue().size();
                 while (size > 0) {
-                    Task<T, ?, ?> task = taskQueue.poll();
+                    BaseTask<T> task = taskQueue.poll();
                     if (task == null) break;
                     synchronized (taskQueue) {
                         taskQueue.notifyAll();
@@ -294,9 +291,9 @@ public abstract class Scheduler<T extends TransactionId> implements Closeable, R
         }
     }
 
-    public abstract boolean schedule(@NonNull Task<T, ?, ?> task);
+    public abstract boolean schedule(@NonNull BaseTask<T> task);
 
-    private boolean submit(Task<T, ?, ?> task) {
+    private boolean submit(BaseTask<T> task) {
         try {
             task.state().setState(ETaskState.QUEUED);
             Future<?> response = executorService.submit(task);

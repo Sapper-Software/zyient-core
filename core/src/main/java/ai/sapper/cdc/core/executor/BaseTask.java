@@ -1,48 +1,47 @@
-package ai.sapper.cdc.entity.executor;
+package ai.sapper.cdc.core.executor;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.core.messaging.MessageReceiver;
 import ai.sapper.cdc.core.state.BaseStateManager;
-import ai.sapper.cdc.entity.manager.SchemaManager;
-import ai.sapper.cdc.entity.model.EntityReadState;
-import ai.sapper.cdc.entity.model.TransactionId;
-import ai.sapper.cdc.entity.schema.SchemaEntity;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.Closeable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class Task<T extends TransactionId, I, M> implements Runnable, Closeable {
+public abstract class BaseTask<T> implements Runnable, Closeable {
     private final TaskState state = new TaskState();
 
+    private final String type;
     private final String id;
-    private final SchemaEntity entity;
+    private int shardId = 0;
     private TaskBatchResponse<T> response;
-    private EntityReadState<T> entityState;
-    private final MessageReceiver<I, M> receiver;
     private final BaseStateManager stateManager;
-    private final SchemaManager schemaManager;
-    private CompletionCallback<T> callback;
+    private final List<CompletionCallback<T>> callbacks = new ArrayList<>();
 
-    public Task(@NonNull SchemaEntity entity,
-                @NonNull MessageReceiver<I, M> receiver,
-                @NonNull BaseStateManager stateManager,
-                @NonNull SchemaManager schemaManager) {
-        this.entity = entity;
-        this.receiver = receiver;
+    public BaseTask(@NonNull BaseStateManager stateManager,
+                    @NonNull String type) {
         this.stateManager = stateManager;
-        this.schemaManager = schemaManager;
-        id = UUID.randomUUID().toString();
+        this.type = type;
+        id = String.format("%s::%s", type, UUID.randomUUID().toString());
     }
 
-    public Task<T, I, M> withCallback(@NonNull CompletionCallback<T> callback) {
-        this.callback = callback;
+    public BaseTask(@NonNull BaseStateManager stateManager,
+                    @NonNull String type,
+                    @NonNull String key) {
+        this.stateManager = stateManager;
+        this.type = type;
+        id = String.format("%s::%s::%s", type, key, UUID.randomUUID().toString());
+    }
+
+    public BaseTask<T> withCallback(@NonNull CompletionCallback<T> callback) {
+        callbacks.add(callback);
         return this;
     }
 
@@ -57,17 +56,18 @@ public abstract class Task<T extends TransactionId, I, M> implements Runnable, C
                 response = initResponse();
                 if (response == null) {
                     throw new FatalError(
-                            String.format("Failed to create response instance. [entity=%s]", entity.toString()));
+                            String.format("Failed to create response instance. [entity=%s]", id));
                 }
-                response.taskId(String.format("%s::%s", id, UUID.randomUUID().toString()));
-                if (callback == null) {
-                    throw new FatalError(String.format("Completion callback is null. [entity=%s]", entity.toString()));
+                response.taskId(id);
+                if (callbacks.isEmpty()) {
+                    throw new FatalError(String.format("Completion callback is null. [entity=%s]", id));
                 }
                 response.start();
                 try {
                     execute();
                     state.setState(ETaskState.DONE);
-                    callback.finished(this);
+                    for (CompletionCallback<T> callback : callbacks)
+                        callback.finished(this);
                 } finally {
                     response.close();
                 }
@@ -78,7 +78,8 @@ public abstract class Task<T extends TransactionId, I, M> implements Runnable, C
                     state.error(t);
                 DefaultLogger.stacktrace(t);
                 DefaultLogger.error(t.getLocalizedMessage());
-                callback.error(this, t);
+                for (CompletionCallback<T> callback : callbacks)
+                    callback.error(this, t);
             } finally {
                 notifyAll();
             }
