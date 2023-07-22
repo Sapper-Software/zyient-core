@@ -17,7 +17,6 @@
 package ai.sapper.cdc.core.executor;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.executor.SchedulerSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;

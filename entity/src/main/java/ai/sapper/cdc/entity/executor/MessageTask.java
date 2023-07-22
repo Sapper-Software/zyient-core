@@ -2,7 +2,6 @@ package ai.sapper.cdc.entity.executor;
 
 import ai.sapper.cdc.core.executor.BaseTask;
 import ai.sapper.cdc.core.executor.CompletionCallback;
-import ai.sapper.cdc.core.executor.TaskBatchResponse;
 import ai.sapper.cdc.core.executor.TaskState;
 import ai.sapper.cdc.core.messaging.MessageReceiver;
 import ai.sapper.cdc.core.state.BaseStateManager;
@@ -19,7 +18,7 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class MessageTask<T extends TransactionId, I, M> extends BaseTask<T> {
+public abstract class MessageTask<T extends TransactionId, I, M> extends EntityTask<T> {
     private final TaskState state = new TaskState();
 
     private final SchemaEntity entity;
@@ -32,7 +31,7 @@ public abstract class MessageTask<T extends TransactionId, I, M> extends BaseTas
                        @NonNull MessageReceiver<I, M> receiver,
                        @NonNull BaseStateManager stateManager,
                        @NonNull SchemaManager schemaManager) {
-        super(stateManager, type, entity.toString());
+        super(stateManager, schemaManager, type, entity);
         this.entity = entity;
         this.receiver = receiver;
         this.schemaManager = schemaManager;
@@ -42,7 +41,7 @@ public abstract class MessageTask<T extends TransactionId, I, M> extends BaseTas
                        @NonNull MessageReceiver<I, M> receiver,
                        @NonNull BaseStateManager stateManager,
                        @NonNull SchemaManager schemaManager) {
-        super(stateManager, entity.toString());
+        super(stateManager, schemaManager, entity);
         this.entity = entity;
         this.receiver = receiver;
         this.schemaManager = schemaManager;
@@ -53,8 +52,4 @@ public abstract class MessageTask<T extends TransactionId, I, M> extends BaseTas
         Preconditions.checkArgument(callback instanceof MessageCompletionCallback<?>);
         return super.withCallback(callback);
     }
-
-    public abstract TaskBatchResponse<T> initResponse();
-
-    public abstract void execute() throws Exception;
 }
