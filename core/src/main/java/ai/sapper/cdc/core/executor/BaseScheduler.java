@@ -193,7 +193,7 @@ public abstract class BaseScheduler<T> implements Closeable, Runnable, Completio
      * @param task
      */
     @Override
-    public void finished(@NonNull BaseTask<T> task) {
+    public void finished(@NonNull BaseTask<T> task, @NonNull TaskResponse<T> response) {
         // DefaultLogger.LOGGER.debug(String.format("Finished task: [id=%s]", task.id()));
         queue(task, ETaskState.WAITING);
         notifyFinished();
@@ -204,7 +204,7 @@ public abstract class BaseScheduler<T> implements Closeable, Runnable, Completio
      * @param error
      */
     @Override
-    public void error(@NonNull BaseTask<T> task, @NonNull Throwable error) {
+    public void error(@NonNull BaseTask<T> task, @NonNull Throwable error, TaskResponse<T> response) {
         //DefaultLogger.LOGGER.debug(String.format("Finished task with error: [id=%s]", task.id()));
         if (error instanceof FatalError) {
             try {

@@ -28,7 +28,7 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public class Timer implements Closeable {
     private final DistributionSummary summary;
-    private long startTime;
+    private final long startTime;
 
     public Timer(@NonNull DistributionSummary summary) {
         this.summary = summary;

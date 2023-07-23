@@ -18,7 +18,7 @@ package ai.sapper.cdc.core.messaging.kafka;
 
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.messaging.MessagingProcessorSettings;
-import ai.sapper.cdc.core.processing.MessageProcessor;
+import ai.sapper.cdc.core.processing.BatchMessageProcessor;
 import ai.sapper.cdc.core.processing.MessageProcessorMetrics;
 import ai.sapper.cdc.core.processing.ProcessingState;
 import ai.sapper.cdc.core.state.Offset;
@@ -28,19 +28,19 @@ import lombok.experimental.Accessors;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class KafkaMessageProcessor<E extends Enum<?>, O extends Offset, M>
-        extends MessageProcessor<String, M, E, O, KafkaOffset> {
+public abstract class KafkaBatchMessageProcessor<T, E extends Enum<?>, O extends Offset, M>
+        extends BatchMessageProcessor<T, String, M, E, O, KafkaOffset> {
 
-    protected KafkaMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull MessageProcessorMetrics metrics,
-                                    @NonNull Class<? extends ProcessingState<E, O>> stateType,
-                                    @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
+    protected KafkaBatchMessageProcessor(@NonNull BaseEnv<?> env,
+                                         @NonNull MessageProcessorMetrics metrics,
+                                         @NonNull Class<? extends ProcessingState<E, O>> stateType,
+                                         @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
         super(env, metrics, stateType, settingsType);
     }
 
-    protected KafkaMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull MessageProcessorMetrics metrics,
-                                    @NonNull Class<? extends ProcessingState<E, O>> stateType) {
+    protected KafkaBatchMessageProcessor(@NonNull BaseEnv<?> env,
+                                         @NonNull MessageProcessorMetrics metrics,
+                                         @NonNull Class<? extends ProcessingState<E, O>> stateType) {
         super(env, metrics, stateType);
     }
 }

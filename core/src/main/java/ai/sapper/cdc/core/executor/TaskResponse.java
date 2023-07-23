@@ -16,13 +16,39 @@
 
 package ai.sapper.cdc.core.executor;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class TaskBatchResponse<T> extends TaskResponse<T> {
-    private int batchSize;
+public class TaskResponse<T> implements Closeable {
+    private String taskId;
+    private long timestamp;
+    private long startTime = -1;
+    @Setter(AccessLevel.NONE)
+    private long execTime;
+    private Throwable error;
+    private T result;
+    private ETaskState state = ETaskState.UNKNOWN;
+
+    public long start() {
+        return (startTime = System.currentTimeMillis());
+    }
+
+    /**
+     * @throws IOException
+     */
+    @Override
+    public void close() throws IOException {
+        if (startTime < 0) {
+            throw new IOException("Batch not started...");
+        }
+        execTime = System.currentTimeMillis() - startTime;
+    }
 }

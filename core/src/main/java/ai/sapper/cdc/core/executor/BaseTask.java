@@ -64,22 +64,26 @@ public abstract class BaseTask<T> implements Runnable, Closeable {
                 }
                 response.start();
                 try {
-                    execute();
+                    T result = execute();
+                    response.result(result);
                     state.setState(ETaskState.DONE);
                     for (CompletionCallback<T> callback : callbacks)
-                        callback.finished(this);
+                        callback.finished(this, response);
+                    response.error(null);
+                    response.state(ETaskState.DONE);
                 } finally {
                     response.close();
                 }
             } catch (Throwable t) {
-                if (response != null)
+                if (response != null) {
+                    response.state(ETaskState.ERROR);
                     response.error(t);
-                else
+                } else
                     state.error(t);
                 DefaultLogger.stacktrace(t);
                 DefaultLogger.error(t.getLocalizedMessage());
                 for (CompletionCallback<T> callback : callbacks)
-                    callback.error(this, t);
+                    callback.error(this, t, response);
             } finally {
                 notifyAll();
             }
@@ -94,5 +98,5 @@ public abstract class BaseTask<T> implements Runnable, Closeable {
 
     public abstract TaskBatchResponse<T> initResponse();
 
-    public abstract void execute() throws Exception;
+    public abstract T execute() throws Exception;
 }

@@ -21,6 +21,7 @@ import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.state.Offset;
+import ai.sapper.cdc.core.utils.MetricsBase;
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -40,25 +41,28 @@ import java.util.concurrent.ExecutorService;
 public abstract class Processor<E extends Enum<?>, O extends Offset> implements Runnable, Closeable {
     protected final Logger LOG;
     protected final ProcessorState state = new ProcessorState();
-    private String name;
     private final ProcessStateManager<E, O> stateManager;
-    private ProcessingState<E, O> processingState;
     private final Class<? extends ProcessingState<E, O>> stateType;
+    protected final BaseEnv<?> env;
+    protected final MetricsBase metrics;
 
-    protected BaseEnv<?> env;
+    private String name;
     @Getter(AccessLevel.PROTECTED)
     private DistributedLock __lock;
     @Getter(AccessLevel.NONE)
     private Thread executor;
     private ProcessorSettings settings;
+    private ProcessingState<E, O> processingState;
 
     @SuppressWarnings("unchecked")
     protected Processor(@NonNull BaseEnv<?> env,
+                        @NonNull MetricsBase metrics,
                         @NonNull Class<? extends ProcessingState<E, O>> stateType) {
         Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
         this.env = env;
         this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
         this.stateType = stateType;
+        this.metrics = metrics;
         this.LOG = LoggerFactory.getLogger(getClass());
     }
 

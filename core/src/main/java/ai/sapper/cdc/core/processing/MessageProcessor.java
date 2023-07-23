@@ -23,6 +23,7 @@ import ai.sapper.cdc.core.messaging.builders.MessageReceiverBuilder;
 import ai.sapper.cdc.core.messaging.builders.MessageSenderBuilder;
 import ai.sapper.cdc.core.state.Offset;
 import ai.sapper.cdc.core.state.OffsetState;
+import ai.sapper.cdc.core.utils.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.NonNull;
@@ -40,15 +41,17 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     protected final Class<? extends MessagingProcessorSettings> settingsType;
 
     protected MessageProcessor(@NonNull BaseEnv<?> env,
+                               @NonNull MessageProcessorMetrics metrics,
                                @NonNull Class<? extends ProcessingState<E, O>> stateType,
                                @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
-        super(env, stateType);
+        super(env, metrics, stateType);
         this.settingsType = settingsType;
     }
 
     protected MessageProcessor(@NonNull BaseEnv<?> env,
+                               @NonNull MessageProcessorMetrics metrics,
                                @NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        super(env, stateType);
+        super(env, metrics, stateType);
         this.settingsType = null;
     }
 
@@ -158,26 +161,19 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     }
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
                     if (batch != null && !batch.isEmpty()) {
-                        LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
-                        offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
-                        batchStart(processorState);
-                        processorState = (MessageProcessorState<E, O, MO>) updateState();
+                        metrics.getCounter(MessageProcessorMetrics.METRIC_MESSAGES_READ).increment(batch.size());
+                        try (Timer t = new Timer(metrics.getTimer(MessageProcessorMetrics.METRIC_BATCH_TIME))) {
+                            LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
+                            offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
+                            batchStart(processorState);
+                            processorState = (MessageProcessorState<E, O, MO>) updateState();
 
-                        for (MessageObject<K, M> message : batch) {
-                            try {
-                                process(message, processorState);
-                            } catch (InvalidMessageError me) {
-                                DefaultLogger.stacktrace(me);
-                                DefaultLogger.warn(LOG, me.getLocalizedMessage());
-                                if (errorLogger != null) {
-                                    errorLogger.send(message);
-                                }
-                            }
+                            handleBatch(batch, processorState);
+                            processorState.setMessageOffset(offsetState.getOffset());
+
+                            batchEnd(processorState);
+                            updateState();
                         }
-                        processorState.setMessageOffset(offsetState.getOffset());
-
-                        batchEnd(processorState);
-                        updateState();
                     } else {
                         sleep = true;
                     }
@@ -193,6 +189,23 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                 } catch (InterruptedException e) {
                     LOG.info(String.format("[%s] Thread interrupted. [%s]",
                             name(), e.getLocalizedMessage()));
+                }
+            }
+        }
+    }
+
+    protected void handleBatch(@NonNull List<MessageObject<K, M>> batch,
+                               @NonNull MessageProcessorState<E, O, MO> processorState) throws Exception {
+        for (MessageObject<K, M> message : batch) {
+            try (Timer t = new Timer(metrics.getTimer(MessageProcessorMetrics.METRIC_PROCESS_TIME))) {
+                process(message, processorState);
+                metrics.getCounter(MessageProcessorMetrics.METRIC_MESSAGES_PROCESSED).increment();
+            } catch (InvalidMessageError me) {
+                metrics.getCounter(MessageProcessorMetrics.METRIC_MESSAGES_ERROR).increment();
+                DefaultLogger.stacktrace(me);
+                DefaultLogger.warn(LOG, me.getLocalizedMessage());
+                if (errorLogger != null) {
+                    errorLogger.send(message);
                 }
             }
         }

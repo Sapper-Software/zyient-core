@@ -171,7 +171,7 @@ public abstract class BaseShardedExecutor<T> implements Closeable, CompletionCal
     }
 
     @Override
-    public void finished(@NonNull BaseTask<T> task) {
+    public void finished(@NonNull BaseTask<T> task, @NonNull TaskResponse<T> response) {
         ThreadPoolExecutor executor = executors.get(task.shardId());
         if (executor == null) {
             DefaultLogger.error(String.format("Failed to find executor. [shard=%d]", task.shardId()));
@@ -184,7 +184,7 @@ public abstract class BaseShardedExecutor<T> implements Closeable, CompletionCal
     }
 
     @Override
-    public void error(@NonNull BaseTask<T> task, @NonNull Throwable error) {
+    public void error(@NonNull BaseTask<T> task, @NonNull Throwable error, TaskResponse<T> response) {
         ThreadPoolExecutor executor = executors.get(task.shardId());
         if (executor == null) {
             DefaultLogger.error(String.format("Failed to find executor. [shard=%d]", task.shardId()));
