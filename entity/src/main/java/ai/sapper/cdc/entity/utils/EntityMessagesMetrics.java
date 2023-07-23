@@ -17,7 +17,7 @@
 package ai.sapper.cdc.entity.utils;
 
 import ai.sapper.cdc.core.BaseEnv;
-import ai.sapper.cdc.core.processing.MessageProcessorMetrics;
+import ai.sapper.cdc.core.processing.EventProcessorMetrics;
 import ai.sapper.cdc.entity.schema.SchemaEntity;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -27,7 +27,7 @@ import lombok.NonNull;
 
 import java.util.Map;
 
-public class EntityMessagesMetrics extends MessageProcessorMetrics {
+public class EntityMessagesMetrics extends EventProcessorMetrics {
     public EntityMessagesMetrics(@NonNull String engine,
                                  @NonNull String name,
                                  @NonNull String sourceType,

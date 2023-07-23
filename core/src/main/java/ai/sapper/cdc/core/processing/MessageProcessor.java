@@ -41,7 +41,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     protected final Class<? extends MessagingProcessorSettings> settingsType;
 
     protected MessageProcessor(@NonNull BaseEnv<?> env,
-                               @NonNull MessageProcessorMetrics metrics,
+                               @NonNull EventProcessorMetrics metrics,
                                @NonNull Class<? extends ProcessingState<E, O>> stateType,
                                @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
         super(env, metrics, stateType);
@@ -49,7 +49,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     }
 
     protected MessageProcessor(@NonNull BaseEnv<?> env,
-                               @NonNull MessageProcessorMetrics metrics,
+                               @NonNull EventProcessorMetrics metrics,
                                @NonNull Class<? extends ProcessingState<E, O>> stateType) {
         super(env, metrics, stateType);
         this.settingsType = null;
@@ -161,8 +161,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     }
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout());
                     if (batch != null && !batch.isEmpty()) {
-                        metrics.getCounter(MessageProcessorMetrics.METRIC_MESSAGES_READ).increment(batch.size());
-                        try (Timer t = new Timer(metrics.getTimer(MessageProcessorMetrics.METRIC_BATCH_TIME))) {
+                        metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_READ).increment(batch.size());
+                        try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_BATCH_TIME))) {
                             LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
                             offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
                             batchStart(processorState);
@@ -197,11 +197,11 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     protected void handleBatch(@NonNull List<MessageObject<K, M>> batch,
                                @NonNull MessageProcessorState<E, O, MO> processorState) throws Exception {
         for (MessageObject<K, M> message : batch) {
-            try (Timer t = new Timer(metrics.getTimer(MessageProcessorMetrics.METRIC_PROCESS_TIME))) {
+            try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_EVENTS_TIME))) {
                 process(message, processorState);
-                metrics.getCounter(MessageProcessorMetrics.METRIC_MESSAGES_PROCESSED).increment();
+                metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_PROCESSED).increment();
             } catch (InvalidMessageError me) {
-                metrics.getCounter(MessageProcessorMetrics.METRIC_MESSAGES_ERROR).increment();
+                metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
                 DefaultLogger.stacktrace(me);
                 DefaultLogger.warn(LOG, me.getLocalizedMessage());
                 if (errorLogger != null) {

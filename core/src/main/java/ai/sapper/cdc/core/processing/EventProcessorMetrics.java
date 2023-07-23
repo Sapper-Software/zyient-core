@@ -20,22 +20,22 @@ import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.utils.MetricsBase;
 import lombok.NonNull;
 
-public class MessageProcessorMetrics extends MetricsBase {
-    public static final String METRIC_MESSAGES_READ = "messages.read";
-    public static final String METRIC_MESSAGES_PROCESSED = "messages.processed";
-    public static final String METRIC_MESSAGES_ERROR = "messages.error";
-    public static final String METRIC_PROCESS_TIME = "messages.process.time";
-    public static final String METRIC_BATCH_TIME = "messages.batch.time";
+public class EventProcessorMetrics extends MetricsBase {
+    public static final String METRIC_EVENTS_READ = "events_read";
+    public static final String METRIC_EVENTS_PROCESSED = "events_processed";
+    public static final String METRIC_EVENTS_ERROR = "events_error";
+    public static final String METRIC_EVENTS_TIME = "events_process_time";
+    public static final String METRIC_BATCH_TIME = "events_batch_time";
 
-    public MessageProcessorMetrics(@NonNull String engine,
-                                   @NonNull String name,
-                                   @NonNull String sourceType,
-                                   @NonNull BaseEnv<?> env) {
+    public EventProcessorMetrics(@NonNull String engine,
+                                 @NonNull String name,
+                                 @NonNull String sourceType,
+                                 @NonNull BaseEnv<?> env) {
         super(engine, name, sourceType, env);
-        addCounter(METRIC_MESSAGES_READ, null);
-        addCounter(METRIC_MESSAGES_PROCESSED, null);
-        addCounter(METRIC_MESSAGES_ERROR, null);
-        addTimer(METRIC_PROCESS_TIME, null);
+        addCounter(METRIC_EVENTS_READ, null);
+        addCounter(METRIC_EVENTS_PROCESSED, null);
+        addCounter(METRIC_EVENTS_ERROR, null);
+        addTimer(METRIC_EVENTS_TIME, null);
         addTimer(METRIC_BATCH_TIME, null);
     }
 }

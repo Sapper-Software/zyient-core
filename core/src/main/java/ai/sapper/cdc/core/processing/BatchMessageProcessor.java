@@ -38,14 +38,14 @@ public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extend
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
     protected BatchMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull MessageProcessorMetrics metrics,
+                                    @NonNull EventProcessorMetrics metrics,
                                     @NonNull Class<? extends ProcessingState<E, O>> stateType,
                                     @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
         super(env, metrics, stateType, settingsType);
     }
 
     protected BatchMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull MessageProcessorMetrics metrics,
+                                    @NonNull EventProcessorMetrics metrics,
                                     @NonNull Class<? extends ProcessingState<E, O>> stateType) {
         super(env, metrics, stateType);
     }
