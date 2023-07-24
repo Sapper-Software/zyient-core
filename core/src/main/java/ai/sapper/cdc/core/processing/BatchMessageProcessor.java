@@ -55,7 +55,8 @@ public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extend
                                @NonNull MessageProcessorState<E, O, MO> processorState) throws Exception {
         final List<TaskResponse<T>> responses = new ArrayList<>(batch.size());
         for (int ii = 0; ii < batch.size(); ii++) {
-            TaskResponse<T> response = initResponse(processorState);
+            MessageObject<K, M> message = batch.get(ii);
+            TaskResponse<T> response = initResponse(processorState, message);
             responses.set(ii, response);
         }
         Runner runner = new Runner(this, batch, processorState, responses);
@@ -101,7 +102,8 @@ public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extend
                                     final @NonNull MessageProcessorState<E, O, MO> processorState,
                                     final @NonNull List<TaskResponse<T>> responses) throws Exception;
 
-    protected abstract TaskResponse<T> initResponse(final @NonNull MessageProcessorState<E, O, MO> processorState);
+    protected abstract MessageTaskResponse<T, K, M> initResponse(final @NonNull MessageProcessorState<E, O, MO> processorState,
+                                                                 final @NonNull MessageObject<K, M> message);
 
     @Override
     public ProcessorState.EProcessorState stop() {

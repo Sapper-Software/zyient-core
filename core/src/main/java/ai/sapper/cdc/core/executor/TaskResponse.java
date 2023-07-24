@@ -18,6 +18,7 @@ package ai.sapper.cdc.core.executor;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -50,5 +51,15 @@ public class TaskResponse<T> implements Closeable {
             throw new IOException("Batch not started...");
         }
         execTime = System.currentTimeMillis() - startTime;
+    }
+
+    public TaskResponse<T> markError(@NonNull Throwable error) {
+        this.error = error;
+        this.state = ETaskState.ERROR;
+        return this;
+    }
+
+    public boolean hasError() {
+        return state == ETaskState.ERROR;
     }
 }
