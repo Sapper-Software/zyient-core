@@ -21,7 +21,7 @@ public abstract class BaseTask<T> implements Runnable, Closeable {
     private final String type;
     private final String id;
     private int shardId = 0;
-    private TaskBatchResponse<T> response;
+    private TaskResponse<T> response;
     private final BaseStateManager stateManager;
     private final List<CompletionCallback<T>> callbacks = new ArrayList<>();
 
@@ -40,6 +40,11 @@ public abstract class BaseTask<T> implements Runnable, Closeable {
         id = String.format("%s::%s::%s", type, key, UUID.randomUUID().toString());
     }
 
+    public BaseTask<T> withResponse(@NonNull TaskResponse<T> response) {
+        this.response = response;
+        return this;
+    }
+
     public BaseTask<T> withCallback(@NonNull CompletionCallback<T> callback) {
         callbacks.add(callback);
         return this;
@@ -53,7 +58,8 @@ public abstract class BaseTask<T> implements Runnable, Closeable {
         synchronized (this) {
             state.setState(ETaskState.RUNNING);
             try {
-                response = initResponse();
+                if (response == null)
+                    response = initResponse();
                 if (response == null) {
                     throw new FatalError(
                             String.format("Failed to create response instance. [entity=%s]", id));
@@ -96,7 +102,7 @@ public abstract class BaseTask<T> implements Runnable, Closeable {
         }
     }
 
-    public abstract TaskBatchResponse<T> initResponse();
+    public abstract TaskResponse<T> initResponse();
 
     public abstract T execute() throws Exception;
 }
