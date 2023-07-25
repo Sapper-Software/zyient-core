@@ -63,9 +63,9 @@ public abstract class BaseShardedExecutor<T> implements Closeable, CompletionCal
             settings = (ShardedExecutorSettings) reader.settings();
             for (int ii = 0; ii < settings().getShards(); ii++) {
                 ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                        settings.getCorePoolSize(),
-                        settings.getMaxPoolSize(),
-                        settings.getKeepAliveTime(),
+                        1,
+                        1,
+                        0L,
                         TimeUnit.MILLISECONDS,
                         new LinkedBlockingQueue<>(settings.getQueueSize())
                 );
