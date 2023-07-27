@@ -23,6 +23,7 @@ import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.Writer;
 import ai.sapper.cdc.core.io.model.EFileState;
 import ai.sapper.cdc.core.io.model.FileInode;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -40,6 +41,7 @@ import java.nio.file.Paths;
 @Getter
 @Accessors(fluent = true)
 public class LocalWriter extends Writer {
+    @Getter(AccessLevel.NONE)
     private FileOutputStream outputStream;
     private final LocalPathInfo path;
 
@@ -71,7 +73,7 @@ public class LocalWriter extends Writer {
                 inode.getState().setState(EFileState.Updating);
 
                 inode = (FileInode) fs.updateInode(inode);
-
+                dataSize = inode.getDataSize();
                 return this;
             } finally {
                 lock.unlock();
@@ -112,6 +114,7 @@ public class LocalWriter extends Writer {
             throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
         }
         outputStream.write(data, (int) offset, (int) length);
+        dataSize += length;
         return length;
     }
 
@@ -139,7 +142,9 @@ public class LocalWriter extends Writer {
         }
         FileChannel channel = outputStream.getChannel();
         channel = channel.truncate(offset + length);
-        return channel.size();
+        dataSize = channel.size();
+
+        return dataSize;
     }
 
     /**
@@ -193,6 +198,7 @@ public class LocalWriter extends Writer {
                     }
 
                     inode.setSyncedSize(fileSize(path.file));
+                    inode.setDataSize(dataSize);
                     inode.setSyncTimestamp(getLocalUpdateTime());
                     inode.getState().setState(EFileState.Synced);
                     if (clearLock) {

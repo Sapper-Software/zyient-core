@@ -14,36 +14,24 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.impl.local;
+package ai.sapper.cdc.core.io.impl.mapped;
 
-import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.Reader;
+import ai.sapper.cdc.core.io.impl.local.LocalReader;
 import ai.sapper.cdc.core.io.model.FileInode;
-import lombok.AccessLevel;
-import lombok.Getter;
+import com.google.common.base.Preconditions;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 
-import java.io.*;
+import java.io.IOException;
 
-@Getter
-@Accessors(fluent = true)
-public class LocalReader extends Reader {
-    @Getter(AccessLevel.NONE)
-    private RandomAccessFile inputStream;
-    private final LocalPathInfo path;
-    private File temp = null;
+public class MappedReader extends LocalReader {
+    private MemMappedFile file;
 
-    public LocalReader(@NonNull FileInode inode,
-                       @NonNull FileSystem fs) throws IOException {
+    public MappedReader(@NonNull FileInode inode,
+                        @NonNull FileSystem fs) throws IOException {
         super(inode, fs);
-        if (inode.getPathInfo() == null) {
-            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
-            inode.setPathInfo(path);
-        } else {
-            path = (LocalPathInfo) inode.getPathInfo();
-        }
+        Preconditions.checkArgument(fs instanceof MappedFileSystem);
     }
 
     /**
@@ -52,16 +40,16 @@ public class LocalReader extends Reader {
      */
     @Override
     public Reader open() throws IOException {
-        if (!path.exists()) {
-            throw new IOException(String.format("File not found. [path=%s]", path.file().getAbsolutePath()));
+        synchronized (this) {
+            super.open();
+            try {
+                file = new MemMappedFile(temp(), inode);
+                file.forRead();
+                return this;
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
         }
-        if (!inode().isCompressed()) {
-            inputStream = new RandomAccessFile(path.file(), "r");
-        } else {
-            temp = fs.decompress(path.file);
-            inputStream = new RandomAccessFile(temp, "r");
-        }
-        return this;
     }
 
     /**
@@ -76,7 +64,7 @@ public class LocalReader extends Reader {
         if (!isOpen()) {
             throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
         }
-        return inputStream.read(buffer, offset, length);
+        return file.read(buffer, offset, length);
     }
 
     /**
@@ -88,7 +76,9 @@ public class LocalReader extends Reader {
         if (!isOpen()) {
             throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
         }
-        inputStream.seek(offset);
+        synchronized (this) {
+            file.seek(offset);
+        }
     }
 
     /**
@@ -96,20 +86,7 @@ public class LocalReader extends Reader {
      */
     @Override
     public boolean isOpen() {
-        return (inputStream != null);
-    }
-
-    @Override
-    public File copy() throws IOException {
-        return path.file();
-    }
-
-    @Override
-    public InputStream getInputStream() throws Exception {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
-        return new FileInputStream(path.file);
+        return file.isOpen();
     }
 
     /**
@@ -127,16 +104,12 @@ public class LocalReader extends Reader {
      */
     @Override
     public void close() throws IOException {
-        if (inputStream != null) {
-            inputStream.close();
-            inputStream = null;
-        }
-        if (temp != null) {
-            if (!temp.delete()) {
-                DefaultLogger.error(
-                        String.format("Failed to delete temporary file. [path=%s]", temp.getAbsolutePath()));
+        synchronized (this) {
+            super.close();
+            if (file != null) {
+                file.close();
             }
-            temp = null;
+            file = null;
         }
     }
 }

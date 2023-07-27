@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.impl.local;
+package ai.sapper.cdc.core.io.impl.mapped;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.services.EConfigFileType;
@@ -38,8 +38,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class LocalFileSystemTest {
-    private static final String __CONFIG_FILE = "src/test/resources/local/fs-mapped-test.xml";
+class MappedFileSystemTest {
+    private static final String __CONFIG_FILE = "src/test/resources/mapped/fs-mapped-test.xml";
     private static final String FS_DEMO = "local-test-1";
     private static final String FS_DEMO_DOMAIN = "local-demo-1";
 
@@ -63,85 +63,6 @@ class LocalFileSystemTest {
     public static void stop() throws Exception {
         env.close();
     }
-
-    @Test
-    void mkdir() {
-        try {
-            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
-            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
-            assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
-            DirectoryInode cdi = fs.mkdir(di, "child");
-            assertNotNull(cdi);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", cdi.getAbsolutePath()));
-            d = new File(cdi.getAbsolutePath());
-            String cdir = String.format("%s/", cdi.getFsPath());
-            cdi = (DirectoryInode) fs.getInode(cdi.getDomain(), cdir);
-            assertNotNull(cdi);
-            assertTrue(d.exists() && d.isDirectory());
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            DefaultLogger.error(ex.getLocalizedMessage());
-            fail(ex);
-        }
-    }
-
-    @Test
-    void create() {
-        try {
-            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
-            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
-            assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
-            String name = String.format("test/%s.tmp", UUID.randomUUID().toString());
-            FileInode fi = fs.create(di, name);
-            assertNotNull(fi);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", fi.getAbsolutePath()));
-            d = new File(fi.getAbsolutePath());
-            assertTrue(d.exists() && d.isFile());
-            fi = (FileInode) fs.getInode(di.getDomain(), fi.getFsPath());
-            assertNotNull(fi);
-
-            assertTrue(fs.delete(di.getPathInfo(), true));
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            DefaultLogger.error(ex.getLocalizedMessage());
-            fail(ex);
-        }
-    }
-
-    @Test
-    void delete() {
-        try {
-            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
-            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
-            assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
-            assertTrue(d.exists() && d.isDirectory());
-            FileInode fi = fs.create(di, String.format("test/%s.tmp", UUID.randomUUID().toString()));
-
-            fi = (FileInode) fs.getInode(fi.getPathInfo());
-            assertNotNull(fi);
-            d = new File(fi.getAbsolutePath());
-            assertTrue(d.exists() && d.isFile());
-
-            assertTrue(fs.delete(fi.getPathInfo()));
-            assertFalse(d.exists());
-
-            assertTrue(fs.delete(di.getPathInfo(), true));
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            DefaultLogger.error(ex.getLocalizedMessage());
-            fail(ex);
-        }
-    }
-
-
     @Test
     void getReader() {
         try {
@@ -169,10 +90,10 @@ class LocalFileSystemTest {
             }
             try (Reader reader = fs.reader(fi)) {
                 int size = 0;
-                byte[] buffer = new byte[512];
+                byte[] buffer = new byte[1024];
                 while (true) {
                     int s = reader.read(buffer);
-                    if (s < 512) {
+                    if (s < 1024) {
                         size += s;
                         break;
                     }

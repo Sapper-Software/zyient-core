@@ -1,7 +1,6 @@
 
 dependencies {
     implementation project(':common')
-    //implementation 'ai.sapper.cdc.framework:entity:1.2-SNAPSHOT'
     implementation 'org.xerial.snappy:snappy-java:1.1.9.1'
     implementation 'org.apache.avro:avro:1.11.0'
     // https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-hdfs-client
@@ -43,4 +42,19 @@ dependencies {
     implementation 'io.prometheus:simpleclient_pushgateway:0.16.0'
 
     implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
+
+    implementation 'net.openhft:chronicle-bytes:2.24ea15'
+    implementation 'net.openhft:chronicle-queue:5.24ea23'
+}
+
+test {
+    jvmArgs ('--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED',
+            '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
+            '--add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED',
+            '--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED',
+            '--add-opens=jdk.compiler/com.sun.tools.javac=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang=ALL-UNNAMED',
+            '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+            '--add-opens=java.base/java.io=ALL-UNNAMED',
+            '--add-opens=java.base/java.util=ALL-UNNAMED')
 }

@@ -44,6 +44,7 @@ public abstract class Writer implements Closeable {
     private final boolean overwrite;
     @Getter(AccessLevel.PROTECTED)
     protected File temp;
+    protected long dataSize;
 
     protected Writer(@NonNull FileInode inode,
                      @NonNull FileSystem fs,

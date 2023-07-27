@@ -30,6 +30,7 @@ public class FileInode extends Inode {
     private FileState state = new FileState();
     private boolean compressed = false;
     private long syncedSize = 0;
+    private long dataSize = 0;
 
     public FileInode() {
 

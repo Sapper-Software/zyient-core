@@ -61,6 +61,7 @@ public abstract class RemoteWriter extends Writer {
                 inode.getState().setState(EFileState.Updating);
 
                 inode = (FileInode) fs.updateInode(inode);
+                dataSize = inode.getDataSize();
                 lastFlushTimestamp = System.currentTimeMillis();
                 lastFlushSize = fileSize(temp);
 
@@ -114,6 +115,8 @@ public abstract class RemoteWriter extends Writer {
             throw new IOException(String.format("Writer not open: [path=%s]", inode));
         }
         outputStream.write(data, (int) offset, (int) length);
+        dataSize += length;
+
         return length;
     }
 
@@ -159,7 +162,9 @@ public abstract class RemoteWriter extends Writer {
         }
         FileChannel channel = outputStream.getChannel();
         channel = channel.truncate(offset + length);
-        return channel.size();
+        dataSize = channel.size();
+
+        return dataSize;
     }
 
     @Override
