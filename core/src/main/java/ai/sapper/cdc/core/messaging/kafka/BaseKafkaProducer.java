@@ -96,7 +96,7 @@ public abstract class BaseKafkaProducer<M> extends MessageSender<String, M> {
     }
 
     @Override
-    public List<MessageObject<String, M>> sent(@NonNull List<MessageObject<String, M>> messages) throws MessagingError {
+    public List<MessageObject<String, M>> send(@NonNull List<MessageObject<String, M>> messages) throws MessagingError {
         Preconditions.checkArgument(state().isAvailable());
         List<MessageObject<String, M>> responses = new ArrayList<>(messages.size());
         for (MessageObject<String, M> message : messages) {

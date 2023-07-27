@@ -22,12 +22,13 @@ import lombok.NonNull;
 
 public class HeartbeatThread implements Runnable {
     private final String name;
-    private long sleepInterval = 60 * 1000; // 60 secs.
+    private final long sleepInterval; // 60 secs.
     private BaseStateManager stateManager;
     private boolean running = true;
 
-    public HeartbeatThread(@NonNull String name) {
+    public HeartbeatThread(@NonNull String name, long sleepInterval) {
         this.name = name;
+        this.sleepInterval = sleepInterval;
     }
 
     public HeartbeatThread withStateManager(@NonNull BaseStateManager stateManager) {

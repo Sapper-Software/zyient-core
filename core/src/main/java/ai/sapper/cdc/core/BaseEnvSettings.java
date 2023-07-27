@@ -18,6 +18,8 @@ package ai.sapper.cdc.core;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
+import ai.sapper.cdc.common.config.units.TimeValueParser;
 import ai.sapper.cdc.core.state.BaseStateManager;
 import ai.sapper.cdc.core.state.BaseStateManagerSettings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -27,11 +29,16 @@ import lombok.Setter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * <pre>
  *     <module>[Module name]</module>
  *     <instance>[Instance name, must be unique]</instance>
- *     <enableHeartbeat>[Enable heartbeat]</enableHeartbeat>
+ *     <heartbeat>
+ *         <enable>[true/false, default=false]</enable>
+ *         <frequency>[time value, default=60s]</frequency>
+ *     </heartbeat>
  *     <state>
  *         <stateManagerClass>[State Manager class]</stateManagerClass>
  *     </state>
@@ -52,7 +59,8 @@ public class BaseEnvSettings extends Settings {
         public static final String __CONFIG_PATH_MANAGERS = "managers";
         private static final String CONFIG_MODULE = "module";
         private static final String CONFIG_INSTANCE = "instance";
-        private static final String CONFIG_HEARTBEAT = "enableHeartbeat";
+        private static final String CONFIG_HEARTBEAT = "heartbeat.enable";
+        private static final String CONFIG_HEARTBEAT_FREQ = "heartbeat.frequency";
         private static final String CONFIG_STATE_MANAGER_TYPE
                 = __CONFIG_PATH_MANAGERS + "." + BaseStateManagerSettings.__CONFIG_PATH + ".stateManagerClass";
         private static final String CONFIG_CONNECTIONS = "paths.connections";
@@ -70,6 +78,8 @@ public class BaseEnvSettings extends Settings {
     private String registryPath;
     @Config(name = Constants.CONFIG_HEARTBEAT, required = false, type = Boolean.class)
     private boolean enableHeartbeat = false;
+    @Config(name = Constants.CONFIG_HEARTBEAT_FREQ, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue heartbeatFreq = new TimeUnitValue(1L, TimeUnit.MINUTES);
     @Config(name = Constants.CONFIG_STATE_MANAGER_TYPE, required = false, type = Class.class)
     private Class<? extends BaseStateManager> stateManagerClass;
     @Config(name = Constants.CONFIG_BASE_PATH)

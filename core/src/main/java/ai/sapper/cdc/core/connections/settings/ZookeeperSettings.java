@@ -18,11 +18,15 @@ package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Exists;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
+import ai.sapper.cdc.common.config.units.TimeValueParser;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -78,10 +82,10 @@ public class ZookeeperSettings extends ConnectionSettings {
     private int retryInterval = 1000;
     @Config(name = Constants.CONFIG_RETRY_TRIES, required = false, type = Integer.class)
     private int retryCount = 3;
-    @Config(name = Constants.CONFIG_CONN_TIMEOUT, required = false, type =  Integer.class)
-    private int connectionTimeout = -1;
-    @Config(name = Constants.CONFIG_SESSION_TIMEOUT, required = false, type = Integer.class)
-    private int sessionTimeout = -1;
+    @Config(name = Constants.CONFIG_CONN_TIMEOUT, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue connectionTimeout = new TimeUnitValue(-1, TimeUnit.MILLISECONDS);
+    @Config(name = Constants.CONFIG_SESSION_TIMEOUT, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue sessionTimeout = new TimeUnitValue(-1, TimeUnit.MILLISECONDS);
 
     public ZookeeperSettings() {
         setType(EConnectionType.zookeeper);

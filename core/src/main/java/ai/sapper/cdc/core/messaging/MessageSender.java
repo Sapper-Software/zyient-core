@@ -52,5 +52,5 @@ public abstract class MessageSender<K, M> implements Closeable {
 
     public abstract MessageObject<K, M> send(@NonNull MessageObject<K, M> message) throws MessagingError;
 
-    public abstract List<MessageObject<K, M>> sent(@NonNull List<MessageObject<K, M>> messages) throws MessagingError;
+    public abstract List<MessageObject<K, M>> send(@NonNull List<MessageObject<K, M>> messages) throws MessagingError;
 }

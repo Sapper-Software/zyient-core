@@ -55,5 +55,10 @@ public class MessageObject<K, V> {
 
     public MessageObject(@NonNull MessageObject<K, V> source) {
         this.id = source.id;
+        this.queue = source.queue;
+        this.correlationId = source.correlationId;
+        this.mode = source.mode;
+        this.key = source.key;
+        this.value = source.value;
     }
 }

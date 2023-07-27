@@ -101,11 +101,13 @@ public class ZookeeperConnection implements Connection {
         if (!Strings.isNullOrEmpty(settings.getNamespace())) {
             builder.namespace(settings.getNamespace());
         }
-        if (settings.getConnectionTimeout() > 0) {
-            builder.connectionTimeoutMs(settings.getConnectionTimeout());
+        long v = settings.getConnectionTimeout().normalized();
+        if (v > 0) {
+            builder.connectionTimeoutMs((int) v);
         }
-        if (settings.getSessionTimeout() > 0) {
-            builder.sessionTimeoutMs(settings.getSessionTimeout());
+        v = settings.getSessionTimeout().normalized();
+        if (v > 0) {
+            builder.sessionTimeoutMs((int) v);
         }
     }
 

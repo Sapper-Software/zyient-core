@@ -103,7 +103,7 @@ public abstract class OffsetStateManager<T extends Offset> {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(settings.getName(), zp, connection, settings.getLockTimeout());
+        return env.createCustomLock(settings.getName(), zp, connection, settings.getLockTimeout().normalized());
     }
 
     protected DistributedLock getLock(@NonNull String type,
@@ -115,7 +115,7 @@ public abstract class OffsetStateManager<T extends Offset> {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(type, zp, connection, settings.getLockTimeout());
+        return env.createCustomLock(type, zp, connection, settings.getLockTimeout().normalized());
     }
 
     protected DistributedLock getLock(@NonNull String type,
@@ -129,7 +129,7 @@ public abstract class OffsetStateManager<T extends Offset> {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(type, zp, connection, settings.getLockTimeout());
+        return env.createCustomLock(type, zp, connection, settings.getLockTimeout().normalized());
     }
 
     protected String registerType(@NonNull String type) throws StateManagerError {

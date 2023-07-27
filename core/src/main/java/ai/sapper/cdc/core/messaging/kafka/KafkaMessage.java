@@ -38,6 +38,10 @@ public class KafkaMessage<K, V> extends MessageObject<K, V> {
 
     public KafkaMessage(MessageObject<K, V> source) {
         super(source);
+        if (source instanceof KafkaMessage<K, V>) {
+            partition = ((KafkaMessage<K, V>) source).partition;
+            offset = ((KafkaMessage<K, V>)  source).offset;
+        }
     }
 
     public KafkaMessage(@NonNull ConsumerRecord<K, ?> record, @NonNull V value) {

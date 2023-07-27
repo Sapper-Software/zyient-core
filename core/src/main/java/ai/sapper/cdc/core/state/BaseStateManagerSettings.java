@@ -18,11 +18,14 @@ package ai.sapper.cdc.core.state;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
@@ -68,7 +71,7 @@ public class BaseStateManagerSettings extends Settings {
     @Config(name = Constants.CONFIG_LOCK_RETRY, required = false, type = Short.class)
     private short lockRetryCount = Constants.LOCK_RETRY_COUNT;
     @Config(name = Constants.CONFIG_LOCK_TIMEOUT, required = false, type = Long.class)
-    private long lockTimeout = Constants.LOCK_TIMEOUT;
+    private TimeUnitValue lockTimeout = new TimeUnitValue(Constants.LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
     @Config(name = Constants.CONFIG_SAVE_OFFSETS, required = false, type = Boolean.class)
     private boolean saveOffsetManager = true;
 
