@@ -25,7 +25,10 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.RandomAccessFile;
 
 @Getter
 @Accessors(fluent = true)
@@ -64,6 +67,11 @@ public class LocalReader extends Reader {
         return this;
     }
 
+    @Override
+    public int read() throws IOException {
+        return inputStream.read();
+    }
+
     /**
      * @param buffer
      * @param offset
@@ -72,23 +80,84 @@ public class LocalReader extends Reader {
      * @throws IOException
      */
     @Override
-    public int read(byte[] buffer, int offset, int length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
+    public int read(byte @NonNull [] buffer, int offset, int length) throws IOException {
+        checkOpen();
         return inputStream.read(buffer, offset, length);
     }
 
-    /**
-     * @param offset
-     * @throws IOException
-     */
     @Override
-    public void seek(int offset) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
+    public byte[] readAllBytes() throws IOException {
+        checkOpen();
+        if (inputStream.getChannel().size() > Integer.MAX_VALUE) {
+            throw new IOException(String.format("File size too large. [size=%d]", inputStream.getChannel().size()));
         }
-        inputStream.seek(offset);
+        reset();
+        byte[] buffer = new byte[(int) inputStream.getChannel().size()];
+        int s = read(buffer);
+        if (s != inputStream.getChannel().size()) {
+            throw new IOException(
+                    String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
+                            inputStream.getChannel().size(), s, path().file.getAbsolutePath()));
+        }
+        return buffer;
+    }
+
+    @Override
+    public byte[] readNBytes(int len) throws IOException {
+        checkOpen();
+        byte[] buffer = new byte[len];
+        int s = read(buffer, 0, len);
+        if (s != len) {
+            throw new IOException(
+                    String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
+                            inputStream.getChannel().size(), s, path().file.getAbsolutePath()));
+        }
+        return buffer;
+    }
+
+    @Override
+    public int readNBytes(byte[] buffer, int off, int len) throws IOException {
+        checkOpen();
+        return read(buffer, off, len);
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+        checkOpen();
+        return inputStream.skipBytes((int) n);
+    }
+
+    @Override
+    public void skipNBytes(long n) throws IOException {
+        skip(n);
+    }
+
+    @Override
+    public int available() throws IOException {
+        checkOpen();
+        long pos = inputStream.getChannel().position();
+        long size = inputStream.getChannel().size();
+        return (int) (size - pos);
+    }
+
+    @Override
+    public synchronized void mark(int readlimit) {
+
+    }
+
+    @Override
+    public synchronized void reset() throws IOException {
+        seek(0);
+    }
+
+    @Override
+    public boolean markSupported() {
+        return false;
+    }
+
+    @Override
+    public long transferTo(OutputStream out) throws IOException {
+        throw new IOException("Not supported...");
     }
 
     /**
@@ -100,17 +169,20 @@ public class LocalReader extends Reader {
     }
 
     @Override
+    public long seek(long offset) throws IOException {
+        checkOpen();
+        if (offset >= inputStream.getChannel().size()) {
+            offset = inputStream.getChannel().size();
+        }
+        inputStream.seek(offset);
+        return offset;
+    }
+
+    @Override
     public File copy() throws IOException {
         return path.file();
     }
 
-    @Override
-    public InputStream getInputStream() throws Exception {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
-        return new FileInputStream(path.file);
-    }
 
     /**
      * Closes this stream and releases any system resources associated

@@ -32,7 +32,6 @@ import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,6 +86,7 @@ public class LocalWriter extends Writer {
     }
 
     protected void getLocalCopy() throws Exception {
+        checkOpen();
         if (path.file.exists()) {
             FileUtils.copyFile(path.file, temp);
             temp = Reader.checkDecompress(temp, inode, fs);
@@ -94,28 +94,17 @@ public class LocalWriter extends Writer {
     }
 
     @Override
-    public OutputStream getOutputStream() throws Exception {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
-        }
-        return outputStream;
-    }
-
-    /**
-     * @param data
-     * @param offset
-     * @param length
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public long write(byte[] data, long offset, long length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
-        }
+    public void write(byte[] data, int offset, int length) throws IOException {
+        checkOpen();
         outputStream.write(data, (int) offset, (int) length);
         dataSize += length;
-        return length;
+    }
+
+    @Override
+    public void write(int i) throws IOException {
+        checkOpen();
+        outputStream.write(i);
+        dataSize += Integer.BYTES;
     }
 
     /**
@@ -123,9 +112,7 @@ public class LocalWriter extends Writer {
      */
     @Override
     public void flush() throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
-        }
+        checkOpen();
         outputStream.flush();
     }
 
@@ -137,9 +124,7 @@ public class LocalWriter extends Writer {
      */
     @Override
     public long truncate(long offset, long length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", path().toString()));
-        }
+        checkOpen();
         FileChannel channel = outputStream.getChannel();
         channel = channel.truncate(offset + length);
         dataSize = channel.size();
@@ -157,6 +142,7 @@ public class LocalWriter extends Writer {
 
     @Override
     public void commit(boolean clearLock) throws IOException {
+        checkOpen();
         try {
             Path tp = Paths.get(temp.toURI());
             if (Files.size(tp) <= 0) {

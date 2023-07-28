@@ -52,6 +52,83 @@ public class MappedReader extends LocalReader {
         }
     }
 
+    @Override
+    public byte[] readAllBytes() throws IOException {
+        checkOpen();
+        if (file.writeOffset() > Integer.MAX_VALUE) {
+            throw new IOException(String.format("File size too large. [size=%d]", file.writeOffset()));
+        }
+        reset();
+        byte[] buffer = new byte[(int) file.writeOffset()];
+        int s = read(buffer);
+        if (s != file.writeOffset()) {
+            throw new IOException(
+                    String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
+                            file.writeOffset(), s, path().file().getAbsolutePath()));
+        }
+        return buffer;
+    }
+
+    @Override
+    public byte[] readNBytes(int len) throws IOException {
+        checkOpen();
+        byte[] buffer = new byte[len];
+        int s = read(buffer, 0, len);
+        if (s != len) {
+            throw new IOException(
+                    String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
+                            file.writeOffset(), s, path().file().getAbsolutePath()));
+        }
+        return buffer;
+    }
+
+    @Override
+    public int readNBytes(byte[] buffer, int off, int len) throws IOException {
+        checkOpen();
+        return read(buffer, off, len);
+    }
+
+    @Override
+    public long skip(long n) throws IOException {
+        checkOpen();
+        if (file.readOffset() + n >= file.writeOffset()) {
+            n = file.writeOffset() - file.readOffset();
+        }
+        if (n < 0) {
+            throw new IOException("Failed to skip bytes...");
+        }
+        return file.seek(file.readOffset() + n);
+    }
+
+    @Override
+    public void skipNBytes(long n) throws IOException {
+        skip(n);
+    }
+
+    @Override
+    public int available() throws IOException {
+        checkOpen();
+        return (int) (file.writeOffset() - file.readOffset());
+    }
+
+    @Override
+    public synchronized void mark(int readlimit) {
+
+    }
+
+    @Override
+    public boolean markSupported() {
+        return false;
+    }
+
+    @Override
+    public long seek(long offset) throws IOException {
+        checkOpen();
+        synchronized (this) {
+            return file.seek(offset);
+        }
+    }
+
     /**
      * @param buffer
      * @param offset
@@ -60,25 +137,9 @@ public class MappedReader extends LocalReader {
      * @throws IOException
      */
     @Override
-    public int read(byte[] buffer, int offset, int length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
+    public int read(byte @NonNull [] buffer, int offset, int length) throws IOException {
+        checkOpen();
         return file.read(buffer, offset, length);
-    }
-
-    /**
-     * @param offset
-     * @throws IOException
-     */
-    @Override
-    public void seek(int offset) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
-        synchronized (this) {
-            file.seek(offset);
-        }
     }
 
     /**

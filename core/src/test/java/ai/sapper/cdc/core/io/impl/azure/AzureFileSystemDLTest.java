@@ -96,7 +96,9 @@ class AzureFileSystemDLTest {
             try (Writer writer = fs.writer(fi)) {
                 for (int ii = 0; ii < 200; ii++) {
                     String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
-                    written = writer.write(str.getBytes(StandardCharsets.UTF_8));
+                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                    writer.write(bytes);
+                    written += bytes.length;
                 }
                 writer.commit(true);
             }
@@ -128,7 +130,9 @@ class AzureFileSystemDLTest {
             try (Writer writer = fs.writer(fi)) {
                 for (int ii = 0; ii < 200; ii++) {
                     String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
-                    written += writer.write(str.getBytes(StandardCharsets.UTF_8));
+                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                    writer.write(bytes);
+                    written += bytes.length;
                 }
                 writer.commit(true);
             }
@@ -172,7 +176,9 @@ class AzureFileSystemDLTest {
             try (Writer writer = fs.writer(fi)) {
                 for (int ii = 0; ii < 200; ii++) {
                     String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
-                    written += writer.write(str.getBytes(StandardCharsets.UTF_8));
+                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                    writer.write(bytes);
+                    written += bytes.length;
                 }
                 writer.commit(false);
             }
@@ -180,7 +186,9 @@ class AzureFileSystemDLTest {
             try (Writer writer = fs.writer(fi)) {
                 for (int ii = 0; ii < 200; ii++) {
                     String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
-                    written += writer.write(str.getBytes(StandardCharsets.UTF_8));
+                    byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                    writer.write(bytes);
+                    written += bytes.length;
                 }
                 writer.commit(true);
             }

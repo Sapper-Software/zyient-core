@@ -28,7 +28,6 @@ import lombok.experimental.Accessors;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -76,6 +75,7 @@ public abstract class RemoteWriter extends Writer {
 
     @Override
     protected void getLocalCopy() throws Exception {
+        checkOpen();
         if (fs.exists(inode.getPathInfo())) {
             File file = fs.download(inode, cache.settings().getDownloadTimeout());
             if (file == null) return;
@@ -93,41 +93,26 @@ public abstract class RemoteWriter extends Writer {
     }
 
     @Override
-    public long write(byte[] data) throws IOException {
-        return write(data, 0, data.length);
-    }
-
-    @Override
-    public long write(byte[] data, long length) throws IOException {
-        return write(data, 0, length);
-    }
-
-    /**
-     * @param data
-     * @param offset
-     * @param length
-     * @return
-     * @throws IOException
-     */
-    @Override
-    public long write(byte[] data, long offset, long length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode));
-        }
+    public void write(byte[] data, int offset, int length) throws IOException {
+        checkOpen();
         outputStream.write(data, (int) offset, (int) length);
         dataSize += length;
-
-        return length;
     }
+
+    @Override
+    public void write(int i) throws IOException {
+        checkOpen();
+        outputStream.write(i);
+        dataSize += Integer.BYTES;
+    }
+
 
     /**
      * @throws IOException
      */
     @Override
     public void flush() throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode));
-        }
+        checkOpen();
         outputStream.flush();
         checkUpload();
     }
@@ -157,19 +142,12 @@ public abstract class RemoteWriter extends Writer {
      */
     @Override
     public long truncate(long offset, long length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode.toString()));
-        }
+        checkOpen();
         FileChannel channel = outputStream.getChannel();
         channel = channel.truncate(offset + length);
         dataSize = channel.size();
 
         return dataSize;
-    }
-
-    @Override
-    public Writer open() throws IOException {
-        return open(overwrite());
     }
 
     @Override
@@ -179,6 +157,7 @@ public abstract class RemoteWriter extends Writer {
 
     @Override
     public void commit(boolean clearLock) throws IOException {
+        checkOpen();
         try {
             Path tp = Paths.get(temp.toURI());
             if (Files.size(tp) <= 0) {
@@ -236,15 +215,6 @@ public abstract class RemoteWriter extends Writer {
             }
         }
     }
-
-    @Override
-    public OutputStream getOutputStream() throws Exception {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode.toString()));
-        }
-        return outputStream;
-    }
-
 
     protected abstract String getTmpPath();
 }

@@ -45,7 +45,7 @@ public class MemMappedFile implements Closeable {
     }
 
     public MemMappedFile(@NonNull String path,
-                         @NonNull  FileInode node) {
+                         @NonNull FileInode node) {
         this.path = new File(path);
         this.node = node;
     }
@@ -81,11 +81,15 @@ public class MemMappedFile implements Closeable {
         }
     }
 
-    protected void seek(long offset) {
+    protected long seek(long offset) {
         Preconditions.checkState(isOpen());
         Preconditions.checkArgument(offset >= 0 && offset < data.readLimit());
+        if (offset >= data.readLimit()) {
+            offset = data.readLimit();
+        }
         readOffset = offset;
         data.readPosition(readOffset);
+        return offset;
     }
 
     public void flush() throws IOException {
@@ -98,6 +102,12 @@ public class MemMappedFile implements Closeable {
         writeOffset += length;
 
         return length;
+    }
+
+    public void write(int i) throws IOException {
+        Preconditions.checkState(isOpen());
+        data.writeInt(writeOffset, i);
+        writeOffset += Integer.BYTES;
     }
 
     public int read(byte[] buffer, int offset, int length) throws IOException {

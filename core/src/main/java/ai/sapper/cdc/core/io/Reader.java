@@ -28,7 +28,7 @@ import java.io.InputStream;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class Reader implements Closeable {
+public abstract class Reader extends InputStream implements Closeable {
     protected final FileInode inode;
     protected final FileSystem fs;
 
@@ -40,15 +40,13 @@ public abstract class Reader implements Closeable {
 
     public abstract Reader open() throws IOException;
 
-    public abstract int read(byte[] buffer, int offset, int length) throws IOException;
-
-    public int read(byte[] buffer) throws IOException {
+    public int read(byte @NonNull [] buffer) throws IOException {
         return read(buffer, 0, buffer.length);
     }
 
-    public abstract void seek(int offset) throws IOException;
-
     public abstract boolean isOpen();
+
+    public abstract long seek(long offset) throws IOException;
 
     public abstract File copy() throws IOException;
 
@@ -64,5 +62,8 @@ public abstract class Reader implements Closeable {
         return infile;
     }
 
-    public abstract InputStream getInputStream() throws Exception;
+    protected void checkOpen() throws IOException {
+        if (!isOpen())
+            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
+    }
 }

@@ -38,7 +38,7 @@ import java.nio.file.attribute.FileTime;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class Writer implements Closeable {
+public abstract class Writer extends OutputStream implements Closeable {
     protected FileInode inode;
     protected final FileSystem fs;
     private final boolean overwrite;
@@ -69,17 +69,13 @@ public abstract class Writer implements Closeable {
         return 0;
     }
 
-    public abstract long write(byte[] data, long offset, long length) throws IOException;
-
-    public long write(byte[] data) throws IOException {
-        return write(data, 0, data.length);
+    public void write(byte @NonNull [] data) throws IOException {
+        write(data, 0, data.length);
     }
 
-    public long write(byte[] data, long length) throws IOException {
-        return write(data, 0, length);
+    public void write(byte @NonNull [] data, int length) throws IOException {
+        write(data, 0, length);
     }
-
-    public abstract void flush() throws IOException;
 
     public abstract long truncate(long offset, long length) throws IOException;
 
@@ -139,7 +135,10 @@ public abstract class Writer implements Closeable {
         return 0;
     }
 
-    protected abstract void getLocalCopy() throws Exception;
+    protected void checkOpen() throws IOException {
+        if (!isOpen())
+            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
+    }
 
-    public abstract OutputStream getOutputStream() throws Exception;
+    protected abstract void getLocalCopy() throws Exception;
 }

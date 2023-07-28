@@ -66,19 +66,16 @@ public class MappedWriter extends LocalWriter {
         }
     }
 
-    /**
-     * @param data
-     * @param offset
-     * @param length
-     * @return
-     * @throws IOException
-     */
     @Override
-    public long write(byte[] data, long offset, long length) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
-        return file.write(data, offset, length);
+    public void write(byte[] data, int offset, int length) throws IOException {
+        checkOpen();
+        file.write(data, offset, length);
+    }
+
+    @Override
+    public void write(int i) throws IOException {
+        checkOpen();
+        file.write(i);
     }
 
     /**
@@ -86,9 +83,7 @@ public class MappedWriter extends LocalWriter {
      */
     @Override
     public void flush() throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
+        checkOpen();
         file.flush();
     }
 
@@ -113,9 +108,7 @@ public class MappedWriter extends LocalWriter {
 
     @Override
     public void commit(boolean clearLock) throws IOException {
-        if (!isOpen()) {
-            throw new IOException(String.format("Writer not open: [path=%s]", inode().toString()));
-        }
+        checkOpen();
         dataSize = file.writeOffset();
         super.commit(clearLock);
     }
