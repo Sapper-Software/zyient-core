@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging.kafka;
+package ai.sapper.cdc.core.messaging.chronicle;
 
-import ai.sapper.cdc.core.connections.Connection;
-import ai.sapper.cdc.core.state.OffsetState;
+import ai.sapper.cdc.core.state.OffsetStateManagerSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <offsetManager>
+ *         <name>[Name]</name>
+ *         <type>[Class extends OffsetStateManager]</type>
+ *         <connection>ZooKeeper connection name</connection>
+ *         <basePath>ZooKeeper base path</basePath>
+ *         <locking>
+ *             -- optional
+ *             <retry>[Retry count]</retry>
+ *             <timeout>Lock acquire timeout</timeout>
+ *         </locking>
+ *     </offsetManager>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class KafkaConsumerState extends OffsetState<Connection.EConnectionState, KafkaOffset> {
-    public static final String OFFSET_TYPE = "kafka/consumer";
-
-    private String topic;
-    private long partition = 0;
-
-    public KafkaConsumerState() {
-        super(Connection.EConnectionState.Error, Connection.EConnectionState.Initialized, OFFSET_TYPE);
-    }
+public class ChronicleConsumerOffsetSettings extends OffsetStateManagerSettings {
 }

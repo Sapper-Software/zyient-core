@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging.kafka;
+package ai.sapper.cdc.core.messaging.chronicle;
 
-import ai.sapper.cdc.core.connections.Connection;
-import ai.sapper.cdc.core.state.OffsetState;
+import ai.sapper.cdc.core.processing.MessageProcessorState;
+import ai.sapper.cdc.core.state.Offset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class KafkaConsumerState extends OffsetState<Connection.EConnectionState, KafkaOffset> {
-    public static final String OFFSET_TYPE = "kafka/consumer";
+public class ChronicleMessageProcessingState<E extends Enum<?>, O extends Offset> extends MessageProcessorState<E, O, ChronicleOffset> {
+    public ChronicleMessageProcessingState(@NonNull E errorState,
+                                           @NonNull E initState) {
+        super(errorState, initState, ChronicleConsumerState.OFFSET_TYPE);
+    }
 
-    private String topic;
-    private long partition = 0;
-
-    public KafkaConsumerState() {
-        super(Connection.EConnectionState.Error, Connection.EConnectionState.Initialized, OFFSET_TYPE);
+    public ChronicleMessageProcessingState(@NonNull MessageProcessorState<E, O, ChronicleOffset> state) {
+        super(state);
     }
 }

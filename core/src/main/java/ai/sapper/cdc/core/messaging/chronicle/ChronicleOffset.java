@@ -14,25 +14,27 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging.kafka;
+package ai.sapper.cdc.core.messaging.chronicle;
 
-import ai.sapper.cdc.core.connections.Connection;
-import ai.sapper.cdc.core.state.OffsetState;
+import ai.sapper.cdc.core.messaging.ReceiverOffset;
+import ai.sapper.cdc.core.state.Offset;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class KafkaConsumerState extends OffsetState<Connection.EConnectionState, KafkaOffset> {
-    public static final String OFFSET_TYPE = "kafka/consumer";
+public class ChronicleOffset extends ReceiverOffset {
+    private String queue;
 
-    private String topic;
-    private long partition = 0;
-
-    public KafkaConsumerState() {
-        super(Connection.EConnectionState.Error, Connection.EConnectionState.Initialized, OFFSET_TYPE);
+    @Override
+    public int compareTo(@NonNull Offset offset) {
+        Preconditions.checkArgument(offset instanceof ChronicleOffset);
+        Preconditions.checkArgument(queue.compareTo(((ChronicleOffset) offset).queue) == 0);
+        return super.compareTo(offset);
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging.kafka;
+package ai.sapper.cdc.core.messaging.chronicle;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.BaseEnv;
@@ -32,13 +32,12 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Accessors(fluent = true)
-public class KafkaStateManager extends OffsetStateManager<KafkaOffset> {
-
+public class ChronicleStateManager extends OffsetStateManager<ChronicleOffset> {
     @Override
-    public OffsetStateManager<KafkaOffset> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                                @NonNull BaseEnv<?> env) throws StateManagerError {
+    public OffsetStateManager<ChronicleOffset> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                                    @NonNull BaseEnv<?> env) throws StateManagerError {
         try {
-            super.init(xmlConfig, env, KafkaConsumerOffsetSettings.class);
+            super.init(xmlConfig, env, ChronicleConsumerOffsetSettings.class);
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Throwable ex) {
@@ -49,9 +48,9 @@ public class KafkaStateManager extends OffsetStateManager<KafkaOffset> {
     }
 
     @Override
-    public OffsetStateManager<KafkaOffset> init(@NonNull OffsetStateManagerSettings settings,
-                                                @NonNull BaseEnv<?> env) throws StateManagerError {
-        Preconditions.checkArgument(settings instanceof KafkaConsumerOffsetSettings);
+    public OffsetStateManager<ChronicleOffset> init(@NonNull OffsetStateManagerSettings settings,
+                                                    @NonNull BaseEnv<?> env) throws StateManagerError {
+        Preconditions.checkArgument(settings instanceof ChronicleConsumerOffsetSettings);
         try {
             setup(settings, env);
             state().setState(ProcessorState.EProcessorState.Running);
@@ -63,29 +62,23 @@ public class KafkaStateManager extends OffsetStateManager<KafkaOffset> {
         }
     }
 
-    public KafkaConsumerState get(@NonNull String topic, int partition) throws StateManagerError {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(topic));
-        Preconditions.checkArgument(partition >= 0);
-        String name = String.format("%s/%d", topic, partition);
-        return get(KafkaConsumerState.OFFSET_TYPE, name, KafkaConsumerState.class);
+
+    public ChronicleConsumerState get(@NonNull String queue) throws StateManagerError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(queue));
+        return get(ChronicleConsumerState.OFFSET_TYPE, queue, ChronicleConsumerState.class);
     }
 
-    public KafkaConsumerState create(@NonNull String topic, int partition) throws StateManagerError {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(topic));
-        Preconditions.checkArgument(partition >= 0);
-        String name = String.format("%s/%d", topic, partition);
-        KafkaConsumerState state = create(KafkaConsumerState.OFFSET_TYPE, name, KafkaConsumerState.class);
-        state.setTopic(topic);
-        state.setPartition(partition);
-        KafkaOffset offset = new KafkaOffset();
-        offset.setTopic(topic);
-        offset.setPartition(partition);
+    public ChronicleConsumerState create(@NonNull String queue) throws StateManagerError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(queue));
+        ChronicleConsumerState state = create(ChronicleConsumerState.OFFSET_TYPE, queue, ChronicleConsumerState.class);
+        state.setQueue(queue);
+        ChronicleOffset offset = new ChronicleOffset();
+        offset.setQueue(queue);
         state.setOffset(offset);
-
         return update(state);
     }
 
-    public KafkaConsumerState update(@NonNull KafkaConsumerState offset) throws StateManagerError {
-        return super.update(offset);
+    public ChronicleConsumerState update(@NonNull ChronicleConsumerState state) throws StateManagerError {
+        return super.update(state);
     }
 }

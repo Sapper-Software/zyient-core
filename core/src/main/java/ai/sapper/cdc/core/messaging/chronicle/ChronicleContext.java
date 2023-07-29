@@ -16,29 +16,35 @@
 
 package ai.sapper.cdc.core.messaging.chronicle;
 
-import ai.sapper.cdc.core.messaging.MessageObject;
-import lombok.Getter;
+import ai.sapper.cdc.common.model.Context;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.NonNull;
-import lombok.Setter;
-import lombok.experimental.Accessors;
 
-@Getter
-@Setter
-@Accessors(fluent = true)
-public class ChronicleMessage<K, V> extends MessageObject<K, V> {
-    private long index;
+import java.lang.annotation.Native;
 
-    public ChronicleMessage() {
+public class ChronicleContext extends Context {
+    public static final String KEY_QUEUE = "queue";
+
+    public ChronicleContext() {
+
     }
 
-    public ChronicleMessage(@NonNull String id) {
-        super(id);
+    public ChronicleContext(@NonNull String queue) {
+        put(KEY_QUEUE, queue);
     }
 
-    public ChronicleMessage(@NonNull MessageObject<K, V> source) {
-        super(source);
-        if (source instanceof ChronicleMessage<K, V>) {
-            this.index = ((ChronicleMessage<K, V>) source).index;
+    public String getQueue() {
+        Object v = get(KEY_QUEUE);
+        if (v instanceof String) {
+            return (String) v;
         }
+        return null;
+    }
+
+    public ChronicleContext setQueue(@NonNull String queue) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(queue));
+        put(KEY_QUEUE, queue);
+        return this;
     }
 }
