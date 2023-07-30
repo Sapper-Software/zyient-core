@@ -20,7 +20,6 @@ import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.state.OffsetState;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter

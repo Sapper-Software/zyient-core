@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.connections.kafka;
+package ai.sapper.cdc.core.connections.chronicle;
 
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
@@ -26,23 +26,28 @@ import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import net.openhft.chronicle.queue.ExcerptTailer;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.apache.kafka.clients.producer.KafkaProducer;
 
 import javax.naming.ConfigurationException;
 import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
-public class KafkaProducerConnection<K, V> extends KafkaConnection {
-    private KafkaProducer<K, V> producer;
+public class ChronicleConsumerConnection extends ChronicleConnection {
+    private ExcerptTailer tailer;
 
-    /**
-     * @param xmlConfig
-     * @return
-     * @throws ConnectionError
-     */
+    @Override
+    public boolean canSend() {
+        return false;
+    }
+
+    @Override
+    public boolean canReceive() {
+        return true;
+    }
+
     @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
@@ -53,7 +58,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening Kafka connection.", t);
+                throw new ConnectionError("Error opening Chronicle connection.", t);
             }
         }
         return this;
@@ -71,7 +76,7 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening Kafka connection.", t);
+                throw new ConnectionError("Error opening Chronicle connection.", t);
             }
         }
         return this;
@@ -87,80 +92,42 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening Kafka connection.", t);
+                throw new ConnectionError("Error opening Chronicle connection.", t);
             }
+            return this;
         }
-        return this;
     }
 
     private void setup() throws Exception {
-        if (settings().getMode() != EMessageClientMode.Producer) {
-            throw new ConfigurationException("Connection not initialized in Producer mode.");
+        if (settings().getMode() != EMessageClientMode.Consumer) {
+            throw new ConfigurationException("Connection not initialized in Consumer mode.");
         }
         settings().setConnectionClass(getClass());
     }
 
-    /**
-     * @return
-     * @throws ConnectionError
-     */
     @Override
     public Connection connect() throws ConnectionError {
         synchronized (state) {
-            Preconditions.checkState(connectionState() == EConnectionState.Initialized);
-            if (!state.isConnected()) {
-                try {
-                    producer = new KafkaProducer<K, V>(settings().getProperties());
-
-                    state.setState(EConnectionState.Connected);
-                } catch (Throwable t) {
-                    state.error(t);
-                    throw new ConnectionError("Error opening HDFS connection.", t);
-                }
+            try {
+                Preconditions.checkState(connectionState() == EConnectionState.Initialized);
+                setupQueue();
+                tailer = queue.createTailer(env.moduleInstance().getInstanceId());
+                return this;
+            } catch (Exception ex) {
+                state.error(ex);
+                throw new ConnectionError(ex);
             }
         }
-        return this;
     }
 
-    /**
-     * Closes this stream and releases any system resources associated
-     * with it. If the stream is already closed then invoking this
-     * method has no effect.
-     *
-     * <p> As noted in {@link AutoCloseable#close()}, cases where the
-     * close may fail require careful attention. It is strongly advised
-     * to relinquish the underlying resources and to internally
-     * <em>mark</em> the {@code Closeable} as closed, prior to throwing
-     * the {@code IOException}.
-     *
-     * @throws IOException if an I/O error occurs
-     */
     @Override
     public void close() throws IOException {
         synchronized (state) {
-            if (state.isConnected()) {
-                state.setState(EConnectionState.Closed);
+            if (tailer != null) {
+                tailer.close();
+                tailer = null;
             }
-            if (producer != null) {
-                producer.close();
-                producer = null;
-            }
+            super.close();
         }
-    }
-
-    /**
-     * @return
-     */
-    @Override
-    public boolean canSend() {
-        return true;
-    }
-
-    /**
-     * @return
-     */
-    @Override
-    public boolean canReceive() {
-        return false;
     }
 }

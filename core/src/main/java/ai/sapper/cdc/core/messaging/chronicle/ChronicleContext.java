@@ -21,8 +21,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.NonNull;
 
-import java.lang.annotation.Native;
-
 public class ChronicleContext extends Context {
     public static final String KEY_QUEUE = "queue";
 

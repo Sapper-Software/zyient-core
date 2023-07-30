@@ -14,18 +14,8 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.common.model;
+package ai.sapper.cdc.core.connections;
 
-import ai.sapper.cdc.common.AbstractState;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-public class RunnerState extends AbstractState<ERunnerState> {
-    public RunnerState() {
-        super(ERunnerState.Error, ERunnerState.Unknown);
-    }
-
-    @JsonIgnore
-    public boolean isRunning() {
-        return (getState() == ERunnerState.Running);
-    }
+public enum EMessageClientMode {
+    Producer, Consumer;
 }

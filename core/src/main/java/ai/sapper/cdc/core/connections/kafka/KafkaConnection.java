@@ -74,13 +74,11 @@ public abstract class KafkaConnection implements MessageConnection {
             kafkaConfig = new KafkaConfig(xmlConfig, getClass());
             kafkaConfig.read();
             settings = (KafkaSettings) kafkaConfig.settings();
-            if (Strings.isNullOrEmpty(settings.clientId()))
-                settings.clientId(env.moduleInstance().getInstanceId());
+            return this;
         } catch (Throwable t) {
             state.error(t);
             throw new ConnectionError("Error opening HDFS connection.", t);
         }
-        return this;
     }
 
     @Override
@@ -89,11 +87,6 @@ public abstract class KafkaConnection implements MessageConnection {
                            @NonNull String path,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
         try {
-            if (state.isConnected()) {
-                close();
-            }
-            state.clear();
-
             CuratorFramework client = connection.client();
             String zkPath = new PathUtils.ZkPathBuilder(path)
                     .withPath(KafkaConfig.__CONFIG_PATH)
@@ -104,15 +97,11 @@ public abstract class KafkaConnection implements MessageConnection {
                         String.format("Kafka Connection settings not found. [path=%s]", zkPath));
             }
             settings = (KafkaSettings) reader.settings();
-            settings.validate();
-
-            if (Strings.isNullOrEmpty(settings.clientId()))
-                settings.clientId(env.moduleInstance().getInstanceId());
+            return this;
         } catch (Exception ex) {
             state.error(ex);
             throw new ConnectionError(ex);
         }
-        return this;
     }
 
     @Override
@@ -127,6 +116,7 @@ public abstract class KafkaConnection implements MessageConnection {
             this.settings = (KafkaSettings) settings;
             if (Strings.isNullOrEmpty(((KafkaSettings) settings).clientId()))
                 ((KafkaSettings) settings).clientId(env.moduleInstance().getInstanceId());
+            state.setState(EConnectionState.Initialized);
         } catch (Exception ex) {
             state.error(ex);
             throw new ConnectionError(ex);
@@ -173,10 +163,6 @@ public abstract class KafkaConnection implements MessageConnection {
         return settings.getType();
     }
 
-    public enum EKafkaClientMode {
-        Producer, Consumer
-    }
-
 
     @Getter
     @Accessors(fluent = true)
@@ -193,7 +179,7 @@ public abstract class KafkaConnection implements MessageConnection {
             try {
                 KafkaSettings settings = (KafkaSettings) settings();
 
-                if (settings.getMode() == EKafkaClientMode.Producer) {
+                if (settings.getMode() == EMessageClientMode.Producer) {
                     File configFile = ConfigReader.readFileNode(settings.getConfigPath());
                     if (configFile == null || !configFile.exists()) {
                         throw new ConfigurationException(String.format("Kafka Configuration Error: missing [%s]",
@@ -201,7 +187,7 @@ public abstract class KafkaConnection implements MessageConnection {
                     }
                     settings.setProperties(new Properties());
                     settings.getProperties().load(new FileInputStream(configFile));
-                } else if (settings.getMode() == EKafkaClientMode.Consumer) {
+                } else if (settings.getMode() == EMessageClientMode.Consumer) {
                     File configFile = ConfigReader.readFileNode(settings.getConfigPath());
                     if (configFile == null || !configFile.exists()) {
                         throw new ConfigurationException(String.format("Kafka Configuration Error: missing [%s]",

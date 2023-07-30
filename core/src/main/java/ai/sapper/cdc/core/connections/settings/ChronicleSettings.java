@@ -19,10 +19,14 @@ package ai.sapper.cdc.core.connections.settings;
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.units.TimeUnitValue;
 import ai.sapper.cdc.common.config.units.TimeValueParser;
+import ai.sapper.cdc.core.connections.EMessageClientMode;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import net.openhft.chronicle.queue.RollCycles;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -33,10 +37,16 @@ import java.util.concurrent.TimeUnit;
 public class ChronicleSettings extends ConnectionSettings {
     @Config(name = "queue")
     private String name;
-    @Config(name = "path")
-    private String path;
+    @Config(name = "baseDir")
+    private String baseDir;
+    @Config(name = KafkaSettings.Constants.CONFIG_MODE, required = false, type = EMessageClientMode.class)
+    private EMessageClientMode mode = EMessageClientMode.Producer;
     @Config(name = "retention", required = false, parser = TimeValueParser.class)
     private TimeUnitValue cleanUpTTL = new TimeUnitValue(5L * 60 * 60 * 1000, TimeUnit.MILLISECONDS); // Default = 5Hrs
+    @Config(name = "rollCycle", required = false, type = RollCycles.class)
+    private RollCycles rollCycle = RollCycles.FAST_HOURLY;
+    @Config(name = "indexSpacing", required = false, type = Integer.class)
+    private int indexSpacing = 64;
 
     public ChronicleSettings() {
 
@@ -44,5 +54,20 @@ public class ChronicleSettings extends ConnectionSettings {
 
     public ChronicleSettings(@NonNull ConnectionSettings settings) {
         super(settings);
+        Preconditions.checkArgument(settings instanceof ChronicleSettings);
+        name = ((ChronicleSettings) settings).name;
+        baseDir = ((ChronicleSettings) settings).baseDir;
+        cleanUpTTL = ((ChronicleSettings) settings).cleanUpTTL;
+        rollCycle = ((ChronicleSettings) settings).rollCycle;
+        indexSpacing = ((ChronicleSettings) settings).indexSpacing;
+    }
+
+    @Override
+    public void validate() throws Exception {
+        super.validate();
+        if (indexSpacing != 16 && indexSpacing != 64) {
+            throw new ConfigurationException(
+                    String.format("Invalid configuration: Index Spacing value. [value=%d]", indexSpacing));
+        }
     }
 }

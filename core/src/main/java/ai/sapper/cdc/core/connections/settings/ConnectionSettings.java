@@ -78,7 +78,7 @@ public abstract class ConnectionSettings extends Settings {
         connectionClass = settings.connectionClass;
     }
 
-    public final void validate() throws Exception {
+    public void validate() throws Exception {
         Field[] fields = ReflectionUtils.getAllFields(getClass());
         if (fields != null) {
             for (Field field : fields) {

@@ -19,6 +19,7 @@ package ai.sapper.cdc.core.connections.kafka;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
+import ai.sapper.cdc.core.connections.EMessageClientMode;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import com.google.common.base.Preconditions;
@@ -54,15 +55,11 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
         synchronized (state) {
             super.init(xmlConfig, env);
             try {
-                if (settings().getMode() != EKafkaClientMode.Consumer) {
-                    throw new ConfigurationException("Connection not initialized in Consumer mode.");
-                }
                 setup();
-
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening HDFS connection.", t);
+                throw new ConnectionError("Error opening Kafka connection.", t);
             }
         }
         return this;
@@ -76,14 +73,11 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
         synchronized (state) {
             super.init(name, connection, path, env);
             try {
-                if (settings().getMode() != EKafkaClientMode.Consumer) {
-                    throw new ConfigurationException("Connection not initialized in Consumer mode.");
-                }
                 setup();
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening HDFS connection.", t);
+                throw new ConnectionError("Error opening Kafka connection.", t);
             }
         }
         return this;
@@ -95,20 +89,21 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
         synchronized (state) {
             super.setup(settings, env);
             try {
-                if (settings().getMode() != EKafkaClientMode.Consumer) {
-                    throw new ConfigurationException("Connection not initialized in Consumer mode.");
-                }
                 setup();
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening HDFS connection.", t);
+                throw new ConnectionError("Error opening Kafka connection.", t);
             }
+            return this;
         }
-        return this;
     }
 
     private void setup() throws Exception {
+        if (settings().getMode() != EMessageClientMode.Consumer) {
+            throw new ConfigurationException("Connection not initialized in Consumer mode.");
+        }
+
         settings().setConnectionClass(getClass());
         Properties props = settings().getProperties();
         if (props.containsKey(CONFIG_MAX_POLL_RECORDS)) {

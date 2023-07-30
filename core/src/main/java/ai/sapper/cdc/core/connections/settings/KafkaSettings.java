@@ -17,7 +17,7 @@
 package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.connections.kafka.KafkaConnection;
+import ai.sapper.cdc.core.connections.EMessageClientMode;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -61,8 +61,8 @@ public class KafkaSettings extends ConnectionSettings {
     @Config(name = Constants.CONFIG_FILE_CONFIG)
     private String configPath;
     private Properties properties;
-    @Config(name = Constants.CONFIG_MODE, required = false, type = KafkaConnection.EKafkaClientMode.class)
-    private KafkaConnection.EKafkaClientMode mode = KafkaConnection.EKafkaClientMode.Producer;
+    @Config(name = Constants.CONFIG_MODE, required = false, type = EMessageClientMode.class)
+    private EMessageClientMode mode = EMessageClientMode.Producer;
     @Config(name = Constants.CONFIG_TOPIC, required = false)
     private String topic;
     @Config(name = Constants.CONFIG_PARTITIONS, required = false, type = List.class, parser = KafkaPartitionsParser.class)
