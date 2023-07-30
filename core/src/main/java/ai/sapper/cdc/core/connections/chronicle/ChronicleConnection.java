@@ -50,6 +50,7 @@ public abstract class ChronicleConnection implements MessageConnection {
     @Getter(AccessLevel.NONE)
     protected ChronicleQueue queue;
     protected BaseEnv<?> env;
+    private String messageDir;
 
     @Override
     public String name() {
@@ -123,8 +124,8 @@ public abstract class ChronicleConnection implements MessageConnection {
 
     protected void setupQueue() throws Exception {
         Preconditions.checkNotNull(settings);
-        String p = String.format("%s/%s", settings.getBaseDir(), settings.getName());
-        File dir = new File(p);
+        messageDir = String.format("%s/%s", settings.getBaseDir(), settings.getName());
+        File dir = new File(messageDir);
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
                 throw new IOException(String.format("Failed to create directory. [path=%s]", dir.getAbsolutePath()));
