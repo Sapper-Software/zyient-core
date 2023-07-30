@@ -18,12 +18,15 @@ package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
+import ai.sapper.cdc.common.config.units.TimeValueParser;
 import ai.sapper.cdc.core.model.ESettingsSource;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
@@ -43,6 +46,10 @@ import java.util.Map;
  *                     <lockTimeout>[distributed lock timeout (optional)</lockTimeout>
  *                 </zk>
  *                 <compressed>[true|false, default=false]</compressed>
+ *                 <encryption>
+ *                     <enable>[true/false, default=false]</enable>
+ *                     <key>[Encryption Key reference]</key>
+ *                 </encryption>
  *                 <containers>
  *                     <container>
  *                         ...
@@ -71,10 +78,13 @@ public abstract class FileSystemSettings extends Settings {
         public static final String CONFIG_TEMP_FOLDER = "tmp.path";
         public static final String CONFIG_TEMP_TTL = "tmp.ttl";
         public static final String CONFIG_TEMP_CLEAN = "tmp.clean";
+        public static final String CONFIG_TEMP_CLEAN_INTERVAL = "tmp.interval";
         public static final String CONFIG_ZK_CONNECTION = "zk.connection";
         public static final String CONFIG_ZK_PATH = "zk.path";
         public static final String CONFIG_ZK_LOCK_TIMEOUT = "zk.lockTimeout";
         public static final String CONFIG_DEFAULT_COMPRESSED = "compressed";
+        public static final String CONFIG_ENCRYPTED = "encryption.enable";
+        public static final String CONFIG_ENCRYPTION_KEY = "encryption.key";
         public static final int LOCK_TIMEOUT = 60 * 1000;
     }
 
@@ -90,12 +100,18 @@ public abstract class FileSystemSettings extends Settings {
     private String tempDir = TEMP_PATH;
     @Config(name = Constants.CONFIG_TEMP_CLEAN, required = false, type = Boolean.class)
     private boolean cleanTmp = true;
-    @Config(name = Constants.CONFIG_TEMP_TTL, required = false, type = Long.class)
-    private long tempTTL = 15 * 60 * 1000;
-    @Config(name = Constants.CONFIG_ZK_LOCK_TIMEOUT, required = false, type = Integer.class)
-    private int lockTimeout = Constants.LOCK_TIMEOUT;
+    @Config(name = Constants.CONFIG_TEMP_TTL, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue tempTTL = new TimeUnitValue(30L * 60 * 1000, TimeUnit.MILLISECONDS);
+    @Config(name = Constants.CONFIG_TEMP_CLEAN_INTERVAL, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue tempCleanInterval = new TimeUnitValue(60 * 1000, TimeUnit.MILLISECONDS);
+    @Config(name = Constants.CONFIG_ZK_LOCK_TIMEOUT, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue lockTimeout = new TimeUnitValue(Constants.LOCK_TIMEOUT, TimeUnit.MILLISECONDS);
     @Config(name = Constants.CONFIG_DEFAULT_COMPRESSED, required = false, type = Boolean.class)
     private boolean compressed = false;
+    @Config(name = Constants.CONFIG_ENCRYPTED, required = false, type = Boolean.class)
+    private boolean encrypted = false;
+    @Config(name = Constants.CONFIG_ENCRYPTION_KEY, required = false)
+    private String encryptionKey;
     private Container defaultContainer;
     private Map<String, Container> containers;
     private ESettingsSource source = ESettingsSource.File;

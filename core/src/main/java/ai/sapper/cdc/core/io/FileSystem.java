@@ -18,6 +18,7 @@ package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.DirectoryCleaner;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
@@ -35,7 +36,6 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,9 @@ public abstract class FileSystem implements Closeable {
     @Getter(AccessLevel.NONE)
     private File tmpDir;
     @Getter(AccessLevel.NONE)
-    private Thread cleaner;
+    private Thread cleanerThread;
+    @Getter(AccessLevel.NONE)
+    private DirectoryCleaner dirCleaner;
     private FileSystemConfigReader configReader;
     private String id;
 
@@ -162,16 +164,27 @@ public abstract class FileSystem implements Closeable {
                 throw new IOException(
                         String.format("Error create temporary directory. [path=%s]", tmpDir.getAbsolutePath()));
             }
+        } else if (!tmpDir.isDirectory()) {
+            throw new IOException(
+                    String.format("Path is not a directory. [path=%s]", tmpDir.getAbsolutePath()));
         }
     }
 
     protected FileSystem postInit() throws IOException {
-        if (settings.isCleanTmp()) {
-            cleaner = new Thread(new TmpCleaner(this, tmpDir, settings.getTempTTL()), "TMP-CLEANER-THREAD");
-            cleaner.start();
+        try {
+            if (settings.isCleanTmp()) {
+                dirCleaner = new DirectoryCleaner(tmpDir.getAbsolutePath(),
+                        true,
+                        settings.getTempTTL().normalized(),
+                        settings.getTempCleanInterval().normalized());
+                cleanerThread = new Thread(dirCleaner, "TMP-CLEANER-THREAD");
+                cleanerThread.start();
+            }
+            state.setState(Connection.EConnectionState.Connected);
+            return this;
+        } catch (Exception ex) {
+            throw new IOException(ex);
         }
-        state.setState(Connection.EConnectionState.Connected);
-        return this;
     }
 
     protected DistributedLock getLock(@NonNull Inode inode,
@@ -181,7 +194,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(inode.getName(), zp, zkConnection, settings.getLockTimeout());
+        return env.createCustomLock(inode.getName(), zp, zkConnection, settings.getLockTimeout().normalized());
     }
 
     public DistributedLock getLock(@NonNull Inode inode) throws Exception {
@@ -199,7 +212,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(domain, zp, zkConnection, settings.getLockTimeout());
+        return env.createCustomLock(domain, zp, zkConnection, settings.getLockTimeout().normalized());
     }
 
     private DistributedLock getRootLock(@NonNull CuratorFramework client) throws Exception {
@@ -208,7 +221,7 @@ public abstract class FileSystem implements Closeable {
         if (client.checkExists().forPath(zp) == null) {
             throw new Exception(String.format("Failed to get lock: path not found. [path=%s]", zp));
         }
-        return env.createCustomLock(settings.getName(), zp, zkConnection, settings.getLockTimeout());
+        return env.createCustomLock(settings.getName(), zp, zkConnection, settings.getLockTimeout().normalized());
     }
 
     private void registerDomain(Container container, CuratorFramework client) throws Exception {
@@ -868,8 +881,9 @@ public abstract class FileSystem implements Closeable {
         try {
             if (state.isConnected())
                 state.setState(Connection.EConnectionState.Closed);
-            if (cleaner != null) {
-                cleaner.join();
+            if (cleanerThread != null) {
+                dirCleaner.stop();
+                cleanerThread.join();
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -922,51 +936,5 @@ public abstract class FileSystem implements Closeable {
     public interface FileSystemMocker {
         FileSystem create(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                           @NonNull BaseEnv<?> env) throws Exception;
-    }
-
-    public static class TmpCleaner implements Runnable {
-        private final long ttl;
-        private final File tmpDir;
-        private final FileSystem fs;
-
-        public TmpCleaner(@NonNull FileSystem fs,
-                          @NonNull File tmpDir,
-                          long ttl) {
-            Preconditions.checkArgument(tmpDir.exists());
-            Preconditions.checkArgument(ttl >= 60 * 1000);
-            this.fs = fs;
-            this.tmpDir = tmpDir;
-            this.ttl = ttl;
-        }
-
-        @Override
-        public void run() {
-            try {
-                while (fs.state.isConnected()) {
-                    Thread.sleep(ttl);
-                    cleanUp();
-                }
-            } catch (Throwable t) {
-                DefaultLogger.stacktrace(t);
-                DefaultLogger.error("Cleaner thread terminated with error.", t);
-                fs.state.error(t);
-            }
-        }
-
-        private void cleanUp() throws Exception {
-            Collection<File> files = FileUtils.listFiles(tmpDir, null, true);
-            if (files != null && !files.isEmpty()) {
-                for (File file : files) {
-                    cleanUp(file);
-                }
-            }
-        }
-
-        private void cleanUp(File file) throws Exception {
-            long mtime = file.lastModified();
-            if (System.currentTimeMillis() - mtime > ttl) {
-                file.delete();
-            }
-        }
     }
 }

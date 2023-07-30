@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.connections.settings;
+package ai.sapper.cdc.common.model;
 
-public enum EConnectionType {
-    kafka, zookeeper, db, rest, hadoop, debezium, others, chronicle;
+import ai.sapper.cdc.common.AbstractState;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.NonNull;
 
-    public static EConnectionType parse(String name) {
-        for (EConnectionType type : EConnectionType.values()) {
-            if (type.name().compareToIgnoreCase(name) == 0) {
-                return type;
-            }
-        }
-        return null;
+public class RunnerState extends AbstractState<ERunnerState> {
+    public RunnerState() {
+        super(ERunnerState.Error, ERunnerState.Unknown);
+    }
+
+    @JsonIgnore
+    public boolean isRunning() {
+        return (getState() == ERunnerState.Running);
     }
 }
