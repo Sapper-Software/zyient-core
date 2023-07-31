@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging.kafka;
+package ai.sapper.cdc.core.messaging.chronicle;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
-import org.apache.kafka.common.TopicPartition;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class KafkaOffsetData {
+public class ChronicleOffsetData {
     private final String key;
-    private final TopicPartition partition;
-    private final OffsetAndMetadata offset;
+    private final long index;
     private boolean acked = false;
 
-    public KafkaOffsetData(String key, ConsumerRecord<String, byte[]> record) {
+    public ChronicleOffsetData(@NonNull String key, long index) {
+        Preconditions.checkArgument(index >= 0);
         this.key = key;
-        this.partition = new TopicPartition(record.topic(), record.partition());
-        this.offset = new OffsetAndMetadata(record.offset(), String.format("[Key=%s]", key));
+        this.index = index;
     }
 }

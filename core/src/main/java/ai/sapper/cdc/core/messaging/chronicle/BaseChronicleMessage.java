@@ -14,12 +14,9 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging;
+package ai.sapper.cdc.core.messaging.chronicle;
 
-import lombok.NonNull;
-
-public interface AckDelegate<M> {
-    void ack(@NonNull M message, boolean commit) throws MessagingError;
-
-    int commit() throws MessagingError;
+public class BaseChronicleMessage<M> extends ChronicleMessage<String, M> {
+    public static final String HEADER_MESSAGE_QUEUE = "queue";
+    public static final String HEADER_MESSAGE_KEY = "key";
 }

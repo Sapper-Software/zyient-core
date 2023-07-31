@@ -26,6 +26,11 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(fluent = true)
 public class ChronicleMessage<K, V> extends MessageObject<K, V> {
+    public static final String HEADER_CORRELATION_ID = "correlationId";
+    public static final String HEADER_MESSAGE_ID = "messageId";
+    public static final String HEADER_MESSAGE_MODE = "mode";
+    public static final String HEADER_MESSAGE_BODY = "data";
+
     private long index;
 
     public ChronicleMessage() {

@@ -18,10 +18,14 @@ package ai.sapper.cdc.core.messaging.builders;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
+import ai.sapper.cdc.common.config.units.TimeValueParser;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
@@ -49,6 +53,6 @@ public class MessageReceiverSettings extends Settings {
     private String offsetManager;
     @Config(name = "batchSize", required = false, type = Integer.class)
     private int batchSize = -1;
-    @Config(name = "receiverTimeout", required = false, type = Long.class)
-    private long receiverTimeout = -1;
+    @Config(name = "receiverTimeout", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue receiverTimeout = new TimeUnitValue(-1, TimeUnit.MILLISECONDS);
 }

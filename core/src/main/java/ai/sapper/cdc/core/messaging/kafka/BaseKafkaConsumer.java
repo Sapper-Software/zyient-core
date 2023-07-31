@@ -38,22 +38,13 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
 public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
-    private static final long DEFAULT_RECEIVE_TIMEOUT = 30000; // 30 secs default timeout.
     private Queue<MessageObject<String, M>> cache = null;
     private final Map<String, KafkaOffsetData> offsetMap = new HashMap<>();
     private KafkaStateManager stateManager;
     private BasicKafkaConsumerConnection consumer = null;
     private String topic;
     private KafkaConsumerState state;
-    private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
     private int partition;
-
-    public BaseKafkaConsumer<M> withReceiveTimeout(long receiveTimeout) {
-        Preconditions.checkArgument(receiveTimeout > 0);
-        defaultReceiveTimeout = receiveTimeout;
-
-        return this;
-    }
 
     private void seek(TopicPartition partition, long offset) throws Exception {
         if (offset > 0) {
@@ -61,22 +52,27 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         } else {
             consumer.consumer().seekToBeginning(Collections.singletonList(partition));
         }
-        updateReadState(offset);
     }
 
     @Override
-    public void ack(@NonNull String messageId) throws MessagingError {
+    public void ack(@NonNull String messageId, boolean commit) throws MessagingError {
         Preconditions.checkState(state().isAvailable());
         try {
-            if (offsetMap.containsKey(messageId)) {
-                Map<TopicPartition, OffsetAndMetadata> currentOffsets =
-                        new HashMap<>();
-                KafkaOffsetData od = offsetMap.get(messageId);
-                currentOffsets.put(od.partition(), od.offset());
-                consumer.consumer().commitSync(currentOffsets);
-                updateCommitState(od.offset().offset());
-            } else {
-                throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
+            synchronized (offsetMap) {
+                if (offsetMap.containsKey(messageId)) {
+                    Map<TopicPartition, OffsetAndMetadata> currentOffsets =
+                            new HashMap<>();
+                    KafkaOffsetData od = offsetMap.get(messageId);
+                    od.acked(true);
+                    currentOffsets.put(od.partition(), od.offset());
+                    if (commit) {
+                        consumer.consumer().commitSync(currentOffsets);
+                        updateCommitState(od.offset().offset());
+                        offsetMap.remove(messageId);
+                    }
+                } else {
+                    throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
+                }
             }
         } catch (Exception ex) {
             throw new MessagingError(ex);
@@ -89,28 +85,50 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         Preconditions.checkState(state().isAvailable());
         Preconditions.checkArgument(!messageIds.isEmpty());
         try {
-            Map<TopicPartition, OffsetAndMetadata> currentOffsets =
-                    new HashMap<>();
-            Map<Integer, Long> offsets = new HashMap<>();
-            for (String messageId : messageIds) {
-                if (offsetMap.containsKey(messageId)) {
-                    KafkaOffsetData od = offsetMap.get(messageId);
-                    long currentOffset = offsets.get(od.partition().partition());
-                    if (od.offset().offset() > currentOffset) {
-                        currentOffsets.put(od.partition(), od.offset());
-                        offsets.put(od.partition().partition(), od.offset().offset());
+            synchronized (offsetMap) {
+                Map<TopicPartition, OffsetAndMetadata> currentOffsets =
+                        new HashMap<>();
+                Map<Integer, Long> offsets = new HashMap<>();
+                for (String messageId : messageIds) {
+                    if (offsetMap.containsKey(messageId)) {
+                        KafkaOffsetData od = offsetMap.get(messageId);
+                        long currentOffset = offsets.get(od.partition().partition());
+                        if (od.offset().offset() > currentOffset) {
+                            currentOffsets.put(od.partition(), od.offset());
+                            offsets.put(od.partition().partition(), od.offset().offset());
+                        }
+                    } else {
+                        throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
                     }
-                } else {
-                    throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
+                    offsetMap.remove(messageId);
                 }
-            }
-            consumer.consumer().commitSync(currentOffsets);
-            for (int partition : offsets.keySet()) {
-                updateCommitState(offsets.get(partition));
+                consumer.consumer().commitSync(currentOffsets);
+                for (int partition : offsets.keySet()) {
+                    updateCommitState(offsets.get(partition));
+                }
             }
         } catch (Exception ex) {
             throw new MessagingError(ex);
         }
+    }
+
+    @Override
+    public int commit() throws MessagingError {
+        int count = 0;
+        synchronized (offsetMap) {
+            List<String> messageIds = new ArrayList<>();
+            for (String id : offsetMap.keySet()) {
+                KafkaOffsetData od = offsetMap.get(id);
+                if (od.acked()) {
+                    messageIds.add(id);
+                }
+            }
+            if (!messageIds.isEmpty()) {
+                ack(messageIds);
+                count = messageIds.size();
+            }
+        }
+        return count;
     }
 
     @Override
@@ -129,6 +147,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                 stateManager = (KafkaStateManager) offsetStateManager();
                 initializeStates();
             }
+            offsetMap.clear();
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
@@ -185,11 +204,6 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
     }
 
     @Override
-    public MessageObject<String, M> receive() throws MessagingError {
-        return receive(defaultReceiveTimeout);
-    }
-
-    @Override
     public MessageObject<String, M> receive(long timeout) throws MessagingError {
         Preconditions.checkState(state().isAvailable());
         if (cache.isEmpty()) {
@@ -202,11 +216,6 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             return cache.poll();
         }
         return null;
-    }
-
-    @Override
-    public List<MessageObject<String, M>> nextBatch() throws MessagingError {
-        return nextBatch(defaultReceiveTimeout);
     }
 
     @Override
@@ -265,6 +274,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public void seek(@NonNull Offset offset, Context context) throws MessagingError {
+        Preconditions.checkState(state().isAvailable());
         Preconditions.checkArgument(context instanceof KafkaContext);
         Preconditions.checkArgument(offset instanceof KafkaOffset);
         KafkaConsumerState s = (KafkaConsumerState) currentOffset(context);
@@ -278,6 +288,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             long o = ((KafkaOffset) offset).getOffsetCommitted();
             if (s.getOffset().getOffsetRead() <= o) {
                 o = s.getOffset().getOffsetRead();
+                ((KafkaOffset) offset).setOffsetCommitted(o);
             }
             seek(partition, o);
             updateReadState(o);
@@ -290,12 +301,16 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public void close() throws IOException {
+        if (state().isAvailable()) {
+            state().setState(ProcessorState.EProcessorState.Stopped);
+        }
         if (cache != null) {
             cache.clear();
             cache = null;
         }
-        if (state().isAvailable()) {
-            state().setState(ProcessorState.EProcessorState.Stopped);
+        if (consumer != null) {
+            consumer.close();
+            consumer = null;
         }
     }
 }

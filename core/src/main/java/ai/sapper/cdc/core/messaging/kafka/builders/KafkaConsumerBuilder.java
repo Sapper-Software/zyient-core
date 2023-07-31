@@ -64,8 +64,8 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
             }
             consumer.withOffsetStateManager(offsetStateManager);
         }
-        if (settings.getReceiverTimeout() > 0) {
-            consumer.withReceiveTimeout(settings.getReceiverTimeout());
+        if (settings.getReceiverTimeout().normalized() > 0) {
+            consumer.withReceiveTimeout(settings.getReceiverTimeout().normalized());
         }
         return (BaseKafkaConsumer<M>) consumer.init();
     }

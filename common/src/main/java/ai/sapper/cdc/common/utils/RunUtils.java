@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging;
+package ai.sapper.cdc.common.utils;
 
-import lombok.NonNull;
-
-public interface AckDelegate<M> {
-    void ack(@NonNull M message, boolean commit) throws MessagingError;
-
-    int commit() throws MessagingError;
+public class RunUtils {
+    public static void sleep(long interval) {
+        if (interval <= 0) return;
+        try {
+            Thread.sleep(interval);
+        } catch (InterruptedException ie) {
+            // Do nothing...
+        }
+    }
 }

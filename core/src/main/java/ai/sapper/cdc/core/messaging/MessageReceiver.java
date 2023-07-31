@@ -34,12 +34,24 @@ import java.util.List;
 @Getter
 @Accessors(fluent = true)
 public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I> {
+    private static final long DEFAULT_RECEIVE_TIMEOUT = 5000; // 5 secs default timeout.
+
     private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
     private int batchSize = 32;
     private AuditLogger auditLogger;
     private OffsetStateManager<?> offsetStateManager;
     private boolean stateful = false;
+    private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+
+
+    public MessageReceiver<I, M> withReceiveTimeout(long receiveTimeout) {
+        Preconditions.checkArgument(receiveTimeout > 0);
+        defaultReceiveTimeout = receiveTimeout;
+
+        return this;
+    }
+
 
     public MessageReceiver<I, M> withOffsetStateManager(OffsetStateManager<?> offsetStateManager) {
         this.offsetStateManager = offsetStateManager;
@@ -69,11 +81,15 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
 
     public abstract MessageReceiver<I, M> init() throws MessagingError;
 
-    public abstract MessageObject<I, M> receive() throws MessagingError;
+    public MessageObject<I, M> receive() throws MessagingError {
+        return receive(defaultReceiveTimeout);
+    }
 
     public abstract MessageObject<I, M> receive(long timeout) throws MessagingError;
 
-    public abstract List<MessageObject<I, M>> nextBatch() throws MessagingError;
+    public List<MessageObject<I, M>> nextBatch() throws MessagingError {
+        return nextBatch(defaultReceiveTimeout);
+    }
 
     public abstract List<MessageObject<I, M>> nextBatch(long timeout) throws MessagingError;
 

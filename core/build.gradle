@@ -45,6 +45,7 @@ dependencies {
 
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
     implementation 'net.openhft:chronicle-queue:5.24ea23'
+    implementation 'io.github.resilience4j:resilience4j-retry:2.1.0'
 }
 
 test {
