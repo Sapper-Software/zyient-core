@@ -14,9 +14,17 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.connections;
+package ai.sapper.cdc.core.messaging.chronicle;
 
-public enum EMessageClientMode {
-    Producer, Consumer;
-    public static final String CONFIG_MODE = "mode";
+import org.junit.jupiter.api.Test;
+
+class BaseChronicleConsumerTest {
+
+    @Test
+    void nextBatch() {
+    }
+
+    @Test
+    void seek() {
+    }
 }

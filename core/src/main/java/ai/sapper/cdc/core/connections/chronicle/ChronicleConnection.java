@@ -124,7 +124,7 @@ public abstract class ChronicleConnection implements MessageConnection {
 
     protected void setupQueue() throws Exception {
         Preconditions.checkNotNull(settings);
-        messageDir = String.format("%s/%s", settings.getBaseDir(), settings.getName());
+        messageDir = String.format("%s/%s", settings.getBaseDir(), settings.getQueue());
         File dir = new File(messageDir);
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
@@ -176,7 +176,7 @@ public abstract class ChronicleConnection implements MessageConnection {
     }
 
     public static class ChronicleConfig extends ConfigReader {
-        public static final String __CONFIG_PATH = "queue";
+        public static final String __CONFIG_PATH = "chronicle";
 
         public ChronicleConfig(@NonNull HierarchicalConfiguration<ImmutableNode> config) {
             super(config, __CONFIG_PATH, ChronicleSettings.class);

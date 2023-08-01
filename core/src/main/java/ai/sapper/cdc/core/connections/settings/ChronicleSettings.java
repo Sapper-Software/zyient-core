@@ -36,10 +36,10 @@ import java.util.concurrent.TimeUnit;
         property = "@class")
 public class ChronicleSettings extends ConnectionSettings {
     @Config(name = "queue")
-    private String name;
+    private String queue;
     @Config(name = "baseDir")
     private String baseDir;
-    @Config(name = KafkaSettings.Constants.CONFIG_MODE, required = false, type = EMessageClientMode.class)
+    @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
     private EMessageClientMode mode = EMessageClientMode.Producer;
     @Config(name = "retention", required = false, parser = TimeValueParser.class)
     private TimeUnitValue cleanUpTTL = new TimeUnitValue(5L * 60 * 60 * 1000, TimeUnit.MILLISECONDS); // Default = 5Hrs
@@ -55,7 +55,7 @@ public class ChronicleSettings extends ConnectionSettings {
     public ChronicleSettings(@NonNull ConnectionSettings settings) {
         super(settings);
         Preconditions.checkArgument(settings instanceof ChronicleSettings);
-        name = ((ChronicleSettings) settings).name;
+        queue = ((ChronicleSettings) settings).queue;
         baseDir = ((ChronicleSettings) settings).baseDir;
         cleanUpTTL = ((ChronicleSettings) settings).cleanUpTTL;
         rollCycle = ((ChronicleSettings) settings).rollCycle;

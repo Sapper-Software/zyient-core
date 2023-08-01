@@ -40,6 +40,7 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
 
     @Override
     public BaseKafkaConsumer<M> build(@NonNull MessageReceiverSettings settings) throws Exception {
+        Preconditions.checkNotNull(env());
         Preconditions.checkArgument(settings.getType() == EConnectionType.kafka);
         BasicKafkaConsumerConnection connection = env().connectionManager()
                 .getConnection(settings.getConnection(), BasicKafkaConsumerConnection.class);

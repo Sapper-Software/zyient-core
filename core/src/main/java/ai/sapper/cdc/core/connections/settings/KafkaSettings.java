@@ -52,7 +52,6 @@ import java.util.Properties;
 public class KafkaSettings extends ConnectionSettings {
     public static final String PROP_CLIENT_ID = "client.id";
     public static class Constants {
-        public static final String CONFIG_MODE = "mode";
         public static final String CONFIG_FILE_CONFIG = "config";
         public static final String CONFIG_PARTITIONS = "consumer.partitions";
         public static final String CONFIG_TOPIC = "topic";
@@ -61,7 +60,7 @@ public class KafkaSettings extends ConnectionSettings {
     @Config(name = Constants.CONFIG_FILE_CONFIG)
     private String configPath;
     private Properties properties;
-    @Config(name = Constants.CONFIG_MODE, required = false, type = EMessageClientMode.class)
+    @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
     private EMessageClientMode mode = EMessageClientMode.Producer;
     @Config(name = Constants.CONFIG_TOPIC, required = false)
     private String topic;

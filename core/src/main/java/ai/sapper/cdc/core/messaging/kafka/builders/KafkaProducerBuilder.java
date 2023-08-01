@@ -37,6 +37,7 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
     @Override
     @SuppressWarnings("unchecked")
     public BaseKafkaProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
+        Preconditions.checkNotNull(env());
         Preconditions.checkArgument(settings.getType() == EConnectionType.kafka);
         Preconditions.checkArgument(settings instanceof KafkaProducerSettings);
         BasicKafkaProducerConnection connection = env().connectionManager()
