@@ -17,6 +17,7 @@
 package ai.sapper.cdc.common.config.units;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -66,6 +67,8 @@ public class TimeUnitValue extends UnitValue<TimeUnit, Long> {
                     setUnit(TimeUnit.HOURS);
                 } else if (u.equals("D")) {
                     setUnit(TimeUnit.DAYS);
+                } else if (Strings.isNullOrEmpty(u)) {
+                    setUnit(TimeUnit.MILLISECONDS);
                 }
                 setValue(Long.parseLong(m.group(1)));
             }

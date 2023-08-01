@@ -83,9 +83,9 @@ public class ZookeeperSettings extends ConnectionSettings {
     @Config(name = Constants.CONFIG_RETRY_TRIES, required = false, type = Integer.class)
     private int retryCount = 3;
     @Config(name = Constants.CONFIG_CONN_TIMEOUT, required = false, parser = TimeValueParser.class)
-    private TimeUnitValue connectionTimeout = new TimeUnitValue(-1, TimeUnit.MILLISECONDS);
+    private TimeUnitValue connectionTimeout = new TimeUnitValue(10000, TimeUnit.MILLISECONDS);
     @Config(name = Constants.CONFIG_SESSION_TIMEOUT, required = false, parser = TimeValueParser.class)
-    private TimeUnitValue sessionTimeout = new TimeUnitValue(-1, TimeUnit.MILLISECONDS);
+    private TimeUnitValue sessionTimeout = new TimeUnitValue(30000, TimeUnit.MILLISECONDS);
 
     public ZookeeperSettings() {
         setType(EConnectionType.zookeeper);

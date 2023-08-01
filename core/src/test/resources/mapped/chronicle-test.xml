@@ -22,7 +22,29 @@
         <instance>Test</instance>
         <paths>
             <connections>config</connections>
+            <registry>/test/registry</registry>
+            <root>/test</root>
         </paths>
+        <managers>
+            <state>
+                <stateManagerClass>ai.sapper.cdc.core.state.DemoStateManager</stateManagerClass>
+                <basePath>demo</basePath>
+                <connection>test-zk</connection>
+                <fileState>true</fileState>
+                <offsets>
+                    <offsetManager>
+                        <name>TestChronicleOffset</name>
+                        <type>ai.sapper.cdc.core.messaging.chronicle.ChronicleStateManager</type>
+                        <connection>test-zk</connection>
+                        <basePath>chronicle</basePath>
+                    </offsetManager>
+                </offsets>
+            </state>
+        </managers>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/registry</path>
+        </locks>
         <demo>
         </demo>
         <keystore>
