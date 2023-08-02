@@ -27,8 +27,8 @@ import lombok.NonNull;
 public class ChronicleProducerBuilder<M> extends MessageSenderBuilder<String, M> {
     private final Class<? extends BaseChronicleProducer<M>> type;
 
-    protected ChronicleProducerBuilder(@NonNull Class<? extends BaseChronicleProducer<M>> type,
-                                       @NonNull Class<? extends MessageSenderSettings> settingsType) {
+    public ChronicleProducerBuilder(@NonNull Class<? extends BaseChronicleProducer<M>> type,
+                                    @NonNull Class<? extends MessageSenderSettings> settingsType) {
         super(settingsType);
         this.type = type;
     }

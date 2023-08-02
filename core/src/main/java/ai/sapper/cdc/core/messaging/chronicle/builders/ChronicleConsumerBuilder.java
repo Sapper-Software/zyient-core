@@ -30,8 +30,8 @@ import lombok.NonNull;
 public class ChronicleConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
     private final Class<? extends BaseChronicleConsumer<M>> type;
 
-    protected ChronicleConsumerBuilder(@NonNull Class<? extends BaseChronicleConsumer<M>> type,
-                                       @NonNull Class<? extends MessageReceiverSettings> settingsType) {
+    public ChronicleConsumerBuilder(@NonNull Class<? extends BaseChronicleConsumer<M>> type,
+                                    @NonNull Class<? extends MessageReceiverSettings> settingsType) {
         super(settingsType);
         this.type = type;
     }

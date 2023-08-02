@@ -33,8 +33,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.openhft.chronicle.wire.DocumentContext;
-import net.openhft.chronicle.wire.Wire;
+import net.openhft.chronicle.core.io.IORuntimeException;
+import net.openhft.chronicle.core.io.InvalidMarshallableException;
+import net.openhft.chronicle.wire.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -60,6 +61,9 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                 Preconditions.checkArgument(offsetStateManager() instanceof ChronicleStateManager);
                 stateManager = (ChronicleStateManager) offsetStateManager();
                 state = stateManager.get(consumer.name());
+                if (state == null) {
+                    state = stateManager.create(consumer.name());
+                }
                 ChronicleOffset offset = state.getOffset();
                 if (offset.getOffsetCommitted() > 0) {
                     seek(offset.getOffsetCommitted() + 1);
@@ -147,6 +151,7 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
             }
             return null;
         } catch (Throwable ex) {
+            DefaultLogger.stacktrace(ex);
             throw new MessagingError(ex);
         }
     }
@@ -159,40 +164,8 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
             final BaseChronicleMessage<M> message = new BaseChronicleMessage<>();
             message.index(context.index());
             message.queue(consumer.name());
-            w.read(consumer.settings().getName()).marshallable(m -> {
-                message.id(m.read(BaseChronicleMessage.HEADER_MESSAGE_ID).text());
-                message.correlationId(m.read(BaseChronicleMessage.HEADER_CORRELATION_ID).text());
-                message.key(m.read(BaseChronicleMessage.HEADER_MESSAGE_KEY).text());
-                String mo = m.read(BaseChronicleMessage.HEADER_MESSAGE_MODE).text();
-                message.mode(MessageObject.MessageMode.valueOf(mo));
-                String queue = m.read(BaseChronicleMessage.HEADER_MESSAGE_QUEUE).text();
-                if (Strings.isNullOrEmpty(queue) || message.queue().compareToIgnoreCase(queue) != 0) {
-                    response.error = new InvalidMessageError(message.id(),
-                            String.format("Invalid message: Queue not expected. [expected=%s][queue=%s]",
-                                    message.queue(),
-                                    queue));
-                    return;
-                }
-                byte[] data = m.read(BaseChronicleMessage.HEADER_MESSAGE_BODY).bytes();
-                if (data == null || data.length == 0) {
-                    response.error = new InvalidMessageError(message.id(),
-                            "Data is NULL or empty.");
-                    return;
-                }
-                try {
-                    M body = deserialize(data);
-                    if (body == null) {
-                        response.error = new InvalidMessageError(message.id(),
-                                "Failed to parse message body.");
-                        return;
-                    }
-                    message.value(body);
-                } catch (Exception ex) {
-                    response.error = ex;
-                    return;
-                }
-                response.message = message;
-            });
+            ValueIn node = w.read(consumer.settings().getName());
+            node.marshallable(new MessageReader<>(this, response, message));
         }
         return response;
     }
@@ -349,6 +322,80 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         public ReadResponse() {
             message = null;
             error = null;
+        }
+    }
+
+    public static class MessageReader<M> implements ReadMarshallable {
+        private final BaseChronicleConsumer<M> consumer;
+        private final ReadResponse<M> response;
+        private final BaseChronicleMessage<M> message;
+
+        private MessageReader(@NonNull BaseChronicleConsumer<M> consumer,
+                              @NonNull final ReadResponse<M> response,
+                              @NonNull BaseChronicleMessage<M> message) {
+            this.consumer = consumer;
+            this.response = response;
+            this.message = message;
+        }
+
+        /**
+         * Straight line ordered decoding.
+         *
+         * @param m to read from in an ordered manner.
+         * @throws IORuntimeException the stream wasn't ordered or formatted as expected.
+         */
+        @Override
+        public void readMarshallable(@NonNull WireIn m) throws IORuntimeException, InvalidMarshallableException {
+            try {
+                message.id(m.read(BaseChronicleMessage.HEADER_MESSAGE_ID).text());
+                message.correlationId(m.read(BaseChronicleMessage.HEADER_CORRELATION_ID).text());
+                message.key(m.read(BaseChronicleMessage.HEADER_MESSAGE_KEY).text());
+                String mo = m.read(BaseChronicleMessage.HEADER_MESSAGE_MODE).text();
+                message.mode(MessageObject.MessageMode.valueOf(mo));
+                String queue = m.read(BaseChronicleMessage.HEADER_MESSAGE_QUEUE).text();
+                if (Strings.isNullOrEmpty(queue) || message.queue().compareToIgnoreCase(queue) != 0) {
+                    response.error = new InvalidMessageError(message.id(),
+                            String.format("Invalid message: Queue not expected. [expected=%s][queue=%s]",
+                                    message.queue(),
+                                    queue));
+                    return;
+                }
+                byte[] data = m.read(BaseChronicleMessage.HEADER_MESSAGE_BODY).bytes();
+                if (data == null || data.length == 0) {
+                    response.error = new InvalidMessageError(message.id(),
+                            "Data is NULL or empty.");
+                    return;
+                }
+                M body = consumer.deserialize(data);
+                if (body == null) {
+                    response.error = new InvalidMessageError(message.id(),
+                            "Failed to parse message body.");
+                    return;
+                }
+                message.value(body);
+                response.message = message;
+            } catch (Throwable ex) {
+                response.error = ex;
+                return;
+            }
+        }
+
+        @Override
+        public void unexpectedField(Object event, ValueIn valueIn) throws InvalidMarshallableException {
+            ReadMarshallable.super.unexpectedField(event, valueIn);
+        }
+
+        /**
+         * Determines whether the message produced by this object is self-describing.
+         * A self-describing message includes metadata about its structure, which aids
+         * in decoding the message without prior knowledge of its structure.
+         *
+         * @return {@code true} if the message should be self-describing, {@code false} otherwise.
+         * By default, this method returns {@code true}.
+         */
+        @Override
+        public boolean usesSelfDescribingMessage() {
+            return ReadMarshallable.super.usesSelfDescribingMessage();
         }
     }
 }

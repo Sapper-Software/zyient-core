@@ -46,6 +46,25 @@
             <path>/test/registry</path>
         </locks>
         <demo>
+            <producer>
+                <builder>
+                    <type>ai.sapper.cdc.core.messaging.chronicle.builder.DemoProducerBuilder</type>
+                    <settingsType>ai.sapper.cdc.core.messaging.builders.MessageSenderSettings</settingsType>
+                </builder>
+                <type>chronicle</type>
+                <connection>test-queue-producer</connection>
+            </producer>
+            <consumer>
+                <builder>
+                    <type>ai.sapper.cdc.core.messaging.chronicle.builder.DemoConsumerBuilder</type>
+                    <settingsType>ai.sapper.cdc.core.messaging.builders.MessageReceiverSettings</settingsType>
+                </builder>
+                <type>chronicle</type>
+                <connection>test-queue-consumer</connection>
+                <offset>
+                    <manager>TestChronicleOffset</manager>
+                </offset>
+            </consumer>
         </demo>
         <keystore>
             <class>ai.sapper.cdc.core.keystore.JavaKeyStore</class>
@@ -80,11 +99,11 @@
                     </chronicle>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.chronicle.ChronicleConsumerConnection</class>
+                    <class>ai.sapper.cdc.core.connections.chronicle.ChronicleProducerConnection</class>
                     <chronicle>
                         <name>test-queue-producer</name>
                         <queue>test-queue</queue>
-                        <mode>Consumer</mode>
+                        <mode>Producer</mode>
                         <baseDir>/tmp/test/chronicle/queue</baseDir>
                         <retention>8H</retention>
                     </chronicle>

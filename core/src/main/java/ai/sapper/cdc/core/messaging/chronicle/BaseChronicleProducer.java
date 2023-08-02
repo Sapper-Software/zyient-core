@@ -16,6 +16,8 @@
 
 package ai.sapper.cdc.core.messaging.chronicle;
 
+import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.DirectoryCleaner;
 import ai.sapper.cdc.core.connections.chronicle.ChronicleProducerConnection;
 import ai.sapper.cdc.core.messaging.MessageObject;
 import ai.sapper.cdc.core.messaging.MessageSender;
@@ -37,13 +39,29 @@ import java.util.List;
 @Accessors(fluent = true)
 public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> {
     private ChronicleProducerConnection producer;
+    private DirectoryCleaner dirCleaner;
+    private Thread cleanerThread;
 
     @Override
     public MessageSender<String, M> init() throws MessagingError {
-        Preconditions.checkState(connection() instanceof ChronicleProducerConnection);
-        producer = (ChronicleProducerConnection) connection();
-        state().setState(ProcessorState.EProcessorState.Running);
-        return this;
+        try {
+            Preconditions.checkState(connection() instanceof ChronicleProducerConnection);
+            producer = (ChronicleProducerConnection) connection();
+            dirCleaner = new DirectoryCleaner(producer.messageDir(),
+                    true,
+                    producer.settings().getCleanUpTTL().normalized(),
+                    60 * 1000);
+            cleanerThread = new Thread(dirCleaner,
+                    String.format("QUEUE-%s-CLEANER", producer.settings().getName()));
+            cleanerThread.start();
+
+            state().setState(ProcessorState.EProcessorState.Running);
+            return this;
+        } catch (Exception ex) {
+            state().error(ex);
+            DefaultLogger.stacktrace(ex);
+            throw new MessagingError(ex);
+        }
     }
 
     @Override
@@ -83,6 +101,14 @@ public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> 
     public void close() throws IOException {
         if (state().isAvailable()) {
             state().setState(ProcessorState.EProcessorState.Stopped);
+        }
+        if (dirCleaner != null) {
+            try {
+                dirCleaner.stop();
+                cleanerThread.join();
+            } catch (Exception ex) {
+                DefaultLogger.error(ex.getLocalizedMessage());
+            }
         }
     }
 }

@@ -16,8 +16,6 @@
 
 package ai.sapper.cdc.core.connections.chronicle;
 
-import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.common.utils.DirectoryCleaner;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
@@ -39,8 +37,6 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public class ChronicleProducerConnection extends ChronicleConnection {
     private ExcerptAppender appender;
-    private DirectoryCleaner dirCleaner;
-    private Thread cleanerThread;
 
     @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
@@ -106,14 +102,6 @@ public class ChronicleProducerConnection extends ChronicleConnection {
                 appender.close();
                 appender = null;
             }
-            if (dirCleaner != null) {
-                try {
-                    dirCleaner.stop();
-                    cleanerThread.join();
-                } catch (Exception ex) {
-                    DefaultLogger.error(ex.getLocalizedMessage());
-                }
-            }
             super.close();
         }
     }
@@ -125,13 +113,7 @@ public class ChronicleProducerConnection extends ChronicleConnection {
                 Preconditions.checkState(connectionState() == EConnectionState.Initialized);
                 setupQueue();
                 appender = queue.createAppender();
-                dirCleaner = new DirectoryCleaner(messageDir(),
-                        true,
-                        settings().getCleanUpTTL().normalized(),
-                        60 * 1000);
-                cleanerThread = new Thread(dirCleaner,
-                        String.format("QUEUE-%s-CLEANER", settings().getName()));
-                cleanerThread.start();
+               state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
                 state.error(ex);

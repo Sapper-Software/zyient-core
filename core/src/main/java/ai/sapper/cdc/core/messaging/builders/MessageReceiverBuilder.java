@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.messaging.builders;
 
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.messaging.MessageReceiver;
 import ai.sapper.cdc.core.messaging.MessagingError;
@@ -51,6 +52,7 @@ public abstract class MessageReceiverBuilder<I, M> {
             this.config = reader.config();
             return build((MessageReceiverSettings) reader.settings());
         } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
             throw new MessagingError(ex);
         }
     }

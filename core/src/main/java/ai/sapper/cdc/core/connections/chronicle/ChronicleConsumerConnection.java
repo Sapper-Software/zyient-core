@@ -112,6 +112,7 @@ public class ChronicleConsumerConnection extends ChronicleConnection {
                 Preconditions.checkState(connectionState() == EConnectionState.Initialized);
                 setupQueue();
                 tailer = queue.createTailer(env.moduleInstance().getInstanceId());
+                state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
                 state.error(ex);
