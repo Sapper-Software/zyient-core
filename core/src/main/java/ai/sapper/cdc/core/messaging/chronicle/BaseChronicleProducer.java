@@ -29,10 +29,12 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.openhft.chronicle.queue.ExcerptAppender;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -41,12 +43,15 @@ public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> 
     private ChronicleProducerConnection producer;
     private DirectoryCleaner dirCleaner;
     private Thread cleanerThread;
+    private String id = UUID.randomUUID().toString();
+    private ExcerptAppender appender;
 
     @Override
     public MessageSender<String, M> init() throws MessagingError {
         try {
             Preconditions.checkState(connection() instanceof ChronicleProducerConnection);
             producer = (ChronicleProducerConnection) connection();
+            appender = producer.get(id);
             dirCleaner = new DirectoryCleaner(producer.messageDir(),
                     true,
                     producer.settings().getCleanUpTTL().normalized(),
@@ -75,7 +80,7 @@ public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> 
         MessageEnvelop envelop = new MessageEnvelop(message, data)
                 .queue(message.queue());
 
-        producer.appender().writeDocument(w -> w.write(producer.settings().getName()).marshallable(envelop));
+        appender.writeDocument(w -> w.write(producer.settings().getName()).marshallable(envelop));
         return message;
     }
 
@@ -97,6 +102,7 @@ public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> 
         if (state().isAvailable()) {
             state().setState(ProcessorState.EProcessorState.Stopped);
         }
+        producer.release(id);
         if (dirCleaner != null) {
             try {
                 dirCleaner.stop();

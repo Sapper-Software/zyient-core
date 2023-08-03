@@ -32,11 +32,15 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import javax.naming.ConfigurationException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
 public class ChronicleConsumerConnection extends ChronicleConnection {
-    private ExcerptTailer tailer;
+    private final Map<String, ExcerptTailer> tailers = new HashMap<>();
 
     @Override
     public boolean canSend() {
@@ -111,7 +115,6 @@ public class ChronicleConsumerConnection extends ChronicleConnection {
             try {
                 Preconditions.checkState(connectionState() == EConnectionState.Initialized);
                 setupQueue();
-                tailer = queue.createTailer(env.moduleInstance().getInstanceId());
                 state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
@@ -121,12 +124,36 @@ public class ChronicleConsumerConnection extends ChronicleConnection {
         }
     }
 
+    public ExcerptTailer get(@NonNull String name) {
+        Preconditions.checkState(isConnected());
+        synchronized (tailers) {
+            if (tailers.containsKey(name)) {
+                return tailers.get(name);
+            }
+            ExcerptTailer tailer = queue.createTailer(name);
+            tailers.put(name, tailer);
+            return tailer;
+        }
+    }
+
+    public void release(@NonNull String name) {
+        Preconditions.checkState(isConnected());
+        synchronized (tailers) {
+            if (tailers.containsKey(name)) {
+                tailers.get(name).close();
+                tailers.remove(name);
+            }
+        }
+    }
+
     @Override
     public void close() throws IOException {
         synchronized (state) {
-            if (tailer != null) {
-                tailer.close();
-                tailer = null;
+            if (!tailers.isEmpty()) {
+                for (String name : tailers.keySet()) {
+                    tailers.get(name).close();
+                }
+                tailers.clear();
             }
             super.close();
         }

@@ -32,11 +32,13 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import javax.naming.ConfigurationException;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
 public class ChronicleProducerConnection extends ChronicleConnection {
-    private ExcerptAppender appender;
+    private final Map<String, ExcerptAppender> appenders = new HashMap<>();
 
     @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
@@ -98,9 +100,11 @@ public class ChronicleProducerConnection extends ChronicleConnection {
     @Override
     public void close() throws IOException {
         synchronized (state) {
-            if (appender != null) {
-                appender.close();
-                appender = null;
+            if (!appenders.isEmpty()) {
+                for (String name : appenders.keySet()) {
+                    appenders.get(name).close();
+                }
+                appenders.clear();
             }
             super.close();
         }
@@ -112,12 +116,33 @@ public class ChronicleProducerConnection extends ChronicleConnection {
             try {
                 Preconditions.checkState(connectionState() == EConnectionState.Initialized);
                 setupQueue();
-                appender = queue.createAppender();
-               state.setState(EConnectionState.Connected);
+                state.setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
                 state.error(ex);
                 throw new ConnectionError(ex);
+            }
+        }
+    }
+
+    public ExcerptAppender get(@NonNull String name) {
+        Preconditions.checkState(isConnected());
+        synchronized (appenders) {
+            if (appenders.containsKey(name)) {
+                return appenders.get(name);
+            }
+            ExcerptAppender appender = queue.createAppender();
+            appenders.put(name, appender);
+            return appender;
+        }
+    }
+
+    public void release(@NonNull String name) {
+        Preconditions.checkState(isConnected());
+        synchronized (appenders) {
+            if (appenders.containsKey(name)) {
+                appenders.get(name).close();
+                appenders.remove(name);
             }
         }
     }

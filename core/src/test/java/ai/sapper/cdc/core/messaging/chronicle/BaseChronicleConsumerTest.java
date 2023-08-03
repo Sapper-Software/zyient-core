@@ -35,7 +35,9 @@ import org.junit.jupiter.api.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -121,6 +123,72 @@ class BaseChronicleConsumerTest {
 
     @Test
     void seek() {
+        try {
+            File mf = new File(__MESSAGE_FILE);
+            assertTrue(mf.exists());
+            StringBuilder text = new StringBuilder();
+            FileReader fr = new FileReader(mf);   //reads the file
+            try (BufferedReader reader = new BufferedReader(fr)) {  //creates a buffering character input stream
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    text.append(line).append("\n");
+                }
+            }
+            int mCount = 1024;
+            String cid = "FIRST";
+            for (int ii = 0; ii < mCount; ii++) {
+                BaseChronicleMessage<String> m = new BaseChronicleMessage<>();
+                m.key(String.format("TEST-MESSAGE-%d", ii));
+                m.value(text.toString());
+                m.correlationId(cid);
+                m.mode(MessageObject.MessageMode.New);
+                producer.send(m);
+                cid = m.id();
+            }
+
+            long index = -1;
+            int count = 0;
+            int retry = 0;
+            List<ChronicleOffsetValue> offsets = new ArrayList<>();
+            try (DemoChronicleConsumer consumer = initConsumer(env.baseConfig())) {
+                while (true) {
+                    List<MessageObject<String, String>> messages = consumer.nextBatch();
+                    if (messages != null && !messages.isEmpty()) {
+                        retry = 0;
+                        for (MessageObject<String, String> m : messages) {
+                            consumer.ack(m.id(), false);
+                            BaseChronicleMessage<String> cm = (BaseChronicleMessage<String>) m;
+                            offsets.add(cm.index());
+                            count++;
+                        }
+                        consumer.commit();
+                    } else if (retry > 10) {
+                        break;
+                    } else {
+                        retry++;
+                        Thread.sleep(100);
+                    }
+                }
+                DefaultLogger.info(String.format("Received message count = %d", count));
+                Random r = new Random(System.currentTimeMillis());
+                int ri = r.nextInt(count);
+                ChronicleOffsetValue offset = offsets.get(ri);
+                DefaultLogger.info(String.format("Seek to offset = %s", offset));
+                ChronicleOffset co = new ChronicleOffset();
+                co.setOffsetCommitted(offset);
+                co.setOffsetRead(offset);
+                co.setQueue(consumer.queue());
+                consumer.seek(co, null);
+                List<MessageObject<String, String>> messages = consumer.nextBatch();
+                assertNotNull(messages);
+                BaseChronicleMessage<String> cm = (BaseChronicleMessage<String>) messages.get(0);
+                assertEquals(offset.getIndex(), cm.index().getIndex());
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(ex.getLocalizedMessage());
+            fail(ex);
+        }
     }
 
     public static class ConsumerThread implements Runnable {

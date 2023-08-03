@@ -33,6 +33,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.openhft.chronicle.queue.ChronicleQueue;
+import net.openhft.chronicle.queue.ExcerptTailer;
 import net.openhft.chronicle.wire.DocumentContext;
 import net.openhft.chronicle.wire.Wire;
 
@@ -46,6 +47,12 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
     private ChronicleConsumerConnection consumer;
     private ChronicleStateManager stateManager;
     private ChronicleConsumerState state;
+    private String id = UUID.randomUUID().toString();
+    private ExcerptTailer tailer;
+
+    public String queue() {
+        return consumer.settings().getQueue();
+    }
 
     @Override
     public MessageReceiver<String, M> init() throws MessagingError {
@@ -56,6 +63,7 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
             if (!consumer.isConnected()) {
                 consumer.connect();
             }
+            tailer = consumer.get(id);
             if (stateful()) {
                 Preconditions.checkArgument(offsetStateManager() instanceof ChronicleStateManager);
                 stateManager = (ChronicleStateManager) offsetStateManager();
@@ -114,13 +122,13 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         try {
             while (remaining > 0) {
                 boolean read = false;
-                try (DocumentContext dc = consumer.tailer().readingDocument(true)) {
+                try (DocumentContext dc = tailer.readingDocument(true)) {
                     if (dc.isPresent()) {
                         if (!dc.isData()) {
                             continue;
                         }
                         ReadResponse<M> response = parse(dc);
-                        response.index = new ChronicleOffsetValue(consumer.tailer().cycle(), consumer.tailer().index());
+                        response.index = new ChronicleOffsetValue(tailer.cycle(), tailer.index());
                         if (response.index.compareTo(lastIndex) > 0) {
                             lastIndex = response.index;
                         }
@@ -276,29 +284,29 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
 
     private void seek(ChronicleOffsetValue offset, boolean next) throws Exception {
         if (offset.getIndex() > 0) {
-            if (!consumer.tailer().moveToCycle(offset.getCycle())) {
+            if (!tailer.moveToCycle(offset.getCycle())) {
                 throw new Exception(String.format("Failed to move to cycle. [queue=%s][cycle=%d]",
                         consumer.name(), offset.getCycle()));
             }
-            if (!consumer.tailer().moveToIndex(offset.getIndex())) {
+            if (!tailer.moveToIndex(offset.getIndex())) {
                 throw new Exception(
                         String.format("Failed to move to offset. [queue=%s][offset=%d]",
                                 consumer.name(), offset.getIndex()));
             }
             if (next) {
                 long nextIndex = offset.getIndex() + 1;
-                if (!consumer.tailer().moveToIndex(nextIndex)) {
-                    ChronicleQueue queue = consumer.tailer().queue();
+                if (!tailer.moveToIndex(nextIndex)) {
+                    ChronicleQueue queue = tailer.queue();
                     nextIndex = queue
                             .rollCycle()
                             .toIndex(offset.getCycle() + 1, 0);
-                    if (!consumer.tailer().moveToIndex(nextIndex)) {
+                    if (!tailer.moveToIndex(nextIndex)) {
                         DefaultLogger.warn(String.format("[queue=%s] At cycle end.", consumer.name()));
                     }
                 }
             }
         } else {
-            consumer.tailer().toStart();
+            tailer.toStart();
         }
     }
 
@@ -329,9 +337,9 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
             cache.clear();
             cache = null;
         }
-        if (consumer != null) {
-            consumer.close();
-            consumer = null;
+        if (tailer != null) {
+            consumer.release(id);
+            tailer = null;
         }
     }
 

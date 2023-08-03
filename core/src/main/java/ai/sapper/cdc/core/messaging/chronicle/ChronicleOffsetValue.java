@@ -23,11 +23,13 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
+@ToString
 public class ChronicleOffsetValue extends OffsetValue {
     private int cycle = 0;
     private long index = 0;
