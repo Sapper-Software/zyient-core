@@ -32,6 +32,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.openhft.chronicle.queue.ChronicleQueue;
 import net.openhft.chronicle.wire.DocumentContext;
 import net.openhft.chronicle.wire.Wire;
 
@@ -71,7 +72,7 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                     v.setIndex(0);
                     seek(v, false);
                 }
-                if (offset.getOffsetCommitted() != offset.getOffsetRead()) {
+                if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
                     DefaultLogger.warn(
                             String.format("[topic=%s] Read offset ahead of committed, potential resends.",
                                     consumer.name()));
@@ -285,10 +286,15 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                                 consumer.name(), offset.getIndex()));
             }
             if (next) {
-                DocumentContext dc = consumer.tailer().readingDocument();
-                if (!dc.isPresent()) {
-                    throw new Exception(String.format("Failed to move to next offset. [queue=%s][offset=%d]",
-                            consumer.name(), offset.getIndex()));
+                long nextIndex = offset.getIndex() + 1;
+                if (!consumer.tailer().moveToIndex(nextIndex)) {
+                    ChronicleQueue queue = consumer.tailer().queue();
+                    nextIndex = queue
+                            .rollCycle()
+                            .toIndex(offset.getCycle() + 1, 0);
+                    if (!consumer.tailer().moveToIndex(nextIndex)) {
+                        DefaultLogger.warn(String.format("[queue=%s] At cycle end.", consumer.name()));
+                    }
                 }
             }
         } else {
