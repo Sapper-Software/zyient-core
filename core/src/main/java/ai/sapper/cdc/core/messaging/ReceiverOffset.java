@@ -27,13 +27,13 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ReceiverOffset extends Offset {
-    private long offsetRead = 0;
-    private long offsetCommitted = 0;
+public abstract class ReceiverOffset<T extends OffsetValue> extends Offset {
+    private T offsetRead = null;
+    private T offsetCommitted = null;
 
     @Override
     public String asString() {
-        return String.format("%d::%d", offsetRead, offsetCommitted);
+        return String.format("%s::%s", offsetRead.asString(), offsetCommitted.asString());
     }
 
     @Override
@@ -42,18 +42,21 @@ public class ReceiverOffset extends Offset {
         if (parts.length < 2) {
             throw new Exception(String.format("Invalid receiver offset. [value=%s]", source));
         }
-        offsetRead = Long.parseLong(parts[0]);
-        offsetCommitted = Long.parseLong(parts[1]);
+        offsetRead = parse(parts[0]);
+        offsetCommitted = parse(parts[1]);
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public int compareTo(@NonNull Offset offset) {
         Preconditions.checkArgument(offset instanceof ReceiverOffset);
-        long ret = offsetCommitted - ((ReceiverOffset) offset).offsetCommitted;
+        long ret = offsetCommitted.compareTo(((ReceiverOffset<T>) offset).offsetCommitted);
         if (ret == 0) {
-            ret = offsetRead - ((ReceiverOffset) offset).offsetRead;
+            ret = offsetRead.compareTo(((ReceiverOffset<T>) offset).offsetRead);
         }
         return (int) ret;
     }
+
+    public abstract T parse(@NonNull String value) throws Exception;
 }

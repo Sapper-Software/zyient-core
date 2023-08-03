@@ -16,8 +16,7 @@
 
 package ai.sapper.cdc.core.messaging.kafka;
 
-import ai.sapper.cdc.core.messaging.ReceiverOffset;
-import ai.sapper.cdc.core.state.Offset;
+import ai.sapper.cdc.core.messaging.OffsetValue;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -28,24 +27,25 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class KafkaOffset extends ReceiverOffset<KafkaOffsetValue> {
-    private String topic;
-    private int partition;
+public class KafkaOffsetValue extends OffsetValue {
+    private long value = 0;
 
-    public KafkaOffset() {
-        setOffsetRead(new KafkaOffsetValue(0L));
-        setOffsetCommitted(new KafkaOffsetValue(0L));
+    public KafkaOffsetValue() {
+
     }
-    @Override
-    public int compareTo(@NonNull Offset offset) {
-        Preconditions.checkArgument(offset instanceof KafkaOffset);
-        Preconditions.checkArgument(topic.compareTo(((KafkaOffset) offset).topic) == 0);
-        Preconditions.checkArgument(partition == ((KafkaOffset) offset).partition);
-        return super.compareTo(offset);
+
+    public KafkaOffsetValue(long value) {
+        this.value = value;
     }
 
     @Override
-    public KafkaOffsetValue parse(@NonNull String value) throws Exception {
-        return new KafkaOffsetValue(Long.parseLong(value));
+    public String asString() {
+        return String.valueOf(value);
+    }
+
+    @Override
+    public int compareTo(@NonNull OffsetValue offsetValue) {
+        Preconditions.checkArgument(offsetValue instanceof KafkaOffsetValue);
+        return (int) (value - ((KafkaOffsetValue) offsetValue).value);
     }
 }

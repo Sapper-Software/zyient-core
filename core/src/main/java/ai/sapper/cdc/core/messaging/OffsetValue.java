@@ -14,26 +14,17 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.messaging.chronicle;
+package ai.sapper.cdc.core.messaging;
 
-import com.google.common.base.Preconditions;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
-public class ChronicleOffsetData {
-    private final String key;
-    private final ChronicleOffsetValue index;
-    private boolean acked = false;
-
-    public ChronicleOffsetData(@NonNull String key,
-                               @NonNull ChronicleOffsetValue index) {
-        Preconditions.checkArgument(index.getIndex() >= 0);
-        this.key = key;
-        this.index = index;
-    }
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.CLASS
+)
+public abstract class OffsetValue implements Comparable<OffsetValue> {
+    public abstract String asString();
 }

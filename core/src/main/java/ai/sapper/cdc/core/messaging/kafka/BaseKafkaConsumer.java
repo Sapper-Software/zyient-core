@@ -67,7 +67,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                     currentOffsets.put(od.partition(), od.offset());
                     if (commit) {
                         consumer.consumer().commitSync(currentOffsets);
-                        updateCommitState(od.offset().offset());
+                        updateCommitState(new KafkaOffsetValue(od.offset().offset()));
                         offsetMap.remove(messageId);
                     }
                 } else {
@@ -88,14 +88,14 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             synchronized (offsetMap) {
                 Map<TopicPartition, OffsetAndMetadata> currentOffsets =
                         new HashMap<>();
-                Map<Integer, Long> offsets = new HashMap<>();
+                Map<Integer, KafkaOffsetValue> offsets = new HashMap<>();
                 for (String messageId : messageIds) {
                     if (offsetMap.containsKey(messageId)) {
                         KafkaOffsetData od = offsetMap.get(messageId);
-                        long currentOffset = offsets.get(od.partition().partition());
-                        if (od.offset().offset() > currentOffset) {
+                        KafkaOffsetValue currentOffset = offsets.get(od.partition().partition());
+                        if (od.offset().offset() > currentOffset.getValue()) {
                             currentOffsets.put(od.partition(), od.offset());
-                            offsets.put(od.partition().partition(), od.offset().offset());
+                            offsets.put(od.partition().partition(), new KafkaOffsetValue(od.offset().offset()));
                         }
                     } else {
                         throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
@@ -174,10 +174,10 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             }
 
             KafkaOffset offset = state.getOffset();
-            if (offset.getOffsetCommitted() > 0) {
-                seek(partition, offset.getOffsetCommitted() + 1);
+            if (offset.getOffsetCommitted().getValue() > 0) {
+                seek(partition, offset.getOffsetCommitted().getValue() + 1);
             } else {
-                seek(partition, offset.getOffsetCommitted());
+                seek(partition, 0);
             }
             if (offset.getOffsetCommitted() != offset.getOffsetRead()) {
                 DefaultLogger.warn(
@@ -225,7 +225,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(timeout));
             if (records != null && records.count() > 0) {
                 List<MessageObject<String, M>> array = new ArrayList<>(records.count());
-                Map<Integer, Long> offsets = new HashMap<>();
+                Map<Integer, KafkaOffsetValue> offsets = new HashMap<>();
                 for (ConsumerRecord<String, byte[]> record : records) {
                     M cd = deserialize(record.value());
                     KafkaMessage<String, M> response = new KafkaMessage<>(record, cd);
@@ -235,7 +235,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                     }
                     array.add(response);
                     offsetMap.put(response.id(), new KafkaOffsetData(record.key(), record));
-                    offsets.put(record.partition(), record.offset());
+                    offsets.put(record.partition(), new KafkaOffsetValue(record.offset()));
                 }
                 for (int partition : offsets.keySet()) {
                     updateReadState(offsets.get(partition));
@@ -248,18 +248,18 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         }
     }
 
-    private void updateReadState(long offset) throws Exception {
+    private void updateReadState(KafkaOffsetValue offset) throws Exception {
         if (!stateful()) return;
         state.getOffset().setOffsetRead(offset);
         state = stateManager.update(state);
     }
 
-    private void updateCommitState(long offset) throws Exception {
+    private void updateCommitState(KafkaOffsetValue offset) throws Exception {
         if (!stateful()) return;
-        if (offset > state.getOffset().getOffsetRead()) {
+        if (offset.compareTo(state.getOffset().getOffsetRead()) > 0) {
             throw new Exception(
                     String.format("[topic=%s][partition=%d] Offsets out of sync. [read=%d][committing=%d]",
-                            topic, partition, state.getOffset().getOffsetRead(), offset));
+                            topic, partition, state.getOffset().getOffsetRead().getValue(), offset.getValue()));
         }
         state.getOffset().setOffsetCommitted(offset);
         state = stateManager.update(state);
@@ -285,12 +285,12 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                             topic, ((KafkaContext) context).getPartition()));
         }
         try {
-            long o = ((KafkaOffset) offset).getOffsetCommitted();
-            if (s.getOffset().getOffsetRead() <= o) {
+            KafkaOffsetValue o = ((KafkaOffset) offset).getOffsetCommitted();
+            if (s.getOffset().getOffsetRead().compareTo(o) < 0) {
                 o = s.getOffset().getOffsetRead();
                 ((KafkaOffset) offset).setOffsetCommitted(o);
             }
-            seek(partition, o);
+            seek(partition, o.getValue());
             updateReadState(o);
         } catch (Exception ex) {
             throw new MessagingError(ex);

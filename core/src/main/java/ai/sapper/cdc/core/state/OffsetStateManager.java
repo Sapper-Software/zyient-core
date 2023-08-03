@@ -243,6 +243,7 @@ public abstract class OffsetStateManager<T extends Offset> {
                             .build();
                     offset.setTimeUpdated(System.currentTimeMillis());
                     offset.setLastUpdatedBy(env.moduleInstance());
+                    offset.getOffset().setTimeUpdated(System.currentTimeMillis());
                     client.setData().forPath(zp, JSONUtils.asBytes(offset, offset.getClass()));
 
                     return offset;

@@ -28,13 +28,23 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ChronicleOffset extends ReceiverOffset {
+public class ChronicleOffset extends ReceiverOffset<ChronicleOffsetValue> {
     private String queue;
+
+    public ChronicleOffset() {
+        setOffsetRead(new ChronicleOffsetValue(0, 0L));
+        setOffsetCommitted(new ChronicleOffsetValue(0, 0L));
+    }
 
     @Override
     public int compareTo(@NonNull Offset offset) {
         Preconditions.checkArgument(offset instanceof ChronicleOffset);
         Preconditions.checkArgument(queue.compareTo(((ChronicleOffset) offset).queue) == 0);
         return super.compareTo(offset);
+    }
+
+    @Override
+    public ChronicleOffsetValue parse(@NonNull String value) throws Exception {
+        return new ChronicleOffsetValue().parse(value);
     }
 }

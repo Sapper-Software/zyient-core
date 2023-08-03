@@ -21,29 +21,33 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import net.openhft.chronicle.wire.SelfDescribingMarshallable;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class ChronicleMessage<K, V> extends MessageObject<K, V> {
-    public static final String HEADER_CORRELATION_ID = "correlationId";
-    public static final String HEADER_MESSAGE_ID = "messageId";
-    public static final String HEADER_MESSAGE_MODE = "mode";
-    public static final String HEADER_MESSAGE_BODY = "data";
+public class MessageEnvelop extends SelfDescribingMarshallable {
+    private String id;
+    private String correlationId;
+    private String mode;
+    private String key;
+    private String queue;
+    private long timestamp;
+    private long size;
+    private byte[] data;
 
-    private ChronicleOffsetValue index;
+    public MessageEnvelop() {
 
-    public ChronicleMessage() {
     }
 
-    public ChronicleMessage(@NonNull String id) {
-        super(id);
-    }
-
-    public ChronicleMessage(@NonNull MessageObject<K, V> source) {
-        super(source);
-        if (source instanceof ChronicleMessage<K, V>) {
-            this.index = ((ChronicleMessage<K, V>) source).index;
-        }
+    public MessageEnvelop(@NonNull MessageObject<String, ?> message,
+                          byte[] data) {
+        id = message.id();
+        correlationId = message.correlationId();
+        mode = message.mode().name();
+        key = message.key();
+        timestamp = System.nanoTime();
+        size = data.length;
+        this.data = data;
     }
 }

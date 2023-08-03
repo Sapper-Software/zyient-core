@@ -135,10 +135,6 @@ class BaseChronicleConsumerTest {
         public void run() {
             try {
                 consumer = initConsumer(env.baseConfig());
-                ChronicleOffset offset = new ChronicleOffset();
-                offset.setOffsetRead(0);
-                offset.setOffsetCommitted(0);
-                consumer.seek(offset, null);
                 int count = 0;
                 int retry = 0;
                 while (true) {
@@ -150,7 +146,7 @@ class BaseChronicleConsumerTest {
                             count++;
                         }
                         consumer.commit();
-                    } else if (retry > 5) {
+                    } else if (retry > 10) {
                         break;
                     } else {
                         retry++;

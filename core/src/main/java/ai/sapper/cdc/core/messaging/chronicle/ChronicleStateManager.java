@@ -68,10 +68,10 @@ public class ChronicleStateManager extends OffsetStateManager<ChronicleOffset> {
         return get(ChronicleConsumerState.OFFSET_TYPE, queue, ChronicleConsumerState.class);
     }
 
-    public ChronicleConsumerState create(@NonNull String queue) throws StateManagerError {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(queue));
-        ChronicleConsumerState state = create(ChronicleConsumerState.OFFSET_TYPE, queue, ChronicleConsumerState.class);
-        state.setQueue(queue);
+    public ChronicleConsumerState create(@NonNull String name, @NonNull String queue) throws StateManagerError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        ChronicleConsumerState state = create(ChronicleConsumerState.OFFSET_TYPE, name, ChronicleConsumerState.class);
+        state.setQueue(name);
         ChronicleOffset offset = new ChronicleOffset();
         offset.setQueue(queue);
         state.setOffset(offset);

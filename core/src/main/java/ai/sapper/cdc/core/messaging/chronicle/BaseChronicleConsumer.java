@@ -28,14 +28,12 @@ import ai.sapper.cdc.core.processing.ProcessorState;
 import ai.sapper.cdc.core.state.Offset;
 import ai.sapper.cdc.core.state.OffsetState;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.openhft.chronicle.core.io.IORuntimeException;
-import net.openhft.chronicle.core.io.InvalidMarshallableException;
-import net.openhft.chronicle.wire.*;
+import net.openhft.chronicle.wire.DocumentContext;
+import net.openhft.chronicle.wire.Wire;
 
 import java.io.IOException;
 import java.util.*;
@@ -62,13 +60,16 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                 stateManager = (ChronicleStateManager) offsetStateManager();
                 state = stateManager.get(consumer.name());
                 if (state == null) {
-                    state = stateManager.create(consumer.name());
+                    state = stateManager.create(consumer.name(), consumer.settings().getQueue());
                 }
                 ChronicleOffset offset = state.getOffset();
-                if (offset.getOffsetCommitted() > 0) {
-                    seek(offset.getOffsetCommitted() + 1);
+                if (offset.getOffsetCommitted().getIndex() > 0) {
+                    seek(offset.getOffsetCommitted(), true);
                 } else {
-                    seek(0);
+                    ChronicleOffsetValue v = new ChronicleOffsetValue();
+                    v.setCycle(0);
+                    v.setIndex(0);
+                    seek(v, false);
                 }
                 if (offset.getOffsetCommitted() != offset.getOffsetRead()) {
                     DefaultLogger.warn(
@@ -107,28 +108,34 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         Preconditions.checkState(state().isAvailable());
         long stime = System.currentTimeMillis();
         long remaining = timeout;
-        long lastIndex = state.getOffset().getOffsetRead();
+        ChronicleOffsetValue lastIndex = state.getOffset().getOffsetRead();
         List<MessageObject<String, M>> messages = new ArrayList<>(batchSize());
         try {
             while (remaining > 0) {
-                DocumentContext dc = consumer.tailer().readingDocument(true);
                 boolean read = false;
-                if (dc.isPresent()) {
-                    ReadResponse<M> response = parse(dc);
-                    if (response.index > lastIndex) {
-                        lastIndex = response.index;
-                    }
-                    if (response.error != null) {
-                        if (response.error instanceof InvalidMessageError) {
-                            DefaultLogger.error("Error reading message.", response.error);
-                        } else {
-                            throw response.error;
+                try (DocumentContext dc = consumer.tailer().readingDocument(true)) {
+                    if (dc.isPresent()) {
+                        if (!dc.isData()) {
+                            continue;
                         }
-                    } else if (response.message != null) {
-                        messages.add(response.message);
-                        offsetMap.put(response.message.id(),
-                                new ChronicleOffsetData(response.message.key(), response.index));
-                        read = true;
+                        ReadResponse<M> response = parse(dc);
+                        response.index = new ChronicleOffsetValue(consumer.tailer().cycle(), consumer.tailer().index());
+                        if (response.index.compareTo(lastIndex) > 0) {
+                            lastIndex = response.index;
+                        }
+                        if (response.error != null) {
+                            if (response.error instanceof InvalidMessageError) {
+                                DefaultLogger.error("Error reading message.", response.error);
+                            } else {
+                                throw response.error;
+                            }
+                        } else if (response.message != null) {
+                            response.message.index(response.index);
+                            messages.add(response.message);
+                            offsetMap.put(response.message.id(),
+                                    new ChronicleOffsetData(response.message.key(), response.index));
+                            read = true;
+                        }
                     }
                 }
                 if (!read) {
@@ -143,7 +150,7 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                     break;
                 }
             }
-            if (lastIndex > state.getOffset().getOffsetRead()) {
+            if (lastIndex.compareTo(state.getOffset().getOffsetRead()) > 0) {
                 updateReadState(lastIndex);
             }
             if (!messages.isEmpty()) {
@@ -157,15 +164,19 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
     }
 
     private ReadResponse<M> parse(DocumentContext context) throws Exception {
+
         final ReadResponse<M> response = new ReadResponse<>();
-        response.index = context.index();
         Wire w = context.wire();
         if (w != null) {
-            final BaseChronicleMessage<M> message = new BaseChronicleMessage<>();
-            message.index(context.index());
-            message.queue(consumer.name());
-            ValueIn node = w.read(consumer.settings().getName());
-            node.marshallable(new MessageReader<>(this, response, message));
+            MessageEnvelop envelop = w.read().object(MessageEnvelop.class);
+            if (envelop == null) {
+                throw new MessagingError(String.format("Failed to read data. [queue=%s][index=%d]",
+                        consumer.settings().getQueue(), response.index.getIndex()));
+            }
+            M data = deserialize(envelop.data());
+            final BaseChronicleMessage<M> message = new BaseChronicleMessage<>(envelop);
+            message.value(data);
+            response.message = message;
         }
         return response;
     }
@@ -198,21 +209,20 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         Preconditions.checkArgument(!messageIds.isEmpty());
         try {
             synchronized (offsetMap) {
-                long currentOffset = -1;
+                ChronicleOffsetValue currentOffset = new ChronicleOffsetValue(0, -1L);
                 for (String messageId : messageIds) {
                     if (offsetMap.containsKey(messageId)) {
                         ChronicleOffsetData od = offsetMap.get(messageId);
-                        currentOffset = Math.max(od.index(), currentOffset);
+                        currentOffset = (od.index().compareTo(currentOffset) > 0 ? od.index() : currentOffset);
                     } else {
                         throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
                     }
                     offsetMap.remove(messageId);
                 }
-                if (currentOffset > 0) {
-                    if (currentOffset > state.getOffset().getOffsetCommitted()) {
-                        updateCommitState(currentOffset);
-                    }
+                if (currentOffset.compareTo(state.getOffset().getOffsetCommitted()) > 0) {
+                    updateCommitState(currentOffset);
                 }
+
             }
         } catch (Exception ex) {
             throw new MessagingError(ex);
@@ -251,38 +261,53 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         Preconditions.checkArgument(offset instanceof ChronicleOffset);
         ChronicleConsumerState s = (ChronicleConsumerState) currentOffset(context);
         try {
-            long o = ((ChronicleOffset) offset).getOffsetCommitted();
-            if (s.getOffset().getOffsetRead() < o) {
+            ChronicleOffsetValue o = ((ChronicleOffset) offset).getOffsetCommitted();
+            if (s.getOffset().getOffsetRead().getIndex() < o.getIndex()) {
                 o = s.getOffset().getOffsetRead();
                 ((ChronicleOffset) offset).setOffsetCommitted(o);
             }
-            seek(o);
+            seek(o, false);
             updateReadState(o);
         } catch (Exception ex) {
             throw new MessagingError(ex);
         }
     }
 
-    private void seek(long offset) throws Exception {
-        if (offset > 0) {
-            consumer.tailer().moveToIndex(offset);
+    private void seek(ChronicleOffsetValue offset, boolean next) throws Exception {
+        if (offset.getIndex() > 0) {
+            if (!consumer.tailer().moveToCycle(offset.getCycle())) {
+                throw new Exception(String.format("Failed to move to cycle. [queue=%s][cycle=%d]",
+                        consumer.name(), offset.getCycle()));
+            }
+            if (!consumer.tailer().moveToIndex(offset.getIndex())) {
+                throw new Exception(
+                        String.format("Failed to move to offset. [queue=%s][offset=%d]",
+                                consumer.name(), offset.getIndex()));
+            }
+            if (next) {
+                DocumentContext dc = consumer.tailer().readingDocument();
+                if (!dc.isPresent()) {
+                    throw new Exception(String.format("Failed to move to next offset. [queue=%s][offset=%d]",
+                            consumer.name(), offset.getIndex()));
+                }
+            }
         } else {
-            consumer.tailer().toEnd();
+            consumer.tailer().toStart();
         }
     }
 
-    private void updateReadState(long offset) throws Exception {
+    private void updateReadState(ChronicleOffsetValue offset) throws Exception {
         if (!stateful()) return;
         state.getOffset().setOffsetRead(offset);
         state = stateManager.update(state);
     }
 
-    private void updateCommitState(long offset) throws Exception {
+    private void updateCommitState(ChronicleOffsetValue offset) throws Exception {
         if (!stateful()) return;
-        if (offset > state.getOffset().getOffsetRead()) {
+        if (offset.getIndex() > state.getOffset().getOffsetRead().getIndex()) {
             throw new Exception(
                     String.format("[topic=%s] Offsets out of sync. [read=%d][committing=%d]",
-                            consumer.name(), state.getOffset().getOffsetRead(), offset));
+                            consumer.name(), state.getOffset().getOffsetRead().getIndex(), offset.getIndex()));
         }
         state.getOffset().setOffsetCommitted(offset);
         state = stateManager.update(state);
@@ -312,7 +337,7 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
     public static class ReadResponse<M> {
         private BaseChronicleMessage<M> message;
         private Throwable error;
-        private long index = -1;
+        private ChronicleOffsetValue index = new ChronicleOffsetValue();
 
         public ReadResponse(@NonNull BaseChronicleMessage<M> message) {
             this.message = message;
@@ -322,80 +347,6 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         public ReadResponse() {
             message = null;
             error = null;
-        }
-    }
-
-    public static class MessageReader<M> implements ReadMarshallable {
-        private final BaseChronicleConsumer<M> consumer;
-        private final ReadResponse<M> response;
-        private final BaseChronicleMessage<M> message;
-
-        private MessageReader(@NonNull BaseChronicleConsumer<M> consumer,
-                              @NonNull final ReadResponse<M> response,
-                              @NonNull BaseChronicleMessage<M> message) {
-            this.consumer = consumer;
-            this.response = response;
-            this.message = message;
-        }
-
-        /**
-         * Straight line ordered decoding.
-         *
-         * @param m to read from in an ordered manner.
-         * @throws IORuntimeException the stream wasn't ordered or formatted as expected.
-         */
-        @Override
-        public void readMarshallable(@NonNull WireIn m) throws IORuntimeException, InvalidMarshallableException {
-            try {
-                message.id(m.read(BaseChronicleMessage.HEADER_MESSAGE_ID).text());
-                message.correlationId(m.read(BaseChronicleMessage.HEADER_CORRELATION_ID).text());
-                message.key(m.read(BaseChronicleMessage.HEADER_MESSAGE_KEY).text());
-                String mo = m.read(BaseChronicleMessage.HEADER_MESSAGE_MODE).text();
-                message.mode(MessageObject.MessageMode.valueOf(mo));
-                String queue = m.read(BaseChronicleMessage.HEADER_MESSAGE_QUEUE).text();
-                if (Strings.isNullOrEmpty(queue) || message.queue().compareToIgnoreCase(queue) != 0) {
-                    response.error = new InvalidMessageError(message.id(),
-                            String.format("Invalid message: Queue not expected. [expected=%s][queue=%s]",
-                                    message.queue(),
-                                    queue));
-                    return;
-                }
-                byte[] data = m.read(BaseChronicleMessage.HEADER_MESSAGE_BODY).bytes();
-                if (data == null || data.length == 0) {
-                    response.error = new InvalidMessageError(message.id(),
-                            "Data is NULL or empty.");
-                    return;
-                }
-                M body = consumer.deserialize(data);
-                if (body == null) {
-                    response.error = new InvalidMessageError(message.id(),
-                            "Failed to parse message body.");
-                    return;
-                }
-                message.value(body);
-                response.message = message;
-            } catch (Throwable ex) {
-                response.error = ex;
-                return;
-            }
-        }
-
-        @Override
-        public void unexpectedField(Object event, ValueIn valueIn) throws InvalidMarshallableException {
-            ReadMarshallable.super.unexpectedField(event, valueIn);
-        }
-
-        /**
-         * Determines whether the message produced by this object is self-describing.
-         * A self-describing message includes metadata about its structure, which aids
-         * in decoding the message without prior knowledge of its structure.
-         *
-         * @return {@code true} if the message should be self-describing, {@code false} otherwise.
-         * By default, this method returns {@code true}.
-         */
-        @Override
-        public boolean usesSelfDescribingMessage() {
-            return ReadMarshallable.super.usesSelfDescribingMessage();
         }
     }
 }

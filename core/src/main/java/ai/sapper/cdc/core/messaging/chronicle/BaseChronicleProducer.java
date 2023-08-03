@@ -70,17 +70,12 @@ public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> 
         if (Strings.isNullOrEmpty(message.correlationId())) {
             message.correlationId(message.id());
         }
-        if (Strings.isNullOrEmpty(message.queue())) {
-            message.queue(producer.settings().getName());
-        }
+        message.queue(producer.settings().getQueue());
         byte[] data = serialize(message.value());
-        producer.appender().writeDocument(w -> w.write(producer.settings().getName()).marshallable(m ->
-                m.write(BaseChronicleMessage.HEADER_MESSAGE_ID).text(message.id())
-                        .write(BaseChronicleMessage.HEADER_CORRELATION_ID).text(message.correlationId())
-                        .write(BaseChronicleMessage.HEADER_MESSAGE_MODE).text(message.mode().name())
-                        .write(BaseChronicleMessage.HEADER_MESSAGE_KEY).text(message.key())
-                        .write(BaseChronicleMessage.HEADER_MESSAGE_QUEUE).text(message.queue())
-                        .write(BaseChronicleMessage.HEADER_MESSAGE_BODY).bytes(data)));
+        MessageEnvelop envelop = new MessageEnvelop(message, data)
+                .queue(message.queue());
+
+        producer.appender().writeDocument(w -> w.write(producer.settings().getName()).marshallable(envelop));
         return message;
     }
 

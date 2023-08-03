@@ -16,7 +16,31 @@
 
 package ai.sapper.cdc.core.messaging.chronicle;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
+@Getter
+@Setter
+@Accessors(fluent = true)
 public class BaseChronicleMessage<M> extends ChronicleMessage<String, M> {
     public static final String HEADER_MESSAGE_QUEUE = "queue";
     public static final String HEADER_MESSAGE_KEY = "key";
+    private long timestamp;
+    private long size;
+
+    public BaseChronicleMessage() {
+
+    }
+
+    public BaseChronicleMessage(@NonNull MessageEnvelop envelop) {
+        id(envelop.id());
+        correlationId(envelop.correlationId());
+        mode(MessageMode.valueOf(envelop.mode()));
+        key(envelop.key());
+        timestamp = envelop.timestamp();
+        size = envelop.size();
+        queue(envelop.queue());
+    }
 }
