@@ -29,7 +29,11 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Getter
 @Accessors(fluent = true)
@@ -39,6 +43,7 @@ public class DirectoryCleaner implements Runnable {
     private final boolean recursive;
     private final long retention;
     private final long runInterval;
+    private final List<Pattern> ignorePatterns = new ArrayList<>();
 
     private File baseDir;
 
@@ -61,6 +66,13 @@ public class DirectoryCleaner implements Runnable {
         this.recursive = true;
         this.retention = 5L * 60 * 60 * 1000;
         this.runInterval = 60 * 1000;
+    }
+
+    public DirectoryCleaner ignore(@NonNull String regex) throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(regex));
+        Pattern p = Pattern.compile(regex);
+        ignorePatterns.add(p);
+        return this;
     }
 
     @Override
@@ -93,9 +105,18 @@ public class DirectoryCleaner implements Runnable {
         if (files != null && !files.isEmpty()) {
             for (File file : files) {
                 if (file.isDirectory() && !recursive) continue;
+                if (ignore(file)) continue;
                 cleanUp(file);
             }
         }
+    }
+
+    private boolean ignore(File file) {
+        for (Pattern p : ignorePatterns) {
+            Matcher m = p.matcher(file.getAbsolutePath());
+            if (m.matches()) return true;
+        }
+        return false;
     }
 
     private void cleanUp(File file) throws Exception {

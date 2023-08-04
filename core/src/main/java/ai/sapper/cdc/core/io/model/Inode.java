@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.Setter;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,9 +47,10 @@ public abstract class Inode {
     private String zkPath;
     @JsonIgnore
     private PathInfo pathInfo;
+    private Map<String, String> attributes;
 
     public Inode() {
-
+        uuid = UUID.randomUUID().toString();
     }
 
     public Inode(@NonNull InodeType type,
@@ -90,8 +92,38 @@ public abstract class Inode {
         return path.size();
     }
 
+    public Inode attribute(@NonNull String key, @NonNull String value) {
+        if (attributes == null) {
+            attributes = new HashMap<>();
+        }
+        attributes.put(key, value);
+        return this;
+    }
+
+    public Inode add(@NonNull Map<String, String> attributes) {
+        if (this.attributes == null) {
+            this.attributes = attributes;
+        } else {
+            this.attributes.putAll(attributes);
+        }
+        return this;
+    }
+
+    public String attribute(@NonNull String key) {
+        if (attributes != null)
+            return attributes.get(key);
+        return null;
+    }
+
+    public boolean remove(@NonNull String key) {
+        if (attributes != null) {
+            return (attributes.remove(key) != null);
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
-        return String.format("[ID=%s][PATH=%s]", uuid, path);
+        return String.format("[ID=%s][DOMAIN=%s][PATH=%s]", uuid, domain, path);
     }
 }
