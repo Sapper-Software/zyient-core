@@ -16,9 +16,7 @@
 
 package ai.sapper.cdc.core.messaging.kafka;
 
-import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.messaging.MessagingProcessorSettings;
-import ai.sapper.cdc.core.processing.EventProcessorMetrics;
 import ai.sapper.cdc.core.processing.MessageProcessor;
 import ai.sapper.cdc.core.processing.ProcessingState;
 import ai.sapper.cdc.core.state.Offset;
@@ -31,16 +29,12 @@ import lombok.experimental.Accessors;
 public abstract class KafkaMessageProcessor<E extends Enum<?>, O extends Offset, M>
         extends MessageProcessor<String, M, E, O, KafkaOffset> {
 
-    protected KafkaMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull EventProcessorMetrics metrics,
-                                    @NonNull Class<? extends ProcessingState<E, O>> stateType,
+    protected KafkaMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
                                     @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
-        super(env, metrics, stateType, settingsType);
+        super(stateType, settingsType);
     }
 
-    protected KafkaMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull EventProcessorMetrics metrics,
-                                    @NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        super(env, metrics, stateType);
+    protected KafkaMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
+        super(stateType);
     }
 }

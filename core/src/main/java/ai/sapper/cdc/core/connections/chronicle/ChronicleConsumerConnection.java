@@ -32,9 +32,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import javax.naming.ConfigurationException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Getter

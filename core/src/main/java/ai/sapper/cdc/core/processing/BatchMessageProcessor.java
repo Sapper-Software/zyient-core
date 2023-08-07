@@ -17,7 +17,6 @@
 package ai.sapper.cdc.core.processing;
 
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.executor.ETaskState;
 import ai.sapper.cdc.core.executor.TaskResponse;
 import ai.sapper.cdc.core.messaging.MessageObject;
@@ -37,17 +36,13 @@ public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extend
         extends MessageProcessor<K, M, E, O, MO> {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
-    protected BatchMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull EventProcessorMetrics metrics,
-                                    @NonNull Class<? extends ProcessingState<E, O>> stateType,
+    protected BatchMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
                                     @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
-        super(env, metrics, stateType, settingsType);
+        super(stateType, settingsType);
     }
 
-    protected BatchMessageProcessor(@NonNull BaseEnv<?> env,
-                                    @NonNull EventProcessorMetrics metrics,
-                                    @NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        super(env, metrics, stateType);
+    protected BatchMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
+        super(stateType);
     }
 
     @Override

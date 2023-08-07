@@ -41,10 +41,10 @@ import java.util.concurrent.ExecutorService;
 public abstract class Processor<E extends Enum<?>, O extends Offset> implements Runnable, Closeable {
     protected final Logger LOG;
     protected final ProcessorState state = new ProcessorState();
-    private final ProcessStateManager<E, O> stateManager;
+    private ProcessStateManager<E, O> stateManager;
     private final Class<? extends ProcessingState<E, O>> stateType;
-    protected final BaseEnv<?> env;
-    protected final MetricsBase metrics;
+    protected BaseEnv<?> env;
+    protected MetricsBase metrics;
 
     private String name;
     @Getter(AccessLevel.PROTECTED)
@@ -55,21 +55,20 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     private ProcessingState<E, O> processingState;
 
     @SuppressWarnings("unchecked")
-    protected Processor(@NonNull BaseEnv<?> env,
-                        @NonNull MetricsBase metrics,
-                        @NonNull Class<? extends ProcessingState<E, O>> stateType) {
+    protected Processor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
         Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
-        this.env = env;
-        this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
         this.stateType = stateType;
-        this.metrics = metrics;
         this.LOG = LoggerFactory.getLogger(getClass());
     }
 
+    @SuppressWarnings("unchecked")
     protected void init(@NonNull ProcessorSettings settings,
-                        @NonNull String name) throws Exception {
+                        @NonNull String name,
+                        @NonNull BaseEnv<?> env) throws Exception {
         this.settings = settings;
         this.name = name;
+        this.env = env;
+        this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
         String lockPath = new PathUtils.ZkPathBuilder(String.format("processors/%s/%s/%s",
                 env.moduleInstance().getModule(),
                 env.moduleInstance().getName(),
@@ -86,13 +85,20 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         }
     }
 
-    public abstract Processor<E, O> init(@NonNull String name,
+    protected Processor<E, O> withMetrics(@NonNull MetricsBase metrics) {
+        this.metrics = metrics;
+        return this;
+    }
+
+    public abstract Processor<E, O> init(@NonNull BaseEnv<?> env,
+                                         @NonNull String name,
                                          @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                          String path) throws ConfigurationException;
 
-    public Processor<E, O> init(@NonNull String name,
+    public Processor<E, O> init(@NonNull BaseEnv<?> env,
+                                @NonNull String name,
                                 @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        return init(name, xmlConfig, null);
+        return init(env, name, xmlConfig, null);
     }
 
     protected abstract void initState(@NonNull ProcessingState<E, O> processingState) throws Exception;

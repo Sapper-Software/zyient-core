@@ -40,25 +40,22 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     protected MessagingProcessorConfig receiverConfig;
     protected final Class<? extends MessagingProcessorSettings> settingsType;
 
-    protected MessageProcessor(@NonNull BaseEnv<?> env,
-                               @NonNull EventProcessorMetrics metrics,
-                               @NonNull Class<? extends ProcessingState<E, O>> stateType,
+    protected MessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
                                @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
-        super(env, metrics, stateType);
+        super(stateType);
         this.settingsType = settingsType;
     }
 
-    protected MessageProcessor(@NonNull BaseEnv<?> env,
-                               @NonNull EventProcessorMetrics metrics,
-                               @NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        super(env, metrics, stateType);
+    protected MessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
+        super(stateType);
         this.settingsType = null;
     }
 
 
     @Override
     @SuppressWarnings("unchecked")
-    public Processor<E, O> init(@NonNull String name,
+    public Processor<E, O> init(@NonNull BaseEnv<?> env,
+                                @NonNull String name,
                                 @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 String path) throws ConfigurationException {
         HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
@@ -72,7 +69,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         receiverConfig.read();
         try {
             MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
-            super.init(settings, name);
+            super.init(settings, name, env);
             __lock().lock();
             try {
                 HierarchicalConfiguration<ImmutableNode> qConfig = receiverConfig
