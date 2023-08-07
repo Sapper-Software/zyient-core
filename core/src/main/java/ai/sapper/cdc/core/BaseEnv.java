@@ -32,6 +32,7 @@ import ai.sapper.cdc.core.state.HeartbeatThread;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import lombok.Getter;
 import lombok.NonNull;
@@ -106,10 +107,11 @@ public abstract class BaseEnv<T extends Enum<?>> {
             if (settings == null) {
                 throw new ConfigurationException("Environment settings not initialized...");
             }
+
+            return setup(xmlConfig, state);
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
-        return setup(xmlConfig, state);
     }
 
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
@@ -186,7 +188,9 @@ public abstract class BaseEnv<T extends Enum<?>> {
                 fileSystemManager.init(baseConfig, this);
             }
             DefaultExports.initialize();
-
+            if (meterRegistry == null) {
+                meterRegistry = new CompositeMeterRegistry();
+            }
             return this;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);

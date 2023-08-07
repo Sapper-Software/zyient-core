@@ -21,8 +21,8 @@ public class MetricsBase {
     public static final String TAG_DB_TYPE = "DB_TYPE";
     public static final String TAG_ENGINE = "ENGINE";
     public static final String TAG_INSTANCE_NAME = "PIPELINE";
-    public static final String METRICS_TIMER = "TIMER";
-    public static final String METRICS_COUNTER = "COUNTER";
+    public static final String METRICS_TIMER = "timer";
+    public static final String METRICS_COUNTER = "counter";
     private final BaseEnv<?> env;
     private final Map<String, Counter> counters = new HashMap<>();
     private final Map<String, DistributionSummary> timers = new HashMap<>();
@@ -62,6 +62,7 @@ public class MetricsBase {
     }
 
     public Counter getCounter(String name) {
+        name = metricsName(METRICS_COUNTER, name);
         return counters.get(name);
     }
 
@@ -87,6 +88,7 @@ public class MetricsBase {
     }
 
     public DistributionSummary getTimer(String name) {
+        name = metricsName(METRICS_TIMER, name);
         return timers.get(name);
     }
 

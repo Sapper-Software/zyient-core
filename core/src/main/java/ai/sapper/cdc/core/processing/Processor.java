@@ -56,7 +56,6 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
 
     @SuppressWarnings("unchecked")
     protected Processor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
-        Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
         this.stateType = stateType;
         this.LOG = LoggerFactory.getLogger(getClass());
     }
@@ -68,6 +67,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         this.settings = settings;
         this.name = name;
         this.env = env;
+        Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
         this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
         String lockPath = new PathUtils.ZkPathBuilder(String.format("processors/%s/%s/%s",
                 env.moduleInstance().getModule(),
