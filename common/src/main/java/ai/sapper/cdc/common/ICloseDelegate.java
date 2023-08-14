@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.connections.settings;
+package ai.sapper.cdc.common;
 
-public enum EConnectionType {
-    kafka, zookeeper, db, rest, hadoop, debezium, others, chronicle, email;
-
-    public static EConnectionType parse(String name) {
-        for (EConnectionType type : EConnectionType.values()) {
-            if (type.name().compareToIgnoreCase(name) == 0) {
-                return type;
-            }
-        }
-        return null;
-    }
+public interface ICloseDelegate<T> {
+    void close(T source) throws Exception;
 }

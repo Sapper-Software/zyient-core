@@ -160,6 +160,7 @@ subprojects {
         implementation 'org.apache.curator:curator-recipes:5.4.0'
         implementation 'org.apache.curator:curator-framework:5.4.0'
         implementation 'org.apache.curator:curator-client:5.4.0'
+        implementation 'com.codekutter:ews-java-api:2.0-SNAPSHOT'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
