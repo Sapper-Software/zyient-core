@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.annotation.Nonnull;
+
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -58,6 +60,14 @@ public class ProcessorState extends AbstractEnvState<ProcessorState.EProcessorSt
     @Override
     public boolean isTerminated() {
         return (getState() == EProcessorState.Stopped || hasError());
+    }
+
+    public void check(@Nonnull EProcessorState state) throws Exception {
+        if (state != getState()) {
+            throw new Exception(
+                    String.format("Invalid Processor state: [expected=%s][state=%s]",
+                            state.name(), getState().name()));
+        }
     }
 
     public enum EProcessorState {

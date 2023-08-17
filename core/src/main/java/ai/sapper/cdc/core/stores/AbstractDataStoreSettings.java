@@ -19,6 +19,7 @@ package ai.sapper.cdc.core.stores;
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.common.config.Settings;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,4 +47,6 @@ public class AbstractDataStoreSettings extends Settings {
     private boolean audited = false;
     @Config(name = "auditContextProvider", required = false)
     private String auditContextProviderClass;
+    @JsonIgnore
+    private EConfigSource source;
 }

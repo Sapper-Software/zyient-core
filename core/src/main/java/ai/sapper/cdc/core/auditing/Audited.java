@@ -17,7 +17,7 @@
 
 package ai.sapper.cdc.core.auditing;
 
-import joptsimple.internal.Strings;
+import ai.sapper.cdc.common.GlobalConstants;
 
 import java.lang.annotation.*;
 
@@ -34,5 +34,5 @@ public @interface Audited {
      *
      * @return - Logger name
      */
-    String logger() default Strings.EMPTY;
+    String logger() default GlobalConstants.EMPTY;
 }

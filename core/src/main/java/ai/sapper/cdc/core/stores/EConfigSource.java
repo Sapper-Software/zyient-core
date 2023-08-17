@@ -18,5 +18,5 @@
 package ai.sapper.cdc.core.stores;
 
 public enum EConfigSource {
-    File, Database
+    File, Database, New
 }

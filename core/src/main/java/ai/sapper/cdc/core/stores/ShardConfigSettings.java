@@ -20,6 +20,7 @@ import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.core.stores.annotations.IShardProvider;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -42,6 +43,8 @@ public class ShardConfigSettings extends Settings {
     @Config(name = "shards")
     private String shardMap;
     private Map<Integer, String> shards = new HashMap<>();
+    @JsonIgnore
+    private EConfigSource source;
 
     public ShardConfigSettings parse() throws Exception {
         Preconditions.checkState(!Strings.isNullOrEmpty(shardMap));

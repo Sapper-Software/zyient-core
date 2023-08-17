@@ -18,49 +18,48 @@
 package ai.sapper.cdc.core.stores;
 
 import ai.sapper.cdc.common.cache.MapThreadCache;
+import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.JSONUtils;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.DistributedLock;
+import ai.sapper.cdc.core.connections.Connection;
+import ai.sapper.cdc.core.connections.ConnectionManager;
+import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.processing.ProcessorState;
 import ai.sapper.cdc.core.stores.annotations.IShardProvider;
 import ai.sapper.cdc.core.stores.annotations.SchemaSharded;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.stores.annotations.IShardProvider;
-import com.codekutter.common.stores.annotations.SchemaSharded;
-import com.codekutter.common.utils.*;
-import com.codekutter.zconfig.common.ConfigurationAnnotationProcessor;
-import com.codekutter.zconfig.common.ConfigurationException;
-import com.codekutter.zconfig.common.IConfigurable;
-import com.codekutter.zconfig.common.model.annotations.ConfigAttribute;
-import com.codekutter.zconfig.common.model.annotations.ConfigPath;
-import com.codekutter.zconfig.common.model.nodes.*;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.hibernate.Session;
+import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.curator.framework.CuratorFramework;
 
 import javax.annotation.Nonnull;
-import javax.persistence.Query;
 import java.io.IOException;
 import java.util.*;
 
+@Getter
+@Accessors(fluent = true)
 @SuppressWarnings("rawtypes")
 public class DataStoreManager {
-    public static final String CONFIG_NODE_DATA_STORES = "dataStores";
-    public static final String CONFIG_NODE_SHARDED_ENTITIES = "shardedEntities";
-    private final Map<Class<? extends IEntity<?>>, Map<Class<? extends AbstractDataStore>, AbstractDataStoreSettings>> entityIndex = new HashMap<>();
+    private final ProcessorState state = new ProcessorState();
+    private final Map<Class<? extends IEntity<?>>, Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings>> entityIndex = new HashMap<>();
     private final Map<String, AbstractDataStoreSettings> dataStoreConfigs = new HashMap<>();
     private final Map<Class<? extends IShardedEntity<?, ?>>, ShardConfigSettings> shardConfigs = new HashMap<>();
-    private final MapThreadCache<String, AbstractDataStore> openedStores = new MapThreadCache<>();
+    private final MapThreadCache<String, AbstractDataStore<?>> openedStores = new MapThreadCache<>();
     private BaseEnv<?> env;
-
-    public DataStoreManager withEnv(@Nonnull BaseEnv<?> env) {
-        this.env = env;
-        return this;
-    }
+    private ConnectionManager connectionManager;
+    private DataStoreManagerSettings settings;
+    private DistributedLock updateLock;
 
     public boolean isTypeSupported(@Nonnull Class<?> type) {
         if (ReflectionUtils.implementsInterface(IEntity.class, type)) {
@@ -69,35 +68,45 @@ public class DataStoreManager {
         return false;
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> AbstractConnection<T> getConnection(@Nonnull String name, Class<? extends T> type) throws DataStoreException {
-        return ConnectionManager.get().connection(name, type);
+    public <T extends Connection> AbstractConnection<T> getConnection(@Nonnull String name,
+                                                                      Class<? extends T> type) throws DataStoreException {
+        try {
+            state.check(ProcessorState.EProcessorState.Running);
+            return connectionManager.getConnection(name, type);
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
     }
 
-    @SuppressWarnings("rawtypes")
-    public <T> AbstractConnection<T> getConnection(@Nonnull Class<? extends IEntity> type) {
+    public <T> AbstractConnection<T> getConnection(@Nonnull Class<? extends IEntity<?>> type) throws DataStoreException {
         return getConnection(type, false);
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public <T> AbstractConnection<T> getConnection(@Nonnull Class<? extends IEntity> type, boolean checkSuperTypes) {
-        Class<? extends IEntity> ct = type;
-        while (true) {
-            if (entityIndex.containsKey(ct)) {
-                return (AbstractConnection<T>) entityIndex.get(ct);
-            }
-            if (checkSuperTypes) {
-                Class<?> t = ct.getSuperclass();
-                if (ReflectionUtils.implementsInterface(IEntity.class, t)) {
-                    ct = (Class<? extends IEntity>) t;
+    @SuppressWarnings({"unchecked"})
+    public <T> AbstractConnection<T> getConnection(@Nonnull Class<? extends IEntity<?>> type,
+                                                   boolean checkSuperTypes) throws DataStoreException {
+        try {
+            state.check(ProcessorState.EProcessorState.Running);
+            Class<? extends IEntity<?>> ct = type;
+            while (true) {
+                if (entityIndex.containsKey(ct)) {
+                    return (AbstractConnection<T>) entityIndex.get(ct);
+                }
+                if (checkSuperTypes) {
+                    Class<?> t = ct.getSuperclass();
+                    if (ReflectionUtils.implementsInterface(IEntity.class, t)) {
+                        ct = (Class<? extends IEntity<?>>) t;
+                    } else {
+                        break;
+                    }
                 } else {
                     break;
                 }
-            } else {
-                break;
             }
+            return null;
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
         }
-        return null;
     }
 
     public <T> AbstractDataStore<T> getDataStore(@Nonnull String name,
@@ -111,10 +120,13 @@ public class DataStoreManager {
         try {
             AbstractDataStoreSettings config = dataStoreConfigs.get(name);
             if (config == null) {
-                throw new DataStoreException(String.format("No configuration found for data store type. [type=%s]", storeType.getCanonicalName()));
+                throw new DataStoreException(
+                        String.format("No configuration found for data store type. [type=%s]", storeType.getCanonicalName()));
             }
             if (!config.getDataStoreClass().equals(storeType)) {
-                throw new DataStoreException(String.format("Invalid Data Store class. [store=%s][expected=%s][configured=%s]", name, storeType.getCanonicalName(), config.getDataStoreClass().getCanonicalName()));
+                throw new DataStoreException(
+                        String.format("Invalid Data Store class. [store=%s][expected=%s][configured=%s]",
+                                name, storeType.getCanonicalName(), config.getDataStoreClass().getCanonicalName()));
             }
             return getDataStore(config, storeType, add);
         } catch (Exception ex) {
@@ -131,7 +143,7 @@ public class DataStoreManager {
     public <T, E extends IEntity> AbstractDataStore<T> getDataStore(@Nonnull Class<? extends AbstractDataStore<T>> storeType,
                                                                     Class<? extends E> type,
                                                                     boolean add) throws DataStoreException {
-        Map<Class<? extends AbstractDataStore>, AbstractDataStoreSettings> configs = entityIndex.get(type);
+        Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings> configs = entityIndex.get(type);
         if (configs == null) {
             throw new DataStoreException(String.format("No data store found for entity type. [type=%s]", type.getCanonicalName()));
         }
@@ -152,11 +164,11 @@ public class DataStoreManager {
                                                   Class<? extends AbstractDataStore<T>> storeType,
                                                   boolean add) throws DataStoreException {
         Preconditions.checkNotNull(env);
-        Map<String, AbstractDataStore> stores = null;
+        Map<String, AbstractDataStore<?>> stores = null;
         if (openedStores.containsThread()) {
             stores = openedStores.get();
             if (stores.containsKey(config.getName())) {
-                return stores.get(config.getName());
+                return (AbstractDataStore<T>) stores.get(config.getName());
             }
         } else if (!add) {
             return null;
@@ -241,7 +253,7 @@ public class DataStoreManager {
     public void commit() throws DataStoreException {
         try {
             if (openedStores.containsThread()) {
-                Map<String, AbstractDataStore> stores = openedStores.get();
+                Map<String, AbstractDataStore<?>> stores = openedStores.get();
                 for (String name : stores.keySet()) {
                     AbstractDataStore<?> store = stores.get(name);
                     if (store.auditLogger() != null) {
@@ -265,7 +277,7 @@ public class DataStoreManager {
     public void rollback() throws DataStoreException {
         try {
             if (openedStores.containsThread()) {
-                Map<String, AbstractDataStore> stores = openedStores.get();
+                Map<String, AbstractDataStore<?>> stores = openedStores.get();
                 for (String name : stores.keySet()) {
                     AbstractDataStore<?> store = stores.get(name);
                     if (store.auditLogger() != null) {
@@ -289,7 +301,7 @@ public class DataStoreManager {
     public void closeStores() throws DataStoreException {
         try {
             if (openedStores.containsThread()) {
-                Map<String, AbstractDataStore> stores = openedStores.get();
+                Map<String, AbstractDataStore<?>> stores = openedStores.get();
                 List<AbstractDataStore> storeList = new ArrayList<>();
                 for (String name : stores.keySet()) {
                     AbstractDataStore<?> store = stores.get(name);
@@ -322,7 +334,7 @@ public class DataStoreManager {
     public void close(@Nonnull AbstractDataStore dataStore) throws DataStoreException {
         try {
             if (openedStores.containsThread()) {
-                Map<String, AbstractDataStore> stores = openedStores.get();
+                Map<String, AbstractDataStore<?>> stores = openedStores.get();
                 if (stores.containsKey(dataStore.name())) {
                     if (dataStore.auditLogger() != null) {
                         dataStore.auditLogger().discard();
@@ -344,129 +356,152 @@ public class DataStoreManager {
         }
     }
 
-    @Override
-    public void configure(@Nonnull AbstractConfigNode node) throws ConfigurationException {
-        Preconditions.checkArgument(node instanceof ConfigPathNode);
-        AbstractConfigNode dnode = ConfigUtils.getPathNode(getClass(),
-                (ConfigPathNode) node);
-        if (dnode == null) {
-            throw new ConfigurationException(String.format("DataStore Manager configuration node found. [node=%s]", node.getAbsolutePath()));
-        }
-
-        AbstractConfigNode cnode = dnode.find(CONFIG_NODE_DATA_STORES);
-        if (cnode != null) {
-            if (cnode instanceof ConfigPathNode) {
-                AbstractConfigNode csnode = ConfigUtils.getPathNode(DataStoreConfig.class,
-                        (ConfigPathNode) cnode);
-                if (csnode instanceof ConfigPathNode) {
-                    readDataStoreConfig((ConfigPathNode) csnode);
-                } else {
-                    throw new ConfigurationException(String.format("Invalid dataStore configuration. [node=%s]", cnode.getAbsolutePath()));
-                }
-            } else if (cnode instanceof ConfigListElementNode) {
-                List<ConfigElementNode> nodes = ((ConfigListElementNode) cnode).getValues();
-                if (nodes != null && !nodes.isEmpty()) {
-                    for (ConfigElementNode nn : nodes) {
-                        readDataStoreConfig((ConfigPathNode) nn);
-                    }
-                }
-            } else {
-                throw new ConfigurationException(String.format("Invalid dataStore definitions. [node=%s]", cnode.getAbsolutePath()));
-            }
-        }
-
-        cnode = dnode.find(CONFIG_NODE_SHARDED_ENTITIES);
-        if (cnode != null) {
-            if (cnode instanceof ConfigPathNode) {
-                AbstractConfigNode csnode = ConfigUtils.getPathNode(ShardConfig.class, (ConfigPathNode) cnode);
-                if (csnode instanceof ConfigPathNode) {
-                    readShardConfig((ConfigPathNode) csnode);
-                } else {
-                    throw new ConfigurationException(String.format("Invalid Shard configuration. [node=%s]", cnode.getAbsolutePath()));
-                }
-            } else if (cnode instanceof ConfigListElementNode) {
-                List<ConfigElementNode> nodes = ((ConfigListElementNode) cnode).getValues();
-                if (nodes != null && !nodes.isEmpty()) {
-                    for (ConfigElementNode nn : nodes) {
-                        readShardConfig((ConfigPathNode) nn);
-                    }
-                }
-            } else {
-                throw new ConfigurationException(String.format("Invalid Shard definitions. [node=%s]", cnode.getAbsolutePath()));
-            }
-        }
-    }
-
-    private void readShardConfig(ConfigPathNode node) throws ConfigurationException {
-        AbstractConfigNode cnode = ConfigUtils.getPathNode(ShardConfig.class, node);
-        if (cnode instanceof ConfigPathNode) {
-            ShardConfig config = ConfigurationAnnotationProcessor.readConfigAnnotations(ShardConfig.class, node);
-            if (config == null) {
-                throw new ConfigurationException(String.format("Error reading shard configuration. [node=%s]", cnode.getAbsolutePath()));
-            }
-            ConfigParametersNode params = ((ConfigPathNode) cnode).parmeters();
-            if (params == null || params.isEmpty()) {
-                throw new ConfigurationException(String.format("Shard segments not defined. [node=%s]", cnode.getAbsolutePath()));
-            }
-            config.shards = new HashMap<>();
-            for (String key : params.getKeyValues().keySet()) {
-                ConfigValueNode cv = params.getValue(key);
-                config.shards.put(Integer.parseInt(key), cv.getValue());
-            }
-            shardConfigs.put(config.entityType, config);
-        } else {
-            throw new ConfigurationException(String.format("Shard configuration not found. [node=%s]", node.getAbsolutePath()));
-        }
-    }
-
-    public <T> Set<String> readDynamicDConfig(@Nonnull Session session,
-                                              @Nonnull Class<? extends AbstractDataStore<T>> dataStoreType,
-                                              @Nonnull Class<? extends DataStoreConfig> configType,
-                                              String filter) throws DataStoreException {
+    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                     @Nonnull BaseEnv<?> env,
+                     String path) throws ConfigurationException {
+        this.env = env;
+        this.connectionManager = env.connectionManager();
         try {
-            String qstr = String.format("FROM %s", configType.getCanonicalName());
-            if (!Strings.isNullOrEmpty(filter)) {
-                qstr = String.format("%s WHERE (%s)", qstr, filter);
+            updateLock = env.createLock(getClass().getSimpleName());
+            if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)) {
+                state.setState(ProcessorState.EProcessorState.Running);
+                return;
             }
-            Query query = session.createQuery(qstr);
-            List<DataStoreConfig> configs = query.getResultList();
-            if (configs != null && !configs.isEmpty()) {
-                Set<String> dataStores = new HashSet<>();
-                synchronized (dataStoreConfigs) {
-                    for (DataStoreConfig config : configs) {
-                        if (openedStores.containsKey(config.getName())) {
-                            throw new DataStoreException(
-                                    String.format("Store already opened by current thread. [name=%s][type=%s]",
-                                            config.getName(), dataStoreType.getCanonicalName()));
+            if (Strings.isNullOrEmpty(path)) {
+                ConfigPath cp = AbstractDataStoreSettings.class.getAnnotation(ConfigPath.class);
+                path = cp.path();
+            }
+            HierarchicalConfiguration<ImmutableNode> config
+                    = xmlConfig.configurationAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES);
+            ConfigReader reader = new ConfigReader(xmlConfig, path, DataStoreManagerSettings.class);
+            settings = (DataStoreManagerSettings) reader.settings();
+            List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
+            for (HierarchicalConfiguration<ImmutableNode> node : dsnodes) {
+                readDataStoreConfig(node);
+            }
+
+            if (!ConfigReader.checkIfNodeExists(config, DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES))
+                return;
+            List<HierarchicalConfiguration<ImmutableNode>> snodes
+                    = config.configurationsAt(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES);
+            for (HierarchicalConfiguration<ImmutableNode> node : snodes) {
+                readShardConfig(node);
+            }
+            if (!Strings.isNullOrEmpty(settings.getZkConnection())) {
+                ZookeeperConnection zkc = connectionManager
+                        .getConnection(settings().getZkConnection(), ZookeeperConnection.class);
+                if (zkc == null) {
+                    throw new Exception(String.format("ZooKeeper connection not found. [name=%s]",
+                            settings.getZkConnection()));
+                }
+                if (!zkc.isConnected()) zkc.connect();
+                CuratorFramework client = zkc.client();
+                String dspath = new PathUtils.ZkPathBuilder(path)
+                        .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                        .build();
+                if (client.checkExists().forPath(dspath) != null) {
+                    List<String> types = client.getChildren().forPath(dspath);
+                    if (types != null && !types.isEmpty()) {
+                        for (String type : types) {
+                            String tp = new PathUtils.ZkPathBuilder(dspath)
+                                    .withPath(type)
+                                    .build();
+                            List<String> names = client.getChildren().forPath(tp);
+                            if (names != null && !names.isEmpty()) {
+                                for (String name : names) {
+                                    if (dataStoreConfigs.containsKey(name) && settings.isOverride()) {
+                                        continue;
+                                    }
+                                    String cp = new PathUtils.ZkPathBuilder(tp)
+                                            .withPath(name)
+                                            .build();
+                                    readDataStoreConfig(client, cp, name);
+                                }
+                            }
                         }
-                        config.postLoad();
-                        loadDataStoreConfig(config);
-                        dataStores.add(config.getName());
                     }
                 }
-                return dataStores;
+                String shpath = new PathUtils.ZkPathBuilder(path)
+                        .withPath(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES)
+                        .build();
+                if (client.checkExists().forPath(shpath) != null) {
+                    List<String> names = client.getChildren().forPath(shpath);
+                    if (names != null && !names.isEmpty()) {
+                        for (String name : names) {
+                            String cp = new PathUtils.ZkPathBuilder(shpath)
+                                    .withPath(name)
+                                    .build();
+                            byte[] data = client.getData().forPath(cp);
+                            if (data == null || data.length == 0) {
+                                throw new Exception(String.format("Shard Configuration not found. [path=%s]", cp));
+                            }
+                            ShardConfigSettings sc = JSONUtils.read(data, ShardConfigSettings.class);
+                            if (shardConfigs.containsKey(sc.getEntityType()) && settings.isOverride()) {
+                                continue;
+                            }
+                            sc.setSource(EConfigSource.Database);
+                            shardConfigs.put(sc.getEntityType(), sc);
+                        }
+                    }
+                }
             }
-            return null;
+            state.setState(ProcessorState.EProcessorState.Running);
+            if (settings.isAutoSave()) {
+                save();
+            }
         } catch (Exception ex) {
-            throw new DataStoreException(ex);
+            state.error(ex);
+            throw new ConfigurationException(ex);
         }
     }
 
-    private void loadDataStoreConfig(DataStoreConfig config) throws ConfigurationException {
+    public void save() throws DataStoreException {
+
+    }
+
+    private void readDataStoreConfig(CuratorFramework client,
+                                     String path,
+                                     String name) throws Exception {
+        byte[] data = client.getData().forPath(path);
+        if (data == null || data.length == 0) {
+            throw new Exception(String.format("DataStore configuration not found. [path=%s]", path));
+        }
+        AbstractDataStoreSettings settings = JSONUtils.read(data, AbstractDataStoreSettings.class);
+        settings.setSource(EConfigSource.Database);
+        addDataStoreConfig(settings);
+    }
+
+    private void readShardConfig(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        try {
+            ConfigReader reader = new ConfigReader(xmlConfig, ShardConfigSettings.class);
+            ShardConfigSettings settings = ((ShardConfigSettings) reader.settings()).parse();
+            settings.setSource(EConfigSource.File);
+            shardConfigs.put(settings.getEntityType(), settings);
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private void addDataStoreConfig(AbstractDataStoreSettings config) throws ConfigurationException {
         try {
             dataStoreConfigs.put(
                     config.getName(), config);
-            AbstractConnection<?> connection = ConnectionManager.get().connection(config.getConnectionName(), config.getConnectionType());
+            AbstractConnection<?> connection = connectionManager
+                    .getConnection(config.getConnectionName(), config.getConnectionType());
             if (connection == null) {
-                throw new ConfigurationException(String.format("No connection found. [store=%s][connection=%s]", config.getName(), config.getConnectionName()));
+                throw new ConfigurationException(
+                        String.format("No connection found. [store=%s][connection=%s]",
+                                config.getName(), config.getConnectionName()));
             }
-            if (connection.supportedTypes() != null && !connection.supportedTypes().isEmpty()) {
-                for (Class<?> t : connection.supportedTypes()) {
+            if (connection.getSupportedTypes() != null) {
+                for (Class<?> t : connection.getSupportedTypes()) {
                     if (ReflectionUtils.implementsInterface(IEntity.class, t)) {
-                        Map<Class<? extends AbstractDataStore>, DataStoreConfig> ec = entityIndex.get(t);
+                        Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings> ec = entityIndex.get(t);
                         if (ec == null) {
                             ec = new HashMap<>();
-                            entityIndex.put((Class<? extends IEntity>) t, ec);
+                            entityIndex.put((Class<? extends IEntity<?>>) t, ec);
                         }
                         ec.put(config.getDataStoreClass(), config);
                     }
@@ -477,25 +512,10 @@ public class DataStoreManager {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private void readDataStoreConfig(ConfigPathNode node) throws ConfigurationException {
-        AbstractConfigNode cnode = ConfigUtils.getPathNode(DataStoreConfig.class, node);
-        if (!(cnode instanceof ConfigPathNode)) {
-            throw new ConfigurationException(String.format("Invalid/NULL data store configuration. [node=%s]", node.getAbsolutePath()));
-        }
-        String type = ConfigUtils.getClassAttribute(cnode);
-        if (Strings.isNullOrEmpty(type)) {
-            throw new ConfigurationException(String.format("Invalid configuration: Class attribute not found. [node=%s]", cnode.getAbsolutePath()));
-        }
-        try {
-            Class<? extends DataStoreConfig> cls = (Class<? extends DataStoreConfig>) Class.forName(type);
-            DataStoreConfig config = TypeUtils.createInstance(cls);
-            ConfigurationAnnotationProcessor.readConfigAnnotations(cls,
-                    (ConfigPathNode) cnode, config);
-            loadDataStoreConfig(config);
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
+    private void readDataStoreConfig(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        ConfigReader reader = new ConfigReader(xmlConfig, null, AbstractDataStoreSettings.class);
+        AbstractDataStoreSettings settings = (AbstractDataStoreSettings) reader.settings();
+        settings.setSource(EConfigSource.File);
+        addDataStoreConfig(settings);
     }
-
 }

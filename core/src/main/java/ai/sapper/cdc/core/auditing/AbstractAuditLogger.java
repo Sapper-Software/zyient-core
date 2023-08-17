@@ -18,6 +18,8 @@
 package ai.sapper.cdc.core.auditing;
 
 import ai.sapper.cdc.common.audit.AuditRecord;
+import ai.sapper.cdc.common.cache.MapThreadCache;
+import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.core.model.IKeyed;
 import ai.sapper.cdc.core.processing.ProcessorState;
 import ai.sapper.cdc.core.stores.AbstractDataStore;
@@ -163,12 +165,12 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
                                                 String changeContext,
                                                 @Nonnull Principal user) throws AuditException {
         try {
-            state.check(EObjectState.Available, getClass());
+            state.check(ProcessorState.EProcessorState.Running);
             if (serializer == null) {
                 throw new AuditException(String.format("[logger=%s] No serializer defined.", getClass().getCanonicalName()));
             }
             return write(dataStoreType, dataStoreName, type, entity, entityType, changeDelta, changeContext, user, serializer);
-        } catch (StateException ex) {
+        } catch (Exception ex) {
             throw new AuditException(ex);
         }
     }
@@ -197,7 +199,7 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
                                                 @Nonnull IAuditSerDe serializer) throws AuditException {
         Preconditions.checkState(dataStoreManager != null);
         try {
-            state.check(EObjectState.Available, getClass());
+            state.check(ProcessorState.EProcessorState.Running);
             AuditRecord record = createAuditRecord(dataStoreType, dataStoreName, type, entity, entityType, changeDelta, changeContext, user, serializer);
             if (useCache) {
                 cache.put(record.getKey().stringKey(), record);
@@ -216,7 +218,7 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
     public <T extends IKeyed> AuditRecord writeToStore(AuditRecord record) throws AuditException {
         Preconditions.checkState(dataStoreManager != null);
         try {
-            state.check(EObjectState.Available, getClass());
+            state.check(ProcessorState.EProcessorState.Running);
             AbstractDataStore<C> dataStore = getDataStore(true);
             record = dataStore.createEntity(record, record.getClass(), null);
             return record;
@@ -330,7 +332,7 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
      */
     public <K extends IKey, T extends IKeyed<K>> List<T> fetch(@Nonnull K key,
                                                                @Nonnull Class<? extends T> entityType) throws AuditException {
-        Preconditions.checkState(serializer != null);
+        Preconditions.checkNotNull(serializer);
         return fetch(key, entityType, serializer);
     }
 

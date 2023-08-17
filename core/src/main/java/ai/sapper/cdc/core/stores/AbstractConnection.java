@@ -53,5 +53,11 @@ public abstract class AbstractConnection<T> implements Connection {
         types.add(type);
     }
 
+    public Set<Class<?>> getSupportedTypes() {
+        Preconditions.checkState(state.getState() == EConnectionState.Initialized || state.isConnected());
+        Preconditions.checkNotNull(settings);
+        return settings.getSupportedTypes();
+    }
+
     public abstract boolean hasTransactionSupport();
 }

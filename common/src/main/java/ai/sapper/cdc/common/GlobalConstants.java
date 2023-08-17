@@ -29,6 +29,8 @@ import java.nio.charset.StandardCharsets;
  * Class defines static global constants.
  */
 public class GlobalConstants {
+    public static final String EMPTY = "";
+
     /**
      * Default Joda date format to parse/print dates.
      */

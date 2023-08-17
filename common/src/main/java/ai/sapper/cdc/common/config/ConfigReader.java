@@ -83,9 +83,13 @@ public class ConfigReader {
     }
 
     public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                        @NonNull String path,
+                        String path,
                         @NonNull Class<? extends Settings> type) {
-        this.config = config.configurationAt(path);
+        if (!Strings.isNullOrEmpty(path))
+            this.config = config.configurationAt(path);
+        else {
+            this.config = config;
+        }
         this.type = type;
     }
 
