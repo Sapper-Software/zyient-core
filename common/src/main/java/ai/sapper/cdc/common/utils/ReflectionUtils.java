@@ -1097,4 +1097,9 @@ public class ReflectionUtils {
     public static boolean isChar(@NonNull Class<?> type) {
         return (type.equals(char.class) || type.equals(Character.class) || type.equals(Character.TYPE));
     }
+
+    public static <T> T createInstance(Class<T> type) throws Exception {
+        Constructor<T> constructor = type.getDeclaredConstructor();
+        return constructor.newInstance();
+    }
 }

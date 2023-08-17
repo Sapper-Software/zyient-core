@@ -149,9 +149,10 @@ subprojects {
         // https://mvnrepository.com/artifact/com.beust/jcommander
         implementation group: 'com.beust', name: 'jcommander', version: '1.82'
 
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.13.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.2.2'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.2'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.2'
 
         // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
         implementation 'com.google.protobuf:protobuf-java:3.21.5'
@@ -160,7 +161,6 @@ subprojects {
         implementation 'org.apache.curator:curator-recipes:5.4.0'
         implementation 'org.apache.curator:curator-framework:5.4.0'
         implementation 'org.apache.curator:curator-client:5.4.0'
-        implementation 'com.codekutter:ews-java-api:2.0-SNAPSHOT'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

@@ -69,7 +69,16 @@ public class ConfigReader {
 
     public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                         @NonNull Class<? extends Settings> type) {
-        this.config = config;
+        if (type.isAnnotationPresent(ConfigPath.class)) {
+            ConfigPath p = type.getAnnotation(ConfigPath.class);
+            if (!Strings.isNullOrEmpty(p.path())) {
+                this.config = config.configurationAt(p.path());
+            } else {
+                this.config = config.configurationAt(type.getSimpleName());
+            }
+        } else {
+            this.config = config;
+        }
         this.type = type;
     }
 

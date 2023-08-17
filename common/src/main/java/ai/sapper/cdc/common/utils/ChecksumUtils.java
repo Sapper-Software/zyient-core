@@ -26,9 +26,11 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 public class ChecksumUtils {
     private static final int ONE_MB = 1024 * 1024;
+    private static final String HASH_ALGO = "MD5";
 
     public static String computeSHA256(File inputFile) {
 
@@ -207,5 +209,20 @@ public class ChecksumUtils {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    public static int getHashCode(String value) {
+        int hash = 7;
+        hash = 31 * hash + (value == null ? 0 : value.hashCode());
+        return hash;
+    }
+
+    public static String getKeyHash(@NonNull String key) throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(key));
+
+        MessageDigest digest = MessageDigest.getInstance(HASH_ALGO);
+        byte[] d = digest.digest(key.getBytes(StandardCharsets.UTF_8));
+        d = Base64.getEncoder().encode(d);
+        return new String(d, StandardCharsets.UTF_8);
     }
 }

@@ -42,58 +42,70 @@ public class PathUtils {
         return path;
     }
 
-    public static File getTempDir() {
+    public static File getTempDir() throws IOException {
         File dir = new File(TEMP_PATH);
         if (!dir.exists()) {
-            dir.mkdirs();
+            if (!dir.mkdirs()) {
+                throw new IOException(
+                        String.format("Failed to create temp directory. [path=%s]", dir.getAbsolutePath()));
+            }
         }
         return dir;
     }
 
-    public static File getTempFile(@NonNull String name, @NonNull String ext) {
-        File dir = new File(TEMP_PATH);
+    public static File getTempDir(@NonNull String name) throws IOException {
+        File dir = new File(formatPath(String.format("%s/%s", TEMP_PATH, name)));
         if (!dir.exists()) {
-            dir.mkdirs();
+            if (!dir.mkdirs()) {
+                throw new IOException(
+                        String.format("Failed to create temp directory. [path=%s]", dir.getAbsolutePath()));
+            }
         }
+        return dir;
+    }
+
+    public static File getTempFile(@NonNull String name,
+                                   @NonNull String ext) throws IOException {
+        File dir = getTempDir();
         File path = new File(String.format("%s/%s.%s",
                 dir.getAbsolutePath(), name, ext));
         if (path.exists()) {
-            path.delete();
+            if (!path.delete()) {
+                throw new IOException(String.format("Failed to delete temp file. [path=%s]", path.getAbsolutePath()));
+            }
         }
         return path;
     }
 
-    public static File getTempFile(@NonNull String name) {
-        File dir = new File(TEMP_PATH);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+    public static File getTempFile(@NonNull String name) throws IOException {
+        File dir = getTempDir();
         File path = new File(String.format("%s/%s",
                 dir.getAbsolutePath(), name));
         if (path.exists()) {
-            path.delete();
+            if (!path.delete()) {
+                throw new IOException(String.format("Failed to delete temp file. [path=%s]", path.getAbsolutePath()));
+            }
         }
         return path;
     }
 
-    public static File getTempFile() {
+    public static File getTempFile() throws IOException {
         return getTempFile(UUID.randomUUID().toString(), "tmp");
     }
 
-    public static File getTempFileWithName(@NonNull String name) {
-        File dir = new File(TEMP_PATH);
-        if (!dir.exists()) {
-            dir.mkdirs();
-        }
+    public static File getTempFileWithName(@NonNull String name) throws IOException {
+        File dir = getTempDir();
         File path = new File(String.format("%s/%s",
                 dir.getAbsolutePath(), name));
         if (path.exists()) {
-            path.delete();
+            if (!path.delete()) {
+                throw new IOException(String.format("Failed to delete temp file. [path=%s]", path.getAbsolutePath()));
+            }
         }
         return path;
     }
 
-    public static File getTempFileWithExt(@NonNull String ext) {
+    public static File getTempFileWithExt(@NonNull String ext) throws IOException {
         return getTempFile(UUID.randomUUID().toString(), ext);
     }
 
