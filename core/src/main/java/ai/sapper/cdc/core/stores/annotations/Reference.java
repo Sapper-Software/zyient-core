@@ -17,8 +17,8 @@
 
 package ai.sapper.cdc.core.stores.annotations;
 
-import com.codekutter.common.model.IEntity;
-import joptsimple.internal.Strings;
+import ai.sapper.cdc.common.GlobalConstants;
+import ai.sapper.cdc.core.model.IEntity;
 
 import javax.persistence.CascadeType;
 import javax.persistence.JoinColumns;
@@ -39,7 +39,7 @@ public @interface Reference {
      *
      * @return - Target entity class.
      */
-    Class<? extends IEntity> target();
+    Class<? extends IEntity<?>> target();
 
     /**
      * (Optional)
@@ -84,5 +84,5 @@ public @interface Reference {
      *
      * @return - Query String.
      */
-    String query() default Strings.EMPTY;
+    String query() default GlobalConstants.EMPTY;
 }

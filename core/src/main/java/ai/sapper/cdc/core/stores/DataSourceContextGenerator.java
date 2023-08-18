@@ -17,10 +17,10 @@
 
 package ai.sapper.cdc.core.stores;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.auditing.AbstractAuditContext;
-import com.codekutter.common.auditing.IAuditContextGenerator;
-import com.codekutter.common.model.IEntity;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.core.auditing.AbstractAuditContext;
+import ai.sapper.cdc.core.auditing.IAuditContextGenerator;
+import ai.sapper.cdc.core.model.IEntity;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nonnull;
@@ -39,10 +39,10 @@ public class DataSourceContextGenerator implements IAuditContextGenerator {
      */
     @Override
     @SuppressWarnings("rawtypes")
-    public <E extends IEntity> AbstractAuditContext generate(@Nonnull Object source,
-                                                             @Nonnull E entity,
-                                                             Context context,
-                                                             Principal user) throws DataStoreException {
+    public <E extends IEntity<?>> AbstractAuditContext generate(@Nonnull Object source,
+                                                                @Nonnull E entity,
+                                                                Context context,
+                                                                Principal user) throws DataStoreException {
         Preconditions.checkArgument(source instanceof AbstractDataStore);
         try {
             AbstractDataStore store = (AbstractDataStore) source;

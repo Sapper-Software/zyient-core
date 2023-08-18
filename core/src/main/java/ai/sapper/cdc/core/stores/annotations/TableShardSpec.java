@@ -17,16 +17,15 @@
 
 package ai.sapper.cdc.core.stores.annotations;
 
-import com.codekutter.common.stores.IShardedEntity;
+import ai.sapper.cdc.core.stores.IShardedEntity;
 
 import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Inherited
-@SuppressWarnings("rawtypes")
 public @interface TableShardSpec {
     int shard();
 
-    Class<? extends IShardedEntity> mappedEntity();
+    Class<? extends IShardedEntity<?, ?>> mappedEntity();
 }

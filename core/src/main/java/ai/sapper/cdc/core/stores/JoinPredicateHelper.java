@@ -17,13 +17,13 @@
 
 package ai.sapper.cdc.core.stores;
 
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.stores.annotations.Reference;
-import com.codekutter.common.utils.KeyValuePair;
-import com.codekutter.common.utils.ReflectionUtils;
+import ai.sapper.cdc.common.utils.KeyValuePair;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
+import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.stores.annotations.Reference;
 import com.google.common.base.Strings;
+import lombok.NonNull;
 
-import javax.annotation.Nonnull;
 import javax.persistence.JoinColumn;
 import javax.persistence.JoinColumns;
 import java.lang.reflect.Field;
@@ -32,11 +32,11 @@ import java.util.List;
 import java.util.Set;
 
 public class JoinPredicateHelper {
-    public static <T extends IEntity> String generateHibernateJoinQuery(@Nonnull Reference reference,
-                                                                        @Nonnull Collection<T> source,
-                                                                        @Nonnull Field field,
-                                                                        @Nonnull DataStoreManager manager,
-                                                                        boolean appendQuery) throws DataStoreException {
+    public static <T extends IEntity<?>> String generateHibernateJoinQuery(@NonNull Reference reference,
+                                                                           @NonNull Collection<T> source,
+                                                                           @NonNull Field field,
+                                                                           @NonNull DataStoreManager manager,
+                                                                           boolean appendQuery) throws DataStoreException {
         try {
             Class<?> type = field.getType();
             if (ReflectionUtils.implementsInterface(List.class, type)) {
@@ -51,9 +51,9 @@ public class JoinPredicateHelper {
             if (!manager.isTypeSupported(reference.target())) {
                 throw new DataStoreException(String.format("Specified entity type not supported. [type=%s]", type.getCanonicalName()));
             }
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             boolean first = true;
-            for (IEntity entity : source) {
+            for (IEntity<?> entity : source) {
                 String condition = getHibernateJoinConditions(reference.columns(), entity, reference.target());
                 if (Strings.isNullOrEmpty(condition)) {
                     throw new DataStoreException(String.format("Error generating condition. [type=%s][key=%s]",
@@ -73,10 +73,10 @@ public class JoinPredicateHelper {
         }
     }
 
-    public static <T extends IEntity> String generateHibernateJoinQuery(@Nonnull Reference reference,
-                                                                        @Nonnull T source,
-                                                                        @Nonnull Field field,
-                                                                        @Nonnull DataStoreManager manager,
+    public static <T extends IEntity<?>> String generateHibernateJoinQuery(@NonNull Reference reference,
+                                                                        @NonNull T source,
+                                                                        @NonNull Field field,
+                                                                        @NonNull DataStoreManager manager,
                                                                         boolean appendQuery) throws DataStoreException {
         try {
             Class<?> type = field.getType();
@@ -106,35 +106,35 @@ public class JoinPredicateHelper {
         }
     }
 
-    public static String generateSearchQuery(@Nonnull Reference reference,
-                                             @Nonnull Collection<IEntity> source,
-                                             @Nonnull Field field,
-                                             @Nonnull DataStoreManager manager) throws DataStoreException {
+    public static String generateSearchQuery(@NonNull Reference reference,
+                                             @NonNull Collection<IEntity<?>> source,
+                                             @NonNull Field field,
+                                             @NonNull DataStoreManager manager) throws DataStoreException {
 
         return null;
     }
 
-    public static String generateSearchQuery(@Nonnull Reference reference,
-                                             @Nonnull IEntity source,
-                                             @Nonnull Field field,
-                                             @Nonnull DataStoreManager manager) throws DataStoreException {
+    public static String generateSearchQuery(@NonNull Reference reference,
+                                             @NonNull IEntity<?> source,
+                                             @NonNull Field field,
+                                             @NonNull DataStoreManager manager) throws DataStoreException {
 
         return null;
     }
 
     private static String getHibernateJoinConditions(JoinColumns joinColumns,
-                                                     IEntity source,
-                                                     Class<? extends IEntity> type) throws DataStoreException {
+                                                     IEntity<?> source,
+                                                     Class<? extends IEntity<?>> type) throws DataStoreException {
         JoinColumn[] columns = joinColumns.value();
         if (columns.length > 0) {
-            StringBuffer buffer = new StringBuffer();
+            StringBuilder buffer = new StringBuilder();
             for (JoinColumn column : columns) {
                 String vc = getHibernateJoinCondition(column, source, type);
                 if (Strings.isNullOrEmpty(vc)) {
                     throw new DataStoreException(String.format("Error generating JOIN condition. [type=%s][column=%s]",
                             type.getCanonicalName(), column.name()));
                 }
-                if (buffer.length() > 0) {
+                if (!buffer.isEmpty()) {
                     buffer.append(" AND ");
                 }
                 buffer.append(vc);
@@ -145,8 +145,8 @@ public class JoinPredicateHelper {
     }
 
     private static String getHibernateJoinCondition(JoinColumn column,
-                                                    IEntity source,
-                                                    Class<? extends IEntity> type) throws DataStoreException {
+                                                    IEntity<?> source,
+                                                    Class<? extends IEntity<?>> type) throws DataStoreException {
         try {
             KeyValuePair<String, Field> kv = getHibernateFieldName(column, type);
             if (kv != null) {
@@ -226,7 +226,7 @@ public class JoinPredicateHelper {
         return null;
     }
 
-    private static KeyValuePair<String, Field> getHibernateFieldName(JoinColumn column, Class<? extends IEntity> type) {
+    private static KeyValuePair<String, Field> getHibernateFieldName(JoinColumn column, Class<? extends IEntity<?>> type) {
         String cname = column.referencedColumnName();
         if (!Strings.isNullOrEmpty(cname)) {
             return ReflectionUtils.findNestedField(type, cname);

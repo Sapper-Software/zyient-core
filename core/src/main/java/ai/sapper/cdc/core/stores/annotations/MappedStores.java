@@ -17,14 +17,13 @@
 
 package ai.sapper.cdc.core.stores.annotations;
 
-import com.codekutter.common.stores.AbstractDataStore;
+import ai.sapper.cdc.core.stores.AbstractDataStore;
 
 import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Inherited
-@SuppressWarnings("rawtypes")
 public @interface MappedStores {
-    Class<? extends AbstractDataStore>[] stores();
+    Class<? extends AbstractDataStore<?>>[] stores();
 }

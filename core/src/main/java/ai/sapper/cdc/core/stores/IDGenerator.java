@@ -17,21 +17,19 @@
 
 package ai.sapper.cdc.core.stores;
 
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.stores.annotations.EGeneratedType;
-import com.codekutter.common.stores.annotations.GeneratedId;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.common.utils.ReflectionUtils;
-import com.codekutter.common.utils.TypeUtils;
+import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
+import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.stores.annotations.EGeneratedType;
+import ai.sapper.cdc.core.stores.annotations.GeneratedId;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import lombok.NonNull;
 import org.hibernate.Session;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.MySQLDialect;
-import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 
-import javax.annotation.Nonnull;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Id;
 import javax.persistence.Query;
@@ -41,9 +39,10 @@ import java.util.List;
 import java.util.UUID;
 
 public class IDGenerator {
-    public static void process(@Nonnull IEntity<?> entity, @Nonnull Session session) throws DataStoreException {
+    public static void process(@NonNull IEntity<?> entity,
+                               @NonNull Session session) throws DataStoreException {
         Field[] fields = ReflectionUtils.getAllFields(entity.getClass());
-        if (fields != null && fields.length > 0) {
+        if (fields != null) {
             for (Field field : fields) {
                 if (field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(EmbeddedId.class)) {
                     process(entity, field, session);
@@ -53,7 +52,9 @@ public class IDGenerator {
         }
     }
 
-    public static void process(@Nonnull IEntity<?> entity, @Nonnull Field field, @Nonnull Session session) throws DataStoreException {
+    public static void process(@NonNull IEntity<?> entity,
+                               @NonNull Field field,
+                               @NonNull Session session) throws DataStoreException {
         Preconditions.checkArgument(field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(EmbeddedId.class));
         try {
             if (field.isAnnotationPresent(Id.class)) {
@@ -76,7 +77,7 @@ public class IDGenerator {
                         if (f.isAnnotationPresent(GeneratedId.class)) {
                             Object fv = ReflectionUtils.getFieldValue(entity, field);
                             if (fv == null) {
-                                fv = TypeUtils.createInstance(field.getType());
+                                fv = ReflectionUtils.createInstance(field.getType());
                                 ReflectionUtils.setObjectValue(entity, field, fv);
                             }
                             GeneratedId gi = f.getAnnotation(GeneratedId.class);
@@ -107,9 +108,13 @@ public class IDGenerator {
         }
         if (dialect instanceof MySQLDialect) {
             sql = String.format("SELECT NEXT VALUE FOR %s", sequence);
-        } else if (dialect instanceof Oracle8iDialect) {
+        }
+        /*
+        else if (dialect instanceof Oracle8iDialect) {
             sql = String.format("SELECT %s.nextval FROM dual", sequence);
-        } else {
+        }
+         */
+        else {
             throw new DataStoreException(
                     String.format("DB Dialect not supported for Generated ID. [dialect=%s]",
                             dialect.getClass().getCanonicalName()));
@@ -117,8 +122,8 @@ public class IDGenerator {
 
         Long value = null;
         if (!Strings.isNullOrEmpty(sql)) {
-            Query query = session.createNativeQuery(sql);
-            List<Object> result = query.getResultList();
+            Query query = (Query) session.createNativeQuery(sql);
+            List<?> result = query.getResultList();
             if (result != null && !result.isEmpty()) {
                 Object ret = result.get(0);
                 if (ret instanceof BigInteger) {
@@ -135,7 +140,7 @@ public class IDGenerator {
                     String.format("Error fetching sequence value. [dialect=%s][sequence=%s]",
                             dialect.getClass().getCanonicalName(), sequence));
         }
-        LogUtils.debug(IDGenerator.class, String.format("Fetched Sequence :[%s=%d]", sequence, value));
+        DefaultLogger.debug(String.format("Fetched Sequence :[%s=%d]", sequence, value));
         return value;
     }
 }

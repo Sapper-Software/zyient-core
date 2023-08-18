@@ -17,7 +17,7 @@
 
 package ai.sapper.cdc.core.stores.impl;
 
-import com.codekutter.common.stores.annotations.IShardProvider;
+import ai.sapper.cdc.core.stores.annotations.IShardProvider;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;

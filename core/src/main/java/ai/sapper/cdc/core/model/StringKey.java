@@ -18,6 +18,7 @@ package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.utils.ChecksumUtils;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 import javax.persistence.Column;
@@ -34,7 +35,7 @@ public class StringKey implements IKey, Serializable {
     public StringKey() {
     }
 
-    public StringKey(@Nonnull String key) {
+    public StringKey(@NonNull String key) {
         this.key = key;
     }
 

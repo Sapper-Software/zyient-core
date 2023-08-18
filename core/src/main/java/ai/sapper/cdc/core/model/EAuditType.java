@@ -15,17 +15,26 @@
  *
  */
 
-package ai.sapper.cdc.core.stores.annotations;
+package ai.sapper.cdc.core.model;
 
-import ai.sapper.cdc.core.model.IEntity;
-
-import java.lang.annotation.*;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-@Inherited
-public @interface MappedTableShard {
-    int shard();
-
-    Class<? extends IEntity<?>> parent();
+/**
+ * Enum type to log audit records.
+ */
+public enum EAuditType {
+    /**
+     * Entity records was created.
+     */
+    Create,
+    /**
+     * Entity records was updated
+     */
+    Update,
+    /**
+     * Entity record was deleted.
+     */
+    Delete,
+    /**
+     * Entity record was read.
+     */
+    Read
 }

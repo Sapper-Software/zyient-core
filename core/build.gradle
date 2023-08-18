@@ -45,7 +45,9 @@ dependencies {
 
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
     implementation 'net.openhft:chronicle-queue:5.24ea23'
+
     implementation 'io.github.resilience4j:resilience4j-retry:2.1.0'
+
     implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
     implementation 'org.eclipse.angus:angus-mail:2.0.2'
     implementation 'org.eclipse.angus:gimap:2.0.2'
@@ -53,6 +55,9 @@ dependencies {
     implementation 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final'
     implementation 'org.hibernate:hibernate-core:6.2.7.Final'
     implementation 'org.apache.tika:tika-core:2.8.0'
+    implementation 'org.apache.tika:tika-langdetect:2.8.0'
+
+    implementation 'org.apache.lucene:lucene-core:9.7.0'
 }
 
 test {

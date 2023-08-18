@@ -17,7 +17,7 @@
 
 package ai.sapper.cdc.core.stores.annotations;
 
-import com.codekutter.common.stores.impl.DefaultShardProvider;
+import ai.sapper.cdc.core.stores.impl.DefaultShardProvider;
 
 import java.lang.annotation.*;
 

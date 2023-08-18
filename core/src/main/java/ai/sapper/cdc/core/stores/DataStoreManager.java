@@ -47,8 +47,6 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
 
-@Getter
-@Accessors(fluent = true)
 @SuppressWarnings("rawtypes")
 public class DataStoreManager {
     private final ProcessorState state = new ProcessorState();
@@ -60,6 +58,8 @@ public class DataStoreManager {
     private ConnectionManager connectionManager;
     private DataStoreManagerSettings settings;
     private DistributedLock updateLock;
+    private ZookeeperConnection zkConnection;
+    private String zkPath;
 
     public boolean isTypeSupported(@Nonnull Class<?> type) {
         if (ReflectionUtils.implementsInterface(IEntity.class, type)) {
@@ -388,14 +388,15 @@ public class DataStoreManager {
                 readShardConfig(node);
             }
             if (!Strings.isNullOrEmpty(settings.getZkConnection())) {
-                ZookeeperConnection zkc = connectionManager
-                        .getConnection(settings().getZkConnection(), ZookeeperConnection.class);
-                if (zkc == null) {
+                zkConnection = connectionManager
+                        .getConnection(settings.getZkConnection(), ZookeeperConnection.class);
+                if (zkConnection == null) {
                     throw new Exception(String.format("ZooKeeper connection not found. [name=%s]",
                             settings.getZkConnection()));
                 }
-                if (!zkc.isConnected()) zkc.connect();
-                CuratorFramework client = zkc.client();
+                if (!zkConnection.isConnected()) zkConnection.connect();
+                zkPath = path;
+                CuratorFramework client = zkConnection.client();
                 String dspath = new PathUtils.ZkPathBuilder(path)
                         .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
                         .build();
@@ -456,7 +457,29 @@ public class DataStoreManager {
     }
 
     public void save() throws DataStoreException {
+        if (zkConnection == null) {
+            return;
+        }
+        try {
+            state.check(ProcessorState.EProcessorState.Running);
+            updateLock.lock();
+            try {
+                if (!dataStoreConfigs.isEmpty()) {
+                    for (String name : dataStoreConfigs.keySet()) {
+                        AbstractDataStoreSettings config = dataStoreConfigs.get(name);
 
+                    }
+                }
+            } finally {
+                updateLock.unlock();
+            }
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
+    }
+
+    public void addShardConfig(@Nonnull ShardConfigSettings config) throws DataStoreException {
+        shardConfigs.put(config.getEntityType(), config);
     }
 
     private void readDataStoreConfig(CuratorFramework client,
@@ -484,7 +507,7 @@ public class DataStoreManager {
 
 
     @SuppressWarnings("unchecked")
-    private void addDataStoreConfig(AbstractDataStoreSettings config) throws ConfigurationException {
+    public void addDataStoreConfig(AbstractDataStoreSettings config) throws ConfigurationException {
         try {
             dataStoreConfigs.put(
                     config.getName(), config);

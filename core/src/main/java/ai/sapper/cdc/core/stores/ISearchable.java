@@ -17,37 +17,37 @@
 
 package ai.sapper.cdc.core.stores;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.DocumentEntity;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.IKey;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.core.model.DocumentEntity;
+import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.model.IKey;
 import org.apache.lucene.search.Query;
 
 import javax.annotation.Nonnull;
 
 @SuppressWarnings("rawtypes")
 public interface ISearchable {
-    <T extends IEntity> BaseSearchResult<T> textSearch(@Nonnull Query query,
+    <T extends IEntity<?>> BaseSearchResult<T> textSearch(@Nonnull Query query,
                                                        @Nonnull Class<? extends T> type,
                                                        Context context) throws DataStoreException;
 
-    <T extends IEntity> BaseSearchResult<T> textSearch(@Nonnull Query query,
+    <T extends IEntity<?>> BaseSearchResult<T> textSearch(@Nonnull Query query,
                                                        int batchSize,
                                                        int offset,
                                                        @Nonnull Class<? extends T> type,
                                                        Context context) throws DataStoreException;
 
-    <T extends IEntity> BaseSearchResult<T> textSearch(@Nonnull String query,
+    <T extends IEntity<?>> BaseSearchResult<T> textSearch(@Nonnull String query,
                                                        @Nonnull Class<? extends T> type,
                                                        Context context) throws DataStoreException;
 
-    <T extends IEntity> BaseSearchResult<T> textSearch(@Nonnull String query,
+    <T extends IEntity<?>> BaseSearchResult<T> textSearch(@Nonnull String query,
                                                        int batchSize,
                                                        int offset,
                                                        @Nonnull Class<? extends T> type,
                                                        Context context) throws DataStoreException;
 
-    <T extends IEntity> BaseSearchResult<T> facetedSearch(Object query,
+    <T extends IEntity<?>> BaseSearchResult<T> facetedSearch(Object query,
                                                           @Nonnull Object aggregates,
                                                           @Nonnull Class<? extends T> type,
                                                           Context context) throws DataStoreException;
@@ -55,19 +55,19 @@ public interface ISearchable {
     void indexDocument(@Nonnull String index, @Nonnull DocumentEntity entity, Context context) throws DataStoreException;
 
     <C> DocumentEntity indexDocument(@Nonnull String index,
-                                 @Nonnull String fileDataStore,
-                                 @Nonnull Class<? extends AbstractDataStore<C>> dataStoreType,
-                                 @Nonnull IKey key,
-                                 @Nonnull Class<? extends IEntity> fileEntityType,
-                                 Context context) throws DataStoreException;
+                                     @Nonnull String fileDataStore,
+                                     @Nonnull Class<? extends AbstractDataStore<C>> dataStoreType,
+                                     @Nonnull IKey key,
+                                     @Nonnull Class<? extends IEntity> fileEntityType,
+                                     Context context) throws DataStoreException;
 
-    <T extends IEntity> BaseSearchResult<T> searchDocument(@Nonnull String index,
+    <T extends IEntity<?>> BaseSearchResult<T> searchDocument(@Nonnull String index,
                                                            @Nonnull String query,
                                                            int batchSize,
                                                            int offset,
                                                            Context context) throws DataStoreException;
 
-    <T extends IEntity> BaseSearchResult<T> searchDocument(@Nonnull String index,
+    <T extends IEntity<?>> BaseSearchResult<T> searchDocument(@Nonnull String index,
                                                            @Nonnull Query query,
                                                            int batchSize,
                                                            int offset,

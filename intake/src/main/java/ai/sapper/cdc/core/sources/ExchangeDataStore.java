@@ -1,30 +1,15 @@
 package ai.sapper.cdc.core.sources;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.StringKey;
-import com.codekutter.common.stores.BaseSearchResult;
-import com.codekutter.common.stores.DataStoreException;
-import com.codekutter.common.stores.DataStoreManager;
-import com.codekutter.common.stores.impl.DataStoreAuditContext;
-import com.codekutter.common.stores.impl.EntitySearchResult;
-import com.codekutter.common.utils.IOUtils;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.common.utils.ReflectionUtils;
-import com.codekutter.zconfig.common.ConfigurationException;
-import com.codekutter.zconfig.common.model.annotations.ConfigAttribute;
+import ai.sapper.cdc.core.connections.mail.ExchangeConnection;
+import ai.sapper.cdc.core.stores.DataStoreException;
+
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.ingestion.common.connections.ExchangeConnection;
-import com.ingestion.common.ext.utils.MailUtils;
-import com.ingestion.common.model.AbstractMailMessage;
-import com.ingestion.common.model.EmailMessageWrapper;
-import com.ingestion.common.model.MailDataSourceDbConfig;
-import com.ingestion.common.model.MessageWrapper;
-import com.ingestion.common.utils.DateUtils;
-import com.vdurmont.emoji.EmojiParser;
+
+import jakarta.mail.Session;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import microsoft.exchange.webservices.data.core.ExchangeService;
@@ -49,15 +34,9 @@ import microsoft.exchange.webservices.data.search.FindItemsResults;
 import microsoft.exchange.webservices.data.search.FolderView;
 import microsoft.exchange.webservices.data.search.ItemView;
 import microsoft.exchange.webservices.data.search.filter.SearchFilter;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import javax.annotation.Nonnull;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
+
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -98,8 +77,9 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
     }
 
     @Override
-    public EmailMessage createMessage(@Nonnull String mailId, @Nonnull com.ingestion.common.model.EmailMessage email,
-                                      @Nonnull String sender) throws DataStoreException {
+    public EmailMessage createMessage(@NonNull String mailId,
+                                      @NonNull EmailMessage email,
+                                      @NonNull String sender) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
         try {
             EmailMessage message = new EmailMessage(exchangeConnection.connection());
@@ -733,6 +713,7 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
             throw new DataStoreException(ex);
         }
     }
+
 
     @Override
     public void configureDataStore(@Nonnull DataStoreManager dataStoreManager) throws ConfigurationException {

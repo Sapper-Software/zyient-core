@@ -17,9 +17,9 @@
 
 package ai.sapper.cdc.core.auditing;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.stores.DataStoreException;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.stores.DataStoreException;
 
 import javax.annotation.Nonnull;
 import java.security.Principal;
@@ -40,8 +40,8 @@ public interface IAuditContextGenerator {
      * @return - Generated Audit context.
      * @throws DataStoreException
      */
-    <E extends IEntity> AbstractAuditContext generate(@Nonnull Object source,
-                                                      @Nonnull E entity,
-                                                      Context context,
-                                                      Principal user) throws DataStoreException;
+    <E extends IEntity<?>> AbstractAuditContext generate(@Nonnull Object source,
+                                                         @Nonnull E entity,
+                                                         Context context,
+                                                         Principal user) throws DataStoreException;
 }

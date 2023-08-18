@@ -17,9 +17,9 @@
 
 package ai.sapper.cdc.core.stores;
 
-import com.codekutter.common.IState;
+import ai.sapper.cdc.common.AbstractState;
 
-public enum EConnectionState implements IState<EConnectionState> {
+public enum EConnectionState {
     /**
      * Connection state is Unknown
      */
@@ -40,9 +40,4 @@ public enum EConnectionState implements IState<EConnectionState> {
      * Connection in error state.
      */
     Error;
-
-    @Override
-    public EConnectionState getErrorState() {
-        return Error;
-    }
 }
