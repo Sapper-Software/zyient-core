@@ -31,7 +31,6 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
@@ -65,7 +64,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
         threadId = Thread.currentThread().getId();
     }
 
-    public void setupMonitoring(@Nonnull BaseEnv<?> env) {
+    public void setupMonitoring(@NonNull BaseEnv<?> env) {
         metrics = new DataStoreMetrics(KEY_ENGINE, settings.getName(), getClass().getSimpleName(), env, getClass());
     }
 
@@ -76,14 +75,14 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public AbstractDataStore<T> withConnection(@Nonnull AbstractConnection<T> connection) {
+    public AbstractDataStore<T> withConnection(@NonNull AbstractConnection<T> connection) {
         this.connection = connection;
         return this;
     }
 
-    public void configure(@Nonnull DataStoreManager dataStoreManager,
+    public void configure(@NonNull DataStoreManager dataStoreManager,
                           @NonNull AbstractDataStoreSettings settings,
-                          @Nonnull BaseEnv<?> env) throws ConfigurationException {
+                          @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             this.dataStoreManager = dataStoreManager;
             this.settings = settings;
@@ -99,8 +98,8 @@ public abstract class AbstractDataStore<T> implements Closeable {
 
     public abstract void configure() throws ConfigurationException;
 
-    public <E extends IEntity<?>> E create(@Nonnull E entity,
-                                           @Nonnull Class<? extends E> type,
+    public <E extends IEntity<?>> E create(@NonNull E entity,
+                                           @NonNull Class<? extends E> type,
                                            Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
@@ -115,12 +114,10 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public abstract <E extends IEntity> E createEntity(@Nonnull E entity, @Nonnull Class<? extends E> type, Context context) throws
+    public abstract <E extends IEntity<?>> E createEntity(@NonNull E entity, @NonNull Class<? extends E> type, Context context) throws
             DataStoreException;
 
-    @SuppressWarnings("rawtypes")
-    public <E extends IEntity> E update(@Nonnull E entity, @Nonnull Class<? extends E> type, Context context) throws
+    public <E extends IEntity<?>> E update(@NonNull E entity, @NonNull Class<? extends E> type, Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
@@ -134,12 +131,14 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public abstract <E extends IEntity> E updateEntity(@Nonnull E entity, @Nonnull Class<? extends E> type, Context context) throws
+    public abstract <E extends IEntity<?>> E updateEntity(@NonNull E entity, 
+                                                          @NonNull Class<? extends E> type, 
+                                                          Context context) throws
             DataStoreException;
 
-    @SuppressWarnings("rawtypes")
-    public <E extends IEntity> boolean delete(@Nonnull Object key, @Nonnull Class<? extends E> type, Context context) throws
+    public <E extends IEntity<?>> boolean delete(@NonNull Object key,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
@@ -153,12 +152,12 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public abstract <E extends IEntity> boolean deleteEntity(@Nonnull Object key, @Nonnull Class<? extends E> type, Context context) throws
+    public abstract <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key, 
+                                                                @NonNull Class<? extends E> type, 
+                                                                Context context) throws
             DataStoreException;
 
-    @SuppressWarnings("rawtypes")
-    public <E extends IEntity> E find(@Nonnull Object key, @Nonnull Class<? extends E> type, Context context) throws
+    public <E extends IEntity<?>> E find(@NonNull Object key, @NonNull Class<? extends E> type, Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
@@ -171,15 +170,17 @@ public abstract class AbstractDataStore<T> implements Closeable {
             throw new DataStoreException(t);
         }
     }
-
-    @SuppressWarnings("rawtypes")
-    public abstract <E extends IEntity> E findEntity(@Nonnull Object key, @Nonnull Class<? extends E> type, Context context) throws
+    
+    public abstract <E extends IEntity<?>> E findEntity(@NonNull Object key, 
+                                                        @NonNull Class<? extends E> type, 
+                                                        Context context) throws
             DataStoreException;
 
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@Nonnull String query,
+    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
                                                              int offset,
                                                              int maxResults,
-                                                             @Nonnull Class<? extends E> type, Context context) throws
+                                                             @NonNull Class<? extends E> type, 
+                                                             Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
@@ -193,17 +194,17 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public abstract <E extends IEntity<?>> BaseSearchResult<E> doSearch(@Nonnull String query,
+    public abstract <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
                                                                         int offset,
                                                                         int maxResults,
-                                                                        @Nonnull Class<? extends E> type, Context context) throws
+                                                                        @NonNull Class<? extends E> type, Context context) throws
             DataStoreException;
 
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@Nonnull String query,
+    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
                                                              int offset,
                                                              int maxResults,
                                                              Map<String, Object> parameters,
-                                                             @Nonnull Class<? extends E> type, Context context) throws
+                                                             @NonNull Class<? extends E> type, Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
@@ -217,21 +218,21 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public abstract <E extends IEntity<?>> BaseSearchResult<E> doSearch(@Nonnull String query,
+    public abstract <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
                                                                         int offset,
                                                                         int maxResults,
                                                                         Map<String, Object> parameters,
-                                                                        @Nonnull Class<? extends E> type, Context context) throws
+                                                                        @NonNull Class<? extends E> type, Context context) throws
             DataStoreException;
 
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@Nonnull String query, @Nonnull Class<? extends E> type, Context context) throws
+    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query, @NonNull Class<? extends E> type, Context context) throws
             DataStoreException {
         return search(query, 0, settings.getMaxResults(), type, context);
     }
 
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@Nonnull String query,
+    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
                                                              Map<String, Object> parameters,
-                                                             @Nonnull Class<? extends E> type, Context context) throws
+                                                             @NonNull Class<? extends E> type, Context context) throws
             DataStoreException {
         return search(query, 0, settings.getMaxResults(), parameters, type, context);
     }

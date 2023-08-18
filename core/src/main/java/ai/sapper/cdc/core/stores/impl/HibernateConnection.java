@@ -17,6 +17,16 @@
 
 package ai.sapper.cdc.core.stores.impl;
 
+import ai.sapper.cdc.common.cache.ThreadCache;
+import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.connections.Connection;
+import ai.sapper.cdc.core.connections.ConnectionError;
+import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
+import ai.sapper.cdc.core.connections.settings.EConnectionType;
+import ai.sapper.cdc.core.stores.AbstractConnection;
+import ai.sapper.cdc.core.stores.AbstractConnectionSettings;
+import ai.sapper.cdc.core.stores.impl.settings.HibernateConnectionSettings;
 import com.codekutter.common.stores.AbstractConnection;
 import com.codekutter.common.stores.ConnectionException;
 import com.codekutter.common.stores.EConnectionState;
@@ -36,8 +46,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -53,18 +65,17 @@ import java.util.Map;
 import java.util.Properties;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public class HibernateConnection extends AbstractConnection<Session> {
     @Setter(AccessLevel.NONE)
     private SessionFactory sessionFactory = null;
-    @ConfigValue(name = "config")
-    private String hibernateConfigSource;
-    @ConfigValue(name = "password", required = true)
-    private EncryptedValue dbPassword;
     @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private final ThreadCache<Session> threadCache = new ThreadCache<>();
+    private BaseEnv<?> env;
+
+    public HibernateConnection() {
+        super(EConnectionType.db, HibernateConnectionSettings.class);
+    }
 
     public HibernateConnection withSessionFactory(@Nonnull SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
@@ -97,10 +108,9 @@ public class HibernateConnection extends AbstractConnection<Session> {
         }
     }
 
-    @Override
-    public Session connection() throws ConnectionException {
+    public Session getConnection() throws ConnectionError {
+        state().check(EConnectionState.Connected);
         try {
-            state().checkOpened();
             if (threadCache.contains()) {
                 Session session = threadCache.get();
                 if (session.isOpen()) return session;
@@ -110,7 +120,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
                 return threadCache.put(session);
             }
         } catch (Throwable t) {
-            throw new ConnectionException(t, getClass());
+            throw new ConnectionError(t);
         }
     }
 
@@ -121,106 +131,93 @@ public class HibernateConnection extends AbstractConnection<Session> {
      * @throws ConfigurationException
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public void configure(@Nonnull AbstractConfigNode node) throws ConfigurationException {
-        Preconditions.checkArgument(node instanceof ConfigPathNode);
+    private void configure(@Nonnull HibernateConnectionSettings settings) throws ConfigurationException {
         try {
-            ConfigurationAnnotationProcessor.readConfigAnnotations(getClass(), (ConfigPathNode) node, this);
-            if (!Strings.isNullOrEmpty(hibernateConfigSource)) {
-                File cfg = new File(hibernateConfigSource);
+            String passwd = env.keyStore().read(settings.getDbPassword());
+            if (Strings.isNullOrEmpty(passwd)) {
+                throw new ConfigurationException(
+                        String.format("DataStore password not found. [key=%s]", settings.getDbPassword()));
+            }
+            if (!Strings.isNullOrEmpty(settings.getHibernateConfigSource())) {
+                File cfg = new File(settings.getHibernateConfigSource());
                 if (!cfg.exists()) {
                     throw new ConfigurationException(String.format("Hibernate configuration not found. [path=%s]", cfg.getAbsolutePath()));
                 }
-                Properties settings = new Properties();
-                settings.setProperty(Environment.PASS, dbPassword.getDecryptedValue());
-                sessionFactory = new Configuration().configure(cfg).addProperties(settings).buildSessionFactory();
+                Properties properties = new Properties();
+                properties.setProperty(Environment.PASS, passwd);
+                sessionFactory = new Configuration().configure(cfg).addProperties(properties).buildSessionFactory();
             } else {
-                AbstractConfigNode cnode = ConfigUtils.getPathNode(getClass(), (ConfigPathNode) node);
-                if (!(cnode instanceof ConfigPathNode)) {
-                    throw new ConfigurationException(String.format("Hibernate configuration settings not found. [node=%s]", node.getAbsolutePath()));
-                }
-                ConfigPathNode cp = (ConfigPathNode) cnode;
-
-                HibernateConfig cfg = new HibernateConfig();
-                ConfigurationAnnotationProcessor.readConfigAnnotations(HibernateConfig.class, cp, cfg);
-
                 Configuration configuration = new Configuration();
 
-                Properties settings = new Properties();
-                settings.setProperty(Environment.DRIVER, cfg.driver);
-                settings.setProperty(Environment.URL, cfg.dbUrl);
-                settings.setProperty(Environment.USER, cfg.dbUser);
-                settings.setProperty(Environment.PASS, dbPassword.getDecryptedValue());
-                settings.setProperty(Environment.DIALECT, cfg.dialect);
+                Properties properties = new Properties();
+                properties.setProperty(Environment.DRIVER, settings.getDriver());
+                properties.setProperty(Environment.URL, settings.getDbUrl());
+                properties.setProperty(Environment.USER, settings.getDbUser());
+                properties.setProperty(Environment.PASS, passwd);
+                properties.setProperty(Environment.DIALECT, settings.getDialect());
 
-                if (cfg.enableConnectionPool) {
-                    if (cfg.poolMinSize < 0 || cfg.poolMaxSize <= 0 || cfg.poolMaxSize < cfg.poolMinSize) {
+                if (settings.isEnableConnectionPool()) {
+                    if (settings.getPoolMinSize() < 0
+                            || settings.getPoolMaxSize() <= 0
+                            || settings.getPoolMaxSize() < settings.getPoolMinSize()) {
                         throw new ConfigurationException(
                                 String.format("Invalid Pool Configuration : [min size=%d][max size=%d",
-                                        cfg.poolMinSize, cfg.poolMaxSize));
+                                        settings.getPoolMinSize(), settings.getPoolMaxSize()));
                     }
-                    settings.setProperty(HibernateConfig.CONFIG_C3P0_PREFIX + ".min_size", "" + cfg.poolMinSize);
-                    settings.setProperty(HibernateConfig.CONFIG_C3P0_PREFIX + ".max_size", "" + cfg.poolMaxSize);
-                    if (cfg.poolTimeout > 0)
-                        settings.setProperty(HibernateConfig.CONFIG_C3P0_PREFIX + ".timeout", "" + cfg.poolTimeout);
-                    if (cfg.poolConnectionCheck) {
-                        settings.setProperty(HibernateConfig.CONFIG_C3P0_PREFIX + ".testConnectionOnCheckout", "true");
+                    properties.setProperty(
+                            HibernateConnectionSettings.CONFIG_C3P0_PREFIX + ".min_size",
+                            String.valueOf(settings.getPoolMinSize()));
+                    properties.setProperty(
+                            HibernateConnectionSettings.CONFIG_C3P0_PREFIX + ".max_size",
+                            String.valueOf(settings.getPoolMaxSize()));
+                    if (settings.getPoolTimeout().normalized() > 0)
+                        properties.setProperty(
+                                HibernateConnectionSettings.CONFIG_C3P0_PREFIX + ".timeout",
+                                String.valueOf(settings.getPoolTimeout().normalized()));
+                    if (settings.isPoolConnectionCheck()) {
+                        properties.setProperty(
+                                HibernateConnectionSettings.CONFIG_C3P0_PREFIX + ".testConnectionOnCheckout", "true");
                     }
                 }
-                if (cfg.enableCaching) {
-                    if (Strings.isNullOrEmpty(cfg.cacheConfig)) {
+                if (settings.isEnableCaching()) {
+                    if (Strings.isNullOrEmpty(settings.getCacheConfig())) {
                         throw new ConfigurationException("Missing cache configuration file. ");
                     }
-                    settings.setProperty(Environment.USE_SECOND_LEVEL_CACHE, "true");
-                    settings.setProperty(Environment.CACHE_REGION_FACTORY, HibernateConfig.CACHE_FACTORY_CLASS);
-                    if (cfg.enableQueryCaching)
-                        settings.setProperty(Environment.USE_QUERY_CACHE, "true");
-                    settings.setProperty(HibernateConfig.CACHE_CONFIG_FILE, cfg.cacheConfig);
+                    properties.setProperty(Environment.USE_SECOND_LEVEL_CACHE, "true");
+                    properties.setProperty(Environment.CACHE_REGION_FACTORY,
+                            HibernateConnectionSettings.CACHE_FACTORY_CLASS);
+                    if (settings.isEnableQueryCaching())
+                        properties.setProperty(Environment.USE_QUERY_CACHE, "true");
+                    properties.setProperty(HibernateConnectionSettings.CACHE_CONFIG_FILE, settings.getCacheConfig());
                 }
-                if (cp.parmeters() != null) {
-                    Map<String, ConfigValueNode> params = cp.parmeters().getKeyValues();
-                    if (params != null && !params.isEmpty()) {
-                        for (String key : params.keySet()) {
-                            settings.setProperty(key, params.get(key).getValue());
-                        }
+                if (settings.getParameters() != null && !settings.getParameters().isEmpty()) {
+                    for (String key : settings.getParameters().keySet()) {
+                        properties.setProperty(key, settings.getParameters().get(key));
                     }
                 }
-                configuration.setProperties(settings);
+                configuration.setProperties(properties);
 
-                if (supportedTypes() != null && !supportedTypes().isEmpty()) {
-                    for (Class<?> cls : supportedTypes()) {
+                if (settings.getSupportedTypes() != null && !settings.getSupportedTypes().isEmpty()) {
+                    for (Class<?> cls : settings.getSupportedTypes()) {
                         configuration.addAnnotatedClass(cls);
                     }
                 }
 
-                AbstractConfigNode hnode = cnode.find(HibernateConfig.CONFIG_HIBERNATE_PATH);
-                if (hnode instanceof ConfigPathNode) {
-                    if (((ConfigPathNode) hnode).parmeters() != null) {
-                        Map<String, ConfigValueNode> params = ((ConfigPathNode) hnode).parmeters().getKeyValues();
-                        if (params != null && !params.isEmpty()) {
-                            for (String key : params.keySet()) {
-                                String p = String.format("hibernate.%s", key);
-                                settings.setProperty(p, params.get(key).getValue());
-                                LogUtils.debug(getClass(), String.format("Added hibernate configuration. [param=%s][value=%s]",
-                                        p, params.get(key).getValue()));
-                            }
-                        }
-                    }
-                }
-                ServiceRegistry registry = new StandardServiceRegistryBuilder().applySettings(configuration.getProperties()).build();
+                ServiceRegistry registry = new StandardServiceRegistryBuilder()
+                        .applySettings(configuration.getProperties()).build();
                 sessionFactory = configuration.buildSessionFactory(registry);
 
-                state().setState(EConnectionState.Open);
+                state().setState(EConnectionState.Initialized);
             }
         } catch (Exception ex) {
-            state().setError(ex);
+            state().error(ex);
             throw new ConfigurationException(ex);
         }
     }
 
     @Override
     public void close() throws IOException {
-        if (state().isOpen())
+        if (state().isConnected())
             state().setState(EConnectionState.Closed);
         threadCache.close();
         if (sessionFactory != null) {
@@ -229,8 +226,8 @@ public class HibernateConnection extends AbstractConnection<Session> {
         }
     }
 
-    public Transaction startTransaction() throws ConnectionException {
-        Session session = connection();
+    public Transaction startTransaction() throws ConnectionError {
+        Session session = getConnection();
         Transaction tx = null;
         if (session.isJoinedToTransaction()) {
             tx = session.getTransaction();
@@ -240,46 +237,27 @@ public class HibernateConnection extends AbstractConnection<Session> {
         return tx;
     }
 
-    @Getter
-    @Setter
-    @Accessors(fluent = true)
-    @ConfigPath(path = "connection")
-    public static class HibernateConfig {
-        public static final String CACHE_FACTORY_CLASS = "org.hibernate.cache.ehcache.EhCacheRegionFactory";
-        public static final String CACHE_CONFIG_FILE = "net.sf.ehcache.configurationResourceName";
-        public static final String CONFIG_HIBERNATE_PATH = "hibernate";
-        public static final String CONFIG_C3P0_PATH = "pool";
-        public static final String CONFIG_C3P0_PREFIX = "hibernate.c3p0";
-        private static final int DEFAULT_POOL_MIN_SIZE = 4;
-        private static final int DEFAULT_POOL_MAX_SIZE = 8;
-        private static final int DEFAULT_POOL_TIMEOUT = 1800;
-
-        @ConfigValue(name = "url", required = true)
-        private String dbUrl;
-        @ConfigValue(name = "username", required = true)
-        private String dbUser;
-        @ConfigValue(name = "dbname")
-        private String dbName;
-        @ConfigAttribute(name = "driver", required = true)
-        private String driver;
-        @ConfigAttribute(name = "dialect", required = true)
-        private String dialect;
-        @ConfigValue(name = "enableCaching")
-        private boolean enableCaching = false;
-        @ConfigValue(name = "enableQueryCaching")
-        private boolean enableQueryCaching = false;
-        @ConfigValue(name = "cacheConfig")
-        private String cacheConfig;
-        @ConfigAttribute(name = "pool@enable")
-        private boolean enableConnectionPool = false;
-        @ConfigValue(name = "pool/minSize")
-        private int poolMinSize = DEFAULT_POOL_MIN_SIZE;
-        @ConfigValue(name = "pool/maxSize")
-        private int poolMaxSize = DEFAULT_POOL_MAX_SIZE;
-        @ConfigValue(name = "pool/timeout")
-        private long poolTimeout = DEFAULT_POOL_TIMEOUT;
-        @ConfigAttribute(name = "pool@check")
-        private boolean poolConnectionCheck = true;
+    @Override
+    public Connection setup(@NonNull ConnectionSettings settings,
+                            @NonNull BaseEnv<?> env) throws ConnectionError {
+        Preconditions.checkState(settings instanceof HibernateConnectionSettings);
+        try {
+            this.env = env;
+            configure((HibernateConnectionSettings) settings);
+            return this;
+        } catch (Exception ex) {
+            throw new ConnectionError(ex);
+        }
     }
 
+    @Override
+    public Connection connect() throws ConnectionError {
+        return null;
+    }
+
+    @Override
+    public String path() {
+        ConfigPath path = HibernateConnectionSettings.class.getAnnotation(ConfigPath.class);
+        return path.path();
+    }
 }

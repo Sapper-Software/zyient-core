@@ -19,6 +19,7 @@ package ai.sapper.cdc.core;
 import ai.sapper.cdc.common.AbstractEnvState;
 import ai.sapper.cdc.common.audit.AuditLogger;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.model.InvalidDataError;
 import ai.sapper.cdc.common.utils.NetUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.ConnectionManager;
@@ -41,7 +42,6 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import javax.ws.rs.NotFoundException;
 import java.io.File;
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -219,7 +219,7 @@ public abstract class BaseEnv<T extends Enum<?>> {
         Preconditions.checkNotNull(keyStore);
         String v = keyStore.read(key);
         if (Strings.isNullOrEmpty(v)) {
-            throw new NotFoundException(String.format("Key not found: [key=%s]", key));
+            throw new InvalidDataError(getClass(), String.format("Key not found: [key=%s]", key));
         }
         if (v.compareTo(value) != 0) {
             throw new SecurityException(String.format("Invalid secret: [key=%s]", key));

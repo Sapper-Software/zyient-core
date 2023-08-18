@@ -17,19 +17,22 @@
 
 package ai.sapper.cdc.core.stores.impl;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.BaseEntity;
-import com.codekutter.common.model.EEntityState;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.stores.*;
-import com.codekutter.zconfig.common.ConfigurationException;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.core.model.BaseEntity;
+import ai.sapper.cdc.core.model.EEntityState;
+import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.stores.BaseSearchResult;
+import ai.sapper.cdc.core.stores.DataStoreException;
+import ai.sapper.cdc.core.stores.IDGenerator;
+import ai.sapper.cdc.core.stores.TransactionDataStore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import lombok.NonNull;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.Query;
 
-import javax.annotation.Nonnull;
-import javax.persistence.Query;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
@@ -103,11 +106,12 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         transaction(null);
     }
 
+
     @Override
     @SuppressWarnings("rawtypes")
-    public <E extends IEntity> E createEntity(@Nonnull E entity,
-                                              @Nonnull Class<? extends E> type,
-                                              Context context) throws
+    public <E extends IEntity<?>> E createEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
         Preconditions.checkState(isInTransaction());
@@ -153,9 +157,15 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     }
 
     @Override
+    public void configure() throws ConfigurationException {
+
+    }
+
+
+    @Override
     @SuppressWarnings("rawtypes")
-    public <E extends IEntity> E updateEntity(@Nonnull E entity,
-                                              @Nonnull Class<? extends E> type,
+    public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
+                                              @NonNull Class<? extends E> type,
                                               Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
@@ -202,8 +212,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     @SuppressWarnings("rawtypes")
-    public <E extends IEntity> boolean deleteEntity(@Nonnull Object key,
-                                                    @Nonnull Class<? extends E> type,
+    public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
+                                                    @NonNull Class<? extends E> type,
                                                     Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
@@ -229,8 +239,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     @SuppressWarnings("rawtypes")
-    public <E extends IEntity> E findEntity(@Nonnull Object key,
-                                            @Nonnull Class<? extends E> type,
+    public <E extends IEntity<?>> E findEntity(@NonNull Object key,
+                                            @NonNull Class<? extends E> type,
                                             Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
@@ -245,10 +255,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <E extends IEntity> BaseSearchResult<E> doSearch(@Nonnull String query,
+    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
                                                             int offset,
                                                             int maxResults,
-                                                            @Nonnull Class<? extends E> type,
+                                                            @NonNull Class<? extends E> type,
                                                             Context context)
             throws DataStoreException {
         Preconditions.checkState(readSession != null);
@@ -273,10 +283,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <E extends IEntity> BaseSearchResult<E> doSearch(@Nonnull String query,
+    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
                                                             int offset, int maxResults,
                                                             Map<String, Object> parameters,
-                                                            @Nonnull Class<? extends E> type,
+                                                            @NonNull Class<? extends E> type,
                                                             Context context)
             throws DataStoreException {
         Preconditions.checkState(readSession != null);
@@ -309,14 +319,14 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         DataStoreAuditContext ctx = new DataStoreAuditContext();
         ctx.setType(getClass().getCanonicalName());
         ctx.setName(name());
-        ctx.setConnectionType(connection().type().getCanonicalName());
+        ctx.setConnectionType(connection().getClass().getCanonicalName());
         ctx.setConnectionName(connection().name());
         return ctx;
     }
 
 
     @Override
-    public void configureDataStore(@Nonnull DataStoreManager dataStoreManager) throws ConfigurationException {
+    public void configureDataStore(@NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
         Preconditions.checkArgument(config() instanceof RdbmsConfig);
 
         try {
