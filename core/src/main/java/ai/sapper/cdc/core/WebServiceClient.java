@@ -22,9 +22,13 @@ import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.ConnectionManager;
-import ai.sapper.cdc.core.connections.WebServiceConnection;
+import ai.sapper.cdc.core.connections.ws.WebServiceConnection;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -35,10 +39,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.JerseyWebTarget;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.Map;
 
@@ -172,7 +172,7 @@ public class WebServiceClient {
         if (Strings.isNullOrEmpty(mediaType)) {
             mediaType = MediaType.APPLICATION_JSON;
         }
-        Invocation.Builder builder = target.request(mediaType);
+        Invocation.Builder builder = connection.build(target, mediaType);
         int count = 0;
         boolean handle = true;
         while (true) {

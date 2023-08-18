@@ -94,7 +94,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.WebServiceConnection</type>
+                    <type>ai.sapper.cdc.core.connections.ws.WebServiceConnection</type>
                     <rest>
                         <name>test-ws</name>
                         <endpoint>https://howtodoinjava.com/</endpoint>

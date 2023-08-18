@@ -86,7 +86,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.WebServiceConnection</class>
+                    <class>ai.sapper.cdc.core.connections.ws.WebServiceConnection</class>
                     <rest>
                         <name>test-ws</name>
                         <endpoint>https://howtodoinjava.com/</endpoint>

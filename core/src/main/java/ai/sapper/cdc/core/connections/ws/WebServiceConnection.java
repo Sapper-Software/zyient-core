@@ -14,15 +14,21 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.connections;
+package ai.sapper.cdc.core.connections.ws;
 
 import ai.sapper.cdc.common.config.ZkConfigReader;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.connections.Connection;
+import ai.sapper.cdc.core.connections.ConnectionConfig;
+import ai.sapper.cdc.core.connections.ConnectionError;
+import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.connections.settings.WebServiceConnectionSettings;
+import ai.sapper.cdc.core.connections.ws.auth.WebServiceAuthHandler;
 import com.google.common.base.Preconditions;
+import jakarta.ws.rs.client.Invocation;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -30,13 +36,16 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
+import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.client.JerseyWebTarget;
 
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Accessors(fluent = true)
@@ -48,6 +57,7 @@ public class WebServiceConnection implements Connection {
     private JerseyClient client;
     private String name;
     private WebServiceConnectionSettings settings;
+    private WebServiceAuthHandler handler;
 
     public WebServiceConnection() {
     }
@@ -81,10 +91,19 @@ public class WebServiceConnection implements Connection {
                 config = new WebServiceConnectionConfig(xmlConfig);
                 config.read();
                 settings = (WebServiceConnectionSettings) config.settings();
-                client = new JerseyClientBuilder().build();
-                name = settings.getName();
-                endpoint = new URL(settings.getEndpoint());
-
+                JerseyClientBuilder builder = builder();
+                if (this.settings.getAuthHandler() != null) {
+                    handler = this.settings.getAuthHandler().getDeclaredConstructor()
+                            .newInstance();
+                    HierarchicalConfiguration<ImmutableNode> node = config.config()
+                            .configurationAt(WebServiceConnectionSettings.Constants.CONFIG_AUTH_PATH);
+                    handler.init(node, env);
+                    handler.build(builder);
+                    this.settings.setAuthSettings(handler.settings());
+                }
+                client = builder.build();
+                name = this.settings.getName();
+                endpoint = new URL(this.settings.getEndpoint());
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
@@ -118,10 +137,7 @@ public class WebServiceConnection implements Connection {
                 settings = (WebServiceConnectionSettings) reader.settings();
                 settings.validate();
 
-                this.client = new JerseyClientBuilder().build();
-                this.name = settings.getName();
-                endpoint = new URL(settings.getEndpoint());
-
+                setup(settings, env);
                 state.setState(EConnectionState.Initialized);
             } catch (Exception ex) {
                 state.error(ex);
@@ -138,7 +154,14 @@ public class WebServiceConnection implements Connection {
         synchronized (state) {
             try {
                 this.settings = (WebServiceConnectionSettings) settings;
-                client = new JerseyClientBuilder().build();
+                JerseyClientBuilder builder = builder();
+                if (this.settings.getAuthHandler() != null) {
+                    handler = this.settings.getAuthHandler().getDeclaredConstructor()
+                            .newInstance();
+                    handler.init(this.settings.getAuthSettings(), env);
+                    handler.build(builder);
+                }
+                client = builder.build();
                 name = this.settings.getName();
                 endpoint = new URL(this.settings.getEndpoint());
 
@@ -152,20 +175,45 @@ public class WebServiceConnection implements Connection {
         }
     }
 
+    protected JerseyClientBuilder builder() throws Exception {
+        JerseyClientBuilder builder = (JerseyClientBuilder) new JerseyClientBuilder()
+                .connectTimeout(this.settings.getConnectionTimeout().normalized(), TimeUnit.MILLISECONDS)
+                .readTimeout(this.settings.getReadTimeout().normalized(), TimeUnit.MILLISECONDS);
+        if (this.settings.isUseSSL()) {
+            builder.sslContext(SSLContext.getDefault());
+        }
+        builder.register(JacksonJaxbJsonProvider.class);
+
+        return builder;
+    }
+
     /**
      * @return
      * @throws ConnectionError
      */
     @Override
     public Connection connect() throws ConnectionError {
-        throw new ConnectionError("Method should not be called...");
+        state.check(EConnectionState.Initialized);
+        state.setState(EConnectionState.Connected);
+        return this;
     }
 
     public JerseyWebTarget connect(@NonNull String path) throws ConnectionError {
+        state.check(EConnectionState.Connected);
         try {
             return client.target(endpoint.toURI()).path(path);
         } catch (Exception ex) {
             throw new ConnectionError(ex);
+        }
+    }
+
+    public Invocation.Builder build(@NonNull JerseyWebTarget target,
+                                    @NonNull String mediaType) throws ConnectionError {
+        state.check(EConnectionState.Connected);
+        if (handler != null) {
+            return handler.build(target, mediaType);
+        } else {
+            return target.request(mediaType);
         }
     }
 

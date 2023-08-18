@@ -17,11 +17,17 @@
 package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
+import ai.sapper.cdc.common.config.units.TimeValueParser;
+import ai.sapper.cdc.core.connections.ws.auth.WebServiceAuthHandler;
+import ai.sapper.cdc.core.connections.ws.auth.WebServiceAuthSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -47,11 +53,28 @@ import lombok.Setter;
 public class WebServiceConnectionSettings extends ConnectionSettings {
 
     public static class Constants {
+        private static final int DEFAULT_READ_TIMEOUT = 5 * 60 * 1000;
+        private static final int DEFAULT_CONN_TIMEOUT = 60 * 1000;
+
         public static final String CONFIG_URL = "endpoint";
+        public static final String CONFIG_USE_SSL = "useSSL";
+        public static final String CONFIG_READ_TIMEOUT = "timeout.read";
+        public static final String CONFIG_CONN_TIMEOUT = "timeout.connection";
+        public static final String CONFIG_AUTH_CLASS = "auth.class";
+        public static final String CONFIG_AUTH_PATH = "auth";
     }
 
     @Config(name = Constants.CONFIG_URL)
     private String endpoint;
+    @Config(name = Constants.CONFIG_USE_SSL, required = false, type = Boolean.class)
+    private boolean useSSL = false;
+    @Config(name = Constants.CONFIG_READ_TIMEOUT, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue readTimeout = new TimeUnitValue(Constants.DEFAULT_READ_TIMEOUT, TimeUnit.MILLISECONDS);
+    @Config(name = Constants.CONFIG_CONN_TIMEOUT, required = false, parser = TimeValueParser.class)
+    private TimeUnitValue connectionTimeout = new TimeUnitValue(Constants.DEFAULT_CONN_TIMEOUT, TimeUnit.MILLISECONDS);
+    @Config(name = Constants.CONFIG_AUTH_CLASS, required = false, type = Class.class)
+    private  Class<? extends WebServiceAuthHandler> authHandler;
+    private WebServiceAuthSettings authSettings;
 
     public WebServiceConnectionSettings() {
         setType(EConnectionType.rest);

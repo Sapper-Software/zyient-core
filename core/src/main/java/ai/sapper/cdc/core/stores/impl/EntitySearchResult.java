@@ -17,8 +17,8 @@
 
 package ai.sapper.cdc.core.stores.impl;
 
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.stores.BaseSearchResult;
+import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.core.stores.BaseSearchResult;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,10 +28,10 @@ import java.util.Collection;
 
 @Getter
 @Setter
-public class EntitySearchResult<T extends IEntity> extends BaseSearchResult<T> {
+public class EntitySearchResult<T extends IEntity<?>> extends BaseSearchResult<T> {
     private Collection<T> entities;
 
-    public EntitySearchResult(@Nonnull Class<? extends IEntity> type) {
+    public EntitySearchResult(@Nonnull Class<? extends IEntity<?>> type) {
         super(type);
     }
 

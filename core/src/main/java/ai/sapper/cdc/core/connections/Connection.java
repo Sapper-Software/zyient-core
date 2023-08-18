@@ -42,6 +42,14 @@ public interface Connection extends Closeable {
         public boolean isConnected() {
             return (getState() == EConnectionState.Connected);
         }
+
+        public void check(@NonNull EConnectionState state) throws ConnectionError {
+            if (state != getState()) {
+                throw new ConnectionError(
+                        String.format("Invalid connection state: [expected=%s][state=%s]",
+                                state.name(), getState().name()));
+            }
+        }
     }
 
     String name();
