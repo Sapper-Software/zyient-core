@@ -7,9 +7,7 @@ import freemarker.template.Template;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.velocity.Template;
 import org.apache.velocity.app.VelocityEngine;
 
 import javax.annotation.Nonnull;

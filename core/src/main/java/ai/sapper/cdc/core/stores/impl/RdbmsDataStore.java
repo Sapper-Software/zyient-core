@@ -18,6 +18,7 @@
 package ai.sapper.cdc.core.stores.impl;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.model.BaseEntity;
 import ai.sapper.cdc.core.model.EEntityState;
 import ai.sapper.cdc.core.model.IEntity;
@@ -25,6 +26,7 @@ import ai.sapper.cdc.core.stores.BaseSearchResult;
 import ai.sapper.cdc.core.stores.DataStoreException;
 import ai.sapper.cdc.core.stores.IDGenerator;
 import ai.sapper.cdc.core.stores.TransactionDataStore;
+import ai.sapper.cdc.core.stores.impl.settings.RdbmsStoreSettings;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.NonNull;
@@ -139,7 +141,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                     ((BaseEntity) entity).getState().getState().name(), entity.getKey().stringKey()));
             }
         }
-        IDGenerator.process(entity, session);
+        IDGenerator.process(entity, this);
         Object result = session.save(entity);
         if (result == null) {
             throw new DataStoreException(String.format("Error saving entity. [type=%s][key=%s]", type.getCanonicalName(), entity.getKey()));
@@ -158,15 +160,36 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     public void configure() throws ConfigurationException {
+        Preconditions.checkState(settings instanceof RdbmsStoreSettings);
+        try {
+            HibernateConnection hibernateConnection = (HibernateConnection) connection();
+            session = hibernateConnection.getConnection();
+            HibernateConnection readConnection = null;
+            if (!Strings.isNullOrEmpty(((RdbmsStoreSettings) settings).getReadConnectionName())) {
+                readConnection =
+                        dataStoreManager().getConnection(((RdbmsStoreSettings) settings).getReadConnectionName(),
+                                HibernateConnection.class);
+            }
+            if (readConnection != null) {
+                readSession = readConnection.getConnection();
+                readSession.setDefaultReadOnly(true);
+            } else {
+                readSession = session;
+            }
+            if (settings.getMaxResults() > 0) {
 
+            }
+        } catch (ConnectionError | DataStoreException ex) {
+            throw new ConfigurationException(ex);
+        }
     }
 
 
     @Override
     @SuppressWarnings("rawtypes")
     public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
-                                              @NonNull Class<? extends E> type,
-                                              Context context) throws
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
         Preconditions.checkState(isInTransaction());
@@ -213,8 +236,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     @SuppressWarnings("rawtypes")
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
-                                                    @NonNull Class<? extends E> type,
-                                                    Context context) throws
+                                                       @NonNull Class<? extends E> type,
+                                                       Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
         Preconditions.checkState(isInTransaction());
@@ -240,8 +263,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     @SuppressWarnings("rawtypes")
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
-                                            @NonNull Class<? extends E> type,
-                                            Context context) throws
+                                               @NonNull Class<? extends E> type,
+                                               Context context) throws
             DataStoreException {
         Preconditions.checkState(session != null);
         checkThread();
@@ -256,10 +279,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                            int offset,
-                                                            int maxResults,
-                                                            @NonNull Class<? extends E> type,
-                                                            Context context)
+                                                               int offset,
+                                                               int maxResults,
+                                                               @NonNull Class<? extends E> type,
+                                                               Context context)
             throws DataStoreException {
         Preconditions.checkState(readSession != null);
         checkThread();
@@ -284,10 +307,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                            int offset, int maxResults,
-                                                            Map<String, Object> parameters,
-                                                            @NonNull Class<? extends E> type,
-                                                            Context context)
+                                                               int offset, int maxResults,
+                                                               Map<String, Object> parameters,
+                                                               @NonNull Class<? extends E> type,
+                                                               Context context)
             throws DataStoreException {
         Preconditions.checkState(readSession != null);
         checkThread();
@@ -322,43 +345,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         ctx.setConnectionType(connection().getClass().getCanonicalName());
         ctx.setConnectionName(connection().name());
         return ctx;
-    }
-
-
-    @Override
-    public void configureDataStore(@NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
-        Preconditions.checkArgument(config() instanceof RdbmsConfig);
-
-        try {
-            AbstractConnection<Session> connection =
-                    dataStoreManager.getConnection(config().getConnectionName(), Session.class);
-            if (!(connection instanceof HibernateConnection)) {
-                throw new ConfigurationException(String.format("No connection found for name. [name=%s]", config().getConnectionName()));
-            }
-            withConnection(connection);
-            HibernateConnection hibernateConnection = (HibernateConnection) connection;
-            session = hibernateConnection.connection();
-            HibernateConnection readConnection = null;
-            if (!Strings.isNullOrEmpty(((RdbmsConfig) config()).readConnectionName())) {
-                AbstractConnection<Session> rc =
-                        (AbstractConnection<Session>) dataStoreManager.getConnection(((RdbmsConfig) config()).readConnectionName(), Session.class);
-                if (!(rc instanceof HibernateConnection)) {
-                    throw new ConfigurationException(String.format("No connection found for name. [name=%s]", ((RdbmsConfig) config()).readConnectionName()));
-                }
-                readConnection = (HibernateConnection) rc;
-            }
-            if (readConnection != null) {
-                readSession = readConnection.connection();
-                readSession.setDefaultReadOnly(true);
-            } else {
-                readSession = session;
-            }
-            if (config().getMaxResults() > 0) {
-                maxResults(config().getMaxResults());
-            }
-        } catch (ConnectionException | DataStoreException ex) {
-            throw new ConfigurationException(ex);
-        }
     }
 
     @Override

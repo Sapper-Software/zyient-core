@@ -2,10 +2,8 @@ package ai.sapper.cdc.core.sources;
 
 import ai.sapper.cdc.core.connections.mail.ExchangeConnection;
 import ai.sapper.cdc.core.stores.DataStoreException;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-
 import jakarta.mail.Session;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -36,7 +34,6 @@ import microsoft.exchange.webservices.data.search.ItemView;
 import microsoft.exchange.webservices.data.search.filter.SearchFilter;
 
 import javax.annotation.Nonnull;
-
 import java.io.*;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

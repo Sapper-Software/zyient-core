@@ -16,20 +16,6 @@
 
 package ai.sapper.cdc.core.stores;
 
-import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.HashSet;
-import java.util.Set;
-
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class AbstractConnectionSettings extends ConnectionSettings {
-    @Config(name = "supportedTypes", required = false, parser = ClassSetParser.class)
-    private Set<Class<?>> supportedTypes = new HashSet<>();
+public enum EDataStoreType {
+    rdbms
 }

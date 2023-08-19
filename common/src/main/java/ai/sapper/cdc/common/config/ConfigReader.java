@@ -456,6 +456,18 @@ public class ConfigReader {
         return false;
     }
 
+    public static final String CONFIG_KEY_CLASS = "class";
+
+    public static Class<?> readAsClass(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                       @NonNull String key) throws Exception {
+        String cls = config.getString(key);
+        return Class.forName(cls);
+    }
+
+    public static Class<?> readAsClass(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        return readAsClass(config, CONFIG_KEY_CLASS);
+    }
+
     public static <T> Map<String, T> readAsMap(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                                @NonNull String key) {
         Map<String, T> map = new LinkedHashMap<>();

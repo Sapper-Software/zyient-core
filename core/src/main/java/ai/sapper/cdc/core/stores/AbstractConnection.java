@@ -110,4 +110,6 @@ public abstract class AbstractConnection<T> implements Connection {
     }
 
     public abstract boolean hasTransactionSupport();
+
+    public abstract void close(@NonNull T connection) throws ConnectionError;
 }

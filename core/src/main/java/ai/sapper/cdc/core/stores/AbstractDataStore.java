@@ -24,10 +24,8 @@ import ai.sapper.cdc.core.model.IEntity;
 import ai.sapper.cdc.core.stores.impl.DataStoreAuditContext;
 import ai.sapper.cdc.core.utils.Timer;
 import com.google.common.base.Preconditions;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
@@ -36,32 +34,25 @@ import java.io.IOException;
 import java.util.Map;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public abstract class AbstractDataStore<T> implements Closeable {
     public static final String KEY_ENGINE = "Intake";
-    public final DataStoreState state = new DataStoreState();
-    @Setter(AccessLevel.NONE)
+    private final DataStoreState state = new DataStoreState();
     protected DataStoreMetrics metrics;
-    @Setter(AccessLevel.NONE)
     private AbstractConnection<T> connection = null;
-    @Setter(AccessLevel.NONE)
-    private long threadId;
-    @Setter(AccessLevel.NONE)
-    private AbstractDataStoreSettings config;
+    private final long threadId;
     private AbstractAuditLogger<?> auditLogger;
-    @Setter(AccessLevel.NONE)
     private DataStoreManager dataStoreManager;
-    private AbstractDataStoreSettings settings;
-    private BaseEnv<?> env;
+    protected AbstractDataStoreSettings settings;
+    protected BaseEnv<?> env;
+
+    protected AbstractDataStore() {
+        threadId = Thread.currentThread().getId();
+    }
 
     public String name() {
         Preconditions.checkNotNull(settings);
         return settings.getName();
-    }
-
-    public AbstractDataStore() {
-        threadId = Thread.currentThread().getId();
     }
 
     public void setupMonitoring(@NonNull BaseEnv<?> env) {
@@ -75,18 +66,22 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public AbstractDataStore<T> withConnection(@NonNull AbstractConnection<T> connection) {
-        this.connection = connection;
-        return this;
-    }
-
+    @SuppressWarnings("unchecked")
     public void configure(@NonNull DataStoreManager dataStoreManager,
                           @NonNull AbstractDataStoreSettings settings,
                           @NonNull BaseEnv<?> env) throws ConfigurationException {
+        Preconditions.checkNotNull(connection);
         try {
             this.dataStoreManager = dataStoreManager;
             this.settings = settings;
             this.env = env;
+            connection = (AbstractConnection<T>)
+                    dataStoreManager().getConnection(settings.getConnectionName(), settings.getConnectionType());
+            if (connection == null) {
+                throw new Exception(
+                        String.format("DataStore connection not found. [name=%s][type=%s]",
+                                settings.getConnectionName(), settings.getConnectionType().getCanonicalName()));
+            }
             configure();
             setupMonitoring(env);
             state.setState(DataStoreState.EDataStoreState.Available);
@@ -131,8 +126,8 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public abstract <E extends IEntity<?>> E updateEntity(@NonNull E entity, 
-                                                          @NonNull Class<? extends E> type, 
+    public abstract <E extends IEntity<?>> E updateEntity(@NonNull E entity,
+                                                          @NonNull Class<? extends E> type,
                                                           Context context) throws
             DataStoreException;
 
@@ -152,8 +147,8 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public abstract <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key, 
-                                                                @NonNull Class<? extends E> type, 
+    public abstract <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
+                                                                @NonNull Class<? extends E> type,
                                                                 Context context) throws
             DataStoreException;
 
@@ -170,16 +165,16 @@ public abstract class AbstractDataStore<T> implements Closeable {
             throw new DataStoreException(t);
         }
     }
-    
-    public abstract <E extends IEntity<?>> E findEntity(@NonNull Object key, 
-                                                        @NonNull Class<? extends E> type, 
+
+    public abstract <E extends IEntity<?>> E findEntity(@NonNull Object key,
+                                                        @NonNull Class<? extends E> type,
                                                         Context context) throws
             DataStoreException;
 
     public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
                                                              int offset,
                                                              int maxResults,
-                                                             @NonNull Class<? extends E> type, 
+                                                             @NonNull Class<? extends E> type,
                                                              Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
@@ -248,6 +243,11 @@ public abstract class AbstractDataStore<T> implements Closeable {
         } catch (Throwable t) {
             throw new IOException(t);
         }
+    }
+
+    public long nextSequence(@NonNull String name) throws Exception {
+        state.check(DataStoreState.EDataStoreState.Available);
+        return dataStoreManager().nextSequence(name(), name);
     }
 
     public abstract DataStoreAuditContext context();

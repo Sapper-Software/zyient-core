@@ -10,7 +10,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
-import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 

@@ -8,8 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
 
-import javax.persistence.*;
-
 @Entity
 @Table(name = "ingest_mail_metadata")
 @Data

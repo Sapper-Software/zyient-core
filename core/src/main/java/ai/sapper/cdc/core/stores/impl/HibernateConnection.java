@@ -19,29 +19,14 @@ package ai.sapper.cdc.core.stores.impl;
 
 import ai.sapper.cdc.common.cache.ThreadCache;
 import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.stores.AbstractConnection;
-import ai.sapper.cdc.core.stores.AbstractConnectionSettings;
 import ai.sapper.cdc.core.stores.impl.settings.HibernateConnectionSettings;
-import com.codekutter.common.stores.AbstractConnection;
-import com.codekutter.common.stores.ConnectionException;
-import com.codekutter.common.stores.EConnectionState;
-import com.codekutter.common.utils.ConfigUtils;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.common.utils.ThreadCache;
-import com.codekutter.zconfig.common.ConfigurationAnnotationProcessor;
-import com.codekutter.zconfig.common.ConfigurationException;
-import com.codekutter.zconfig.common.model.EncryptedValue;
-import com.codekutter.zconfig.common.model.annotations.ConfigAttribute;
-import com.codekutter.zconfig.common.model.annotations.ConfigPath;
-import com.codekutter.zconfig.common.model.annotations.ConfigValue;
-import com.codekutter.zconfig.common.model.nodes.AbstractConfigNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigPathNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigValueNode;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -58,10 +43,8 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.service.ServiceRegistry;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 import java.util.Properties;
 
 @Getter
@@ -77,7 +60,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
         super(EConnectionType.db, HibernateConnectionSettings.class);
     }
 
-    public HibernateConnection withSessionFactory(@Nonnull SessionFactory sessionFactory) {
+    public HibernateConnection withSessionFactory(@NonNull SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
         return this;
     }
@@ -88,23 +71,24 @@ public class HibernateConnection extends AbstractConnection<Session> {
     }
 
     @Override
-    public void close(@Nonnull Session connection) throws ConnectionException {
+    public void close(@NonNull Session connection) throws ConnectionError {
         try {
             if (connection.isOpen()) {
                 connection.close();
             } else {
-                LogUtils.warn(getClass(), "Connection already closed...");
+                DefaultLogger.warn("Connection already closed...");
             }
 
             Session cs = threadCache.remove();
             if (cs == null) {
-                throw new ConnectionException("Connection not created via connection manager...", HibernateConnection.class);
+                throw new ConnectionError("Connection not created via connection manager...");
             }
             if (!cs.equals(connection)) {
-                throw new ConnectionException("Connection handle passed doesn't match cached connection.", HibernateConnection.class);
+                throw new ConnectionError("Connection handle passed doesn't match cached connection.");
             }
         } catch (Exception ex) {
-            LogUtils.error(getClass(), ex);
+            DefaultLogger.error(ex.getLocalizedMessage());
+            throw new ConnectionError(ex);
         }
     }
 
@@ -127,11 +111,11 @@ public class HibernateConnection extends AbstractConnection<Session> {
     /**
      * Configure this type instance.
      *
-     * @param node - Handle to the configuration node.
+     * @param settings - Handle to the configuration node.
      * @throws ConfigurationException
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private void configure(@Nonnull HibernateConnectionSettings settings) throws ConfigurationException {
+    private void configure(@NonNull HibernateConnectionSettings settings) throws ConfigurationException {
         try {
             String passwd = env.keyStore().read(settings.getDbPassword());
             if (Strings.isNullOrEmpty(passwd)) {

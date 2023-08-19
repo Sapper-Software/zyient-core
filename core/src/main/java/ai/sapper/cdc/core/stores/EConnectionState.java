@@ -17,8 +17,6 @@
 
 package ai.sapper.cdc.core.stores;
 
-import ai.sapper.cdc.common.AbstractState;
-
 public enum EConnectionState {
     /**
      * Connection state is Unknown

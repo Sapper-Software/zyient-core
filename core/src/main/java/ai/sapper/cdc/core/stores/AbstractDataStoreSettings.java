@@ -30,6 +30,9 @@ import lombok.Setter;
         property = "@class")
 @ConfigPath(path = "store")
 public class AbstractDataStoreSettings extends Settings {
+    public static final String CONFIG_SETTING_TYPE = "settingType";
+    public static final long SEQUENCE_BLOCK_SIZE = 8;
+
     private static final int DEFAULT_MAX_RESULTS = 500;
     @Config(name = "class", type = Class.class)
     private Class<? extends AbstractDataStore<?>> dataStoreClass;
@@ -49,4 +52,7 @@ public class AbstractDataStoreSettings extends Settings {
     private String auditContextProviderClass;
     @JsonIgnore
     private EConfigSource source;
+    private EDataStoreType type;
+    @Config(name = "sequenceBlockSize", required = false, type = Long.class)
+    private long sequenceBlockSize = SEQUENCE_BLOCK_SIZE;
 }

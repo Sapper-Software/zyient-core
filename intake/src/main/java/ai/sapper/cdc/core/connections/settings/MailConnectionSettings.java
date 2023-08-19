@@ -17,8 +17,6 @@
 package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
-import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
-import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;

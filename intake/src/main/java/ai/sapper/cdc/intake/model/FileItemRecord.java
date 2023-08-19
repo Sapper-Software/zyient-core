@@ -14,7 +14,6 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
-import javax.persistence.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;

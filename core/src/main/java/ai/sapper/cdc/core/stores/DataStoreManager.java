@@ -20,13 +20,13 @@ package ai.sapper.cdc.core.stores;
 import ai.sapper.cdc.common.cache.MapThreadCache;
 import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
-import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionManager;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.model.IEntity;
@@ -35,9 +35,7 @@ import ai.sapper.cdc.core.stores.annotations.IShardProvider;
 import ai.sapper.cdc.core.stores.annotations.SchemaSharded;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -45,13 +43,22 @@ import org.apache.curator.framework.CuratorFramework;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class DataStoreManager {
+    private static class ZkSequenceBlock {
+        private long next;
+        private long endSequence;
+    }
+
     private final ProcessorState state = new ProcessorState();
     private final Map<Class<? extends IEntity<?>>, Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings>> entityIndex = new HashMap<>();
     private final Map<String, AbstractDataStoreSettings> dataStoreConfigs = new HashMap<>();
+    private final Map<String, ZkSequenceBlock> sequences = new HashMap<>();
     private final Map<Class<? extends IShardedEntity<?, ?>>, ShardConfigSettings> shardConfigs = new HashMap<>();
     private final MapThreadCache<String, AbstractDataStore<?>> openedStores = new MapThreadCache<>();
     private BaseEnv<?> env;
@@ -68,8 +75,8 @@ public class DataStoreManager {
         return false;
     }
 
-    public <T extends Connection> AbstractConnection<T> getConnection(@Nonnull String name,
-                                                                      Class<? extends T> type) throws DataStoreException {
+    public <T extends AbstractConnection<?>> T getConnection(@Nonnull String name,
+                                                             Class<? extends T> type) throws DataStoreException {
         try {
             state.check(ProcessorState.EProcessorState.Running);
             return connectionManager.getConnection(name, type);
@@ -362,7 +369,10 @@ public class DataStoreManager {
         this.env = env;
         this.connectionManager = env.connectionManager();
         try {
-            updateLock = env.createLock(getClass().getSimpleName());
+            String lp = new PathUtils.ZkPathBuilder("stores")
+                    .withPath(getClass().getSimpleName())
+                    .build();
+            updateLock = env.createLock(lp);
             if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)) {
                 state.setState(ProcessorState.EProcessorState.Running);
                 return;
@@ -432,16 +442,7 @@ public class DataStoreManager {
                             String cp = new PathUtils.ZkPathBuilder(shpath)
                                     .withPath(name)
                                     .build();
-                            byte[] data = client.getData().forPath(cp);
-                            if (data == null || data.length == 0) {
-                                throw new Exception(String.format("Shard Configuration not found. [path=%s]", cp));
-                            }
-                            ShardConfigSettings sc = JSONUtils.read(data, ShardConfigSettings.class);
-                            if (shardConfigs.containsKey(sc.getEntityType()) && settings.isOverride()) {
-                                continue;
-                            }
-                            sc.setSource(EConfigSource.Database);
-                            shardConfigs.put(sc.getEntityType(), sc);
+                            readShardConfig(client, cp);
                         }
                     }
                 }
@@ -467,7 +468,16 @@ public class DataStoreManager {
                 if (!dataStoreConfigs.isEmpty()) {
                     for (String name : dataStoreConfigs.keySet()) {
                         AbstractDataStoreSettings config = dataStoreConfigs.get(name);
-
+                        if (config.getSource() == EConfigSource.Database)
+                            continue;
+                        save(config);
+                    }
+                }
+                if (!shardConfigs.isEmpty()) {
+                    for (Class<?> type : shardConfigs.keySet()) {
+                        ShardConfigSettings sc = shardConfigs.get(type);
+                        if (sc.getSource() == EConfigSource.Database)
+                            continue;
                     }
                 }
             } finally {
@@ -477,6 +487,32 @@ public class DataStoreManager {
             throw new DataStoreException(ex);
         }
     }
+
+    private void save(ShardConfigSettings settings) throws Exception {
+        CuratorFramework client = zkConnection.client();
+        String shpath = new PathUtils.ZkPathBuilder(zkPath)
+                .withPath(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES)
+                .withPath(settings.getEntityType().getSimpleName())
+                .build();
+        if (client.checkExists().forPath(shpath) == null) {
+            client.create().creatingParentsIfNeeded().forPath(shpath);
+        }
+        JSONUtils.write(client, shpath, settings);
+    }
+
+    private void save(AbstractDataStoreSettings settings) throws Exception {
+        CuratorFramework client = zkConnection.client();
+        String dspath = new PathUtils.ZkPathBuilder(zkPath)
+                .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                .withPath(settings.getType().name())
+                .withPath(settings.getName())
+                .build();
+        if (client.checkExists().forPath(dspath) == null) {
+            client.create().creatingParentsIfNeeded().forPath(dspath);
+        }
+        JSONUtils.write(client, dspath, settings);
+    }
+
 
     public void addShardConfig(@Nonnull ShardConfigSettings config) throws DataStoreException {
         shardConfigs.put(config.getEntityType(), config);
@@ -505,6 +541,18 @@ public class DataStoreManager {
         }
     }
 
+    private void readShardConfig(CuratorFramework client, String path) throws ConfigurationException {
+        try {
+            ShardConfigSettings settings = JSONUtils.read(client, path, ShardConfigSettings.class);
+            if (settings == null) {
+                throw new Exception(String.format("Failed to read shard configuration. [path=%s]", path));
+            }
+            settings.setSource(EConfigSource.Database);
+            shardConfigs.put(settings.getEntityType(), settings);
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
+    }
 
     @SuppressWarnings("unchecked")
     public void addDataStoreConfig(AbstractDataStoreSettings config) throws ConfigurationException {
@@ -535,10 +583,77 @@ public class DataStoreManager {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void readDataStoreConfig(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        ConfigReader reader = new ConfigReader(xmlConfig, null, AbstractDataStoreSettings.class);
-        AbstractDataStoreSettings settings = (AbstractDataStoreSettings) reader.settings();
-        settings.setSource(EConfigSource.File);
-        addDataStoreConfig(settings);
+        try {
+            Class<?> type = ConfigReader.readAsClass(xmlConfig, AbstractDataStoreSettings.CONFIG_SETTING_TYPE);
+            if (!ReflectionUtils.isSuperType(AbstractDataStoreSettings.class, type)) {
+                throw new ConfigurationException(
+                        String.format("Invalid settings type. [type=%s]", type.getCanonicalName()));
+            }
+            ConfigReader reader = new ConfigReader(xmlConfig, null, (Class<? extends Settings>) type);
+            AbstractDataStoreSettings settings = (AbstractDataStoreSettings) reader.settings();
+            settings.setSource(EConfigSource.File);
+            addDataStoreConfig(settings);
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
+    }
+
+    public long nextSequence(String name, String sequenceName) throws DataStoreException {
+        synchronized (sequences) {
+            String key = String.format("%s::%s", name, sequenceName);
+            if (sequences.containsKey(key)) {
+                ZkSequenceBlock sq = sequences.get(name);
+                if (sq.next < sq.endSequence) {
+                    return sq.next++;
+                }
+            }
+            if (zkConnection != null) {
+                AbstractDataStoreSettings settings = dataStoreConfigs.get(name);
+                if (settings == null) {
+                    throw new DataStoreException(String.format("DataStore not found. [name=%s]", name));
+                }
+                updateLock.lock();
+                try {
+                    ConfigPath cp = ZkSequence.class.getAnnotation(ConfigPath.class);
+
+                    CuratorFramework client = zkConnection.client();
+                    String dspath = new PathUtils.ZkPathBuilder(zkPath)
+                            .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                            .withPath(settings.getType().name())
+                            .withPath(settings.getName())
+                            .withPath(cp.path())
+                            .withPath(sequenceName)
+                            .build();
+                    ZkSequence sequence = null;
+                    if (client.checkExists().forPath(dspath) == null) {
+                        client.create().creatingParentsIfNeeded().forPath(dspath);
+                        sequence = new ZkSequence();
+                    } else {
+                        sequence = JSONUtils.read(client, dspath, ZkSequence.class);
+                        if (sequence == null) {
+                            sequence = new ZkSequence();
+                        }
+                    }
+                    long next = sequence.getNext();
+                    sequence.setNext(sequence.getNext() + settings.getSequenceBlockSize());
+                    sequence.setTimeUpdated(System.currentTimeMillis());
+                    JSONUtils.write(client, dspath, sequence);
+
+                    ZkSequenceBlock block = new ZkSequenceBlock();
+                    block.next = next;
+                    block.endSequence = sequence.getNext();
+                    sequences.put(key, block);
+
+                    return block.next++;
+                } catch (Exception ex) {
+                    throw new DataStoreException(ex);
+                } finally {
+                    updateLock.unlock();
+                }
+            }
+        }
+        throw new DataStoreException("ZK Sequence not supported...");
     }
 }

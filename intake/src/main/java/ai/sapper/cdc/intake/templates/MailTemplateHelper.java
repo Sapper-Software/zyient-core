@@ -4,7 +4,6 @@ import ai.sapper.cdc.intake.model.EmailJson;
 import ai.sapper.cdc.intake.utils.DateUtils;
 import com.google.common.base.Strings;
 
-
 import javax.annotation.Nonnull;
 import java.util.HashMap;
 import java.util.Map;
