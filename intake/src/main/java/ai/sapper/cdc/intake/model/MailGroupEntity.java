@@ -1,9 +1,9 @@
 package ai.sapper.cdc.intake.model;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.CopyException;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -11,6 +11,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
+import javax.persistence.*;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;

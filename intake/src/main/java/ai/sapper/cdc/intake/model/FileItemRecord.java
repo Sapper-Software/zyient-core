@@ -1,19 +1,14 @@
 package ai.sapper.cdc.intake.model;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.CopyException;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.ValidationExceptions;
-import com.codekutter.r2db.driver.impl.IntakeS3FileEntity;
-import com.codekutter.r2db.driver.model.S3FileEntity;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
-import com.ingestion.common.utils.FileUtils;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
+import javax.persistence.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;

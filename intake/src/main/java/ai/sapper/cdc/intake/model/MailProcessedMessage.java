@@ -1,6 +1,6 @@
 package ai.sapper.cdc.intake.model;
 
-import com.codekutter.common.model.EEntityState;
+import ai.sapper.cdc.common.model.entity.EEntityState;
 import lombok.Data;
 
 @Data

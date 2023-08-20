@@ -1,15 +1,15 @@
 package ai.sapper.cdc.intake.model;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.CopyException;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.StringKey;
-import com.codekutter.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.core.model.StringKey;
+import ai.sapper.cdc.intake.utils.MailUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.ingestion.common.ext.utils.MailUtils;
 import lombok.Getter;
 import lombok.Setter;
 import microsoft.exchange.webservices.data.core.service.item.EmailMessage;

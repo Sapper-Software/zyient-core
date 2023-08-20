@@ -19,7 +19,9 @@ package ai.sapper.cdc.core.stores;
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 import java.util.HashSet;
@@ -32,4 +34,12 @@ import java.util.Set;
 public class AbstractConnectionSettings extends ConnectionSettings {
     @Config(name = "supportedTypes", required = false, parser = ClassSetParser.class)
     private Set<Class<?>> supportedTypes = new HashSet<>();
+
+    public AbstractConnectionSettings() {}
+
+    public AbstractConnectionSettings(@NonNull ConnectionSettings settings) {
+        super(settings);
+        Preconditions.checkArgument(settings instanceof AbstractConnectionSettings);
+        supportedTypes = ((AbstractConnectionSettings) settings).getSupportedTypes();
+    }
 }

@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.EEntityState;
 import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.common.model.entity.IKey;
 import lombok.AccessLevel;

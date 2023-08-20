@@ -17,9 +17,9 @@
 
 package ai.sapper.cdc.core.stores;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.IKey;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.common.model.entity.IKey;
 
 import javax.annotation.Nonnull;
 

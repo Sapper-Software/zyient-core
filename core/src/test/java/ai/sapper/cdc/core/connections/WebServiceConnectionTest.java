@@ -21,14 +21,13 @@ import ai.sapper.cdc.core.connections.ws.WebServiceConnection;
 import ai.sapper.cdc.core.utils.DemoEnv;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.glassfish.jersey.client.JerseyWebTarget;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;

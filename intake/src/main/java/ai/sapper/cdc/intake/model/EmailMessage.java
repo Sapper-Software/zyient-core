@@ -2,13 +2,13 @@ package ai.sapper.cdc.intake.model;
 
 import com.codekutter.common.model.RemoteFileEntity;
 import com.codekutter.common.utils.LogUtils;
+import jakarta.mail.internet.AddressException;
+import jakarta.mail.internet.InternetAddress;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
 import javax.mail.Message;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;

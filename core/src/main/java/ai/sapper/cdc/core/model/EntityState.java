@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.AbstractState;
+import ai.sapper.cdc.common.model.entity.EEntityState;
 
 /**
  * Class for defining states for Primary Entities.
