@@ -18,9 +18,9 @@
 package ai.sapper.cdc.core.stores;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.auditing.AbstractAuditLogger;
-import ai.sapper.cdc.core.model.IEntity;
 import ai.sapper.cdc.core.stores.impl.DataStoreAuditContext;
 import ai.sapper.cdc.core.utils.Timer;
 import com.google.common.base.Preconditions;

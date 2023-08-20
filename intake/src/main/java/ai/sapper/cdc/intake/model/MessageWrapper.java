@@ -1,11 +1,11 @@
 package ai.sapper.cdc.intake.model;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.core.model.CopyException;
-import ai.sapper.cdc.core.model.IEntity;
 import ai.sapper.cdc.core.model.StringKey;
-import ai.sapper.cdc.core.model.ValidationExceptions;
 import ai.sapper.cdc.intake.utils.MailUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

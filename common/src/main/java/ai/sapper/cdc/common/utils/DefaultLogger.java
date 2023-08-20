@@ -157,7 +157,23 @@ public class DefaultLogger {
     }
 
     public static void trace(String msg) {
-        LOGGER.trace(msg);
+        trace(LOGGER, msg);
+    }
+
+    public static void trace(@NonNull Object data) {
+        trace(LOGGER, data);
+    }
+
+    public static void trace(Logger logger, @NonNull Object data) {
+        if (logger == null) {
+            logger = LOGGER;
+        }
+        try {
+            String msg = JSONUtils.asString(data, data.getClass());
+            logger.trace(msg);
+        } catch (Exception ex) {
+            logger.error(ex.getLocalizedMessage());
+        }
     }
 
     public static void trace(Logger logger, String msg) {

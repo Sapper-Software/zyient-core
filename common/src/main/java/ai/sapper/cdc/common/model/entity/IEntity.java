@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.common.model.entity;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
 
 /**
  * Interface for defining entities.

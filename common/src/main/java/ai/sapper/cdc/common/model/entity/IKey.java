@@ -14,42 +14,26 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.common.model.entity;
+
+import java.io.Serializable;
 
 /**
- * Enum defines the userState of a primary entity.
+ * Define an entity Key type.
  */
-public enum EEntityState  {
+public interface IKey extends Serializable {
     /**
-     * State is Unknown
+     * Get the String representation of the key.
+     *
+     * @return - Key String
      */
-    Unknown,
+    String stringKey();
+
     /**
-     * Entity has been newly created (not persisted in DB)
+     * Compare the current key to the target.
+     *
+     * @param key - Key to compare to
+     * @return - == 0, < -x, > +x
      */
-    New,
-    /**
-     * Entity has been updated.
-     */
-    Updated,
-    /**
-     * Entity is Synced with the DB.
-     */
-    Synced,
-    /**
-     * Entity is being synced.
-     */
-    Syncing,
-    /**
-     * Entity record has been deleted.
-     */
-    Deleted,
-    /**
-     * Entity has been marked as In Active.
-     */
-    InActive,
-    /**
-     * Entity is in Error userState.
-     */
-    Error;
+    int compareTo(IKey key);
 }

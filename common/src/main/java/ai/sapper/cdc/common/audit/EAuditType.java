@@ -14,23 +14,26 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import java.io.Serializable;
+package ai.sapper.cdc.common.audit;
 
 /**
- * Interface represents a object instance with a key.
- *
- * @param <K> - Key class.
+ * Enum type to log audit records.
  */
-public interface IKeyed<K extends IKey> extends Serializable {
+public enum EAuditType {
     /**
-     * Get the object instance Key.
-     *
-     * @return - Key
+     * Entity records was created.
      */
-    @JsonIgnore
-    K getKey();
+    Create,
+    /**
+     * Entity records was updated
+     */
+    Update,
+    /**
+     * Entity record was deleted.
+     */
+    Delete,
+    /**
+     * Entity record was read.
+     */
+    Read
 }

@@ -18,6 +18,10 @@
 package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Strings;

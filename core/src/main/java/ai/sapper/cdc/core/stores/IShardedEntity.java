@@ -17,8 +17,8 @@
 
 package ai.sapper.cdc.core.stores;
 
-import ai.sapper.cdc.core.model.IEntity;
-import ai.sapper.cdc.core.model.IKey;
+import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.common.model.entity.IKey;
 
 import java.io.Serializable;
 

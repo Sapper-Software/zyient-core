@@ -18,7 +18,6 @@
 package ai.sapper.cdc.core.stores.impl;
 
 import ai.sapper.cdc.common.cache.ThreadCache;
-import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
@@ -114,7 +113,6 @@ public class HibernateConnection extends AbstractConnection<Session> {
      * @param settings - Handle to the configuration node.
      * @throws ConfigurationException
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void configure(@NonNull HibernateConnectionSettings settings) throws ConfigurationException {
         try {
             String passwd = env.keyStore().read(settings.getDbPassword());
@@ -236,12 +234,10 @@ public class HibernateConnection extends AbstractConnection<Session> {
 
     @Override
     public Connection connect() throws ConnectionError {
-        return null;
-    }
-
-    @Override
-    public String path() {
-        ConfigPath path = HibernateConnectionSettings.class.getAnnotation(ConfigPath.class);
-        return path.path();
+        if (!state().isConnected()) {
+            state().check(EConnectionState.Initialized);
+            state().setState(EConnectionState.Connected);
+        }
+        return this;
     }
 }

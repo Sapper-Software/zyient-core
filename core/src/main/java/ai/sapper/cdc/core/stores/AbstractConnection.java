@@ -17,12 +17,16 @@
 
 package ai.sapper.cdc.core.stores;
 
+import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.common.utils.JSONUtils;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
-import ai.sapper.cdc.core.model.IEntity;
 import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -31,13 +35,13 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.curator.framework.CuratorFramework;
 
 import java.util.HashSet;
 import java.util.Set;
 
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public abstract class AbstractConnection<T> implements Connection {
     @Setter(AccessLevel.NONE)
@@ -45,6 +49,7 @@ public abstract class AbstractConnection<T> implements Connection {
     protected AbstractConnectionSettings settings;
     private final Class<? extends AbstractConnectionSettings> settingsType;
     private final EConnectionType type;
+    private BaseEnv<?> env;
 
     public AbstractConnection(@NonNull EConnectionType type,
                               @NonNull Class<? extends AbstractConnectionSettings> settingsType) {
@@ -70,17 +75,52 @@ public abstract class AbstractConnection<T> implements Connection {
     }
 
     @Override
-    public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                           @NonNull BaseEnv<?> env) throws ConnectionError {
-        return null;
-    }
-
-    @Override
     public Connection init(@NonNull String name,
                            @NonNull ZookeeperConnection connection,
                            @NonNull String path,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
-        return null;
+        try {
+            this.env = env;
+            ConfigPath cp = settingsType.getAnnotation(ConfigPath.class);
+            String zkPath = new PathUtils.ZkPathBuilder(path)
+                    .withPath(cp.path())
+                    .build();
+            CuratorFramework client = connection.client();
+            settings = JSONUtils.read(client, zkPath, settingsType);
+            if (settings == null) {
+                throw new Exception(String.format("Connection settings not found. [path=%s]", zkPath));
+            }
+            setup(settings, env);
+            state.setState(EConnectionState.Initialized);
+            return this;
+        } catch (Exception ex) {
+            state.error(ex);
+            throw new ConnectionError(ex);
+        }
+    }
+
+    @Override
+    public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                           @NonNull BaseEnv<?> env) throws ConnectionError {
+        try {
+            this.env = env;
+            ConfigPath cp = settingsType.getAnnotation(ConfigPath.class);
+            ConfigReader reader = new ConfigReader(config, cp.path(), settingsType);
+            reader.read();
+            settings = (AbstractConnectionSettings) reader.settings();
+            setup(settings, env);
+            state.setState(EConnectionState.Initialized);
+            return this;
+        } catch (Exception ex) {
+            state.error(ex);
+            throw new ConnectionError(ex);
+        }
+    }
+
+    @Override
+    public String path() {
+        ConfigPath cp = settingsType.getAnnotation(ConfigPath.class);
+        return cp.path();
     }
 
     @Override

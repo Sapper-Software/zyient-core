@@ -16,6 +16,7 @@
 
 package ai.sapper.cdc.core.model;
 
+import ai.sapper.cdc.common.model.entity.IKey;
 import ai.sapper.cdc.common.utils.ChecksumUtils;
 import lombok.Getter;
 import lombok.NonNull;

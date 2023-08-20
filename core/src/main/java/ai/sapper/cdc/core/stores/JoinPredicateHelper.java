@@ -17,9 +17,9 @@
 
 package ai.sapper.cdc.core.stores;
 
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.common.utils.KeyValuePair;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
-import ai.sapper.cdc.core.model.IEntity;
 import ai.sapper.cdc.core.stores.annotations.Reference;
 import com.google.common.base.Strings;
 import lombok.NonNull;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.common.model;
 
 /**
  * Exception type to be used for escalating Entity Copy errors.

@@ -17,15 +17,13 @@
 
 package ai.sapper.cdc.core.auditing;
 
-import com.codekutter.common.model.AuditRecord;
-import com.codekutter.common.model.EAuditType;
-import com.codekutter.common.model.IKeyed;
-import com.codekutter.common.stores.DataStoreManager;
+import ai.sapper.cdc.common.audit.AuditRecord;
+import ai.sapper.cdc.common.audit.EAuditType;
+import ai.sapper.cdc.common.model.entity.IKeyed;
+import ai.sapper.cdc.core.stores.DataStoreManager;
 import com.codekutter.common.utils.ConfigUtils;
 import com.codekutter.common.utils.LogUtils;
 import com.codekutter.zconfig.common.ConfigurationException;
-import com.codekutter.zconfig.common.IConfigurable;
-import com.codekutter.zconfig.common.model.annotations.ConfigPath;
 import com.codekutter.zconfig.common.model.nodes.AbstractConfigNode;
 import com.codekutter.zconfig.common.model.nodes.ConfigElementNode;
 import com.codekutter.zconfig.common.model.nodes.ConfigListElementNode;
@@ -49,14 +47,13 @@ import java.util.concurrent.ConcurrentHashMap;
 @Getter
 @Setter
 @Accessors(fluent = true)
-@ConfigPath(path = "audit-manager")
 @SuppressWarnings("rawtypes")
-public class AuditManager implements IConfigurable, Closeable {
+public class AuditManager implements Closeable {
     private static final AuditManager __instance = new AuditManager();
     @Setter(AccessLevel.NONE)
     private final Map<String, AbstractAuditLogger> loggers = new ConcurrentHashMap<>();
     @Setter(AccessLevel.NONE)
-    private final Map<Class<? extends IKeyed>, AbstractAuditLogger> entityIndex = new HashMap<>();
+    private final Map<Class<? extends IKeyed<?>>, AbstractAuditLogger> entityIndex = new HashMap<>();
     @Setter(AccessLevel.NONE)
     private final Map<Class<? extends IAuditContextGenerator>, IAuditContextGenerator> contextGenerators = new HashMap<>();
     @Setter(AccessLevel.NONE)
@@ -91,13 +88,13 @@ public class AuditManager implements IConfigurable, Closeable {
         }
     }
 
-    public <T extends IKeyed> AuditRecord audit(@Nonnull Class<?> dataStoreType,
-                                                @Nonnull String dataStoreName,
-                                                @Nonnull EAuditType type,
-                                                @Nonnull T entity,
-                                                String changeDelta,
-                                                String changeContext,
-                                                @Nonnull Principal user) throws AuditException {
+    public <T extends IKeyed<?>> AuditRecord audit(@Nonnull Class<?> dataStoreType,
+                                                   @Nonnull String dataStoreName,
+                                                   @Nonnull EAuditType type,
+                                                   @Nonnull T entity,
+                                                   String changeDelta,
+                                                   String changeContext,
+                                                   @Nonnull Principal user) throws AuditException {
         AbstractAuditLogger logger = getLogger(entity.getClass());
         if (logger != null) {
             return logger.write(dataStoreType, dataStoreName, type, entity, entity.getClass(), changeDelta, changeContext, user);
@@ -105,7 +102,7 @@ public class AuditManager implements IConfigurable, Closeable {
         return null;
     }
 
-    public <T extends IKeyed> AuditRecord audit(@Nonnull Class<?> dataStoreType,
+    public <T extends IKeyed<?>> AuditRecord audit(@Nonnull Class<?> dataStoreType,
                                                 @Nonnull String dataStoreName,
                                                 @Nonnull EAuditType type,
                                                 @Nonnull T entity,
@@ -120,7 +117,7 @@ public class AuditManager implements IConfigurable, Closeable {
         return null;
     }
 
-    public <T extends IKeyed> AuditRecord audit(@Nonnull Class<?> dataStoreType,
+    public <T extends IKeyed<?>> AuditRecord audit(@Nonnull Class<?> dataStoreType,
                                                 @Nonnull String dataStoreName,
                                                 @Nonnull String logger,
                                                 @Nonnull EAuditType type,

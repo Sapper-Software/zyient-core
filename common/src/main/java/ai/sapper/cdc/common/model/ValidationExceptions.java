@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.common.model;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;

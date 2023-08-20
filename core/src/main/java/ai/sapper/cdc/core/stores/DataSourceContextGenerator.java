@@ -18,9 +18,9 @@
 package ai.sapper.cdc.core.stores;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.core.auditing.AbstractAuditContext;
 import ai.sapper.cdc.core.auditing.IAuditContextGenerator;
-import ai.sapper.cdc.core.model.IEntity;
 import com.google.common.base.Preconditions;
 
 import javax.annotation.Nonnull;

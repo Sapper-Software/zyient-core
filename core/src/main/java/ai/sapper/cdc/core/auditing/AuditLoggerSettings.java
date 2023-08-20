@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.auditing;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.common.config.Settings;
 import ai.sapper.cdc.core.stores.AbstractDataStore;
 import ai.sapper.cdc.core.stores.ClassSetParser;
@@ -30,6 +31,7 @@ import java.util.Set;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
+@ConfigPath(path = "audit-logger")
 public class AuditLoggerSettings extends Settings {
     public static final String __CONFIG_PATH = "audit.logger";
     public static final int MAX_CACHE_SIZE = 32;

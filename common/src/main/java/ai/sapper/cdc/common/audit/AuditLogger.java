@@ -35,5 +35,5 @@ public interface AuditLogger {
 
     void audit(@NonNull Class<?> caller, long timestamp, @NonNull MessageOrBuilder data);
 
-    List<AuditRecord<?>> read(@NonNull String logfile, int offset, int batchSize) throws IOException;
+    List<AuditRecord> read(@NonNull String logfile, int offset, int batchSize) throws IOException;
 }

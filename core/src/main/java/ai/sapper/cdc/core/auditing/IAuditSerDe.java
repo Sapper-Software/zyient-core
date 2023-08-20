@@ -17,16 +17,15 @@
 
 package ai.sapper.cdc.core.auditing;
 
+import lombok.NonNull;
 import org.apache.commons.lang3.SerializationException;
-
-import javax.annotation.Nonnull;
 
 /**
  * Interface to implement entity record serializer/de-serializer.
  *
- * @param <T> - Type of records supported
  */
-public interface IAuditSerDe<T> {
+public interface IAuditSerDe {
+
     /**
      * Serialize the specified entity record.
      *
@@ -35,8 +34,8 @@ public interface IAuditSerDe<T> {
      * @return - Serialized Byte array.
      * @throws SerializationException
      */
-    @Nonnull
-    byte[] serialize(@Nonnull T record, @Nonnull Class<? extends T> type) throws SerializationException;
+    @NonNull
+    String serialize(@NonNull Object record, @NonNull Class<?> type) throws SerializationException;
 
     /**
      * Read the entity record from the byte array passed.
@@ -46,6 +45,6 @@ public interface IAuditSerDe<T> {
      * @return - De-serialized entity record.
      * @throws SerializationException
      */
-    @Nonnull
-    T deserialize(@Nonnull byte[] data, @Nonnull Class<? extends T> type) throws SerializationException;
+    @NonNull
+    <T> T deserialize(@NonNull String data, @NonNull Class<? extends T> type) throws SerializationException;
 }

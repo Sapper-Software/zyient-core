@@ -1,6 +1,6 @@
 package ai.sapper.cdc.intake.model;
 
-import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.core.model.StringKey;
 import ai.sapper.cdc.core.utils.FileUtils;
 import ai.sapper.cdc.intake.utils.MailUtils;

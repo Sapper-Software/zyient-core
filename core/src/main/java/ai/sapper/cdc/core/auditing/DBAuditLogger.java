@@ -17,22 +17,26 @@
 
 package ai.sapper.cdc.core.auditing;
 
-import com.codekutter.common.model.AuditRecord;
-import com.codekutter.common.model.EObjectState;
-import com.codekutter.common.model.IKey;
-import com.codekutter.common.model.IKeyed;
-import com.codekutter.common.stores.AbstractDataStore;
-import com.codekutter.common.stores.BaseSearchResult;
-import com.codekutter.common.stores.impl.EntitySearchResult;
-import com.codekutter.common.utils.LogUtils;
+import ai.sapper.cdc.common.audit.AuditRecord;
+import ai.sapper.cdc.common.model.entity.IKey;
+import ai.sapper.cdc.common.model.entity.IKeyed;
+import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.core.processing.ProcessorState;
+import ai.sapper.cdc.core.stores.AbstractDataStore;
+import ai.sapper.cdc.core.stores.BaseSearchResult;
+import ai.sapper.cdc.core.stores.impl.EntitySearchResult;
 import com.google.common.base.Preconditions;
+import lombok.NonNull;
 import org.hibernate.Session;
 
-import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.*;
 
 public class DBAuditLogger extends AbstractAuditLogger<Session> {
+    protected DBAuditLogger() {
+        super(AuditLoggerSettings.class);
+    }
+
     /**
      * Search for entity records based on the query string specified.
      *
@@ -42,14 +46,13 @@ public class DBAuditLogger extends AbstractAuditLogger<Session> {
      * @return - Collection of fetched records.
      * @throws AuditException
      */
-    @SuppressWarnings("unchecked")
     @Override
-    public <T extends IKeyed> Collection<T> search(@Nonnull String query,
-                                                   @Nonnull Class<? extends T> entityType,
-                                                   @Nonnull IAuditSerDe serializer) throws AuditException {
+    public <T extends IKeyed<?>> Collection<T> search(@NonNull String query,
+                                                   @NonNull Class<? extends T> entityType,
+                                                   @NonNull IAuditSerDe serializer) throws AuditException {
         Preconditions.checkState(dataStoreManager() != null);
         try {
-            state().check(EObjectState.Available, getClass());
+            state().check(ProcessorState.EProcessorState.Running);
             AbstractDataStore<Session> dataStore = getDataStore(false);
 
             String qstr = String.format("FROM %s WHERE id.recordType = :recordType AND (%s)",
@@ -57,14 +60,14 @@ public class DBAuditLogger extends AbstractAuditLogger<Session> {
             Map<String, Object> params = new HashMap<>();
             params.put("recordType", entityType.getCanonicalName());
             BaseSearchResult<AuditRecord> result = dataStore.search(qstr, params, AuditRecord.class, null);
-            if (result instanceof EntitySearchResult) {
+            if (result instanceof EntitySearchResult<AuditRecord>) {
                 EntitySearchResult<AuditRecord> er = (EntitySearchResult<AuditRecord>) result;
                 Collection<AuditRecord> records = er.getEntities();
                 if (records != null && !records.isEmpty()) {
                     List<T> entities = new ArrayList<>(records.size());
                     for (AuditRecord record : records) {
                         T entity = (T) serializer.deserialize(record.getEntityData(), entityType);
-                        LogUtils.debug(getClass(), entity);
+                        DefaultLogger.trace(entity);
                         entities.add(entity);
                     }
                     return entities;
@@ -86,11 +89,11 @@ public class DBAuditLogger extends AbstractAuditLogger<Session> {
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <K extends IKey, T extends IKeyed<K>> Collection<AuditRecord> find(@Nonnull K key,
-                                                                              @Nonnull Class<? extends T> entityType) throws AuditException {
+    public <K extends IKey, T extends IKeyed<K>> Collection<AuditRecord> find(@NonNull K key,
+                                                                              @NonNull Class<? extends T> entityType) throws AuditException {
         Preconditions.checkState(dataStoreManager() != null);
         try {
-            state().check(EObjectState.Available, getClass());
+            state().check(ProcessorState.EProcessorState.Running);
             AbstractDataStore<Session> dataStore = getDataStore(false);
 
             String qstr = String.format("FROM %s WHERE id.recordType = :recordType AND entityId = :entityId",
@@ -114,8 +117,8 @@ public class DBAuditLogger extends AbstractAuditLogger<Session> {
 
     @Override
     public void close() throws IOException {
-        if (state().getState() == EObjectState.Available) {
-            state().setState(EObjectState.Disposed);
+        if (state().getState() == ProcessorState.EProcessorState.Running) {
+            state().setState(ProcessorState.EProcessorState.Stopped);
         }
     }
 }

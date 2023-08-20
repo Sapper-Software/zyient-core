@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.common.model.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 
 /**
- * Define an entity Key type.
+ * Interface represents a object instance with a key.
+ *
+ * @param <K> - Key class.
  */
-public interface IKey extends Serializable {
+public interface IKeyed<K extends IKey> extends Serializable {
     /**
-     * Get the String representation of the key.
+     * Get the object instance Key.
      *
-     * @return - Key String
+     * @return - Key
      */
-    String stringKey();
-
-    /**
-     * Compare the current key to the target.
-     *
-     * @param key - Key to compare to
-     * @return - == 0, < -x, > +x
-     */
-    int compareTo(IKey key);
+    @JsonIgnore
+    K getKey();
 }

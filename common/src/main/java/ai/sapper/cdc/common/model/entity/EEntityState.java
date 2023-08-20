@@ -14,16 +14,42 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.common.model.entity;
 
 /**
- * Interface to define a validation method.
+ * Enum defines the userState of a primary entity.
  */
-public interface IValidate {
+public enum EEntityState  {
     /**
-     * Validate this entity instance.
-     *
-     * @throws ValidationExceptions - On validation failure will throw exception.
+     * State is Unknown
      */
-    void validate() throws ValidationExceptions;
+    Unknown,
+    /**
+     * Entity has been newly created (not persisted in DB)
+     */
+    New,
+    /**
+     * Entity has been updated.
+     */
+    Updated,
+    /**
+     * Entity is Synced with the DB.
+     */
+    Synced,
+    /**
+     * Entity is being synced.
+     */
+    Syncing,
+    /**
+     * Entity record has been deleted.
+     */
+    Deleted,
+    /**
+     * Entity has been marked as In Active.
+     */
+    InActive,
+    /**
+     * Entity is in Error userState.
+     */
+    Error;
 }

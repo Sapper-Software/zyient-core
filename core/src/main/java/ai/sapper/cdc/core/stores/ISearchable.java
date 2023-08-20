@@ -18,9 +18,9 @@
 package ai.sapper.cdc.core.stores;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.common.model.entity.IKey;
 import ai.sapper.cdc.core.model.DocumentEntity;
-import ai.sapper.cdc.core.model.IEntity;
-import ai.sapper.cdc.core.model.IKey;
 import org.apache.lucene.search.Query;
 
 import javax.annotation.Nonnull;

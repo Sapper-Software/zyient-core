@@ -41,7 +41,7 @@ public class DefaultAuditLogger implements AuditLogger {
     @Override
     public <T> void audit(@NonNull Class<?> caller, long timestamp, @NonNull T data) {
         try {
-            AuditRecord<T> record = new AuditRecord<>();
+            AuditRecord record = new AuditRecord();
             record.setCaller(caller.getCanonicalName());
             record.setType(data.getClass().getCanonicalName());
             record.setTimestamp(timestamp);

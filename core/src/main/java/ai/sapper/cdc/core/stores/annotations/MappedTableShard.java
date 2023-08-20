@@ -17,7 +17,7 @@
 
 package ai.sapper.cdc.core.stores.annotations;
 
-import ai.sapper.cdc.core.model.IEntity;
+import ai.sapper.cdc.common.model.entity.IEntity;
 
 import java.lang.annotation.*;
 

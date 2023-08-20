@@ -17,15 +17,14 @@
 
 package ai.sapper.cdc.core.auditing;
 
-import com.codekutter.common.GlobalConstants;
+import ai.sapper.cdc.common.GlobalConstants;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import lombok.NonNull;
 import org.apache.commons.lang3.SerializationException;
 
-import javax.annotation.Nonnull;
-
-public class JsonAuditSerDe implements IAuditSerDe<Object> {
+public class JsonAuditSerDe implements IAuditSerDe {
 
     /**
      * Serialize the specified entity record.
@@ -35,9 +34,9 @@ public class JsonAuditSerDe implements IAuditSerDe<Object> {
      * @return - Serialized Byte array.
      * @throws SerializationException
      */
-    @Nonnull
+    @NonNull
     @Override
-    public byte[] serialize(@Nonnull Object record, @Nonnull Class<?> type) throws SerializationException {
+    public String serialize(@NonNull Object record, @NonNull Class<?> type) throws SerializationException {
         try {
             ObjectMapper mapper = GlobalConstants.getJsonMapper();
             String json = mapper.writeValueAsString(record);
@@ -45,7 +44,7 @@ public class JsonAuditSerDe implements IAuditSerDe<Object> {
                 throw new SerializationException(String.format("Error serializing record. [type=%s]",
                         type.getCanonicalName()));
             }
-            return json.getBytes(GlobalConstants.defaultCharset());
+            return json;
         } catch (Exception ex) {
             throw new SerializationException(ex);
         }
@@ -59,13 +58,12 @@ public class JsonAuditSerDe implements IAuditSerDe<Object> {
      * @return - De-serialized entity record.
      * @throws SerializationException
      */
-    @Nonnull
     @Override
-    public Object deserialize(@Nonnull byte[] data, @Nonnull Class<?> type) throws SerializationException {
+    public <T> @NonNull T deserialize(@NonNull String data, @NonNull Class<? extends T> type) throws SerializationException {
         try {
-            Preconditions.checkArgument(data.length > 0);
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(data));
             ObjectMapper mapper = GlobalConstants.getJsonMapper();
-            Object value = mapper.readValue(data, type);
+            T value = mapper.readValue(data, type);
             if (value == null) {
                 throw new SerializationException(String.format("Error de-serializing record. [type=%s]",
                         type.getCanonicalName()));

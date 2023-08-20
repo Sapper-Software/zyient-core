@@ -18,10 +18,10 @@
 package ai.sapper.cdc.core.stores.impl;
 
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.model.BaseEntity;
 import ai.sapper.cdc.core.model.EEntityState;
-import ai.sapper.cdc.core.model.IEntity;
 import ai.sapper.cdc.core.stores.BaseSearchResult;
 import ai.sapper.cdc.core.stores.DataStoreException;
 import ai.sapper.cdc.core.stores.IDGenerator;
