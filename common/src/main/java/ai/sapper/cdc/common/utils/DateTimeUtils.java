@@ -25,6 +25,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import javax.annotation.Nonnull;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -164,5 +165,14 @@ public class DateTimeUtils {
 
     public static String formatTimestamp() {
         return formatTimestamp(DEFAULT_TIMESTAMP_FORMAT);
+    }
+
+
+    public static boolean equals(Date a, Date b) {
+        return a == b || a != null && b != null && compareTo(a, b) == 0;
+    }
+
+    public static int compareTo(Date a, Date b) {
+        return b instanceof Timestamp && !(a instanceof Timestamp) ? (new Timestamp(a.getTime())).compareTo(b) : a.compareTo(b);
     }
 }

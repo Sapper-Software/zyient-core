@@ -1,6 +1,11 @@
 package ai.sapper.cdc.intake.model;
 
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
 import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.utils.FileUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -108,12 +113,10 @@ public class FileItemRecord implements IEntity<IdKey> {
     }
 
     public static FileItemRecord create(@Nonnull EIntakeChannel channel,
-                                        @Nonnull S3FileEntity file,
+                                        @Nonnull FileInode file,
                                         @Nonnull String drive,
                                         @Nonnull String userId,
                                         String parentId) throws IOException {
-        Preconditions.checkArgument(file.exists());
-
         try {
             FileItemRecord record = new FileItemRecord();
             // TODO: File ID shouldn't be random
@@ -125,7 +128,7 @@ public class FileItemRecord implements IEntity<IdKey> {
             record.fileLocation = file.getRemotePath();
             record.checksum = FileUtils.getFileChecksum(file);
             record.fileType = FileUtils.getFileMimeType(file.getCanonicalPath());
-            record.fileSize = file.length();
+            record.fileSize = file.size();
             record.setState(ERecordState.Unknown);
             record.processingTimestamp = System.currentTimeMillis();
             record.readTimestamp = System.currentTimeMillis();

@@ -24,6 +24,9 @@ configurations.all {
         if (details.requested.name == 'avro') {
             details.useTarget "org.apache.avro:avro:1.11.0"
         }
+        if (details.requested.name == 'commons-codec') {
+            details.useTarget 'commons-codec:commons-codec:1.16.0'
+        }
     }
 }
 

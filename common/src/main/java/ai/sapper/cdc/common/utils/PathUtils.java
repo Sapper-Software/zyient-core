@@ -20,21 +20,111 @@ import com.google.common.base.Strings;
 import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 
 public class PathUtils {
     public static final String TEMP_PATH = String.format("%s/sapper/cdc/tmp", System.getProperty("java.io.tmpdir"));
 
+    private static final Pattern PAT_FILENAME_REMOVE_INVALID_CHARACTERS = Pattern.compile("[<>:\"/\\\\|?*\\x00-\\x1F]");
+    private static final Pattern PAT_FILENAME_REMOVE_LEADING_CHARACTERS = Pattern.compile("^[\\s.]+([^\\s.].*)$");
+    private static final Pattern PAT_FILENAME_REMOVE_TRAILING_CHARACTERS = Pattern.compile("^(.*[^\\s.])[\\s.]+$");
+    private static final Pattern PAT_FILENAME_TRIM = Pattern.compile("^[\\s.]*$");
+    private static final String DEFAULT_FILENAME = "_";
+
+    /**
+     * Validate a file name based on the <tt>filename</tt> by removing illegal characters, leading/trailing
+     * dots/whitespace and omitting the file name being one of the reserved file names.
+     * <p>
+     * Never returns an empty String or null.
+     * <p>
+     * Chops filename to max length of 250 characters.
+     *
+     * @since 5.1
+     */
+    public static String toValidFilename(final String filename) {
+        if (filename == null) {
+            return DEFAULT_FILENAME;
+        }
+        String s = filename;
+        s = PAT_FILENAME_REMOVE_INVALID_CHARACTERS.matcher(s).replaceAll("");
+        try {
+            Paths.get(s);
+            //ok
+        } catch (InvalidPathException ex) { // NOSONAR
+            //nok, check every character in sandwich test
+            StringBuilder buf = new StringBuilder();
+            for (char ch : s.toCharArray()) {
+                try {
+                    Paths.get("a" + ch + "a");
+                    buf.append(ch);
+                } catch (InvalidPathException ex2) { // NOSONAR
+                    //skip ch
+                }
+            }
+            s = buf.toString();
+        }
+
+        //remove leading and trailing dots, whitespace
+        s = PAT_FILENAME_REMOVE_LEADING_CHARACTERS.matcher(s).replaceAll("$1");
+        s = PAT_FILENAME_REMOVE_TRAILING_CHARACTERS.matcher(s).replaceAll("$1");
+        s = PAT_FILENAME_TRIM.matcher(s).replaceAll("");
+
+        if (s.isEmpty()) {
+            return DEFAULT_FILENAME;
+        }
+
+        // on some operating systems, the name may not be longer than 250 characters
+        if (s.length() > 250) {
+            int dot = s.lastIndexOf('.');
+            String suffix = (dot > 0 ? s.substring(dot) : "");
+            //suffix is at most 32 chars
+            if (suffix.length() > 32) {
+                suffix = "";
+            }
+            s = s.substring(0, 250 - suffix.length()) + suffix;
+        }
+
+        return s;
+    }
+
+    /**
+     * Is the given <tt>filename</tt> a valid file name
+     * <p>
+     * Uses {@link #toValidFilename(String)} to check
+     *
+     * @return <tt>false</tt> if <tt>filename</tt> is not a valid filename<br/>
+     * <tt>true</tt> if <tt>filename</tt> is a valid filename
+     */
+    public static boolean isValidFilename(String filename) {
+        return toValidFilename(filename).equals(filename);
+    }
+
+    /**
+     * @return Returns <code>true</code> if the given file is a zip file, otherwise <code>false</code>.
+     */
+    public static boolean isZipFile(File file) {
+        if (file == null || file.isDirectory() || !file.canRead() || file.length() < 4) {
+            return false;
+        }
+        try (
+                @SuppressWarnings("squid:S2095")
+                DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            int test = in.readInt();
+            return test == 0x504b0304; // magic number of a zip file
+        } catch (IOException e) { // NOSONAR
+        }
+        return false;
+    }
 
     public static String formatPath(@NonNull String path) {
         path = path.replaceAll("\\\\", "/");

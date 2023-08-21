@@ -3,6 +3,9 @@ package ai.sapper.cdc.intake.utils;
 import ai.sapper.cdc.common.GlobalConstants;
 import ai.sapper.cdc.common.utils.ChecksumUtils;
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.PathUtils;
+import ai.sapper.cdc.core.sources.ExchangeDataStore;
+import ai.sapper.cdc.core.stores.DataStoreException;
 import ai.sapper.cdc.core.utils.FileUtils;
 import ai.sapper.cdc.intake.flow.TaskContext;
 import ai.sapper.cdc.intake.model.*;
@@ -10,10 +13,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
+import jakarta.activation.MimeType;
 import jakarta.mail.*;
-import jakarta.mail.internet.AddressException;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.mail.internet.MimeUtility;
+import jakarta.mail.internet.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -24,12 +26,14 @@ import microsoft.exchange.webservices.data.core.service.schema.EmailMessageSchem
 import microsoft.exchange.webservices.data.property.complex.*;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.jsoup.Jsoup;
 
 import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivilegedActionException;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -130,7 +134,7 @@ public class MailUtils {
             }
             return null;
         } catch (Exception ex) {
-            throw new ParseException(ex.getLocalizedMessage(), 0);
+            throw new ParseException(ex.getLocalizedMessage());
         }
     }
 
@@ -150,7 +154,7 @@ public class MailUtils {
             }
             return null;
         } catch (Exception ex) {
-            throw new ParseException(ex.getLocalizedMessage(), 0);
+            throw new ParseException(ex.getLocalizedMessage());
         }
     }
 
@@ -366,14 +370,14 @@ public class MailUtils {
                         FileAttachment mimeAttachment = (FileAttachment) attachment;
                         mimeAttachment.load();
 
-                        MimeMessage mimeMessage = mailHelper.createMessageFromBytes(mimeAttachment.getContent());
-                        List<Part> extractedSignedAttachments = mailHelper.getAttachmentParts(mimeMessage);
+                        MimeMessage mimeMessage = createMessageFromBytes(mimeAttachment.getContent());
+                        List<Part> extractedSignedAttachments = getAttachmentParts(mimeMessage);
                         for (Part extractedSignedAttachment : extractedSignedAttachments) {
-                            LogUtils.info(MailUtils.class, String.format("####### extractedSignedAttachment name [%s] [%s] [%s]", extractedSignedAttachment.getFileName(),
+                            DefaultLogger.debug(String.format("####### extractedSignedAttachment name [%s] [%s] [%s]", extractedSignedAttachment.getFileName(),
                                     extractedSignedAttachment.getContentType(), DETACHED_SIGNATURE_MIME_TYPE));
                             if (!DETACHED_SIGNATURE_MIME_TYPE.equals(extractedSignedAttachment.getContentType().split(";")[0])) {
                                 // no referenced attachments, as they are all contained in the *.p7m attachment
-                                LogUtils.info(MailUtils.class, String.format("##### extractedSignedAttachment name [=%s] %s", extractedSignedAttachment.getFileName(),
+                                DefaultLogger.debug(String.format("##### extractedSignedAttachment name [=%s] %s", extractedSignedAttachment.getFileName(),
                                         extractedSignedAttachment.getContentType().split(";")[0]));
                                 String fname = extractedSignedAttachment.getFileName();
                                 if (Strings.isNullOrEmpty(fname)) {
@@ -445,7 +449,7 @@ public class MailUtils {
                         Item item = ia.getItem();
                         if (item instanceof EmailMessage) {
                             EmailMessage emailMessage = (EmailMessage) item;
-                            LogUtils.info(MailUtils.class, String.format("##### Mail getContentType. [=%s]", ia.getContentType()));
+                            DefaultLogger.debug(String.format("##### Mail getContentType. [=%s]", ia.getContentType()));
                             EmailMessageWrapper ew = new EmailMessageWrapper(username, emailMessage, true);
                             File ef = saveAsEml(ew, dir.getAbsolutePath(), ia.getName());
                             FileItemRecord fr = FileItemRecord.create(parent.getChannel(), ef, "DUMMY_BUCKET", username,
@@ -456,7 +460,7 @@ public class MailUtils {
                         }
                     }
                 }
-                LogUtils.info(MailUtils.class, String.format("##### Mail getAttachments. [=%d]", count));
+                DefaultLogger.debug(String.format("##### Mail getAttachments. [=%d]", count));
             }
         } catch (Exception ex) {
             throw new MailProcessingException(ex);
@@ -942,7 +946,7 @@ public class MailUtils {
     }
 
     private static List<MimeContent> getContent(Part part, List<MimeContent> contents) throws Exception {
-        LogUtils.debug(MailUtils.class, String.format("Parent mime-type [%s]", part.getContentType()));
+        DefaultLogger.debug(String.format("Parent mime-type [%s]", part.getContentType()));
         if (part.isMimeType("text/*")) {
             String text = (String) part.getContent();
             if (text != null && !Strings.isNullOrEmpty(text.trim())) {
@@ -1111,7 +1115,7 @@ public class MailUtils {
     public static String generateHeaderJson(@NonNull MessageHeader header) throws MailProcessingException {
         try {
             String json = GlobalConstants.getJsonMapper().writeValueAsString(header);
-            LogUtils.debug(MailUtils.class, String.format("HEADER=[%s]", json));
+            DefaultLogger.debug(String.format("HEADER=[%s]", json));
             return json;
         } catch (Exception ex) {
             throw new MailProcessingException(ex);
@@ -1179,6 +1183,315 @@ public class MailUtils {
             }
 
 
+        }
+    }
+
+    public static final String CONTENT_TYPE_ID = "Content-Type";
+    public static final String CONTENT_ID_ID = "Content-ID";
+
+    public static final String CONTENT_TRANSFER_ENCODING_ID = "Content-Transfer-Encoding";
+    public static final String QUOTED_PRINTABLE = "quoted-printable";
+
+    public static final String CONTENT_TYPE_TEXT_HTML = "text/html; charset=\"UTF-8\"";
+    public static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain; charset=\"UTF-8\"";
+    public static final String CONTENT_TYPE_MESSAGE_RFC822 = "message/rfc822";
+    public static final String CONTENT_TYPE_IMAGE_PREFIX = "image/";
+    public static final String CONTENT_TYPE_MULTIPART_PREFIX = "multipart/";
+
+    public static final String HEADER_IN_REPLY_TO = "In-Reply-To";
+
+    /**
+     * @return {@link MimeMessage} created out of given {@code byte[]}
+     */
+    public static MimeMessage createMessageFromBytes(byte[] bytes) {
+        return createMessageFromBytes(bytes, null);
+    }
+
+    /**
+     * @return {@link MimeMessage} created out of given {@code byte[]}
+     */
+    public static MimeMessage createMessageFromBytes(byte[] bytes, Session session) {
+        try {
+            ByteArrayInputStream st = new ByteArrayInputStream(bytes);
+            return new MimeMessage(session, st);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected: ", e);
+        }
+    }
+
+
+    /**
+     * Returns a list of attachments parts.
+     *
+     * @param message Message to look for attachment parts.
+     */
+    public static List<Part> getAttachmentParts(Part message) {
+        List<Part> attachmentCollector = new ArrayList<>();
+        collectMailParts(message, null, attachmentCollector, null);
+        return attachmentCollector;
+    }
+
+
+    /**
+     * Collects the body, attachment and inline attachment parts from the provided part.
+     * <p>
+     * A single collector can be null in order to collect only the relevant parts.
+     *
+     * @param part                      Part
+     * @param bodyCollector             Body collector (optional)
+     * @param attachmentCollector       Attachment collector (optional)
+     * @param inlineAttachmentCollector Inline attachment collector (optional)
+     */
+    public static void collectMailParts(Part part, List<Part> bodyCollector, List<Part> attachmentCollector, List<Part> inlineAttachmentCollector) {
+        if (part == null) {
+            return;
+        }
+        try {
+            String disposition = getDispositionSafely(part);
+            if (disposition != null && disposition.equalsIgnoreCase(Part.ATTACHMENT)) {
+                if (attachmentCollector != null) {
+                    attachmentCollector.add(part);
+                }
+            } else {
+                Object content = null;
+                try { // NOSONAR
+                    // getContent might throw a MessagingException for legitimate parts (e.g. some images end up in a javax.imageio.IIOException for example).
+                    content = getPartContent(part);
+                } catch (MessagingException | IOException e) {
+                    DefaultLogger.info(String.format("Unable to get mime part content due to {%s}: {%s}", e.getClass().getSimpleName(), e.getMessage()));
+                }
+
+                if (content instanceof Multipart) {
+                    Multipart multiPart = (Multipart) content;
+                    for (int i = 0; i < multiPart.getCount(); i++) {
+                        collectMailParts(multiPart.getBodyPart(i), bodyCollector, attachmentCollector, inlineAttachmentCollector);
+                    }
+                } else {
+                    if (part.isMimeType(CONTENT_TYPE_TEXT_PLAIN)) {
+                        if (bodyCollector != null) {
+                            bodyCollector.add(part);
+                        }
+                    } else if (part.isMimeType(CONTENT_TYPE_TEXT_HTML)) {
+                        if (bodyCollector != null) {
+                            bodyCollector.add(part);
+                        }
+                    } else if (part.isMimeType(CONTENT_TYPE_MESSAGE_RFC822) && content instanceof MimeMessage) {
+                        // it's a MIME message in rfc822 format as attachment therefore we have to set the filename for the attachment correctly.
+                        if (attachmentCollector != null) {
+                            String fileName = getFilenameFromRfc822Attachment(part);
+                            if (Strings.isNullOrEmpty(fileName)) {
+                                fileName = "originalMessage.eml";
+                            }
+                            RFCWrapperPart wrapperPart = new RFCWrapperPart(part, fileName);
+                            attachmentCollector.add(wrapperPart);
+                        }
+                    } else if (disposition != null && disposition.equals(Part.INLINE)) {
+                        if (inlineAttachmentCollector != null) {
+                            inlineAttachmentCollector.add(part);
+                        }
+                    } else {
+                        String[] headerContentId = part.getHeader(CONTENT_ID_ID);
+                        if (headerContentId != null && headerContentId.length > 0 && !StringUtils.isBlank(headerContentId[0]) && part.getContentType() != null && part.getContentType().startsWith(CONTENT_TYPE_IMAGE_PREFIX)) {
+                            if (inlineAttachmentCollector != null) {
+                                inlineAttachmentCollector.add(part);
+                            }
+                        } else if (part.getFileName() != null /* assumption: file name = attachment (last resort) */) {
+                            if (attachmentCollector != null) {
+                                attachmentCollector.add(part);
+                            }
+                        } else {
+                            DefaultLogger.debug(String.format("Unknown mail message part, headers: [{%s}]", part.getAllHeaders()));
+                        }
+                    }
+                }
+            }
+        } catch (MessagingException | IOException e) {
+            throw new RuntimeException("Unexpected: ", e);
+        }
+    }
+
+
+    public static String getFilenameFromRfc822Attachment(Part part) throws MessagingException, IOException {
+        if (part == null) {
+            return null;
+        }
+        Object content = getPartContent(part);
+        if (!(content instanceof MimeMessage)) {
+            return null;
+        }
+        String subject = ((MimeMessage) content).getSubject();
+        if (!StringUtils.isBlank(subject)) {
+            String name = PathUtils.toValidFilename(subject);
+            if (!StringUtils.isBlank(name)) {
+                return name + "." + guessAttachmentFileExtension(part.getContentType());
+            }
+        }
+        return null;
+    }
+
+
+    protected static String guessAttachmentFileExtension(String contentType) {
+        if (contentType == null) {
+            return null;
+        } else {
+            ContentType ct;
+            try {
+                ct = new ContentType(contentType);
+            } catch (ParseException ex) {
+                DefaultLogger.warn(String.format("Failed to parse content type '%s'", contentType));
+                return null;
+            }
+
+            String baseType = ct.getBaseType();
+            MimeTypes mimeType = MimeTypes.convertToMimeType(baseType);
+            return mimeType == null ? null : mimeType.getFileExtension();
+        }
+    }
+
+    protected static Object getPartContent(Part part) throws MessagingException, IOException {
+        if (part == null) {
+            return null;
+        }
+        if (part instanceof MimePart) {
+            autoFixEncoding((MimePart) part);
+        }
+        autoFixCharset(part);
+        return part.getContent();
+    }
+
+
+    /**
+     * Fixes a special behavior when access of {@link Part#getContent()} results in an {@link NullPointerException} due to
+     * an invalid charset.
+     * <p>
+     * If charset is valid or {@link Part#getContent()} doesn't result in a {@link NullPointerException}, no fix is
+     * applied.
+     * <p>
+     * As java.io.InputStreamReader.InputStreamReader(InputStream, String) might throw up with a
+     * {@link NullPointerException} in case of an unknown character set, if such an exception occurs, the character set is
+     * replaced with {@link StandardCharsets#UTF_8} even though this may lead to display errors.
+     * </p>
+     */
+    protected static void autoFixCharset(Part part) {
+        String charset = null;
+        try {
+            charset = getPartCharsetInternal(part);
+            if (charset == null || Charset.isSupported(charset)) {
+                return;
+            }
+            part.getContent();
+        } catch (NullPointerException | UnsupportedEncodingException e) { // NOSONAR
+            String msgId = null;
+            if (part instanceof MimeMessage) {
+                msgId = getMessageIdSafely((MimeMessage) part);
+            }
+            DefaultLogger.info(String.format("Mail part '{%s}' uses an unsupported character set '{%s}'. Use UTF-8 as fallback.", msgId, charset));
+            // Update charset of content type so that when accessing part.getContent() again no NPE is thrown
+            // (UnsupportedEncodingException might still be thrown when part.getContent() didn't result in an NPE).
+            if (charset == null) {
+                return; // cannot fix
+            }
+            try {
+                String contentType = part.getContentType(); // cannot be null because otherwise charset would have been null already
+                part.setHeader(CONTENT_TYPE_ID, contentType.replace(charset, StandardCharsets.UTF_8.name()));
+            } catch (Exception ex) {
+                DefaultLogger.info(String.format("Unable to switch to default character set for message with ID '{%s}'.", msgId));
+            }
+        } catch (Exception e) {
+            DefaultLogger.trace(e); // explicitly trace
+        }
+    }
+
+
+    /**
+     * Some parts use an invalid encoding (not to be confused with the charset!) which is not supported. If this is
+     * detected, remove it and try with the default encoding.<br>
+     * Supported encodings are listed in {@link MimeUtility#decode(InputStream, String)} If this fix is not applied, a
+     * MessagingException would be thrown on {@link Part#getContent()}
+     */
+    protected static void autoFixEncoding(MimePart part) {
+        if (part == null) {
+            return;
+        }
+        String encoding = null;
+        try {
+            encoding = part.getEncoding();
+            if (encoding == null) {
+                return; // no encoding present. No need to test it
+            }
+            part.getContent(); // triggers the decode
+        } catch (Exception e) {
+            // use exception message as indicator because no list of supported encodings exists to be checked against
+            String exMsg = e.getMessage();
+            String identifier = "Unknown encoding";
+            String msgId = null;
+            if (part instanceof MimeMessage) {
+                msgId = getMessageIdSafely((MimeMessage) part);
+            }
+            if (exMsg != null && exMsg.regionMatches(true, 0, identifier, 0, identifier.length())) {
+                // Supplied encoding is not supported.
+                // Remove it as otherwise MimeUtility#decode fails with MessagingException
+                // If no header is supplied the data will be read as is (no special decoding)
+                DefaultLogger.info(String.format("Mail part '{%s}' uses an unsupported Content-Transfer-Encoding '{%s}' . Use default encoding as fallback.", msgId, encoding));
+                try {
+                    part.removeHeader("Content-Transfer-Encoding");
+                } catch (Exception ex) {
+                    DefaultLogger.info(String.format("Unable to switch to default encoding for message with ID '{%s}'.", msgId));
+                }
+            } else {
+                DefaultLogger.trace(String.format("autoFixTransferEncoding: Exception has occurred for message with ID '{%s}'. [error=%s]", msgId, e.getLocalizedMessage())); // explicitly trace
+            }
+        }
+    }
+
+    /**
+     * Retrieves the value of the 'Message-Id' header field of the message, without throwing an exception.
+     *
+     * @param mimeMessage message
+     * @return Message-Id or {@code null}
+     */
+    public static String getMessageIdSafely(MimeMessage mimeMessage) {
+        if (mimeMessage == null) {
+            return null;
+        }
+
+        try {
+            return mimeMessage.getMessageID();
+        } catch (MessagingException e) {
+            DefaultLogger.info(e.getLocalizedMessage());
+            return null;
+        }
+    }
+
+
+    /**
+     * @return Charset as string
+     */
+    protected static String getPartCharsetInternal(Part part) throws MessagingException {
+        if (part == null) {
+            return null;
+        }
+
+        String contentType = part.getContentType();
+        if (contentType == null) {
+            return null;
+        }
+
+        try {
+            return new ContentType(contentType).getParameter("charset");
+        } catch (jakarta.mail.internet.ParseException e) {
+            DefaultLogger.trace(String.format("Failed to parse content type '{%s}'", contentType));
+            return null;
+        }
+    }
+
+    protected static String getDispositionSafely(Part part) {
+        try {
+            return part.getDisposition();
+        } catch (MessagingException e) {
+            DefaultLogger.info("Unable to get disposition");
+            // Rare cases where content disposition header is set but empty, assuming no disposition at all.
+            return null;
         }
     }
 
