@@ -84,12 +84,7 @@ public class FileItemRecord implements IEntity<IdKey> {
     private long recordVersion = 0;
     @Transient
     @JsonIgnore
-    private File path;
-    @Transient
-    @JsonIgnore
     private Throwable error;
-    @Column(name = "is_valid_literature")
-    private boolean isValidLiterature = false;
     @Column(name = "is_inline_attachment")
     private boolean isInlineAttachment = false;
     @Transient

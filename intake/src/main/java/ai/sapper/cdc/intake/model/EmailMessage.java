@@ -24,15 +24,6 @@ public class EmailMessage {
         if (attachments == null) {
             attachments = new ArrayList<>();
         }
-        if (file instanceof RemoteFileEntity) {
-            File lf = ((RemoteFileEntity) file).copyToLocal();
-            if (lf == null || !lf.exists()) {
-                throw new IOException(String.format("Error copying to local. [key=%s]",
-                        ((RemoteFileEntity) file).getKey().stringKey()));
-            }
-            LogUtils.debug(getClass(), String.format("Copied to local instance. [key=%s][file=%s]",
-                    ((RemoteFileEntity) file).getKey().stringKey(), lf.getAbsolutePath()));
-        }
         attachments.add(file.getAbsolutePath());
     }
 

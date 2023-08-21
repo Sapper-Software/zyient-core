@@ -16,6 +16,9 @@
 
 package ai.sapper.cdc.core.io.model;
 
+import ai.sapper.cdc.core.index.Indexed;
+import ai.sapper.cdc.core.index.JsonIndexer;
+import ai.sapper.cdc.core.io.indexing.InodeIndexConstants;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -31,22 +34,32 @@ import java.util.UUID;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public abstract class Inode {
+    @Indexed(name = InodeIndexConstants.NAME_FS_PATH)
     private String fsPath;
+    @Indexed(name = InodeIndexConstants.NAME_UUID)
     private String uuid;
+    @Indexed(name = InodeIndexConstants.NAME_DOMAIN)
     private String domain;
+    @Indexed(name = InodeIndexConstants.NAME_PATH, indexer = JsonIndexer.class)
     private Map<String, String> path;
+    @Indexed(name = InodeIndexConstants.NAME_ABSOLUTE_PATH)
     private String absolutePath;
     private long createTimestamp = 0;
     private long updateTimestamp = 0;
     private long syncTimestamp = 0;
+    @Indexed(name = InodeIndexConstants.NAME_TYPE)
     private InodeType type;
     @JsonIgnore
     private Inode parent = null;
+    @Indexed(name = InodeIndexConstants.NAME_PARENT_ZK_PATH)
     private String parentZkPath;
+    @Indexed(name = InodeIndexConstants.NAME_NAME)
     private String name;
+    @Indexed(name = InodeIndexConstants.NAME_ZK_PATH)
     private String zkPath;
     @JsonIgnore
     private PathInfo pathInfo;
+    @Indexed(name = InodeIndexConstants.NAME_ATTRS, indexer = JsonIndexer.class)
     private Map<String, String> attributes;
 
     public Inode() {

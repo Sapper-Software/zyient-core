@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.model;
+package ai.sapper.cdc.core.index;
+
+import org.apache.lucene.document.Field;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -23,5 +25,12 @@ import java.lang.annotation.Target;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
-public @interface Encrypted {
+public @interface Indexed {
+    String name() default "";
+
+    Field.Store stored() default Field.Store.YES;
+
+    boolean deep() default false;
+
+    Class<? extends Indexer<?>> indexer() default NullIndexer.class;
 }

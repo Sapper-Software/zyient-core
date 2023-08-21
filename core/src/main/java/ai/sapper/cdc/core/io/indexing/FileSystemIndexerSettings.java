@@ -14,35 +14,23 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.model;
+package ai.sapper.cdc.core.io.indexing;
 
-import ai.sapper.cdc.core.index.Indexed;
-import ai.sapper.cdc.core.index.JsonIndexer;
-import ai.sapper.cdc.core.io.indexing.InodeIndexConstants;
+import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.config.Settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class FileInode extends Inode {
-    private FileInodeLock lock;
-    @Indexed(name = InodeIndexConstants.NAME_STATE, indexer = JsonIndexer.class)
-    private FileState state = new FileState();
-    private boolean compressed = false;
-    private long syncedSize = 0;
-    private long dataSize = 0;
-
-    public FileInode() {
-
-    }
-
-    public FileInode(@NonNull String domain,
-                     @NonNull String fsPath,
-                     @NonNull String name) {
-        super(InodeType.File, domain, fsPath, name);
-    }
+@ConfigPath(path = "indexer")
+public class FileSystemIndexerSettings extends Settings {
+    @Config(name = "directory")
+    private String directory;
+    @Config(name = "mapped", required = false, type = Boolean.class)
+    private boolean useMappedFiles = true;
 }
