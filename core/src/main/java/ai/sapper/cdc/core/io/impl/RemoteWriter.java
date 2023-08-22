@@ -49,7 +49,7 @@ public abstract class RemoteWriter extends Writer {
     }
 
     @Override
-    public Writer open(boolean overwrite) throws IOException {
+    public void doOpen(boolean overwrite) throws IOException {
         try (DistributedLock lock = fs.getLock(inode)) {
             lock.lock();
             try {
@@ -63,8 +63,6 @@ public abstract class RemoteWriter extends Writer {
                 dataSize = inode.getDataSize();
                 lastFlushTimestamp = System.currentTimeMillis();
                 lastFlushSize = fileSize(temp);
-
-                return this;
             } finally {
                 lock.unlock();
             }
@@ -93,8 +91,7 @@ public abstract class RemoteWriter extends Writer {
     }
 
     @Override
-    public void write(byte[] data, int offset, int length) throws IOException {
-        checkOpen();
+    public void doWrite(byte @NonNull [] data, int offset, int length) throws IOException {
         outputStream.write(data, (int) offset, (int) length);
         dataSize += length;
     }
@@ -156,8 +153,7 @@ public abstract class RemoteWriter extends Writer {
     }
 
     @Override
-    public void commit(boolean clearLock) throws IOException {
-        checkOpen();
+    public void doCommit(boolean clearLock) throws IOException {
         try {
             Path tp = Paths.get(temp.toURI());
             if (Files.size(tp) <= 0) {

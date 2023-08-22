@@ -61,7 +61,7 @@ public class LocalWriter extends Writer {
      * @throws IOException
      */
     @Override
-    public Writer open(boolean overwrite) throws IOException, DistributedLock.LockError {
+    public void doOpen(boolean overwrite) throws IOException, DistributedLock.LockError {
         try (DistributedLock lock = fs.getLock(inode)) {
             lock.lock();
             try {
@@ -73,7 +73,6 @@ public class LocalWriter extends Writer {
 
                 inode = (FileInode) fs.updateInode(inode);
                 dataSize = inode.getDataSize();
-                return this;
             } finally {
                 lock.unlock();
             }
@@ -94,8 +93,7 @@ public class LocalWriter extends Writer {
     }
 
     @Override
-    public void write(byte[] data, int offset, int length) throws IOException {
-        checkOpen();
+    public void doWrite(byte @NonNull [] data, int offset, int length) throws IOException {
         outputStream.write(data, (int) offset, (int) length);
         dataSize += length;
     }
@@ -141,8 +139,7 @@ public class LocalWriter extends Writer {
     }
 
     @Override
-    public void commit(boolean clearLock) throws IOException {
-        checkOpen();
+    public void doCommit(boolean clearLock) throws IOException {
         try {
             Path tp = Paths.get(temp.toURI());
             if (Files.size(tp) <= 0) {

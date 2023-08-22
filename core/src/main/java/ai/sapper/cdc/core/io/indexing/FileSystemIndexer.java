@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.io.indexing;
 
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.index.IndexBuilder;
 import ai.sapper.cdc.core.index.SearchCursor;
@@ -24,6 +25,7 @@ import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.impl.PostOperationVisitor;
 import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.Inode;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -33,7 +35,10 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
@@ -42,9 +47,9 @@ import org.apache.lucene.store.NIOFSDirectory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
 
 @Getter
 @Accessors(fluent = true)
@@ -147,6 +152,11 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
         return findBy(InodeIndexConstants.NAME_ZK_PATH, path);
     }
 
+    public SearchCursor findByDirectory(@NonNull String path) throws Exception {
+        Query query = new PrefixQuery(new Term(InodeIndexConstants.NAME_FS_PATH, path));
+        return reader(query);
+    }
+
     public Document findBy(@NonNull String name, @NonNull String value) throws Exception {
         Query query = new TermQuery(new Term(name, String.format("\"%s\"", value)));
         TopDocs topDocs = search.search(query, 1);
@@ -178,18 +188,40 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
     public void visit(@NonNull Operation op, @NonNull Inode inode) throws IOException {
         try {
             switch (op) {
-                case Create:
-                case Update:
+                case Create, Update -> {
                     if (inode instanceof FileInode)
                         index((FileInode) inode);
-                    break;
-                case Delete:
-                    if (inode instanceof FileInode)
-                        delete((FileInode) inode);
-                    break;
+                }
+                case Delete -> checkAndDelete(inode);
             }
         } catch (Exception ex) {
             throw new IOException(ex);
+        }
+    }
+
+    private void checkAndDelete(Inode node) throws Exception {
+        if (node instanceof FileInode) {
+            delete((FileInode) node);
+        } else {
+            try (SearchCursor cursor = findByDirectory(node.getFsPath())) {
+                while (true) {
+                    Collection<Document> docs = cursor.fetch();
+                    if (docs == null) break;
+                    for (Document doc : docs) {
+                        String fsPath = doc.get(InodeIndexConstants.NAME_FS_PATH);
+                        if (!Strings.isNullOrEmpty(fsPath)) {
+                            long ret = writer.deleteDocuments(
+                                    new Term(InodeIndexConstants.NAME_FS_PATH, String.format("\"%s\"", fsPath)));
+                            if (ret > 1) {
+                                throw new Exception(
+                                        String.format("Index corrupted: multiple document deleted. [count=%s][faPath=%s]",
+                                                ret, fsPath));
+                            }
+                            DefaultLogger.trace(String.format("Delete index: [path=%s]", fsPath));
+                        }
+                    }
+                }
+            }
         }
     }
 }

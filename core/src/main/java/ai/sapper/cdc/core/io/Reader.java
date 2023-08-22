@@ -17,6 +17,8 @@
 package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.io.model.FileSystemMetrics;
+import ai.sapper.cdc.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -31,18 +33,37 @@ import java.io.InputStream;
 public abstract class Reader extends InputStream implements Closeable {
     protected final FileInode inode;
     protected final FileSystem fs;
+    private final FileSystemMetrics metrics;
 
     protected Reader(@NonNull FileInode inode,
                      @NonNull FileSystem fs) {
         this.inode = inode;
         this.fs = fs;
+        this.metrics = fs.metrics();
     }
 
-    public abstract Reader open() throws IOException;
+    public Reader open() throws IOException {
+        try (Timer t = new Timer(metrics.timerFileReadOpen())) {
+            doOpen();
+        }
+        return this;
+    }
+
+    protected abstract void doOpen() throws IOException;
 
     public int read(byte @NonNull [] buffer) throws IOException {
         return read(buffer, 0, buffer.length);
     }
+
+    @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        checkOpen();
+        try (Timer t = new Timer(metrics.timerFileRead())) {
+            return doRead(b, off, len);
+        }
+    }
+
+    protected abstract int doRead(byte @NonNull [] buffer, int offset, int length) throws IOException;
 
     public abstract boolean isOpen();
 

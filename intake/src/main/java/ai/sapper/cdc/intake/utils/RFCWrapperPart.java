@@ -16,18 +16,18 @@
 
 package ai.sapper.cdc.intake.utils;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Enumeration;
-
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import jakarta.activation.DataHandler;
 import jakarta.mail.Header;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Multipart;
 import jakarta.mail.Part;
-import jakarta.activation.DataHandler;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Enumeration;
 
 public class RFCWrapperPart implements Part {
     private final Part m_rfcPart;

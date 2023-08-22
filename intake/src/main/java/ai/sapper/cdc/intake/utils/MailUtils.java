@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
-import jakarta.activation.MimeType;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import lombok.Getter;

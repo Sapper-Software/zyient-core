@@ -54,7 +54,7 @@ public class LocalReader extends Reader {
      * @throws IOException
      */
     @Override
-    public Reader open() throws IOException {
+    public void doOpen() throws IOException {
         if (!path.exists()) {
             throw new IOException(String.format("File not found. [path=%s]", path.file().getAbsolutePath()));
         }
@@ -64,7 +64,6 @@ public class LocalReader extends Reader {
             temp = fs.decompress(path.file);
             inputStream = new RandomAccessFile(temp, "r");
         }
-        return this;
     }
 
     @Override
@@ -80,8 +79,7 @@ public class LocalReader extends Reader {
      * @throws IOException
      */
     @Override
-    public int read(byte @NonNull [] buffer, int offset, int length) throws IOException {
-        checkOpen();
+    public int doRead(byte @NonNull [] buffer, int offset, int length) throws IOException {
         return inputStream.read(buffer, offset, length);
     }
 

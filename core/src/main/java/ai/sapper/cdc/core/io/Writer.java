@@ -19,6 +19,8 @@ package ai.sapper.cdc.core.io;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.io.model.FileSystemMetrics;
+import ai.sapper.cdc.core.utils.Timer;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -42,6 +44,7 @@ public abstract class Writer extends OutputStream implements Closeable {
     protected FileInode inode;
     protected final FileSystem fs;
     private final boolean overwrite;
+    private final FileSystemMetrics metrics;
     @Getter(AccessLevel.PROTECTED)
     protected File temp;
     protected long dataSize;
@@ -52,10 +55,18 @@ public abstract class Writer extends OutputStream implements Closeable {
         Preconditions.checkArgument(inode.getPathInfo() != null);
         this.inode = inode;
         this.fs = fs;
+        this.metrics = fs.metrics();
         this.overwrite = overwrite;
     }
 
-    public abstract Writer open(boolean overwrite) throws IOException, DistributedLock.LockError;
+    public Writer open(boolean overwrite) throws IOException, DistributedLock.LockError {
+        try (Timer t = new Timer(metrics.timerFileWriteOpen())) {
+            doOpen(overwrite);
+        }
+        return this;
+    }
+
+    protected abstract void doOpen(boolean overwrite) throws IOException, DistributedLock.LockError;
 
     public Writer open() throws IOException {
         return open(overwrite);
@@ -69,6 +80,7 @@ public abstract class Writer extends OutputStream implements Closeable {
         return 0;
     }
 
+    @Override
     public void write(byte @NonNull [] data) throws IOException {
         write(data, 0, data.length);
     }
@@ -76,6 +88,16 @@ public abstract class Writer extends OutputStream implements Closeable {
     public void write(byte @NonNull [] data, int length) throws IOException {
         write(data, 0, length);
     }
+
+    @Override
+    public void write(byte @NonNull [] b, int off, int len) throws IOException {
+        checkOpen();
+        try (Timer t = new Timer(metrics.timerFileWrite())) {
+            doWrite(b, off, len);
+        }
+    }
+
+    public abstract void doWrite(byte @NonNull [] b, int off, int len) throws IOException;
 
     public abstract long truncate(long offset, long length) throws IOException;
 
@@ -85,7 +107,13 @@ public abstract class Writer extends OutputStream implements Closeable {
 
     public abstract boolean isOpen();
 
-    public abstract void commit(boolean clearLock) throws IOException;
+    public void commit(boolean clearLock) throws IOException {
+        try (Timer t = new Timer(metrics.timerFileWriteCommit())) {
+            doCommit(clearLock);
+        }
+    }
+
+    public abstract void doCommit(boolean clearLock) throws IOException;
 
 
     protected void checkLocalCopy(boolean overwrite) throws Exception {

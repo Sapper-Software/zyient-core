@@ -18,6 +18,7 @@ package ai.sapper.cdc.core.io.impl;
 
 import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -40,7 +41,8 @@ public abstract class RemoteReader extends Reader {
         cache = fs.cache();
     }
 
-    public RemoteReader open() throws IOException {
+    @Override
+    public void doOpen() throws IOException {
         try {
             cacheFile = cache.get(inode());
             if (cacheFile == null || !cacheFile.exists()) {
@@ -49,7 +51,6 @@ public abstract class RemoteReader extends Reader {
             }
 
             inputStream = new RandomAccessFile(cacheFile, "r");
-            return this;
         } catch (Exception ex) {
             throw new IOException(ex);
         }
@@ -69,8 +70,7 @@ public abstract class RemoteReader extends Reader {
      * @throws IOException
      */
     @Override
-    public int read(byte @NonNull [] buffer, int offset, int length) throws IOException {
-        checkOpen();
+    public int doRead(byte @NonNull [] buffer, int offset, int length) throws IOException {
         return inputStream.read(buffer, offset, length);
     }
 
@@ -78,30 +78,34 @@ public abstract class RemoteReader extends Reader {
     @Override
     public byte[] readAllBytes() throws IOException {
         checkOpen();
-        if (inputStream.getChannel().size() > Integer.MAX_VALUE) {
-            throw new IOException(String.format("File size too large. [size=%d]", inputStream.getChannel().size()));
+        try (Timer t = new Timer(metrics().timerFileRead())) {
+            if (inputStream.getChannel().size() > Integer.MAX_VALUE) {
+                throw new IOException(String.format("File size too large. [size=%d]", inputStream.getChannel().size()));
+            }
+            byte[] buffer = new byte[(int) inputStream.getChannel().size()];
+            int s = read(buffer);
+            if (s != inputStream.getChannel().size()) {
+                throw new IOException(
+                        String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
+                                inputStream.getChannel().size(), s, cacheFile.getAbsolutePath()));
+            }
+            return buffer;
         }
-        byte[] buffer = new byte[(int) inputStream.getChannel().size()];
-        int s = read(buffer);
-        if (s != inputStream.getChannel().size()) {
-            throw new IOException(
-                    String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
-                            inputStream.getChannel().size(), s, cacheFile.getAbsolutePath()));
-        }
-        return buffer;
     }
 
     @Override
     public byte[] readNBytes(int len) throws IOException {
         checkOpen();
-        byte[] buffer = new byte[len];
-        int s = read(buffer, 0, len);
-        if (s != len) {
-            throw new IOException(
-                    String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
-                            inputStream.getChannel().size(), s, cacheFile.getAbsolutePath()));
+        try (Timer t = new Timer(metrics().timerFileRead())) {
+            byte[] buffer = new byte[len];
+            int s = read(buffer, 0, len);
+            if (s != len) {
+                throw new IOException(
+                        String.format("Failed to read all bytes: [expected=%d][read=%d][file=%s]",
+                                inputStream.getChannel().size(), s, cacheFile.getAbsolutePath()));
+            }
+            return buffer;
         }
-        return buffer;
     }
 
     @Override
