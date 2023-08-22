@@ -33,4 +33,6 @@ public class FileSystemIndexerSettings extends Settings {
     private String directory;
     @Config(name = "mapped", required = false, type = Boolean.class)
     private boolean useMappedFiles = true;
+    @Config(name = "poolSize", required = false, type = Integer.class)
+    private int poolSize = 4;
 }

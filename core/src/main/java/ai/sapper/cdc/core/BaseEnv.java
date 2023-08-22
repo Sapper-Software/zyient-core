@@ -17,7 +17,6 @@
 package ai.sapper.cdc.core;
 
 import ai.sapper.cdc.common.AbstractEnvState;
-import ai.sapper.cdc.common.audit.AuditLogger;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.InvalidDataError;
 import ai.sapper.cdc.common.utils.NetUtils;
@@ -73,7 +72,6 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private AbstractEnvState<T> state;
     private ModuleInstance moduleInstance;
     private BaseStateManager stateManager;
-    private AuditLogger auditLogger;
     private BaseEnvConfig config;
     private List<InetAddress> hostIPs;
     private final String name;
@@ -170,19 +168,6 @@ public abstract class BaseEnv<T extends Enum<?>> {
                         .init(managersConfig,
                                 this);
             }
-            if (ConfigReader.checkIfNodeExists(baseConfig,
-                    AuditLogger.__CONFIG_PATH)) {
-                String c = baseConfig.getString(AuditLogger.CONFIG_AUDIT_CLASS);
-                if (Strings.isNullOrEmpty(c)) {
-                    throw new ConfigurationException(
-                            String.format("Audit Logger class not specified. [node=%s]",
-                                    AuditLogger.CONFIG_AUDIT_CLASS));
-                }
-                Class<? extends AuditLogger> cls = (Class<? extends AuditLogger>) Class.forName(c);
-                auditLogger = cls.getDeclaredConstructor().newInstance();
-                auditLogger.init(baseConfig);
-            }
-
             if (ConfigReader.checkIfNodeExists(baseConfig, FileSystemManager.__CONFIG_PATH)) {
                 fileSystemManager = new FileSystemManager();
                 fileSystemManager.init(baseConfig, this);

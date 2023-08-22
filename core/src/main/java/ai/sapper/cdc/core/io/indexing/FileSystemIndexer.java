@@ -19,8 +19,11 @@ package ai.sapper.cdc.core.io.indexing;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.index.IndexBuilder;
+import ai.sapper.cdc.core.index.SearchCursor;
 import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.impl.PostOperationVisitor;
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.io.model.Inode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -30,11 +33,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.index.*;
+import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.NIOFSDirectory;
@@ -42,10 +42,13 @@ import org.apache.lucene.store.NIOFSDirectory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 @Getter
 @Accessors(fluent = true)
-public class FileSystemIndexer implements Closeable {
+public class FileSystemIndexer implements Closeable, PostOperationVisitor {
     private FileSystemIndexerSettings settings;
     private FileSystem fs;
     private BaseEnv<?> env;
@@ -53,6 +56,8 @@ public class FileSystemIndexer implements Closeable {
     private final IndexBuilder builder = new IndexBuilder();
     private IndexWriter writer;
     private IndexSearcher search;
+    private Directory baseDir;
+    private ExecutorService executor;
 
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                      @NonNull BaseEnv<?> env,
@@ -69,16 +74,16 @@ public class FileSystemIndexer implements Closeable {
                     throw new IOException(String.format("Failed to create directory. [path=%s]", settings.getDirectory()));
                 }
             }
-            Directory d = null;
             if (settings().isUseMappedFiles()) {
-                d = new MMapDirectory(dir.toPath());
+                baseDir = new MMapDirectory(dir.toPath());
             } else {
-                d = new NIOFSDirectory(dir.toPath());
+                baseDir = new NIOFSDirectory(dir.toPath());
             }
+            executor = Executors.newFixedThreadPool(settings().getPoolSize());
             IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(d, indexWriterConfig);
+            writer = new IndexWriter(baseDir, indexWriterConfig);
 
-            search = new IndexSearcher(DirectoryReader.open(d));
+            search = new IndexSearcher(DirectoryReader.open(baseDir), executor);
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
@@ -89,10 +94,73 @@ public class FileSystemIndexer implements Closeable {
         writer.addDocument(doc);
     }
 
-    public void delete(@NonNull FileInode inode) throws Exception {
-
+    public boolean delete(@NonNull FileInode inode) throws Exception {
+        Document doc = findById(inode.getUuid());
+        if (doc != null) {
+            long ret = writer.deleteDocuments(
+                    new Term(InodeIndexConstants.NAME_UUID, String.format("\"%s\"", inode.getUuid())));
+            if (ret > 1) {
+                throw new Exception(
+                        String.format("Index corrupted: multiple document deleted. [count=%s][uuid=%s]",
+                                ret, inode.getUuid()));
+            }
+            return (ret == 1);
+        }
+        return false;
     }
 
+    public boolean delete(@NonNull String fsPath) throws Exception {
+        Document doc = findByFsPath(fsPath);
+        if (doc != null) {
+            long ret = writer.deleteDocuments(
+                    new Term(InodeIndexConstants.NAME_FS_PATH, String.format("\"%s\"", fsPath)));
+            if (ret > 1) {
+                throw new Exception(
+                        String.format("Index corrupted: multiple document deleted. [count=%s][faPath=%s]",
+                                ret, fsPath));
+            }
+            return (ret == 1);
+        }
+        return false;
+    }
+
+    public SearchCursor reader(@NonNull Query query, int pageSize, int pageBuffers) throws Exception {
+        return new SearchCursor(baseDir, query)
+                .withPageSize(pageSize)
+                .withPageBuffers(pageBuffers)
+                .create(executor);
+    }
+
+    public SearchCursor reader(@NonNull Query query) throws Exception {
+        return reader(query, -1, -1);
+    }
+
+    public Document findById(@NonNull String id) throws Exception {
+        return findBy(InodeIndexConstants.NAME_UUID, id);
+    }
+
+    public Document findByFsPath(@NonNull String path) throws Exception {
+        return findBy(InodeIndexConstants.NAME_FS_PATH, path);
+    }
+
+    public Document findByZkPath(@NonNull String path) throws Exception {
+        return findBy(InodeIndexConstants.NAME_ZK_PATH, path);
+    }
+
+    public Document findBy(@NonNull String name, @NonNull String value) throws Exception {
+        Query query = new TermQuery(new Term(name, String.format("\"%s\"", value)));
+        TopDocs topDocs = search.search(query, 1);
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+            Document doc = search.doc(scoreDoc.doc);
+            String v = doc.get(name);
+            if (v != null) {
+                if (v.compareTo(value) == 0) {
+                    return doc;
+                }
+            }
+        }
+        return null;
+    }
 
     @Override
     public void close() throws IOException {
@@ -103,6 +171,25 @@ public class FileSystemIndexer implements Closeable {
         writer = null;
         if (search != null) {
             search = null;
+        }
+    }
+
+    @Override
+    public void visit(@NonNull Operation op, @NonNull Inode inode) throws IOException {
+        try {
+            switch (op) {
+                case Create:
+                case Update:
+                    if (inode instanceof FileInode)
+                        index((FileInode) inode);
+                    break;
+                case Delete:
+                    if (inode instanceof FileInode)
+                        delete((FileInode) inode);
+                    break;
+            }
+        } catch (Exception ex) {
+            throw new IOException(ex);
         }
     }
 }

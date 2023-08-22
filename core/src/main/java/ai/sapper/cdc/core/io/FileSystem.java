@@ -25,6 +25,7 @@ import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
+import ai.sapper.cdc.core.io.impl.PostOperationVisitor;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.model.ModuleInstance;
 import com.google.common.base.Preconditions;
@@ -70,6 +71,8 @@ public abstract class FileSystem implements Closeable {
     private DirectoryCleaner dirCleaner;
     private FileSystemConfigReader configReader;
     private String id;
+    private final List<PostOperationVisitor> visitors = new ArrayList<>();
+    private FileSystemMetrics metrics;
 
     protected FileSystem withZkConnection(@NonNull ZookeeperConnection connection) {
         this.zkConnection = connection;
@@ -78,6 +81,11 @@ public abstract class FileSystem implements Closeable {
 
     protected FileSystem withZkPath(@NonNull String zkPath) {
         this.zkPath = zkPath;
+        return this;
+    }
+
+    public FileSystem addVisitor(@NonNull PostOperationVisitor visitor) {
+        visitors.add(visitor);
         return this;
     }
 
@@ -168,6 +176,7 @@ public abstract class FileSystem implements Closeable {
             throw new IOException(
                     String.format("Path is not a directory. [path=%s]", tmpDir.getAbsolutePath()));
         }
+        metrics = new FileSystemMetrics(getClass().getSimpleName(), settings.getName(), "FILESYSTEM", env);
     }
 
     protected FileSystem postInit() throws IOException {
@@ -268,9 +277,7 @@ public abstract class FileSystem implements Closeable {
         if (fpath.startsWith("/")) {
             fpath = fpath.substring(1);
         }
-        String[] parts = fpath.split("/");
-        CuratorFramework client = zkConnection.client();
-        return createInode(dnode, type, parts, 0, client);
+        return createInode(dnode, type, fpath);
     }
 
     protected Inode createInode(@NonNull DirectoryInode dnode,
@@ -286,9 +293,7 @@ public abstract class FileSystem implements Closeable {
         if (fpath.startsWith("/")) {
             fpath = fpath.substring(1);
         }
-        String[] parts = fpath.split("/");
-        CuratorFramework client = zkConnection.client();
-        return createInode(dnode, type, parts, 0, client);
+        return createInode(dnode, type, fpath);
     }
 
     public Inode updateInode(@NonNull Inode inode) throws IOException {
@@ -312,6 +317,9 @@ public abstract class FileSystem implements Closeable {
             client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
         } catch (Exception ex) {
             throw new IOException(ex);
+        }
+        for (PostOperationVisitor visitor : visitors) {
+            visitor.visit(PostOperationVisitor.Operation.Update, inode);
         }
         return inode;
     }
@@ -362,6 +370,9 @@ public abstract class FileSystem implements Closeable {
                     }
                     client.delete().forPath(current.getZkPath());
                 }
+                for (PostOperationVisitor visitor : visitors) {
+                    visitor.visit(PostOperationVisitor.Operation.Delete, current);
+                }
             } finally {
                 lock.unlock();
             }
@@ -369,6 +380,18 @@ public abstract class FileSystem implements Closeable {
             throw new IOException(ex);
         }
         return true;
+    }
+
+    private Inode createInode(DirectoryInode parent,
+                              InodeType type,
+                              String fpath) throws IOException {
+        String[] parts = fpath.split("/");
+        CuratorFramework client = zkConnection.client();
+        Inode node = createInode(parent, type, parts, 0, client);
+        for (PostOperationVisitor visitor : visitors) {
+            visitor.visit(PostOperationVisitor.Operation.Create, node);
+        }
+        return node;
     }
 
     private Inode createInode(DirectoryInode parent,
