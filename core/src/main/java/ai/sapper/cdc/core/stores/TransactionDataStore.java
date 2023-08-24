@@ -19,7 +19,6 @@ package ai.sapper.cdc.core.stores;
 
 import com.google.common.base.Preconditions;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 

@@ -16,7 +16,6 @@
 
 package ai.sapper.cdc.core.stores.impl;
 
-import ai.sapper.cdc.common.cache.ThreadCache;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ConnectionError;
@@ -31,7 +30,6 @@ import com.google.common.base.Preconditions;
 import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -40,7 +38,7 @@ import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
-public class MongoDSConnection extends AbstractConnection<MongoClient> {
+public class MongoDSConnection extends AbstractConnection<ClientSession> {
     private MongoDSConnectionSettings settings;
     protected ConnectionManager connectionManager;
     private BaseEnv<?> env;
@@ -125,12 +123,12 @@ public class MongoDSConnection extends AbstractConnection<MongoClient> {
 
     @Override
     public boolean hasTransactionSupport() {
-        return false;
+        return true;
     }
 
     @Override
-    public void close(@NonNull MongoClient connection) throws ConnectionError {
-        // Do nothing...
+    public void close(@NonNull ClientSession connection) throws ConnectionError {
+        connection.close();
     }
 
     @Override

@@ -20,21 +20,20 @@ package ai.sapper.cdc.core.stores.impl;
 import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.common.model.entity.EEntityState;
 import ai.sapper.cdc.common.model.entity.IEntity;
-import ai.sapper.cdc.core.connections.ConnectionError;
 import ai.sapper.cdc.core.model.BaseEntity;
-import ai.sapper.cdc.core.stores.*;
+import ai.sapper.cdc.core.stores.BaseSearchResult;
+import ai.sapper.cdc.core.stores.DataStoreException;
+import ai.sapper.cdc.core.stores.IDGenerator;
+import ai.sapper.cdc.core.stores.TransactionDataStore;
 import ai.sapper.cdc.core.stores.impl.settings.RdbmsStoreSettings;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
-import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -222,5 +221,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         ctx.setConnectionType(connection().getClass().getCanonicalName());
         ctx.setConnectionName(connection().name());
         return ctx;
+    }
+
+    @Override
+    public boolean isThreadSafe() {
+        return true;
     }
 }

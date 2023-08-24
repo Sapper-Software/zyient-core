@@ -8,18 +8,15 @@ import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.utils.FileUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
 import javax.persistence.*;
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Entity
 @Table(name = "ingest_file_records")

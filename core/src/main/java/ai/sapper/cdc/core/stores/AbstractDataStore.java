@@ -50,12 +50,16 @@ public abstract class AbstractDataStore<T> implements Closeable {
         return settings.getName();
     }
 
-    public void setupMonitoring(@NonNull BaseEnv<?> env) {
+    protected void setupMonitoring(@NonNull BaseEnv<?> env) {
         metrics = new DataStoreMetrics(KEY_ENGINE, settings.getName(), getClass().getSimpleName(), env, getClass());
     }
 
     protected void checkState() throws DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
+    }
+
+    public boolean isThreadSafe() {
+        return false;
     }
 
     @SuppressWarnings("unchecked")

@@ -61,6 +61,8 @@ public class DataStoreManager {
     private final Map<String, ZkSequenceBlock> sequences = new HashMap<>();
     private final Map<Class<? extends IShardedEntity<?, ?>>, ShardConfigSettings> shardConfigs = new HashMap<>();
     private final MapThreadCache<String, AbstractDataStore<?>> openedStores = new MapThreadCache<>();
+    private final Map<String, AbstractDataStore<?>> safeStores = new HashMap<>();
+
     private BaseEnv<?> env;
     private ConnectionManager connectionManager;
     private DataStoreManagerSettings settings;
@@ -171,6 +173,9 @@ public class DataStoreManager {
                                                   Class<? extends AbstractDataStore<T>> storeType,
                                                   boolean add) throws DataStoreException {
         Preconditions.checkNotNull(env);
+        if (safeStores.containsKey(config.getName())) {
+            return (AbstractDataStore<T>) safeStores.get(config.getName());
+        }
         Map<String, AbstractDataStore<?>> stores = null;
         if (openedStores.containsThread()) {
             stores = openedStores.get();
@@ -184,7 +189,10 @@ public class DataStoreManager {
         try {
             AbstractDataStore<T> store = ReflectionUtils.createInstance(storeType);
             store.configure(this, config, env);
-            openedStores.put(store.name(), store);
+            if (store.isThreadSafe()) {
+                safeStores.put(store.name(), store);
+            } else
+                openedStores.put(store.name(), store);
 
             return store;
         } catch (Exception ex) {

@@ -29,9 +29,11 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @ConfigPath(path = "mongodb")
-public class MongoDbSettings extends AbstractDataStoreSettings  {
+public class MongoDbSettings extends AbstractDataStoreSettings {
     @Config(name = "db")
     private String db;
+    @Config(name = "sessionTimeout", required = false, type = Long.class)
+    private long sessionTimeout = 30 * 60 * 1000;
 
     public MongoDbSettings() {
         setType(EDataStoreType.kvstore);

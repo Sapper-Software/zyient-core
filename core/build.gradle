@@ -76,6 +76,7 @@ dependencies {
     implementation 'org.apache.tika:tika-langdetect:2.8.0'
 
     implementation 'org.apache.lucene:lucene-core:9.7.0'
+    implementation 'com.github.vincentrussell:sql-to-mongo-db-query-converter:1.21'
 }
 
 test {
