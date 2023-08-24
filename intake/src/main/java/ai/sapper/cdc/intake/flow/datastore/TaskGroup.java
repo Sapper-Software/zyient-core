@@ -1,5 +1,6 @@
 package ai.sapper.cdc.intake.flow.datastore;
 
+import ai.sapper.cdc.common.config.ConfigPath;
 import com.codekutter.common.model.ConnectionConfig;
 import com.codekutter.common.stores.*;
 import com.codekutter.common.stores.impl.HibernateConnection;

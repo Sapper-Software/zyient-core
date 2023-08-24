@@ -14,30 +14,21 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.stores.impl.settings;
+package ai.sapper.cdc.intake.flow.datastore;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigPath;
-import ai.sapper.cdc.common.config.units.TimeUnitValue;
-import ai.sapper.cdc.common.config.units.TimeValueParser;
-import ai.sapper.cdc.core.stores.AbstractDataStoreSettings;
-import ai.sapper.cdc.core.stores.EDataStoreType;
+import ai.sapper.cdc.common.config.Settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "db")
-public class RdbmsStoreSettings extends AbstractDataStoreSettings {
-    @Config(name = "sessionTimeout", required = false, parser = TimeValueParser.class)
-    private TimeUnitValue sessionTimeout = new TimeUnitValue(30 * 60 * 1000, TimeUnit.MILLISECONDS);
-
-    public RdbmsStoreSettings() {
-        setType(EDataStoreType.rdbms);
-    }
+@ConfigPath(path = "task")
+public abstract class FlowTaskSettings extends Settings {
+    @Config(name = "name")
+    private String name;
 }

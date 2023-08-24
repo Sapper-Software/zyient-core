@@ -1,22 +1,21 @@
 package ai.sapper.cdc.intake.flow.datastore;
 
-import com.codekutter.common.utils.ConfigUtils;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.zconfig.common.ConfigurationException;
-import com.codekutter.zconfig.common.IConfigurable;
-import com.codekutter.zconfig.common.model.annotations.ConfigPath;
-import com.codekutter.zconfig.common.model.annotations.ConfigValue;
-import com.codekutter.zconfig.common.model.nodes.AbstractConfigNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigPathNode;
+import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.intake.flow.ETaskResponse;
+import ai.sapper.cdc.intake.flow.FlowTaskException;
+import ai.sapper.cdc.intake.flow.TaskContext;
+import ai.sapper.cdc.intake.flow.TaskResponse;
 import com.google.common.base.Preconditions;
-import com.ingestion.common.flow.ETaskResponse;
-import com.ingestion.common.flow.FlowTaskException;
-import com.ingestion.common.flow.TaskContext;
-import com.ingestion.common.flow.TaskResponse;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import javax.annotation.Nonnull;
 import java.security.Principal;
@@ -24,17 +23,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
-@ConfigPath(path = "task")
-public abstract class AbstractFlowTask<K, T> implements IConfigurable {
-    @ConfigValue(name = "name")
-    private String name;
+public abstract class AbstractFlowTask<K, T> {
+    private final Class<? extends FlowTaskSettings> settingsType;
+    private FlowTaskSettings settings;
     @Setter(AccessLevel.NONE)
     private TaskGroup<K, T, ?> group;
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     private List<AbstractFlowTask<K, T>> tasks;
+
+    protected AbstractFlowTask(@Nonnull Class<? extends FlowTaskSettings> settingsType) {
+        this.settingsType = settingsType;
+    }
 
     public AbstractFlowTask<K, T> withTaskGroup(@Nonnull TaskGroup<K, T, ?> group) {
         this.group = group;
@@ -43,11 +44,11 @@ public abstract class AbstractFlowTask<K, T> implements IConfigurable {
     }
 
     public TaskResponse run(T data, @Nonnull TaskContext context, @Nonnull Principal user) throws FlowTaskException {
-        Preconditions.checkArgument(context != null);
+        Preconditions.checkNotNull(settings);
         long startt = System.currentTimeMillis();
-        LogUtils.info(getClass(), String.format("Running Task Step [%s]: " +
-                "[id=%s][start time=%d]", name, context.getTaskId(), startt));
-        LogUtils.debug(getClass(), data);
+        DefaultLogger.info(String.format("Running Task Step [%s]: " +
+                "[id=%s][start time=%d]", settings.getName(), context.getTaskId(), startt));
+        DefaultLogger.trace(data);
         TaskResponse response = null;
         try {
             response = process(data, context, user);
@@ -67,15 +68,15 @@ public abstract class AbstractFlowTask<K, T> implements IConfigurable {
                     }
                 }
             }
-            LogUtils.info(getClass(), String.format("Finished Task Step [%s]: " +
+            DefaultLogger.info(String.format("Finished Task Step [%s]: " +
                             "[id=%s][response=%s]", name, context.getTaskId(),
                     response.getState().name()));
         } catch (Throwable e) {
-            LogUtils.error(getClass(), e);
+            DefaultLogger.error(getClass().getCanonicalName(), e);
             if (response == null) response = new TaskResponse();
-            response.setError(e);
+            response.error(e);
         } finally {
-            LogUtils.info(getClass(), String.format("Finished Task Step [%s]: " +
+            DefaultLogger.info(String.format("Finished Task Step [%s]: " +
                             "[id=%s][time taken=%d]", name, context.getTaskId(),
                     (System.currentTimeMillis() - startt)));
         }
@@ -83,7 +84,8 @@ public abstract class AbstractFlowTask<K, T> implements IConfigurable {
     }
 
     @Override
-    public void configure(@Nonnull AbstractConfigNode node) throws ConfigurationException {
+    public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                          @Nonnull BaseEnv<?> env) throws ConfigurationException {
         if (node instanceof ConfigPathNode) {
             setup(node);
             AbstractConfigNode cnode = ConfigUtils.getPathNode(getClass(), (ConfigPathNode) node);

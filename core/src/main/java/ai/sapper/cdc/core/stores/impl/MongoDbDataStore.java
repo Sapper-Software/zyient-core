@@ -63,7 +63,8 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
             if (!connection.isConnected()) {
                 connection.connect();
             }
-            sessionManager(new MongoSessionManager(connection, ((MongoDbSettings) settings).getSessionTimeout()));
+            sessionManager(new MongoSessionManager(connection,
+                    ((MongoDbSettings) settings).getSessionTimeout().normalized()));
             database = connection.getConnection().getDatabase(((MongoDbSettings) settings).getDb());
         } catch (Exception ex) {
             throw new ConfigurationException(ex);

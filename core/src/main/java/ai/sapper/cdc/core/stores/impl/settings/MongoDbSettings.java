@@ -18,11 +18,15 @@ package ai.sapper.cdc.core.stores.impl.settings;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.config.units.TimeUnitValue;
+import ai.sapper.cdc.common.config.units.TimeValueParser;
 import ai.sapper.cdc.core.stores.AbstractDataStoreSettings;
 import ai.sapper.cdc.core.stores.EDataStoreType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
@@ -32,8 +36,8 @@ import lombok.Setter;
 public class MongoDbSettings extends AbstractDataStoreSettings {
     @Config(name = "db")
     private String db;
-    @Config(name = "sessionTimeout", required = false, type = Long.class)
-    private long sessionTimeout = 30 * 60 * 1000;
+    @Config(name = "sessionTimeout", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue sessionTimeout = new TimeUnitValue(30 * 60 * 1000, TimeUnit.MILLISECONDS);
 
     public MongoDbSettings() {
         setType(EDataStoreType.kvstore);
