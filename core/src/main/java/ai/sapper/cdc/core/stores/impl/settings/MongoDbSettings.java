@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.indexing;
+package ai.sapper.cdc.core.stores.impl.settings;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigPath;
-import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.stores.AbstractDataStoreSettings;
+import ai.sapper.cdc.core.stores.EDataStoreType;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,17 +28,12 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "indexer")
-public class FileSystemIndexerSettings extends Settings {
-    @Config(name = "directory")
-    private String directory;
-    @Config(name = "mapped", required = false, type = Boolean.class)
-    private boolean useMappedFiles = true;
-    @Config(name = "poolSize", required = false, type = Integer.class)
-    private int poolSize = 4;
+@ConfigPath(path = "mongodb")
+public class MongoDbSettings extends AbstractDataStoreSettings  {
+    @Config(name = "db")
+    private String db;
 
-    public static String path() {
-        ConfigPath cp = FileSystemIndexerSettings.class.getAnnotation(ConfigPath.class);
-        return cp.path();
+    public MongoDbSettings() {
+        setType(EDataStoreType.kvstore);
     }
 }

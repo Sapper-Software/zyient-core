@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.model.entity.IKey;
+import ai.sapper.cdc.common.model.entity.NativeKey;
 import ai.sapper.cdc.common.utils.ChecksumUtils;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,14 +30,16 @@ import java.io.Serializable;
 @Getter
 @Setter
 @Embeddable
-public class StringKey implements IKey, Serializable {
+public class StringKey extends NativeKey<String> {
     @Column(name = "key")
     private String key;
 
     public StringKey() {
+        super(String.class);
     }
 
     public StringKey(@NonNull String key) {
+        super(String.class);
         this.key = key;
     }
 
@@ -58,8 +61,7 @@ public class StringKey implements IKey, Serializable {
      */
     @Override
     public int compareTo(IKey key) {
-        if (key instanceof StringKey) {
-            StringKey s = (StringKey) key;
+        if (key instanceof StringKey s) {
             return this.key.compareTo(s.key);
         }
         return -1;

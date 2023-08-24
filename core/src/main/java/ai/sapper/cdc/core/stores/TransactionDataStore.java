@@ -17,21 +17,56 @@
 
 package ai.sapper.cdc.core.stores;
 
+import com.google.common.base.Preconditions;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+
+import java.io.IOException;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
 public abstract class TransactionDataStore<C, T> extends AbstractDataStore<C> {
-    private T transaction;
+    private StoreSessionManager<C, T> sessionManager;
 
-    public abstract boolean isInTransaction() throws DataStoreException;
 
-    public abstract void beingTransaction() throws DataStoreException;
+    @Override
+    public void close() throws IOException {
+        super.close();
+    }
 
-    public abstract void commit() throws DataStoreException;
+    @Override
+    protected void checkState() throws DataStoreException {
+        super.checkState();
+        Preconditions.checkNotNull(sessionManager);
+    }
 
-    public abstract void rollback() throws DataStoreException;
+
+    public boolean isInTransaction() throws DataStoreException {
+        checkState();
+        return sessionManager().isInTransaction();
+    }
+
+    public void beingTransaction() throws DataStoreException {
+        checkState();
+        sessionManager().beingTransaction();
+    }
+
+
+    public void commit() throws DataStoreException {
+        checkState();
+        Preconditions.checkState(isInTransaction());
+        sessionManager.commit();
+    }
+
+    public void rollback() throws DataStoreException {
+        checkState();
+        sessionManager().rollback();
+    }
+
+    public void closeSession() throws DataStoreException {
+        sessionManager.close();
+    }
 }

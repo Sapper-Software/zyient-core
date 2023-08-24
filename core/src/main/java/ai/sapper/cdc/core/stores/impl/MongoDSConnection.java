@@ -28,6 +28,7 @@ import ai.sapper.cdc.core.keystore.KeyStore;
 import ai.sapper.cdc.core.stores.AbstractConnection;
 import ai.sapper.cdc.core.stores.impl.settings.MongoDSConnectionSettings;
 import com.google.common.base.Preconditions;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import lombok.AccessLevel;
@@ -42,9 +43,8 @@ import java.io.IOException;
 public class MongoDSConnection extends AbstractConnection<MongoClient> {
     private MongoDSConnectionSettings settings;
     protected ConnectionManager connectionManager;
-    @Getter(AccessLevel.NONE)
-    private final ThreadCache<MongoClient> threadCache = new ThreadCache<>();
     private BaseEnv<?> env;
+    private MongoClient client;
 
     public MongoDSConnection() {
         super(EConnectionType.db, MongoDSConnectionSettings.class);
@@ -71,26 +71,22 @@ public class MongoDSConnection extends AbstractConnection<MongoClient> {
 
     @Override
     public Connection connect() throws ConnectionError {
-        if (!state().isConnected()) {
-            state().check(EConnectionState.Initialized);
-            state().setState(EConnectionState.Connected);
+        try {
+            if (!state().isConnected()) {
+                state().check(EConnectionState.Initialized);
+                client = createConnection();
+                state().setState(EConnectionState.Connected);
+            }
+            return this;
+        } catch (Exception ex) {
+            state().error(ex);
+            throw new ConnectionError(ex);
         }
-        return this;
     }
 
     public MongoClient getConnection() throws ConnectionError {
         state().check(EConnectionState.Connected);
-        try {
-            synchronized (threadCache) {
-                if (threadCache.contains()) {
-                    MongoClient session = threadCache.get();
-                }
-                MongoClient session = createConnection();
-                return threadCache.put(session);
-            }
-        } catch (Throwable t) {
-            throw new ConnectionError(t);
-        }
+        return client;
     }
 
     private MongoClient createConnection() throws Exception {
@@ -134,18 +130,7 @@ public class MongoDSConnection extends AbstractConnection<MongoClient> {
 
     @Override
     public void close(@NonNull MongoClient connection) throws ConnectionError {
-        try {
-            connection.close();
-            MongoClient client = threadCache.remove();
-            if (client == null) {
-                throw new ConnectionError("Connection not created via connection manager...");
-            }
-            if (!client.equals(connection)) {
-                throw new ConnectionError("Connection handle passed doesn't match cached connection.");
-            }
-        } catch (Exception ex) {
-            throw new ConnectionError(ex);
-        }
+        // Do nothing...
     }
 
     @Override
@@ -153,7 +138,10 @@ public class MongoDSConnection extends AbstractConnection<MongoClient> {
         synchronized (state()) {
             if (state().isConnected())
                 state().setState(EConnectionState.Closed);
-            threadCache.close();
+            if (client != null) {
+                client.close();
+                client = null;
+            }
         }
     }
 }

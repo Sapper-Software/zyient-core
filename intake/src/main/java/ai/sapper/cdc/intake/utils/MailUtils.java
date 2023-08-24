@@ -4,6 +4,9 @@ import ai.sapper.cdc.common.GlobalConstants;
 import ai.sapper.cdc.common.utils.ChecksumUtils;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
+import ai.sapper.cdc.core.io.FileSystem;
+import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.io.model.PathInfo;
 import ai.sapper.cdc.core.sources.ExchangeDataStore;
 import ai.sapper.cdc.core.stores.DataStoreException;
 import ai.sapper.cdc.core.utils.FileUtils;
@@ -720,10 +723,19 @@ public class MailUtils {
         }
     }
 
-    public static void extractArchive(Session mailSession, String username, @NonNull FileItemRecord file,
-                                      boolean extractText, @NonNull String decodingKey) throws Exception {
-        String fname = FilenameUtils.getBaseName(file.getFileName());
-        String dir = file.getPath().getParent();
+    public static void extractArchive(Session mailSession,
+                                      String username,
+                                      @NonNull FileItemRecord record,
+                                      boolean extractText,
+                                      @NonNull String decodingKey,
+                                      @NonNull FileSystem fs) throws Exception {
+        PathInfo pi = fs.parsePathInfo(record.getFileLocation());
+        FileInode inode = (FileInode) fs.getInode(pi);
+        if (inode == null) {
+            throw new IOException(String.format("File inode not found. [path=%s]", record.getFileLocation().toString()));
+        }
+        String fname = FilenameUtils.getBaseName(record.getFileName());
+        String dir = inode.getParent().getFsPath();
         String outdir = String.format("%s/%s", dir, fname);
 
         try {
@@ -734,23 +746,24 @@ public class MailUtils {
                             String.format("Error creating output folder. " + "[path=%s]", odir.getAbsolutePath()));
                 }
             }
-            if (!file.getPath().exists()) {
+
+            if (!record.getPath().exists()) {
                 throw new IOException(
-                        String.format("Source file not found. [path=%s]", file.getPath().getAbsolutePath()));
+                        String.format("Source file not found. [path=%s]", record.getPath().getAbsolutePath()));
             }
             try {
-                ZipUtils.unzip(file.getPath().getAbsolutePath(), outdir, decodingKey);
+                ZipUtils.unzip(record.getPath().getAbsolutePath(), outdir, decodingKey);
             } catch (Exception ex) {
-                file.setState(ERecordState.Error);
-                file.setError(ex);
-                file.setErrorMessage(ex.getLocalizedMessage());
+                record.setState(ERecordState.Error);
+                record.setError(ex);
+                record.setErrorMessage(ex.getLocalizedMessage());
                 return;
             }
             String userId = "Unknown";
             if (!Strings.isNullOrEmpty(username)) {
                 userId = username;
             }
-            processExtractedFiles(file, mailSession, userId, odir, extractText);
+            processExtractedFiles(record, mailSession, userId, odir, extractText);
         } catch (IOException | FileUtils.FileUtilsException ex) {
             throw new MailProcessingException(ex);
         } catch (Exception ex) {

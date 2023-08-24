@@ -17,6 +17,7 @@ import javax.persistence.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -42,13 +43,11 @@ public class FileItemRecord implements IEntity<IdKey> {
     @Column(name = "name")
     private String fileName;
     @Column(name = "file_location")
-    private String fileLocation;
+    private Map<String, String> fileLocation;
     @Column(name = "file_location_url")
     private String fileLocationUrl;
     @Column(name = "file_pdf_location_url")
     private String filePdfLocationUrl;
-    @Column(name = "checksum")
-    private String checksum;
     @Column(name = "processed_timestamp")
     private long processedTimestamp;
     @Column(name = "read_timestamp")
@@ -108,83 +107,28 @@ public class FileItemRecord implements IEntity<IdKey> {
     }
 
     public static FileItemRecord create(@Nonnull EIntakeChannel channel,
-                                        @Nonnull FileInode file,
-                                        @Nonnull String drive,
-                                        @Nonnull String userId,
-                                        String parentId) throws IOException {
+                                        @Nonnull FileInode inode,
+                                        @Nonnull String userId) throws IOException {
         try {
             FileItemRecord record = new FileItemRecord();
             // TODO: File ID shouldn't be random
-            record.fileId = new IdKey(generateFileId(file));
-            record.setChannel(channel);
-            record.setDrive(drive);
-            record.setParentId(parentId);
-            record.fileName = file.getName();
-            record.fileLocation = file.getRemotePath();
-            record.checksum = FileUtils.getFileChecksum(file);
-            record.fileType = FileUtils.getFileMimeType(file.getCanonicalPath());
-            record.fileSize = file.size();
-            record.setState(ERecordState.Unknown);
-            record.processingTimestamp = System.currentTimeMillis();
-            record.readTimestamp = System.currentTimeMillis();
-            record.path = file;
-            record.setSourceUserId(userId);
-            if (file instanceof IntakeS3FileEntity) {
-                record.setSourceFolder(((IntakeS3FileEntity) file).getSourceFolder());
-            }
-            return record;
-        } catch (Exception ex) {
-            throw new IOException(ex);
-        }
-    }
-
-    public static FileItemRecord create(@Nonnull EIntakeChannel channel,
-                                        @Nonnull File localFile,
-                                        @Nonnull String drive,
-                                        @Nonnull String userId,
-                                        String parentId,
-                                        String uploadedPath) throws IOException {
-        Preconditions.checkArgument(localFile.exists());
-        try {
-            FileItemRecord record = new FileItemRecord();
-            // TODO: File ID shouldn't be random
-            record.fileId = new IdKey(generateFileId(localFile));
+            record.fileId = new IdKey(inode.getUuid());
             record.channel = channel;
-            record.setDrive(drive);
-            record.setParentId(parentId);
-            record.fileName = localFile.getName();
-            record.fileLocation = uploadedPath;
-            record.checksum = FileUtils.getFileChecksum(localFile);
-            record.fileType = FileUtils.getFileMimeType(localFile.getCanonicalPath());
-            record.fileSize = localFile.length();
+            record.setDrive(inode.getDomain());
+            record.setParentId(inode.getParent().getUuid());
+            record.fileName = inode.getName();
+            record.fileLocation = inode.getPath();
+            record.fileType = FileUtils.getFileMimeType(inode.getFsPath());
+            record.fileSize = inode.size();
             record.setState(ERecordState.Unknown);
             record.processingTimestamp = System.currentTimeMillis();
             record.readTimestamp = System.currentTimeMillis();
-            record.path = localFile;
             record.setSourceUserId(userId);
 
             return record;
         } catch (Exception ex) {
             throw new IOException(ex);
         }
-    }
-
-    public static FileItemRecord create(@Nonnull EIntakeChannel channel,
-                                        @Nonnull File localFile,
-                                        @Nonnull String drive,
-                                        @Nonnull String userId,
-                                        String parentId) throws IOException {
-        try {
-            FileItemRecord record = create(channel, localFile, drive, userId, parentId, null);
-            record.fileId = new IdKey(generateFileId(localFile));
-            return record;
-        } catch (Exception ex) {
-            throw new IOException(ex);
-        }
-    }
-
-    public static String generateFileId(@Nonnull File file) throws IOException {
-        return String.format("{%s}:{%s}", UUID.randomUUID().toString(), file.getName());
     }
 
     @Override
@@ -213,12 +157,4 @@ public class FileItemRecord implements IEntity<IdKey> {
         return fileId;
     }
 
-    public void markAsValidLiterature() {
-        isValidLiterature = true;
-        if (fileItemRecords != null && !fileItemRecords.isEmpty()) {
-            for (FileItemRecord record : fileItemRecords) {
-                record.markAsValidLiterature();
-            }
-        }
-    }
 }

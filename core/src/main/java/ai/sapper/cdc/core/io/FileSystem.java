@@ -26,6 +26,8 @@ import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.io.impl.PostOperationVisitor;
+import ai.sapper.cdc.core.io.indexing.FileSystemIndexer;
+import ai.sapper.cdc.core.io.indexing.FileSystemIndexerSettings;
 import ai.sapper.cdc.core.io.model.*;
 import ai.sapper.cdc.core.model.ModuleInstance;
 import com.google.common.base.Preconditions;
@@ -73,6 +75,7 @@ public abstract class FileSystem implements Closeable {
     private String id;
     private final List<PostOperationVisitor> visitors = new ArrayList<>();
     private FileSystemMetrics metrics;
+    private FileSystemIndexer indexer = null;
 
     protected FileSystem withZkConnection(@NonNull ZookeeperConnection connection) {
         this.zkConnection = connection;
@@ -177,6 +180,12 @@ public abstract class FileSystem implements Closeable {
                     String.format("Path is not a directory. [path=%s]", tmpDir.getAbsolutePath()));
         }
         metrics = new FileSystemMetrics(getClass().getSimpleName(), settings.getName(), "FILESYSTEM", env);
+        String ip = FileSystemIndexerSettings.path();
+        HierarchicalConfiguration<ImmutableNode> config = configReader.config();
+        if (ConfigReader.checkIfNodeExists(config, ip)) {
+            indexer = new FileSystemIndexer();
+            indexer.init(config, env, this);
+        }
     }
 
     protected FileSystem postInit() throws IOException {

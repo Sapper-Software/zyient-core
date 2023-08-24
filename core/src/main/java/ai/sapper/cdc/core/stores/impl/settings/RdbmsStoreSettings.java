@@ -28,10 +28,10 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "store")
+@ConfigPath(path = "db")
 public class RdbmsStoreSettings extends AbstractDataStoreSettings {
-    @Config(name = "readConnection", required = false)
-    private String readConnectionName;
+    @Config(name = "sessionTimeout", required = false, type = Long.class)
+    private long sessionTimeout = 30 * 60 * 1000;
 
     public RdbmsStoreSettings() {
         setType(EDataStoreType.rdbms);

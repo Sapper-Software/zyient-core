@@ -22,7 +22,6 @@ import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.connections.settings.JdbcConnectionSettings;
 import ai.sapper.cdc.core.connections.settings.MongoDbConnectionSettings;
-import ai.sapper.cdc.core.model.Encrypted;
 import ai.sapper.cdc.core.stores.AbstractConnectionSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -45,7 +44,6 @@ public class MongoDSConnectionSettings extends AbstractConnectionSettings {
     private int port = 27017;
     @Config(name = MongoDbConnectionSettings.Constants.CONFIG_DB)
     private String db;
-    @Encrypted
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_PASS_KEY)
     private String password;
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_POOL_SIZE, required = false, type = Integer.class)

@@ -40,15 +40,10 @@ public abstract class AbstractDataStore<T> implements Closeable {
     private final DataStoreState state = new DataStoreState();
     protected DataStoreMetrics metrics;
     private AbstractConnection<T> connection = null;
-    private final long threadId;
     private AbstractAuditLogger<?> auditLogger;
     private DataStoreManager dataStoreManager;
     protected AbstractDataStoreSettings settings;
     protected BaseEnv<?> env;
-
-    protected AbstractDataStore() {
-        threadId = Thread.currentThread().getId();
-    }
 
     public String name() {
         Preconditions.checkNotNull(settings);
@@ -59,11 +54,8 @@ public abstract class AbstractDataStore<T> implements Closeable {
         metrics = new DataStoreMetrics(KEY_ENGINE, settings.getName(), getClass().getSimpleName(), env, getClass());
     }
 
-    protected void checkThread() throws DataStoreException {
-        long threadId = Thread.currentThread().getId();
-        if (this.threadId != threadId) {
-            throw new DataStoreException(String.format("Thread instance exception. [expected=%d][current=%d]", this.threadId, threadId));
-        }
+    protected void checkState() throws DataStoreException {
+        state.check(DataStoreState.EDataStoreState.Available);
     }
 
     @SuppressWarnings("unchecked")

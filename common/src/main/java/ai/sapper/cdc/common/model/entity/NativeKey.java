@@ -14,8 +14,21 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.stores;
+package ai.sapper.cdc.common.model.entity;
 
-public enum EDataStoreType {
-    rdbms, kvstore
+import ai.sapper.cdc.common.utils.ReflectionUtils;
+import com.google.common.base.Preconditions;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+
+@Getter
+@Setter
+public abstract class NativeKey<T> implements IKey {
+    private final Class<? extends T> type;
+
+    public NativeKey(@NonNull Class<? extends T> type) {
+        Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrClass(type));
+        this.type = type;
+    }
 }
