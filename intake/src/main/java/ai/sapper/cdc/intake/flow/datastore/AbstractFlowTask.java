@@ -25,16 +25,19 @@ import java.util.List;
 @Getter
 @Accessors(fluent = true)
 public abstract class AbstractFlowTask<K, T> {
-    private final Class<? extends FlowTaskSettings> settingsType;
     private FlowTaskSettings settings;
-    @Setter(AccessLevel.NONE)
     private TaskGroup<K, T, ?> group;
     @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private List<AbstractFlowTask<K, T>> tasks;
 
-    protected AbstractFlowTask(@Nonnull Class<? extends FlowTaskSettings> settingsType) {
-        this.settingsType = settingsType;
+    public String name() {
+        Preconditions.checkNotNull(settings);
+        return settings.getName();
+    }
+
+    public AbstractFlowTask<K, T> withSettings(@Nonnull FlowTaskSettings settings) {
+        this.settings = settings;
+        return this;
     }
 
     public AbstractFlowTask<K, T> withTaskGroup(@Nonnull TaskGroup<K, T, ?> group) {
@@ -77,13 +80,12 @@ public abstract class AbstractFlowTask<K, T> {
             response.error(e);
         } finally {
             DefaultLogger.info(String.format("Finished Task Step [%s]: " +
-                            "[id=%s][time taken=%d]", name, context.getTaskId(),
+                            "[id=%s][time taken=%d]", settings.getName(), context.getTaskId(),
                     (System.currentTimeMillis() - startt)));
         }
         return response;
     }
 
-    @Override
     public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                           @Nonnull BaseEnv<?> env) throws ConfigurationException {
         if (node instanceof ConfigPathNode) {

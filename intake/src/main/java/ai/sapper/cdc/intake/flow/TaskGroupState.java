@@ -1,12 +1,12 @@
 package ai.sapper.cdc.intake.flow;
 
-import com.codekutter.common.AbstractState;
-import com.codekutter.common.StateException;
+import ai.sapper.cdc.common.AbstractState;
+import ai.sapper.cdc.common.StateException;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class TaskGroupState extends AbstractState<ETaskGroupState> {
     public TaskGroupState() {
-        this.setState(ETaskGroupState.Unknown);
+       super(ETaskGroupState.Error, ETaskGroupState.Unknown);
     }
 
     @JsonIgnore

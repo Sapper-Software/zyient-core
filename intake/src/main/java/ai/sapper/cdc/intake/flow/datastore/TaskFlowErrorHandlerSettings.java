@@ -27,10 +27,8 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "task")
-public abstract class FlowTaskSettings extends Settings {
-    @Config(name = "name")
-    private String name;
+@ConfigPath(path = "errorHandler")
+public class TaskFlowErrorHandlerSettings extends Settings {
     @Config(name = "class", type = Class.class)
-    private Class<? extends AbstractFlowTask<?, ?>> type;
+    private Class<? extends TaskFlowErrorHandler<?>> type;
 }

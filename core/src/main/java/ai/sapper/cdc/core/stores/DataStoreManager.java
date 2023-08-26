@@ -381,79 +381,45 @@ public class DataStoreManager {
                     .withPath(getClass().getSimpleName())
                     .build();
             updateLock = env.createLock(lp);
-            if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)) {
-                state.setState(ProcessorState.EProcessorState.Running);
-                return;
-            }
-            if (Strings.isNullOrEmpty(path)) {
-                ConfigPath cp = AbstractDataStoreSettings.class.getAnnotation(ConfigPath.class);
-                path = cp.path();
-            }
-            HierarchicalConfiguration<ImmutableNode> config
-                    = xmlConfig.configurationAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES);
-            ConfigReader reader = new ConfigReader(xmlConfig, path, DataStoreManagerSettings.class);
-            settings = (DataStoreManagerSettings) reader.settings();
-            List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
-            for (HierarchicalConfiguration<ImmutableNode> node : dsnodes) {
-                readDataStoreConfig(node);
-            }
+            updateLock.lock();
+            try {
+                if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)) {
+                    state.setState(ProcessorState.EProcessorState.Running);
+                    return;
+                }
+                if (Strings.isNullOrEmpty(path)) {
+                    ConfigPath cp = AbstractDataStoreSettings.class.getAnnotation(ConfigPath.class);
+                    path = cp.path();
+                }
+                HierarchicalConfiguration<ImmutableNode> config
+                        = xmlConfig.configurationAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES);
+                ConfigReader reader = new ConfigReader(xmlConfig, path, DataStoreManagerSettings.class);
+                settings = (DataStoreManagerSettings) reader.settings();
+                List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
+                for (HierarchicalConfiguration<ImmutableNode> node : dsnodes) {
+                    readDataStoreConfig(node);
+                }
 
-            if (!ConfigReader.checkIfNodeExists(config, DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES))
-                return;
-            List<HierarchicalConfiguration<ImmutableNode>> snodes
-                    = config.configurationsAt(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES);
-            for (HierarchicalConfiguration<ImmutableNode> node : snodes) {
-                readShardConfig(node);
-            }
-            if (!Strings.isNullOrEmpty(settings.getZkConnection())) {
-                zkConnection = connectionManager
-                        .getConnection(settings.getZkConnection(), ZookeeperConnection.class);
-                if (zkConnection == null) {
-                    throw new Exception(String.format("ZooKeeper connection not found. [name=%s]",
-                            settings.getZkConnection()));
+                if (!ConfigReader.checkIfNodeExists(config, DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES))
+                    return;
+                List<HierarchicalConfiguration<ImmutableNode>> snodes
+                        = config.configurationsAt(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES);
+                for (HierarchicalConfiguration<ImmutableNode> node : snodes) {
+                    readShardConfig(node);
                 }
-                if (!zkConnection.isConnected()) zkConnection.connect();
-                zkPath = path;
-                CuratorFramework client = zkConnection.client();
-                String dspath = new PathUtils.ZkPathBuilder(path)
-                        .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
-                        .build();
-                if (client.checkExists().forPath(dspath) != null) {
-                    List<String> types = client.getChildren().forPath(dspath);
-                    if (types != null && !types.isEmpty()) {
-                        for (String type : types) {
-                            String tp = new PathUtils.ZkPathBuilder(dspath)
-                                    .withPath(type)
-                                    .build();
-                            List<String> names = client.getChildren().forPath(tp);
-                            if (names != null && !names.isEmpty()) {
-                                for (String name : names) {
-                                    if (dataStoreConfigs.containsKey(name) && settings.isOverride()) {
-                                        continue;
-                                    }
-                                    String cp = new PathUtils.ZkPathBuilder(tp)
-                                            .withPath(name)
-                                            .build();
-                                    readDataStoreConfig(client, cp, name);
-                                }
-                            }
-                        }
+                if (!Strings.isNullOrEmpty(settings.getZkConnection())) {
+                    zkConnection = connectionManager
+                            .getConnection(settings.getZkConnection(), ZookeeperConnection.class);
+                    if (zkConnection == null) {
+                        throw new Exception(String.format("ZooKeeper connection not found. [name=%s]",
+                                settings.getZkConnection()));
                     }
+                    if (!zkConnection.isConnected()) zkConnection.connect();
+                    zkPath = path;
+                    readFromZk(false);
                 }
-                String shpath = new PathUtils.ZkPathBuilder(path)
-                        .withPath(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES)
-                        .build();
-                if (client.checkExists().forPath(shpath) != null) {
-                    List<String> names = client.getChildren().forPath(shpath);
-                    if (names != null && !names.isEmpty()) {
-                        for (String name : names) {
-                            String cp = new PathUtils.ZkPathBuilder(shpath)
-                                    .withPath(name)
-                                    .build();
-                            readShardConfig(client, cp);
-                        }
-                    }
-                }
+            } finally {
+                updateLock.unlock();
             }
             state.setState(ProcessorState.EProcessorState.Running);
             if (settings.isAutoSave()) {
@@ -462,6 +428,64 @@ public class DataStoreManager {
         } catch (Exception ex) {
             state.error(ex);
             throw new ConfigurationException(ex);
+        }
+    }
+
+    public void reLoadConfigurations() throws DataStoreException {
+        updateLock.lock();
+        try {
+            readFromZk(true);
+        } finally {
+            updateLock.unlock();
+        }
+    }
+
+    private void readFromZk(boolean reload) throws DataStoreException {
+        Preconditions.checkNotNull(zkConnection);
+        Preconditions.checkState(!Strings.isNullOrEmpty(zkPath));
+        try {
+            CuratorFramework client = zkConnection.client();
+            String dspath = new PathUtils.ZkPathBuilder(zkPath)
+                    .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                    .build();
+            if (client.checkExists().forPath(dspath) != null) {
+                List<String> types = client.getChildren().forPath(dspath);
+                if (types != null && !types.isEmpty()) {
+                    for (String type : types) {
+                        String tp = new PathUtils.ZkPathBuilder(dspath)
+                                .withPath(type)
+                                .build();
+                        List<String> names = client.getChildren().forPath(tp);
+                        if (names != null && !names.isEmpty()) {
+                            for (String name : names) {
+                                if (dataStoreConfigs.containsKey(name) && settings.isOverride()) {
+                                    continue;
+                                }
+                                String cp = new PathUtils.ZkPathBuilder(tp)
+                                        .withPath(name)
+                                        .build();
+                                readDataStoreConfig(client, cp, name);
+                            }
+                        }
+                    }
+                }
+            }
+            String shpath = new PathUtils.ZkPathBuilder(zkPath)
+                    .withPath(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES)
+                    .build();
+            if (client.checkExists().forPath(shpath) != null) {
+                List<String> names = client.getChildren().forPath(shpath);
+                if (names != null && !names.isEmpty()) {
+                    for (String name : names) {
+                        String cp = new PathUtils.ZkPathBuilder(shpath)
+                                .withPath(name)
+                                .build();
+                        readShardConfig(client, cp);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
         }
     }
 
@@ -486,6 +510,7 @@ public class DataStoreManager {
                         ShardConfigSettings sc = shardConfigs.get(type);
                         if (sc.getSource() == EConfigSource.Database)
                             continue;
+                        save(sc);
                     }
                 }
             } finally {
@@ -519,11 +544,6 @@ public class DataStoreManager {
             client.create().creatingParentsIfNeeded().forPath(dspath);
         }
         JSONUtils.write(client, dspath, settings);
-    }
-
-
-    public void addShardConfig(@Nonnull ShardConfigSettings config) throws DataStoreException {
-        shardConfigs.put(config.getEntityType(), config);
     }
 
     private void readDataStoreConfig(CuratorFramework client,

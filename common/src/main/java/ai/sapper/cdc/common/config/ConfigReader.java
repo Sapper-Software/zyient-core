@@ -69,13 +69,9 @@ public class ConfigReader {
 
     public ConfigReader(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                         @NonNull Class<? extends Settings> type) {
-        if (type.isAnnotationPresent(ConfigPath.class)) {
-            ConfigPath p = type.getAnnotation(ConfigPath.class);
-            if (!Strings.isNullOrEmpty(p.path())) {
-                this.config = config.configurationAt(p.path());
-            } else {
-                this.config = config.configurationAt(type.getSimpleName());
-            }
+        String path = getPathAnnotation(type);
+        if (!Strings.isNullOrEmpty(path)) {
+            this.config = config.configurationAt(path);
         } else {
             this.config = config;
         }
@@ -454,6 +450,18 @@ public class ConfigReader {
             }
         }
         return false;
+    }
+
+    public static String getPathAnnotation(@NonNull Class<?> type) {
+        if (type.isAnnotationPresent(ConfigPath.class)) {
+            ConfigPath cp = type.getAnnotation(ConfigPath.class);
+            if (!Strings.isNullOrEmpty(cp.path())) {
+                return cp.path();
+            } else {
+                return type.getSimpleName();
+            }
+        }
+        return null;
     }
 
     public static final String CONFIG_KEY_CLASS = "class";
