@@ -24,7 +24,7 @@ import ai.sapper.cdc.common.model.CopyException;
  *
  * @param <K> - Entity Unique Key type.
  */
-public interface IEntity<K extends IKey> extends IValidate, IKeyed<K> {
+public interface IEntity<K extends IKey> extends IValidate, IKeyed<K>, Cloneable{
     /**
      * Compare the entity key with the key specified.
      *

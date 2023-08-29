@@ -7,5 +7,4 @@ import lombok.Setter;
 @Setter
 public class UpdateParams {
     private boolean emailVisible = false;
-    private int xceStatus = 0;
 }

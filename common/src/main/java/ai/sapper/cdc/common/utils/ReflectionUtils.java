@@ -459,7 +459,7 @@ public class ReflectionUtils {
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public static Object setValue(@NonNull Object value,
+    public static Object setValue(Object value,
                                   @NonNull Object source,
                                   @NonNull Field f) throws
             ReflectionException {
@@ -1101,5 +1101,20 @@ public class ReflectionUtils {
     public static <T> T createInstance(Class<T> type) throws Exception {
         Constructor<T> constructor = type.getDeclaredConstructor();
         return constructor.newInstance();
+    }
+
+    public static <T> void copyNatives(@NonNull T source, @NonNull T target) throws Exception {
+        Field[] fields = getAllFields(source.getClass());
+        if (fields == null) {
+            return;
+        }
+        for (Field field : fields) {
+            if (isPrimitiveTypeOrString(field) || field.isEnumConstant()) {
+                Object v = getFieldValue(source, field, true);
+                if (v != null) {
+                    setValue(v, target, field);
+                }
+            }
+        }
     }
 }

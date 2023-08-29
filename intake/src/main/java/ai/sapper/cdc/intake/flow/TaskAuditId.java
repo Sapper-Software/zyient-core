@@ -1,6 +1,6 @@
 package ai.sapper.cdc.intake.flow;
 
-import com.codekutter.common.model.IKey;
+import ai.sapper.cdc.common.model.entity.IKey;
 import lombok.Getter;
 import lombok.Setter;
 

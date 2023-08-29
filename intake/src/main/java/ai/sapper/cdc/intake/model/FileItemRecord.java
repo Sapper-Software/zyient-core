@@ -4,14 +4,17 @@ import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.common.model.CopyException;
 import ai.sapper.cdc.common.model.ValidationExceptions;
 import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.stores.JsonReference;
+import ai.sapper.cdc.core.stores.annotations.Reference;
 import ai.sapper.cdc.core.utils.FileUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
-import javax.annotation.Nonnull;
 import javax.persistence.*;
 import java.io.IOException;
 import java.util.HashSet;
@@ -57,7 +60,7 @@ public class FileItemRecord implements IEntity<IdKey> {
     private String sourceUserId;
     @Column(name = "processing_status")
     @Enumerated(EnumType.STRING)
-    private ERecordState state = null;
+    private ERecordState state = ERecordState.Unknown;
     @Column(name = "error_message")
     private String errorMessage;
     @Column(name = "file_type")
@@ -70,6 +73,7 @@ public class FileItemRecord implements IEntity<IdKey> {
     private String contextJson;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "parent_id")
+    @Reference(target = FileItemRecord.class, reference = "itemReferences")
     private Set<FileItemRecord> fileItemRecords;
     @Column(name = "request_id")
     private String requestId;
@@ -85,16 +89,17 @@ public class FileItemRecord implements IEntity<IdKey> {
     private boolean isInlineAttachment = false;
     @Transient
     private UpdateParams updateParams;
+    @Transient
+    private JsonReference itemReferences;
 
     public FileItemRecord() {
-        state = ERecordState.Unknown;
     }
 
     public boolean hasError() {
         return state == ERecordState.Error;
     }
 
-    public void addFileItemRecord(@Nonnull FileItemRecord record) {
+    public void addFileItemRecord(@NonNull FileItemRecord record) {
         if (fileItemRecords == null) {
             fileItemRecords = new HashSet<>();
         }
@@ -103,9 +108,9 @@ public class FileItemRecord implements IEntity<IdKey> {
         fileItemRecords.add(record);
     }
 
-    public static FileItemRecord create(@Nonnull EIntakeChannel channel,
-                                        @Nonnull FileInode inode,
-                                        @Nonnull String userId) throws IOException {
+    public static FileItemRecord create(@NonNull EIntakeChannel channel,
+                                        @NonNull FileInode inode,
+                                        @NonNull String userId) throws IOException {
         try {
             FileItemRecord record = new FileItemRecord();
             // TODO: File ID shouldn't be random
@@ -134,13 +139,33 @@ public class FileItemRecord implements IEntity<IdKey> {
     }
 
     @Override
-    public IEntity<IdKey> copyChanges(IEntity<IdKey> iEntity, Context context) throws CopyException {
-        return null;
+    public IEntity<IdKey> copyChanges(IEntity<IdKey> iEntity,
+                                      Context context) throws CopyException {
+        try {
+            if (iEntity instanceof FileItemRecord source) {
+                this.fileId = source.fileId;
+                this.fileItemRecords = new HashSet<>(source.fileItemRecords);
+                this.fileLocation = source.fileLocation;
+                this.recordReference = source.recordReference;
+                this.updateParams = source.updateParams;
+                ReflectionUtils.copyNatives(source, this);
+            } else {
+                throw new CopyException(String.format("Invalid entity: [type=%s]", iEntity.getClass().getCanonicalName()));
+            }
+            return this;
+        } catch (Exception ex) {
+            throw new CopyException(ex);
+        }
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public IEntity<IdKey> clone(Context context) throws CopyException {
-        return null;
+        try {
+            return (IEntity<IdKey>) clone();
+        } catch (Exception ex) {
+            throw new CopyException(ex);
+        }
     }
 
     @Override
@@ -153,5 +178,4 @@ public class FileItemRecord implements IEntity<IdKey> {
     public IdKey getKey() {
         return fileId;
     }
-
 }

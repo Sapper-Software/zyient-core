@@ -1,9 +1,9 @@
 package ai.sapper.cdc.intake.model;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
-import javax.annotation.Nonnull;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 
@@ -20,7 +20,8 @@ public class RecordReference {
 
     }
 
-    public RecordReference(@Nonnull String type, @Nonnull String key) {
+    public RecordReference(@NonNull String type,
+                           @NonNull String key) {
         this.type = type;
         this.key = key;
     }

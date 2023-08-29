@@ -21,15 +21,19 @@ import ai.sapper.cdc.common.model.entity.EEntityState;
 import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.JSONUtils;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.model.BaseEntity;
 import ai.sapper.cdc.core.stores.BaseSearchResult;
 import ai.sapper.cdc.core.stores.DataStoreException;
+import ai.sapper.cdc.core.stores.JsonReference;
 import ai.sapper.cdc.core.stores.TransactionDataStore;
+import ai.sapper.cdc.core.stores.annotations.Reference;
 import ai.sapper.cdc.core.stores.impl.settings.MongoDbSettings;
 import com.github.vincentrussell.query.mongodb.sql.converter.MongoDBQueryHolder;
 import com.github.vincentrussell.query.mongodb.sql.converter.QueryConverter;
 import com.github.vincentrussell.query.mongodb.sql.converter.QueryResultIterator;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
@@ -45,8 +49,10 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -93,6 +99,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                 database.createCollection(cname);
             }
             MongoCollection<Document> collection = database.getCollection(cname);
+            entity = checkAndCreateReference(entity, type, context, session);
             String json = JSONUtils.asString(entity, type);
             Document doc = Document.parse(json);
             doc.put(FIELD_DOC_ID, entity.getKey().stringKey());
@@ -104,6 +111,201 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
+        }
+    }
+
+    private <E extends IEntity<?>> E checkAndCreateReference(E entity,
+                                                             Class<? extends E> type,
+                                                             Context context,
+                                                             ClientSession session) throws Exception {
+        Field[] fields = ReflectionUtils.getAllFields(type);
+        if (fields != null) {
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Reference.class)) {
+                    Reference ref = field.getAnnotation(Reference.class);
+                    String tf = ref.reference();
+                    if (!Strings.isNullOrEmpty(tf)) {
+                        Object value = ReflectionUtils.getFieldValue(entity, field, true);
+                        if (value == null) continue;
+                        if (!(value instanceof IEntity<?>)) {
+                            throw new Exception(
+                                    String.format("Invalid embedded field. [field=%s][type=%s]",
+                                            field.getName(), field.getType().getCanonicalName()));
+                        }
+                        Field rfield = ReflectionUtils.findField(type, tf);
+                        if (rfield == null) {
+                            throw new DataStoreException(
+                                    String.format("Reference field not found. [field=%s][type=%s]",
+                                            tf, type.getCanonicalName()));
+                        }
+                        if (!ReflectionUtils.isSuperType(JsonReference.class, rfield.getType())) {
+                            throw new DataStoreException(
+                                    String.format("Invalid reference field type. [type=%s][class=%s]",
+                                            rfield.getType().getCanonicalName(), type.getCanonicalName()));
+                        }
+                        Class<? extends IEntity<?>> rtype = ref.target();
+                        entity = processNestedCreate(entity,
+                                type,
+                                context,
+                                session,
+                                field,
+                                value,
+                                rfield,
+                                rtype);
+                    }
+                }
+            }
+        }
+        return entity;
+    }
+
+    private <E extends IEntity<?>> E processNestedCreate(E entity,
+                                                         Class<? extends E> type,
+                                                         Context context,
+                                                         ClientSession session,
+                                                         Field sourceField,
+                                                         Object sourceValue,
+                                                         Field referenceField,
+                                                         Class<? extends IEntity<?>> referenceType) throws Exception {
+        JsonReference ref = (JsonReference) ReflectionUtils.getFieldValue(entity, referenceField, true);
+        if (ref == null) {
+            ref = new JsonReference();
+        }
+        if (sourceField.isAnnotationPresent(OneToMany.class)) {
+            OneToMany o2m = sourceField.getAnnotation(OneToMany.class);
+            CascadeType[] cascadeTypes = o2m.cascade();
+            if (ReflectionUtils.implementsInterface(Collection.class, sourceField.getType())) {
+                handleCollectionCreate(referenceType,
+                        context,
+                        session,
+                        sourceField,
+                        sourceValue,
+                        referenceField,
+                        cascadeTypes,
+                        ref);
+            } else if (ReflectionUtils.isSuperType(Map.class, sourceField.getType())) {
+                if (!sourceField.isAnnotationPresent(MapKey.class)) {
+                    throw new Exception(
+                            String.format("Map Key not found. [field=%s][class=%s]",
+                                    sourceField.getName(), type.getCanonicalName()));
+                }
+                handleMapCreate(referenceType,
+                        context,
+                        session,
+                        sourceField,
+                        sourceValue,
+                        referenceField,
+                        cascadeTypes,
+                        ref);
+            } else {
+                throw new Exception(
+                        String.format("Unsupported field type. [type=%s][class=%s]",
+                                sourceField.getType().getCanonicalName(), type.getCanonicalName()));
+            }
+        } else if (sourceField.isAnnotationPresent(ManyToMany.class)) {
+            ManyToMany m2m = sourceField.getAnnotation(ManyToMany.class);
+            CascadeType[] cascadeTypes = m2m.cascade();
+            if (ReflectionUtils.implementsInterface(Collection.class, sourceField.getType())) {
+                handleCollectionCreate(referenceType,
+                        context,
+                        session,
+                        sourceField,
+                        sourceValue,
+                        referenceField,
+                        cascadeTypes,
+                        ref);
+            } else if (ReflectionUtils.isSuperType(Map.class, sourceField.getType())) {
+                if (!sourceField.isAnnotationPresent(MapKey.class)) {
+                    throw new Exception(
+                            String.format("Map Key not found. [field=%s][class=%s]",
+                                    sourceField.getName(), type.getCanonicalName()));
+                }
+                handleMapCreate(referenceType,
+                        context,
+                        session,
+                        sourceField,
+                        sourceValue,
+                        referenceField,
+                        cascadeTypes,
+                        ref);
+            } else {
+                throw new Exception(
+                        String.format("Unsupported field type. [type=%s][class=%s]",
+                                sourceField.getType().getCanonicalName(), type.getCanonicalName()));
+            }
+        } else if (sourceField.isAnnotationPresent(OneToOne.class)) {
+            OneToOne o2o = sourceField.getAnnotation(OneToOne.class);
+            IEntity<?> ie = (IEntity<?>) sourceValue;
+            ref.add(ie, EEntityState.New);
+            CascadeType[] cascadeTypes = o2o.cascade();
+            if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
+                boolean create = true;
+                if (ie instanceof BaseEntity<?>) {
+                    if (((BaseEntity<?>) ie).getState().getState() != EEntityState.New) {
+                        create = false;
+                    }
+                }
+                if (create) {
+                    create(ie, ie.getClass(), context);
+                }
+            }
+        }
+        ReflectionUtils.setValue(ref, entity, referenceField);
+        return entity;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E extends IEntity<?>> void handleCollectionCreate(Class<? extends E> type,
+                                                               Context context,
+                                                               ClientSession session,
+                                                               Field sourceField,
+                                                               Object sourceValue,
+                                                               Field referenceField,
+                                                               CascadeType[] cascadeTypes,
+                                                               JsonReference ref) throws Exception {
+        Collection<E> values = (Collection<E>) sourceValue;
+        ref.addAll(values);
+        if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
+            for (E value : values) {
+                if (value instanceof BaseEntity<?>) {
+                    if (((BaseEntity<?>) value).getState().getState() != EEntityState.New) {
+                        continue;
+                    }
+                }
+                create(value, value.getClass(), context);
+            }
+        }
+    }
+
+    private boolean hasCascadeType(CascadeType type, CascadeType[] values) {
+        for (CascadeType value : values) {
+            if (type == value || value == CascadeType.ALL)
+                return true;
+        }
+        return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E extends IEntity<?>> void handleMapCreate(Class<? extends E> type,
+                                                        Context context,
+                                                        ClientSession session,
+                                                        Field sourceField,
+                                                        Object sourceValue,
+                                                        Field referenceField,
+                                                        CascadeType[] cascadeTypes,
+                                                        JsonReference ref) throws Exception {
+        Map<?, E> values = (Map<?, E>) sourceValue;
+        ref.addAll(values);
+        if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
+            for (Object k : values.keySet()) {
+                E value = values.get(k);
+                if (value instanceof BaseEntity<?>) {
+                    if (((BaseEntity<?>) value).getState().getState() != EEntityState.New) {
+                        continue;
+                    }
+                }
+                create(value, value.getClass(), context);
+            }
         }
     }
 
@@ -133,6 +335,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                 database.createCollection(cname);
             }
             MongoCollection<Document> collection = database.getCollection(cname);
+            entity = checkAndUpdateReference(entity, type, context, session);
             String json = JSONUtils.asString(entity, type);
             Document doc = Document.parse(json);
             doc.put(FIELD_DOC_ID, entity.getKey().stringKey());
@@ -155,6 +358,51 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
         }
+    }
+
+    private <E extends IEntity<?>> E checkAndUpdateReference(E entity,
+                                                             Class<? extends E> type,
+                                                             Context context,
+                                                             ClientSession session) throws Exception {
+        Field[] fields = ReflectionUtils.getAllFields(type);
+        if (fields != null) {
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(Reference.class)) {
+                    Reference ref = field.getAnnotation(Reference.class);
+                    String tf = ref.reference();
+                    if (!Strings.isNullOrEmpty(tf)) {
+                        Object value = ReflectionUtils.getFieldValue(entity, field, true);
+                        if (value == null) continue;
+                        if (!(value instanceof IEntity<?>)) {
+                            throw new Exception(
+                                    String.format("Invalid embedded field. [field=%s][type=%s]",
+                                            field.getName(), field.getType().getCanonicalName()));
+                        }
+                        Field rfield = ReflectionUtils.findField(type, tf);
+                        if (rfield == null) {
+                            throw new DataStoreException(
+                                    String.format("Reference field not found. [field=%s][type=%s]",
+                                            tf, type.getCanonicalName()));
+                        }
+                        if (!ReflectionUtils.isSuperType(JsonReference.class, rfield.getType())) {
+                            throw new DataStoreException(
+                                    String.format("Invalid reference field type. [type=%s][class=%s]",
+                                            rfield.getType().getCanonicalName(), type.getCanonicalName()));
+                        }
+                        Class<? extends IEntity<?>> rtype = ref.target();
+                        entity = processNestedCreate(entity,
+                                type,
+                                context,
+                                session,
+                                field,
+                                value,
+                                rfield,
+                                rtype);
+                    }
+                }
+            }
+        }
+        return entity;
     }
 
     @Override

@@ -1,11 +1,13 @@
 package ai.sapper.cdc.intake.model;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.CopyException;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.IEntity;
 import lombok.Getter;
 import lombok.Setter;
+
+import javax.persistence.*;
 
 @Getter
 @Setter

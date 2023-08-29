@@ -56,7 +56,7 @@ public @interface Reference {
      *
      * @return - Join Columns
      */
-    JoinColumns columns();
+    JoinColumns columns() default @JoinColumns(value = {});
 
     /**
      * (Optional) The operations that must be cascaded to
@@ -85,4 +85,12 @@ public @interface Reference {
      * @return - Query String.
      */
     String query() default GlobalConstants.EMPTY;
+
+    /**
+     * (Optional) Reference field for JSON
+     * objects.
+     *
+     * @return
+     */
+    String reference() default GlobalConstants.EMPTY;
 }

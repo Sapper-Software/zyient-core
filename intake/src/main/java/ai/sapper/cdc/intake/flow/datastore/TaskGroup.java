@@ -4,31 +4,17 @@ import ai.sapper.cdc.common.StateException;
 import ai.sapper.cdc.common.config.ConfigPath;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.JSONUtils;
+import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.BaseEnv;
+import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.stores.AbstractDataStore;
 import ai.sapper.cdc.core.stores.DataStoreException;
 import ai.sapper.cdc.core.stores.DataStoreManager;
-import ai.sapper.cdc.core.stores.impl.HibernateConnection;
 import ai.sapper.cdc.intake.flow.*;
-import com.codekutter.common.model.ConnectionConfig;
-import com.codekutter.common.stores.*;
-import com.codekutter.common.stores.impl.HibernateConnection;
-import com.codekutter.common.utils.ConfigUtils;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.common.utils.TypeUtils;
-import com.codekutter.zconfig.common.*;
-import com.codekutter.zconfig.common.model.annotations.ConfigAttribute;
-import com.codekutter.zconfig.common.model.annotations.ConfigPath;
-import com.codekutter.zconfig.common.model.annotations.ConfigValue;
-import com.codekutter.zconfig.common.model.nodes.AbstractConfigNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigListNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigPathNode;
-import com.codekutter.zconfig.common.transformers.StringListParser;
-import com.codekutter.zconfig.common.transformers.URLEncodedParser;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.ingestion.common.flow.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -37,7 +23,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.hibernate.Session;
+import org.apache.curator.framework.CuratorFramework;
 
 import javax.annotation.Nonnull;
 import java.security.Principal;
@@ -53,18 +39,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 @Setter
 @Accessors(fluent = true)
 public abstract class TaskGroup<K, T, C> {
-    @Getter
-    @Setter
-    @Accessors(fluent = true)
-    @ConfigPath(path = "connection")
-    public static class ConnectionConfigSettings<C> {
-        @ConfigAttribute(required = true)
-        private Class<? extends ConnectionConfig> config;
-        @ConfigAttribute(required = true)
-        private Class<? extends AbstractConnection<C>> type;
-        @ConfigValue(parser = URLEncodedParser.class)
-        private String filter;
-    }
 
     public static final String CONFIG_NODE_TASKS = "tasks";
     public static final String CONFIG_NODE_DATA_SOURCES = "dataSources";
@@ -118,6 +92,16 @@ public abstract class TaskGroup<K, T, C> {
         return this;
     }
 
+    public String name() {
+        Preconditions.checkNotNull(settings);
+        return settings().getName();
+    }
+
+    public String namespace() {
+        Preconditions.checkNotNull(settings);
+        return settings.getNamespace();
+    }
+
     @SuppressWarnings("unchecked")
     public List<String> fetchDynamicStores() throws ConfigurationException {
         Preconditions.checkState(settings != null);
@@ -129,39 +113,51 @@ public abstract class TaskGroup<K, T, C> {
 
             dataStoreManager.reLoadConfigurations();
 
-            HibernateConnection connection = env.connectionManager()
-                    .getConnection(settings.getDbConnectionName(), HibernateConnection.class);
+            ZookeeperConnection connection = env.connectionManager()
+                    .getConnection(settings.getZkConnection(), ZookeeperConnection.class);
             if (connection == null) {
                 throw new ConfigurationException(
-                        String.format("DB Connection not found. [name=%s]", settings.getDbConnectionName()));
+                        String.format("ZooKeeper Connection not found. [name=%s]", settings.getZkConnection()));
             }
-
-            Session session = connection.getConnection();
-            try {
-                DefaultLogger.debug(String.format("Connection filter [%s]", settings.getFilter()));
-                List<AbstractCollection<C>> connections = ConnectionManager.get().readConnections(settings.config,
-                        session, settings.filter);
-                if (connections == null || connections.isEmpty()) {
-                    throw new ConfigurationException(
-                            String.format("No connections loaded. [type=%s]", settings.type.getCanonicalName()));
+            Preconditions.checkState(!Strings.isNullOrEmpty(settings.getZkPath()));
+            CuratorFramework client = connection.client();
+            String path = new PathUtils.ZkPathBuilder(settings.getZkPath())
+                    .withPath(CONFIG_NODE_TASKS)
+                    .withPath(settings.getNamespace())
+                    .withPath(settings.getName())
+                    .withPath(CONFIG_NODE_DATA_SOURCES)
+                    .build();
+            if (client.checkExists().forPath(path) != null) {
+                Map<String, Boolean> current = new HashMap<>();
+                for (String s : settings.getDataSourceNames()) {
+                    current.put(s, true);
                 }
-                LogUtils.debug(getClass(), String.format("DataStore filter [%s]", filter));
-                Set<String> set = dataStoreManager().readDynamicDConfig(session, dataStoreType, configType, filter);
-                if (set != null && !set.isEmpty()) {
-                    dataSourceNames = new ArrayList<>(set);
-                } else {
-                    throw new ConfigurationException("No data stores found...");
-                }
-                lastRefreshed = System.currentTimeMillis();
-                for (String ds : settings.getDataSourceNames()) {
-                    if (!storeRunLocks.containsKey(ds)) {
-                        storeRunLocks.put(ds, new ReentrantLock());
+                List<String> stores = client.getChildren().forPath(path);
+                if (stores != null && !stores.isEmpty()) {
+                    for (String store : stores) {
+                        String cp = new PathUtils.ZkPathBuilder(path)
+                                .withPath(store)
+                                .build();
+                        TaskGroupSource source = JSONUtils.read(client, cp, TaskGroupSource.class);
+                        if (source != null) {
+                            if (current.containsKey(source.getName()))
+                                continue;
+                            Class<? extends AbstractDataStore<?>> type
+                                    = (Class<? extends AbstractDataStore<?>>) Class.forName(source.getType());
+                            settings.getDataSourceNames().add(source.getName());
+                            current.put(source.getName(), false);
+                        }
                     }
                 }
-                return settings.getDataSourceNames();
-            } finally {
-                connection.close(session);
             }
+            lastRefreshed = System.currentTimeMillis();
+            for (String ds : settings.getDataSourceNames()) {
+                if (!storeRunLocks.containsKey(ds)) {
+                    storeRunLocks.put(ds, new ReentrantLock());
+                }
+            }
+            return settings.getDataSourceNames();
+
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         } finally {
@@ -183,6 +179,9 @@ public abstract class TaskGroup<K, T, C> {
             DefaultLogger.warn(String.format("Configuring Task Group. " + "[GROUP ID=%s][type=%s]",
                     instanceId, getClass().getCanonicalName()));
 
+            if (settings.isDynamicStores()) {
+                fetchDynamicStores();
+            }
             if (settings.getDataSourceNames() == null || settings.getDataSourceNames().isEmpty()) {
                 throw new ConfigurationException(
                         String.format("No data sources specified. [group=%s]", settings.getName()));

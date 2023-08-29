@@ -41,13 +41,13 @@ public class TaskGroupSettings extends Settings {
     private String namespace;
     @Config(name = "stores.dynamic", required = false, type = Boolean.class)
     private boolean dynamicStores = false;
-    @Config(name = "stores.filter", parser = URLEncodingParser.class)
-    private String filter;
-    @Config(name = "stores.dbConnection")
-    private String dbConnectionName;
+    @Config(name = "stores.connection", required = false)
+    private String zkConnection;
+    @Config(name = "stores.path", required = false)
+    private String zkPath;
     @Config(name = "stores.refreshInterval", required = false, parser = TimeValueParser.class)
     private TimeUnitValue storeRefreshInterval = new TimeUnitValue(DEFAULT_STORE_REFRESH_INTERVAL, TimeUnit.MILLISECONDS);
-    @Config(name = "stores.sources", parser = StringListParser.class)
+    @Config(name = "stores.sources", required = false, parser = StringListParser.class)
     private List<String> dataSourceNames;
     @Config(name = "allowConcurrentPerStore", required = false, type = Boolean.class)
     private boolean allowConcurrentPerStore = true;

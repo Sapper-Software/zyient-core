@@ -1,15 +1,17 @@
 package ai.sapper.cdc.intake.flow;
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.CopyException;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.model.CopyException;
+import ai.sapper.cdc.common.model.ValidationExceptions;
+import ai.sapper.cdc.common.model.entity.IEntity;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.annotation.Nonnull;
+import javax.persistence.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -54,14 +56,49 @@ public class TaskAuditRecord implements IEntity<TaskAuditId> {
         return this.taskId.compareTo(taskId);
     }
 
+    /**
+     * Copy the changes from the specified source entity
+     * to this instance.
+     * <p>
+     * All properties other than the Key will be copied.
+     * Copy Type:
+     * Primitive - Copy
+     * String - Copy
+     * Enum - Copy
+     * Nested Entity - Copy Recursive
+     * Other Objects - Copy Reference.
+     *
+     * @param source  - Source instance to Copy from.
+     * @param context - Execution context.
+     * @return - Copied Entity instance.
+     * @throws CopyException
+     */
     @Override
-    public IEntity<TaskAuditId> copyChanges(IEntity<TaskAuditId> iEntity, Context context) throws CopyException {
-        return null;
+    public IEntity<TaskAuditId> copyChanges(IEntity<TaskAuditId> source,
+                                            Context context) throws CopyException {
+        try {
+            if (source instanceof TaskAuditRecord record) {
+                params = new HashMap<>(record.params);
+                taskId = record.taskId;
+                ReflectionUtils.copyNatives(record, this);
+                return this;
+            } else {
+                throw new Exception(
+                        String.format("Invalid entity type: [type=%s]", source.getClass().getCanonicalName()));
+            }
+        } catch (Exception ex) {
+            throw new CopyException(ex);
+        }
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public IEntity<TaskAuditId> clone(Context context) throws CopyException {
-        return null;
+        try {
+            return (IEntity<TaskAuditId>) clone();
+        } catch (Exception ex) {
+            throw new CopyException(ex);
+        }
     }
 
     @Override
