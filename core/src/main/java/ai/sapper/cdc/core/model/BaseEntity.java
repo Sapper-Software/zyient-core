@@ -45,7 +45,7 @@ public abstract class BaseEntity<K extends IKey> implements IEntity<K> {
      * @throws ValidationExceptions - On validation failure will throw exception.
      */
     @Override
-    public void validate() throws ValidationExceptions {
+    public final void validate() throws ValidationExceptions {
         try {
             doValidate();
         } catch (Exception ex) {

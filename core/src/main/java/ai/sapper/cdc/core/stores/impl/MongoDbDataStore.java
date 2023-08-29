@@ -144,13 +144,14 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                             rfield.getType().getCanonicalName(), type.getCanonicalName()));
                         }
                         Class<? extends IEntity<?>> rtype = ref.target();
-                        entity = processNestedCreate(entity,
+                        entity = nestedUpdates(entity,
                                 type,
                                 context,
                                 session,
                                 field,
                                 value,
                                 rfield,
+                                new EEntityState[]{EEntityState.New},
                                 rtype);
                     }
                 }
@@ -159,14 +160,15 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         return entity;
     }
 
-    private <E extends IEntity<?>> E processNestedCreate(E entity,
-                                                         Class<? extends E> type,
-                                                         Context context,
-                                                         ClientSession session,
-                                                         Field sourceField,
-                                                         Object sourceValue,
-                                                         Field referenceField,
-                                                         Class<? extends IEntity<?>> referenceType) throws Exception {
+    private <E extends IEntity<?>> E nestedUpdates(E entity,
+                                                   Class<? extends E> type,
+                                                   Context context,
+                                                   ClientSession session,
+                                                   Field sourceField,
+                                                   Object sourceValue,
+                                                   Field referenceField,
+                                                   EEntityState[] states,
+                                                   Class<? extends IEntity<?>> referenceType) throws Exception {
         JsonReference ref = (JsonReference) ReflectionUtils.getFieldValue(entity, referenceField, true);
         if (ref == null) {
             ref = new JsonReference();
@@ -182,6 +184,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                         sourceValue,
                         referenceField,
                         cascadeTypes,
+                        states,
                         ref);
             } else if (ReflectionUtils.isSuperType(Map.class, sourceField.getType())) {
                 if (!sourceField.isAnnotationPresent(MapKey.class)) {
@@ -196,6 +199,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                         sourceValue,
                         referenceField,
                         cascadeTypes,
+                        states,
                         ref);
             } else {
                 throw new Exception(
@@ -213,6 +217,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                         sourceValue,
                         referenceField,
                         cascadeTypes,
+                        states,
                         ref);
             } else if (ReflectionUtils.isSuperType(Map.class, sourceField.getType())) {
                 if (!sourceField.isAnnotationPresent(MapKey.class)) {
@@ -227,6 +232,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                         sourceValue,
                         referenceField,
                         cascadeTypes,
+                        states,
                         ref);
             } else {
                 throw new Exception(
@@ -262,13 +268,14 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                                Object sourceValue,
                                                                Field referenceField,
                                                                CascadeType[] cascadeTypes,
+                                                               EEntityState[] states,
                                                                JsonReference ref) throws Exception {
         Collection<E> values = (Collection<E>) sourceValue;
         ref.addAll(values);
         if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
             for (E value : values) {
                 if (value instanceof BaseEntity<?>) {
-                    if (((BaseEntity<?>) value).getState().getState() != EEntityState.New) {
+                    if (!((BaseEntity<?>) value).getState().inState(states)) {
                         continue;
                     }
                 }
@@ -293,6 +300,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                         Object sourceValue,
                                                         Field referenceField,
                                                         CascadeType[] cascadeTypes,
+                                                        EEntityState[] states,
                                                         JsonReference ref) throws Exception {
         Map<?, E> values = (Map<?, E>) sourceValue;
         ref.addAll(values);
@@ -300,7 +308,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
             for (Object k : values.keySet()) {
                 E value = values.get(k);
                 if (value instanceof BaseEntity<?>) {
-                    if (((BaseEntity<?>) value).getState().getState() != EEntityState.New) {
+                    if (!((BaseEntity<?>) value).getState().inState(states)) {
                         continue;
                     }
                 }
@@ -390,13 +398,14 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                             rfield.getType().getCanonicalName(), type.getCanonicalName()));
                         }
                         Class<? extends IEntity<?>> rtype = ref.target();
-                        entity = processNestedCreate(entity,
+                        entity = nestedUpdates(entity,
                                 type,
                                 context,
                                 session,
                                 field,
                                 value,
                                 rfield,
+                                new EEntityState[]{EEntityState.New, EEntityState.Updated},
                                 rtype);
                     }
                 }

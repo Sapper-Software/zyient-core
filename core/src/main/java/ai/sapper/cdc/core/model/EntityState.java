@@ -18,6 +18,7 @@ package ai.sapper.cdc.core.model;
 
 import ai.sapper.cdc.common.AbstractState;
 import ai.sapper.cdc.common.model.entity.EEntityState;
+import lombok.NonNull;
 
 /**
  * Class for defining states for Primary Entities.
@@ -28,5 +29,14 @@ public class EntityState extends AbstractState<EEntityState> {
      */
     public EntityState() {
         super(EEntityState.Error, EEntityState.Unknown);
+    }
+
+    public boolean inState(@NonNull EEntityState[] states) {
+        for (EEntityState state : states) {
+            if (getState() == state) {
+                return true;
+            }
+        }
+        return false;
     }
 }

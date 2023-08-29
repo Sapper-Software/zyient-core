@@ -6,6 +6,7 @@ import ai.sapper.cdc.common.model.ValidationExceptions;
 import ai.sapper.cdc.common.model.entity.IEntity;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.io.model.FileInode;
+import ai.sapper.cdc.core.model.BaseEntity;
 import ai.sapper.cdc.core.stores.JsonReference;
 import ai.sapper.cdc.core.stores.annotations.Reference;
 import ai.sapper.cdc.core.utils.FileUtils;
@@ -26,7 +27,7 @@ import java.util.Set;
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public class FileItemRecord implements IEntity<IdKey> {
+public class FileItemRecord extends BaseEntity<IdKey> {
     @Id
     @Column(name = "id")
     private IdKey fileId;
@@ -82,9 +83,6 @@ public class FileItemRecord implements IEntity<IdKey> {
     @Version
     @Column(name = "record_version")
     private long recordVersion = 0;
-    @Transient
-    @JsonIgnore
-    private Throwable error;
     @Column(name = "is_inline_attachment")
     private boolean isInlineAttachment = false;
     @Transient
@@ -168,8 +166,13 @@ public class FileItemRecord implements IEntity<IdKey> {
         }
     }
 
+    /**
+     * Validate this entity instance.
+     *
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
     @Override
-    public void validate() throws ValidationExceptions {
+    public void doValidate() throws ValidationExceptions {
 
     }
 
