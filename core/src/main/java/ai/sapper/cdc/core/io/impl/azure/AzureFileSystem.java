@@ -33,6 +33,8 @@ import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobUploadFromFileOptions;
+import com.azure.storage.blob.options.BlobUploadFromUrlOptions;
+import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.Getter;
@@ -223,7 +225,11 @@ public class AzureFileSystem extends RemoteFileSystem {
         return false;
     }
 
-    private static String getBlobName(AzurePathInfo pathInfo) {
+    private String getBlobName(AzurePathInfo pathInfo) {
+        AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+        if (settings.isUseHierarchical()) {
+            return pathInfo.path();
+        }
         return String.format("%s.blob", pathInfo.uuid());
     }
 
@@ -247,6 +253,59 @@ public class AzureFileSystem extends RemoteFileSystem {
             inode.setPathInfo(pi);
         }
         return new AzureWriter(inode, this, overwrite).open();
+    }
+
+    @Override
+    protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
+        AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
+        AzurePathInfo sp = (AzurePathInfo) source.getPathInfo();
+        if (sp == null) {
+            sp = (AzurePathInfo) parsePathInfo(source.getPath());
+        }
+        AzurePathInfo tp = (AzurePathInfo) target.getPathInfo();
+        if (tp == null) {
+            tp = (AzurePathInfo) parsePathInfo(target.getPath());
+        }
+        BlobContainerClient sc = client.getContainer(sp.container());
+        if (sc == null || !sc.exists()) {
+            throw new IOException(String.format("Azure Container not found. [container=%s]", sp.container()));
+        }
+        BlobContainerClient tc = client.getContainer(tp.container());
+        if (tc == null || !tc.exists()) {
+            throw new IOException(String.format("Azure Container not found. [container=%s]", tp.container()));
+        }
+        try {
+            BlobClient bs = sc.getBlobClient(getBlobName(sp));
+            BlobClient bt = tc.getBlobClient(getBlobName(tp));
+            BlobUploadFromUrlOptions options = new BlobUploadFromUrlOptions(bs.getBlobUrl());
+            Duration timeout = Duration.ofSeconds(settings.getUploadTimeout());
+            Response<BlockBlobItem> response = bt.getBlockBlobClient()
+                    .uploadFromUrlWithResponse(options, timeout, null);
+            target.setSyncTimestamp(response.getValue().getLastModified().toInstant().toEpochMilli());
+        } catch (RuntimeException re) {
+            throw new IOException(re);
+        }
+    }
+
+    @Override
+    protected PathInfo renameFile(@NonNull FileInode source,
+                                  @NonNull String name) throws IOException {
+        AzurePathInfo pi = (AzurePathInfo) source.getPathInfo();
+        if (pi == null) {
+            pi = (AzurePathInfo) parsePathInfo(source.getPath());
+        }
+        String path = String.format("%s/%s", pi.parent(), name);
+        return new AzurePathInfo(this, pi.domain(), pi.container(), path, InodeType.File);
+    }
+
+    @Override
+    protected void doRename(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
+        doCopy(source, target);
+        AzurePathInfo sp = (AzurePathInfo) source.getPathInfo();
+        if (sp == null) {
+            sp = (AzurePathInfo) parsePathInfo(source.getPath());
+        }
+        delete(sp, false);
     }
 
     @SuppressWarnings("unchecked")
@@ -369,7 +428,7 @@ public class AzureFileSystem extends RemoteFileSystem {
             BlobClient c = client.getContainer(ap.container()).getBlobClient(name);
             if (c.exists())
                 return c.getProperties().getBlobSize();
-            else  {
+            else {
                 throw new IOException(String.format("File not found. [path=%s]", path.pathConfig()));
             }
         }
@@ -413,10 +472,7 @@ public class AzureFileSystem extends RemoteFileSystem {
                 }
                 BlobUploadFromFileOptions options = new BlobUploadFromFileOptions(source.getAbsolutePath());
                 Duration timeout = Duration.ofSeconds(uploadTimeout);
-                String name = pi.path();
-                if (!useHierarchical) {
-                    name = getBlobName(pi);
-                }
+                String name = ((AzureFileSystem) fs).getBlobName(pi);
                 BlobClient bc = cc.getBlobClient(name);
                 return bc.uploadFromFileWithResponse(options, timeout, null);
             } catch (RuntimeException re) {

@@ -33,6 +33,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
@@ -251,6 +252,47 @@ public class S3FileSystem extends RemoteFileSystem {
             inode.setPathInfo(pi);
         }
         return new S3Writer(inode, this, overwrite).open();
+    }
+
+    @Override
+    protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
+        S3PathInfo sp = (S3PathInfo) source.getPathInfo();
+        if (sp == null) {
+            sp = (S3PathInfo) parsePathInfo(source.getPath());
+        }
+        S3PathInfo tp = (S3PathInfo) target.getPathInfo();
+        if (tp == null) {
+            tp = (S3PathInfo) parsePathInfo(target.getPath());
+        }
+        CopyObjectRequest cr = CopyObjectRequest.builder()
+                .sourceBucket(sp.bucket())
+                .sourceKey(sp.path())
+                .destinationBucket(tp.bucket())
+                .destinationKey(tp.path())
+                .build();
+        CopyObjectResponse rc = client.copyObject(cr);
+    }
+
+    @Override
+    protected PathInfo renameFile(@NonNull FileInode source,
+                                  @NonNull String name) throws IOException {
+        S3PathInfo pi = (S3PathInfo) source.getPathInfo();
+        if (pi == null) {
+            pi = (S3PathInfo) parsePathInfo(source.getPath());
+        }
+        String path = String.format("%s/%s", pi.parent(), name);
+        return new S3PathInfo(this, pi.domain(), pi.bucket(), path, InodeType.File);
+    }
+
+    @Override
+    protected void doRename(@NonNull FileInode source,
+                            @NonNull FileInode target) throws IOException {
+        doCopy(source, target);
+        S3PathInfo sp = (S3PathInfo) source.getPathInfo();
+        if (sp == null) {
+            sp = (S3PathInfo) parsePathInfo(source.getPath());
+        }
+        delete(sp, false);
     }
 
     protected File read(@NonNull FileInode path) throws IOException {

@@ -216,13 +216,4 @@ public class ChecksumUtils {
         hash = 31 * hash + (value == null ? 0 : value.hashCode());
         return hash;
     }
-
-    public static String getKeyHash(@NonNull String key) throws Exception {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(key));
-
-        MessageDigest digest = MessageDigest.getInstance(HASH_ALGO);
-        byte[] d = digest.digest(key.getBytes(StandardCharsets.UTF_8));
-        d = Base64.getEncoder().encode(d);
-        return new String(d, StandardCharsets.UTF_8);
-    }
 }

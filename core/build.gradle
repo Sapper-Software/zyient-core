@@ -77,6 +77,8 @@ dependencies {
 
     implementation 'org.apache.lucene:lucene-core:9.7.0'
     implementation 'com.github.vincentrussell:sql-to-mongo-db-query-converter:1.21'
+
+    implementation 'org.apache.commons:commons-vfs2:2.9.0'
 }
 
 test {

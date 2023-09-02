@@ -18,6 +18,7 @@ package ai.sapper.cdc.core.io.model;
 
 import ai.sapper.cdc.core.index.Indexed;
 import ai.sapper.cdc.core.index.JsonIndexer;
+import ai.sapper.cdc.core.io.encryption.EncryptionType;
 import ai.sapper.cdc.core.io.indexing.InodeIndexConstants;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -35,6 +36,8 @@ public class FileInode extends Inode {
     private boolean compressed = false;
     private long syncedSize = 0;
     private long dataSize = 0;
+    private EncryptionType encryption = EncryptionType.None;
+    private Encrypted encrypted;
 
     public FileInode() {
 

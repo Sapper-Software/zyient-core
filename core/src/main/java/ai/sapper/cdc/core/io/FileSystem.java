@@ -17,14 +17,13 @@
 package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.common.config.ConfigReader;
-import ai.sapper.cdc.common.utils.DefaultLogger;
-import ai.sapper.cdc.common.utils.DirectoryCleaner;
-import ai.sapper.cdc.common.utils.JSONUtils;
-import ai.sapper.cdc.common.utils.PathUtils;
+import ai.sapper.cdc.common.utils.*;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
 import ai.sapper.cdc.core.connections.Connection;
 import ai.sapper.cdc.core.connections.ZookeeperConnection;
+import ai.sapper.cdc.core.io.encryption.EncryptionHandler;
+import ai.sapper.cdc.core.io.encryption.EncryptionType;
 import ai.sapper.cdc.core.io.impl.PostOperationVisitor;
 import ai.sapper.cdc.core.io.indexing.FileSystemIndexer;
 import ai.sapper.cdc.core.io.indexing.FileSystemIndexerSettings;
@@ -57,6 +56,7 @@ import java.util.regex.Pattern;
 @Accessors(fluent = true)
 public abstract class FileSystem implements Closeable {
     protected final Logger LOG = LoggerFactory.getLogger(FileSystem.class);
+    public static final int DEFAULT_READ_BLOCK_SIZE = 1024 * 32;
 
     private ZookeeperConnection zkConnection;
     protected FileSystemSettings settings;
@@ -879,6 +879,55 @@ public abstract class FileSystem implements Closeable {
         return false;
     }
 
+    public FileInode setEncryption(@NonNull PathInfo path,
+                                   @NonNull EncryptionType type,
+                                   String password) throws IOException {
+        FileInode inode = (FileInode) getInode(path);
+        if (inode == null) {
+            throw new IOException(String.format("File not found. [path=%s]", path.path()));
+        }
+        if (type != EncryptionType.None) {
+            if (Strings.isNullOrEmpty(password)) {
+                throw new IOException("Password not specified.");
+            }
+            if (Strings.isNullOrEmpty(settings.getEncryptionKey())) {
+                throw new IOException("Encryption key not specified in settings.");
+            }
+            Encrypted e = new Encrypted();
+            try {
+                String passKey = env.keyStore().read(settings.getEncryptionKey());
+                if (Strings.isNullOrEmpty(passKey)) {
+                    throw new IOException(
+                            String.format("Encryption key not found. [key=%s]", settings.getEncryptionKey()));
+                }
+                String key = CypherUtils.encryptAsString(password, passKey, getClass().getCanonicalName());
+                e.setKey(key);
+                inode.setEncrypted(e);
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
+        } else {
+            inode.setEncryption(EncryptionType.None);
+            inode.setEncrypted(null);
+        }
+        return (FileInode) updateInode(inode);
+    }
+
+    public EncryptionHandler getEncryptionHandler(@NonNull PathInfo path) throws IOException {
+        FileInode inode = (FileInode) getInode(path);
+        if (inode == null) {
+            throw new IOException(String.format("File not found. [path=%s]", path.path()));
+        }
+        return getEncryptionHandler(inode);
+    }
+
+    public EncryptionHandler getEncryptionHandler(@NonNull FileInode inode) throws IOException {
+        if (inode.getEncryption() != EncryptionType.None) {
+
+        }
+        return null;
+    }
+
     public File compress(@NonNull File file) throws IOException {
         Preconditions.checkArgument(file.exists());
         byte[] data = Files.readAllBytes(Paths.get(file.toURI()));
@@ -907,6 +956,69 @@ public abstract class FileSystem implements Closeable {
 
     protected abstract Writer getWriter(@NonNull FileInode inode,
                                         boolean overwrite) throws IOException;
+
+    public FileInode copy(@NonNull FileInode source,
+                          @NonNull PathInfo target) throws IOException {
+        return copy(source, target, false);
+    }
+
+    public FileInode copy(@NonNull FileInode source,
+                          @NonNull PathInfo target,
+                          boolean overwrite) throws IOException {
+        FileInode tf = (FileInode) getInode(target);
+        if (!overwrite && tf != null) {
+            throw new IOException(String.format("Target file already exists. [path=%s]", target.path()));
+        }
+        if (tf == null) {
+            tf = create(target);
+        }
+        if (tf.getPathInfo() == null) {
+            tf.setPathInfo(parsePathInfo(tf.getPath()));
+        }
+        try {
+            doCopy(source, tf);
+            return (FileInode) updateInode(tf);
+        } catch (Throwable t) {
+            delete(tf.getPathInfo());
+            throw new IOException(t);
+        }
+    }
+
+    protected abstract void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException;
+
+    public FileInode move(@NonNull FileInode source,
+                          @NonNull PathInfo target,
+                          boolean overwrite) throws IOException {
+        FileInode tf = (FileInode) getInode(target);
+        if (!overwrite && tf != null) {
+            throw new IOException(String.format("Target file already exists. [path=%s]", target.path()));
+        }
+        if (tf == null) {
+            tf = create(target);
+        }
+        if (tf.getPathInfo() == null) {
+            tf.setPathInfo(parsePathInfo(tf.getPath()));
+        }
+        try {
+            doRename(source, tf);
+            delete(source.getPathInfo(), true);
+            return (FileInode) updateInode(tf);
+        } catch (Throwable t) {
+            delete(tf.getPathInfo());
+            throw new IOException(t);
+        }
+    }
+
+    public FileInode rename(@NonNull FileInode source,
+                            @NonNull String name,
+                            boolean overwrite) throws IOException {
+        PathInfo target = renameFile(source, name);
+        return move(source, target, overwrite);
+    }
+
+    protected abstract PathInfo renameFile(@NonNull FileInode source, @NonNull String name) throws IOException;
+
+    protected abstract void doRename(@NonNull FileInode source, @NonNull FileInode target) throws IOException;
 
     @Override
     public void close() throws IOException {

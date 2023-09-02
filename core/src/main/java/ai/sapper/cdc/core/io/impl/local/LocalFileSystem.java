@@ -32,6 +32,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -262,6 +263,48 @@ public class LocalFileSystem extends FileSystem {
             inode.setPathInfo(pi);
         }
         return new LocalWriter(inode, this, overwrite).open();
+    }
+
+    @Override
+    protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
+        LocalPathInfo sp = (LocalPathInfo) source.getPathInfo();
+        if (sp == null) {
+            sp = (LocalPathInfo) parsePathInfo(source.getPath());
+        }
+        LocalPathInfo tp = (LocalPathInfo) target.getPathInfo();
+        if (tp == null) {
+            tp = (LocalPathInfo) parsePathInfo(target.getPath());
+        }
+        FileUtils.copyFile(sp.file, tp.file);
+    }
+
+    @Override
+    protected PathInfo renameFile(@NonNull FileInode source, @NonNull String name) throws IOException {
+        LocalPathInfo pi = (LocalPathInfo) source.getPathInfo();
+        if (pi == null) {
+            pi = (LocalPathInfo) parsePathInfo(source.getPath());
+        }
+        String dir = pi.file.getParent();
+        String path = String.format("%s/%s", dir, name);
+        return new LocalPathInfo(this, path, source.getDomain());
+    }
+
+    @Override
+    protected void doRename(@NonNull FileInode source,
+                            @NonNull FileInode target) throws IOException {
+        LocalPathInfo sp = (LocalPathInfo) source.getPathInfo();
+        if (sp == null) {
+            sp = (LocalPathInfo) parsePathInfo(source.getPath());
+        }
+        LocalPathInfo tp = (LocalPathInfo) target.getPathInfo();
+        if (tp == null) {
+            tp = (LocalPathInfo) parsePathInfo(target.getPath());
+        }
+        if (!sp.file.renameTo(tp.file)) {
+            throw new IOException(
+                    String.format("Failed to rename file. [source=%s][target=%s]",
+                            sp.file.getAbsolutePath(), tp.file.getAbsolutePath()));
+        }
     }
 
     @Override
