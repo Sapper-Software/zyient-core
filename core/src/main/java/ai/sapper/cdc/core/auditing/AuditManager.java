@@ -19,62 +19,62 @@ package ai.sapper.cdc.core.auditing;
 
 import ai.sapper.cdc.common.audit.AuditRecord;
 import ai.sapper.cdc.common.audit.EAuditType;
+import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.entity.IKeyed;
+import ai.sapper.cdc.common.utils.DefaultLogger;
+import ai.sapper.cdc.common.utils.ReflectionUtils;
+import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.stores.DataStoreManager;
-import com.codekutter.common.utils.ConfigUtils;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.zconfig.common.ConfigurationException;
-import com.codekutter.zconfig.common.model.nodes.AbstractConfigNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigElementNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigListElementNode;
-import com.codekutter.zconfig.common.model.nodes.ConfigPathNode;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import javax.annotation.Nonnull;
 import java.io.Closeable;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 @SuppressWarnings("rawtypes")
 public class AuditManager implements Closeable {
+    public static final String __CONFIG_PATH = "audit-manager";
+
     private static final AuditManager __instance = new AuditManager();
-    @Setter(AccessLevel.NONE)
     private final Map<String, AbstractAuditLogger> loggers = new ConcurrentHashMap<>();
-    @Setter(AccessLevel.NONE)
     private final Map<Class<? extends IKeyed<?>>, AbstractAuditLogger> entityIndex = new HashMap<>();
-    @Setter(AccessLevel.NONE)
     private final Map<Class<? extends IAuditContextGenerator>, IAuditContextGenerator> contextGenerators = new HashMap<>();
-    @Setter(AccessLevel.NONE)
     private AbstractAuditLogger defaultLogger = null;
     @Setter(AccessLevel.NONE)
     private DataStoreManager dataStoreManager;
+    private BaseEnv<?> env;
 
-    public static void init(@Nonnull AbstractConfigNode node) throws ConfigurationException {
-        __instance.configure(node);
+    public static void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                            @NonNull BaseEnv<?> env) throws ConfigurationException {
+        __instance.configure(xmlConfig, env);
     }
 
     public static AuditManager get() {
         return __instance;
     }
 
-    public AuditManager withDataStoreManager(@Nonnull DataStoreManager dataStoreManager) {
+    public AuditManager withDataStoreManager(@NonNull DataStoreManager dataStoreManager) {
         this.dataStoreManager = dataStoreManager;
         return this;
     }
 
-    public IAuditContextGenerator getContextGenerator(@Nonnull Class<? extends IAuditContextGenerator> type) throws AuditException {
+    public IAuditContextGenerator getContextGenerator(@NonNull Class<? extends IAuditContextGenerator> type) throws AuditException {
         try {
             synchronized (contextGenerators) {
                 if (!contextGenerators.containsKey(type)) {
@@ -88,13 +88,13 @@ public class AuditManager implements Closeable {
         }
     }
 
-    public <T extends IKeyed<?>> AuditRecord audit(@Nonnull Class<?> dataStoreType,
-                                                   @Nonnull String dataStoreName,
-                                                   @Nonnull EAuditType type,
-                                                   @Nonnull T entity,
+    public <T extends IKeyed<?>> AuditRecord audit(@NonNull Class<?> dataStoreType,
+                                                   @NonNull String dataStoreName,
+                                                   @NonNull EAuditType type,
+                                                   @NonNull T entity,
                                                    String changeDelta,
                                                    String changeContext,
-                                                   @Nonnull Principal user) throws AuditException {
+                                                   @NonNull Principal user) throws AuditException {
         AbstractAuditLogger logger = getLogger(entity.getClass());
         if (logger != null) {
             return logger.write(dataStoreType, dataStoreName, type, entity, entity.getClass(), changeDelta, changeContext, user);
@@ -102,14 +102,14 @@ public class AuditManager implements Closeable {
         return null;
     }
 
-    public <T extends IKeyed<?>> AuditRecord audit(@Nonnull Class<?> dataStoreType,
-                                                @Nonnull String dataStoreName,
-                                                @Nonnull EAuditType type,
-                                                @Nonnull T entity,
-                                                String changeDelta,
-                                                String changeContext,
-                                                @Nonnull Principal user,
-                                                @Nonnull IAuditSerDe serializer) throws AuditException {
+    public <T extends IKeyed<?>> AuditRecord audit(@NonNull Class<?> dataStoreType,
+                                                   @NonNull String dataStoreName,
+                                                   @NonNull EAuditType type,
+                                                   @NonNull T entity,
+                                                   String changeDelta,
+                                                   String changeContext,
+                                                   @NonNull Principal user,
+                                                   @NonNull IAuditSerDe serializer) throws AuditException {
         AbstractAuditLogger logger = getLogger(entity.getClass());
         if (logger != null) {
             return logger.write(dataStoreType, dataStoreName, type, entity, entity.getClass(), changeDelta, changeContext, user, serializer);
@@ -117,29 +117,29 @@ public class AuditManager implements Closeable {
         return null;
     }
 
-    public <T extends IKeyed<?>> AuditRecord audit(@Nonnull Class<?> dataStoreType,
-                                                @Nonnull String dataStoreName,
-                                                @Nonnull String logger,
-                                                @Nonnull EAuditType type,
-                                                @Nonnull T entity,
-                                                String changeDelta,
-                                                String changeContext,
-                                                @Nonnull Principal user) throws AuditException {
+    public <T extends IKeyed<?>> AuditRecord audit(@NonNull Class<?> dataStoreType,
+                                                   @NonNull String dataStoreName,
+                                                   @NonNull String logger,
+                                                   @NonNull EAuditType type,
+                                                   @NonNull T entity,
+                                                   String changeDelta,
+                                                   String changeContext,
+                                                   @NonNull Principal user) throws AuditException {
         if (loggers.containsKey(logger)) {
             return loggers.get(logger).write(dataStoreType, dataStoreName, type, entity, entity.getClass(), changeDelta, changeContext, user);
         }
         return null;
     }
 
-    public <T extends IKeyed> AuditRecord audit(@Nonnull Class<?> dataStoreType,
-                                                @Nonnull String dataStoreName,
-                                                @Nonnull String logger,
-                                                @Nonnull EAuditType type,
-                                                @Nonnull T entity,
+    public <T extends IKeyed> AuditRecord audit(@NonNull Class<?> dataStoreType,
+                                                @NonNull String dataStoreName,
+                                                @NonNull String logger,
+                                                @NonNull EAuditType type,
+                                                @NonNull T entity,
                                                 String changeDelta,
                                                 String changeContext,
-                                                @Nonnull IAuditSerDe serializer,
-                                                @Nonnull Principal user) throws AuditException {
+                                                @NonNull IAuditSerDe serializer,
+                                                @NonNull Principal user) throws AuditException {
         if (loggers.containsKey(logger)) {
             return loggers.get(logger).write(dataStoreType, dataStoreName, type, entity, entity.getClass(), changeDelta, changeContext, user, serializer);
         }
@@ -177,65 +177,47 @@ public class AuditManager implements Closeable {
         return defaultLogger;
     }
 
-    /**
-     * Configure this type instance.
-     *
-     * @param node - Handle to the configuration node.
-     * @throws ConfigurationException
-     */
-    @Override
-    public void configure(@Nonnull AbstractConfigNode node) throws ConfigurationException {
-        Preconditions.checkArgument(node instanceof ConfigPathNode);
+    public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                          @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkArgument(dataStoreManager != null);
+        this.env = env;
         try {
-            AbstractConfigNode pnode = ConfigUtils.getPathNode(getClass(), (ConfigPathNode) node);
-            if (pnode != null) {
-                if (pnode instanceof ConfigPathNode) {
-                    pnode = ConfigUtils.getPathNode(AbstractAuditLogger.class, (ConfigPathNode) pnode);
-                    if (pnode instanceof ConfigPathNode) {
-                        readLoggerConfig((ConfigPathNode) pnode);
-                    }
-                } else if (pnode instanceof ConfigListElementNode) {
-                    List<ConfigElementNode> nodes = ((ConfigListElementNode) pnode).getValues();
-                    if (nodes != null && !nodes.isEmpty()) {
-                        for (ConfigElementNode en : nodes) {
-                            readLoggerConfig((ConfigPathNode) en);
-                        }
-                    }
-                }
+            if (!ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH)) return;
+
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
+            String path = ConfigReader.getPathAnnotation(AuditLoggerSettings.class);
+            Preconditions.checkState(!Strings.isNullOrEmpty(path));
+            List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(path);
+            for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                readLoggerConfig(config);
             }
         } catch (Throwable t) {
-            LogUtils.error(getClass(), t);
+            DefaultLogger.error(getClass().getCanonicalName(), t);
             throw new ConfigurationException(t);
         }
     }
 
     @SuppressWarnings("unchecked")
-    private void readLoggerConfig(ConfigPathNode node) throws ConfigurationException {
+    private void readLoggerConfig(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            String cname = ConfigUtils.getClassAttribute(node);
-            if (Strings.isNullOrEmpty(cname)) {
-                throw new ConfigurationException(
-                        String.format("Invalid Audit Logger configuration: Logger class not specified. [node=%s]",
-                                node.getAbsolutePath()));
-            }
-            Class<? extends AbstractAuditLogger> cls = (Class<? extends AbstractAuditLogger>) Class.forName(cname);
-            AbstractAuditLogger logger = cls.newInstance();
-            logger.configure(node);
+            Class<? extends AbstractAuditLogger> cls
+                    = (Class<? extends AbstractAuditLogger>) ConfigReader.readAsClass(xmlConfig);
+
+            AbstractAuditLogger<?> logger = ReflectionUtils.createInstance(cls);
+            logger.init(xmlConfig, env);
             logger.withDataStoreManager(dataStoreManager);
             loggers.put(logger.name(), logger);
-            if (logger.defaultLogger()) {
+            if (logger.isDefaultLogger()) {
                 defaultLogger = logger;
             }
-            List<String> classes = logger.classes();
+            Set<Class<?>> classes = logger.settings().getClasses();
             if (classes != null && !classes.isEmpty()) {
-                for (String c : classes) {
-                    Class<? extends IKeyed> type = (Class<? extends IKeyed>) Class.forName(c);
-                    entityIndex.put(type, logger);
+                for (Class<?> type : classes) {
+                    entityIndex.put((Class<? extends IKeyed<?>>) type, logger);
                 }
             }
-            LogUtils.info(getClass(), String.format("Configured logger. [name=%s][type=%s][default=%s]",
-                    logger.name(), logger.getClass().getCanonicalName(), logger.defaultLogger()));
+            DefaultLogger.info(String.format("Configured logger. [name=%s][type=%s][default=%s]",
+                    logger.name(), logger.getClass().getCanonicalName(), logger.isDefaultLogger()));
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }

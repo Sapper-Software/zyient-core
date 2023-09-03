@@ -1,6 +1,6 @@
 package ai.sapper.cdc.core.sources;
 
-import com.codekutter.common.stores.impl.DataStoreAuditContext;
+import ai.sapper.cdc.core.stores.impl.DataStoreAuditContext;
 import lombok.Getter;
 import lombok.Setter;
 

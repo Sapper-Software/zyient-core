@@ -2,6 +2,7 @@ package ai.sapper.cdc.intake.utils;
 
 import ai.sapper.cdc.common.GlobalConstants;
 import ai.sapper.cdc.common.utils.ChecksumUtils;
+import ai.sapper.cdc.common.utils.CypherUtils;
 import ai.sapper.cdc.common.utils.DefaultLogger;
 import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.io.FileSystem;
@@ -260,7 +261,7 @@ public class MailUtils {
         Preconditions.checkArgument(message != null);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(folder));
         String filename = String.format("%s.eml", message.getMessageId());
-        filename = URLEncoder.encode(ChecksumUtils.getKeyHash(filename), StandardCharsets.UTF_8);
+        filename = URLEncoder.encode(CypherUtils.getKeyHash(filename), StandardCharsets.UTF_8);
         return saveAsEml(message, folder, filename);
     }
 
@@ -274,7 +275,7 @@ public class MailUtils {
                         String.format("saveAsEml() Directory not found. [path=%s]", dir.getAbsolutePath()));
             }
             String fname = String.format("%s.eml",
-                    URLEncoder.encode(ChecksumUtils.getKeyHash(message.getMessageId().getKey()),
+                    URLEncoder.encode(CypherUtils.getKeyHash(message.getMessageId().getKey()),
                             StandardCharsets.UTF_8));
             fname = fname.replaceAll("[<>]", "");
             File outf = new File(String.format("%s/%s", dir.getAbsolutePath(), fname));
@@ -305,7 +306,7 @@ public class MailUtils {
                 throw new IOException(
                         String.format("saveAsEml() Directory not found. [path=%s]", dir.getAbsolutePath()));
             }
-            filename = URLEncoder.encode(ChecksumUtils.getKeyHash(
+            filename = URLEncoder.encode(CypherUtils.getKeyHash(
                     FilenameUtils.getBaseName(replaceAllSpecialCharacters(filename))), StandardCharsets.UTF_8);
             String fileExtension = FilenameUtils.getExtension(filename);
             String fname = (fileExtension.equalsIgnoreCase("eml")) ? filename : String.format("%s.eml", filename);

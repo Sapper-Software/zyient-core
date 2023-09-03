@@ -51,9 +51,6 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
         }
         BaseKafkaProducer<M> producer = type.getDeclaredConstructor().newInstance();
         producer.withConnection(connection);
-        if (env().auditLogger() != null) {
-            producer.withAuditLogger(env().auditLogger());
-        }
         if (((KafkaProducerSettings) settings).getPartitioner() != null) {
             KafkaPartitioner<M> partitioner = (KafkaPartitioner<M>) ((KafkaProducerSettings) settings)
                     .getPartitioner()

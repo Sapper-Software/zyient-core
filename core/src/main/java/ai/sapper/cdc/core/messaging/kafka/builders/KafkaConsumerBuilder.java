@@ -53,9 +53,7 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
         }
         BaseKafkaConsumer<M> consumer = type.getDeclaredConstructor().newInstance();
         consumer.withConnection(connection);
-        if (env().auditLogger() != null) {
-            consumer.withAuditLogger(env().auditLogger());
-        }
+
         if (!Strings.isNullOrEmpty(settings.getOffsetManager())) {
             OffsetStateManager<?> offsetStateManager = env().stateManager()
                     .getOffsetManager(settings.getOffsetManager(), KafkaStateManager.class);

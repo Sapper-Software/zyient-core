@@ -230,9 +230,6 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                     M cd = deserialize(record.value());
                     KafkaMessage<String, M> response = new KafkaMessage<>(record, cd);
 
-                    if (auditLogger() != null) {
-                        auditLogger().audit(getClass(), System.currentTimeMillis(), response.value());
-                    }
                     array.add(response);
                     offsetMap.put(response.id(), new KafkaOffsetData(record.key(), record));
                     offsets.put(record.partition(), new KafkaOffsetValue(record.offset()));

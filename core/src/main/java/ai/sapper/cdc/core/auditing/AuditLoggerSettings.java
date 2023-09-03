@@ -39,7 +39,7 @@ public class AuditLoggerSettings extends Settings {
     @Config(name = "name")
     private String name;
     @Config(name = "serializer", type = Class.class)
-    private Class<? extends IAuditSerDe<?>> serializerClass;
+    private Class<? extends IAuditSerDe> serializerClass;
     @Config(name = "default", required = false, type = Boolean.class)
     private boolean defaultLogger = false;
     @Config(name = "dataStore.name")

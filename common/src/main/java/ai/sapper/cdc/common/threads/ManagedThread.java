@@ -22,15 +22,17 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import javax.annotation.Nonnull;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 @Getter
 @Accessors(fluent = true)
-public class ManagedThread extends Thread {
+public class ManagedThread extends Thread implements Closeable {
     private final ThreadState state = new ThreadState();
     private final Set<IThreadListener> fIThreadListeners = new HashSet<>();
-    private Runnable runnable;
+    private final Runnable runnable;
     private final ThreadManager manager;
 
     public ManagedThread(@NonNull ThreadManager manager,
@@ -67,6 +69,7 @@ public class ManagedThread extends Thread {
 
     @Override
     public synchronized void start() {
+        manager.addThread(getName(), this);
         if (!fIThreadListeners.isEmpty()) {
             for (IThreadListener listener : fIThreadListeners) {
                 listener.event(EThreadEvent.Start, this);
@@ -97,7 +100,7 @@ public class ManagedThread extends Thread {
                 }
             }
             try {
-                manager.remove(this.getName());
+                manager.removeThread(this.getName());
             } catch (Exception ex) {
                 DefaultLogger.error(getClass().getCanonicalName(), ex);
             }
@@ -119,6 +122,13 @@ public class ManagedThread extends Thread {
             for (IThreadListener listener : fIThreadListeners) {
                 listener.event(EThreadEvent.Error, this, type, error);
             }
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (state.isRunning()) {
+            state.setState(EThreadState.Stopped);
         }
     }
 }

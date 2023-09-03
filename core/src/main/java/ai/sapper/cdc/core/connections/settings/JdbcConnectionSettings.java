@@ -18,7 +18,6 @@ package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.ConfigPath;
-import ai.sapper.cdc.core.model.Encrypted;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
@@ -74,7 +73,6 @@ public class JdbcConnectionSettings extends ConnectionSettings {
     private String db;
     @Config(name = Constants.CONFIG_USER)
     private String user;
-    @Encrypted
     @Config(name = Constants.CONFIG_PASS_KEY)
     private String password;
     @Config(name = Constants.CONFIG_POOL_SIZE, required = false, type = Integer.class)

@@ -48,9 +48,6 @@ public class ChronicleProducerBuilder<M> extends MessageSenderBuilder<String, M>
         }
         BaseChronicleProducer<M> producer = type.getDeclaredConstructor().newInstance();
         producer.withConnection(connection);
-        if (env().auditLogger() != null) {
-            producer.withAuditLogger(env().auditLogger());
-        }
         return (BaseChronicleProducer<M>) producer.init();
     }
 }

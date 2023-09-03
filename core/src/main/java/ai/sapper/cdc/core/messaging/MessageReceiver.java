@@ -16,8 +16,8 @@
 
 package ai.sapper.cdc.core.messaging;
 
-import ai.sapper.cdc.common.audit.AuditLogger;
 import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.core.auditing.AbstractAuditLogger;
 import ai.sapper.cdc.core.connections.MessageConnection;
 import ai.sapper.cdc.core.processing.ProcessorState;
 import ai.sapper.cdc.core.state.Offset;
@@ -39,7 +39,7 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
     private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
     private int batchSize = 32;
-    private AuditLogger auditLogger;
+    private AbstractAuditLogger<?> auditLogger;
     private OffsetStateManager<?> offsetStateManager;
     private boolean stateful = false;
     private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
@@ -67,7 +67,7 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
         return this;
     }
 
-    public MessageReceiver<I, M> withAuditLogger(AuditLogger auditLogger) {
+    public MessageReceiver<I, M> withAuditLogger(AbstractAuditLogger<?> auditLogger) {
         this.auditLogger = auditLogger;
         return this;
     }

@@ -19,10 +19,10 @@ package ai.sapper.cdc.common.threads;
 import lombok.NonNull;
 
 public interface ThreadManager {
-    ThreadManager add(@NonNull String name,
-                      @NonNull ManagedThread thread);
+    ThreadManager addThread(@NonNull String name,
+                            @NonNull ManagedThread thread);
 
-    ManagedThread get(@NonNull String name);
+    ManagedThread getThread(@NonNull String name);
 
-    ManagedThread remove(@NonNull String name) throws Exception;
+    ManagedThread removeThread(@NonNull String name) throws Exception;
 }

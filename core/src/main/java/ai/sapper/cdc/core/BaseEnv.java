@@ -19,6 +19,8 @@ package ai.sapper.cdc.core;
 import ai.sapper.cdc.common.AbstractEnvState;
 import ai.sapper.cdc.common.config.ConfigReader;
 import ai.sapper.cdc.common.model.InvalidDataError;
+import ai.sapper.cdc.common.threads.ManagedThread;
+import ai.sapper.cdc.common.threads.ThreadManager;
 import ai.sapper.cdc.common.utils.NetUtils;
 import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.ConnectionManager;
@@ -42,20 +44,19 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.locks.ReentrantLock;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class BaseEnv<T extends Enum<?>> {
+public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     public static class Constants {
         public static final String __CONFIG_PATH_ENV = "env";
         public static final String CONFIG_ENV_NAME = String.format("%s.name", __CONFIG_PATH_ENV);
         private static final String LOCK_GLOBAL = "global";
+        private static final String THREAD_HEARTBEAT = "HEARTBEAT_%s";
     }
 
     private static MeterRegistry meterRegistry;
@@ -75,12 +76,12 @@ public abstract class BaseEnv<T extends Enum<?>> {
     private BaseEnvConfig config;
     private List<InetAddress> hostIPs;
     private final String name;
-    private Thread heartbeatThread;
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
     private FileSystemManager fileSystemManager;
     private String zkBasePath;
     private Processor<?, ?> processor;
+    private final Map<String, ManagedThread> managedThreads = new HashMap<>();
 
     public BaseEnv(@NonNull String name) {
         this.name = name;
@@ -121,15 +122,17 @@ public abstract class BaseEnv<T extends Enum<?>> {
         return setup(xmlConfig, state);
     }
 
-    @SuppressWarnings("unchecked")
     private BaseEnv<T> setup(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                              @NonNull AbstractEnvState<T> state) throws ConfigurationException {
         try {
             String temp = System.getProperty("java.io.tmpdir");
-            temp = String.format("%s/sapper/cdc/%s", temp, getClass().getSimpleName());
+            temp = String.format("%s/zyient/%s", temp, getClass().getSimpleName());
             File tdir = new File(temp);
             if (!tdir.exists()) {
-                tdir.mkdirs();
+                if (!tdir.mkdirs()) {
+                    throw new IOException(
+                            String.format("Error creating temporary folder. [path=%s]", tdir.getAbsolutePath()));
+                }
             }
 
             this.state = state;
@@ -182,11 +185,29 @@ public abstract class BaseEnv<T extends Enum<?>> {
         }
     }
 
+    @Override
+    public ThreadManager addThread(@NonNull String name,
+                                   @NonNull ManagedThread thread) {
+        managedThreads.put(name, thread);
+        return this;
+    }
+
+    @Override
+    public ManagedThread getThread(@NonNull String name) {
+        return managedThreads.get(name);
+    }
+
+    @Override
+    public ManagedThread removeThread(@NonNull String name) throws Exception {
+        return managedThreads.remove(name);
+    }
+
     public void postInit() throws Exception {
         if (settings.isEnableHeartbeat()) {
+            String tname = String.format(Constants.THREAD_HEARTBEAT, name);
             heartbeat = new HeartbeatThread(name(), settings.getHeartbeatFreq().normalized())
                     .withStateManager(stateManager);
-            heartbeatThread = new Thread(heartbeat);
+            ManagedThread heartbeatThread = new ManagedThread(this, heartbeat, name);
             heartbeatThread.start();
         }
     }
@@ -275,10 +296,13 @@ public abstract class BaseEnv<T extends Enum<?>> {
             processor.close();
             processor = null;
         }
-        if (heartbeatThread != null) {
-            heartbeat().terminate();
-            heartbeatThread().join();
-            heartbeatThread = null;
+        if (!managedThreads.isEmpty()) {
+            for (String key : managedThreads.keySet()) {
+                ManagedThread t = managedThreads.get(key);
+                t.close();
+                t.join();
+            }
+            managedThreads.clear();
         }
         if (stateManager != null) {
             stateManager.close();

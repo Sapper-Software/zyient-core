@@ -51,9 +51,6 @@ public class ChronicleConsumerBuilder<M> extends MessageReceiverBuilder<String, 
         }
         BaseChronicleConsumer<M> consumer = type.getDeclaredConstructor().newInstance();
         consumer.withConnection(connection);
-        if (env().auditLogger() != null) {
-            consumer.withAuditLogger(env().auditLogger());
-        }
         if (!Strings.isNullOrEmpty(settings.getOffsetManager())) {
             OffsetStateManager<?> offsetStateManager = env().stateManager()
                     .getOffsetManager(settings.getOffsetManager(), ChronicleStateManager.class);

@@ -16,7 +16,7 @@
 
 package ai.sapper.cdc.core.messaging;
 
-import ai.sapper.cdc.common.audit.AuditLogger;
+import ai.sapper.cdc.core.auditing.AbstractAuditLogger;
 import ai.sapper.cdc.core.connections.MessageConnection;
 import ai.sapper.cdc.core.processing.ProcessorState;
 import com.google.common.base.Preconditions;
@@ -32,7 +32,7 @@ import java.util.List;
 public abstract class MessageSender<K, M> implements Closeable {
     private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
-    private AuditLogger auditLogger;
+    private AbstractAuditLogger<?> auditLogger;
 
     public MessageSender<K, M> withConnection(@NonNull MessageConnection connection) {
         Preconditions.checkArgument(connection.isConnected());
@@ -43,7 +43,7 @@ public abstract class MessageSender<K, M> implements Closeable {
         return this;
     }
 
-    public MessageSender<K, M> withAuditLogger(AuditLogger auditLogger) {
+    public MessageSender<K, M> withAuditLogger(AbstractAuditLogger<?> auditLogger) {
         this.auditLogger = auditLogger;
         return this;
     }

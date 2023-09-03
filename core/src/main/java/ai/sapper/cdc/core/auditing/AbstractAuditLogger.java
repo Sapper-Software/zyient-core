@@ -64,6 +64,16 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
     private MapThreadCache<String, AuditRecord> cache;
     private AuditLoggerSettings settings;
 
+    public String name() {
+        Preconditions.checkNotNull(settings);
+        return settings.getName();
+    }
+
+    public boolean isDefaultLogger() {
+        Preconditions.checkNotNull(settings);
+        return settings().isDefaultLogger();
+    }
+
     protected AbstractAuditLogger(@NonNull Class<? extends AuditLoggerSettings> settingsType) {
         this.settingsType = settingsType;
     }
@@ -289,12 +299,12 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
                 }
             }
             AbstractDataStore<C> dataStore = getDataStore(false);
-            if (dataStore == null) {
-                throw new AuditException(
-                        String.format("Data Store not found. [type=%s][name=%s]",
-                                settings.getDataStoreType().getCanonicalName(), settings.getDataStoreName()));
-            }
-            try {
+            try (dataStore) {
+                if (dataStore == null) {
+                    throw new AuditException(
+                            String.format("Data Store not found. [type=%s][name=%s]",
+                                    settings.getDataStoreType().getCanonicalName(), settings.getDataStoreName()));
+                }
                 if (dataStore.connection().hasTransactionSupport()) {
                     TransactionDataStore ts = (TransactionDataStore) dataStore;
                     if (ts.isInTransaction()) {
@@ -302,8 +312,6 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
                     }
                 }
                 return size;
-            } finally {
-                dataStore.close();
             }
         } catch (Throwable t) {
             throw new AuditException(t);

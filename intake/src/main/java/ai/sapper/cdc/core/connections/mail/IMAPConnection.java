@@ -46,6 +46,26 @@ public class IMAPConnection extends AbstractMailConnection<Store> {
         super(IMAPConnectionSettings.class, IMAPConnectionSettings.__CONFIG_PATH);
     }
 
+    public String getEmailId() {
+        Preconditions.checkState(settings instanceof IMAPConnectionSettings);
+        return settings.getEmailId();
+    }
+
+    public String getMailServer() {
+        Preconditions.checkState(settings instanceof IMAPConnectionSettings);
+        return settings.getMailServer();
+    }
+
+    public int getPort() {
+        Preconditions.checkState(settings instanceof IMAPConnectionSettings);
+        return settings.getPort();
+    }
+
+    public String getUsername() {
+        Preconditions.checkState(settings instanceof IMAPConnectionSettings);
+        return settings.getUsername();
+    }
+
     public void open() throws Exception {
         Preconditions.checkState(state.isConnected());
         IMAPConnectionSettings settings = (IMAPConnectionSettings) settings();
