@@ -18,7 +18,6 @@ package ai.sapper.cdc.core.io.encryption;
 
 import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.core.BaseEnv;
-import ai.sapper.cdc.core.io.Reader;
 import ai.sapper.cdc.core.io.model.FileInode;
 import lombok.NonNull;
 
@@ -26,8 +25,8 @@ import java.io.File;
 import java.io.IOException;
 
 public abstract class EncryptionHandler {
-    private final String key;
-    private final BaseEnv<?> env;
+    protected final String key;
+    protected final BaseEnv<?> env;
 
     public EncryptionHandler(@NonNull BaseEnv<?> env,
                              @NonNull String key) {
@@ -35,11 +34,13 @@ public abstract class EncryptionHandler {
         this.key = key;
     }
 
-    public abstract File encrypt(@NonNull File source,
+    public abstract void encrypt(@NonNull File source,
                                  @NonNull FileInode inode,
-                                 Context context) throws IOException;
+                                 Context context,
+                                 @NonNull File outfile) throws IOException;
 
-    public abstract File decrypt(@NonNull File source,
+    public abstract void decrypt(@NonNull File source,
                                  @NonNull FileInode inode,
-                                 Context context) throws IOException;
+                                 Context context,
+                                 @NonNull File outfile) throws IOException;
 }

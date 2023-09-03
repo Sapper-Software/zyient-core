@@ -36,9 +36,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CypherUtils {
-    private static final String HASH_ALGO = "MD5";
-    private static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
-    private static final String CIPHER_TYPE = "AES";
+    public static final String HASH_ALGO = "MD5";
+    public static final String CIPHER_ALGO = "AES/CBC/PKCS5Padding";
+    public static final String CIPHER_TYPE = "AES";
     @Parameter(names = {"-h", "--hash"}, description = "Get the MD5 Hash")
     private boolean doHash = false;
     @Parameter(names = {"-e", "--encrypt"}, description = "Encrypt the passed String")
@@ -95,35 +95,25 @@ public class CypherUtils {
      * @return - Encrypted Buffer.
      * @throws Exception
      */
-    public static byte[] encrypt(@Nonnull byte[] data, @Nonnull String password, @Nonnull String iv)
+    public static byte[] encrypt(@Nonnull String algo,
+                                 @Nonnull byte[] data,
+                                 @Nonnull String password,
+                                 @Nonnull String iv)
             throws Exception {
         Preconditions.checkArgument(data != null && data.length > 0);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(password));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(iv));
 
-        Cipher cipher = getCipher(password, iv, Cipher.ENCRYPT_MODE);
+        Cipher cipher = getCipher(algo, password, iv, Cipher.ENCRYPT_MODE);
 
         return cipher.doFinal(data);
     }
 
-    /**
-     * Encrypt the passed data buffer using the passcode.
-     *
-     * @param data     - Data Buffer.
-     * @param password - Passcode.
-     * @param iv       - IV Key
-     * @return - Base64 encoded String.
-     * @throws Exception
-     */
-    public static String encryptAsString(@Nonnull byte[] data,
-                                         @Nonnull String password, @Nonnull String iv)
+    public static byte[] encrypt(@Nonnull byte[] data,
+                                 @Nonnull String password,
+                                 @Nonnull String iv)
             throws Exception {
-        Preconditions.checkArgument(data != null && data.length > 0);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(password));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(iv));
-
-        byte[] encrypted = encrypt(data, password, iv);
-        return new String(Base64.encodeBase64(encrypted));
+        return encrypt(CIPHER_ALGO, data, password, iv);
     }
 
     /**
@@ -135,15 +125,53 @@ public class CypherUtils {
      * @return - Base64 encoded String.
      * @throws Exception
      */
-    public static String encryptAsString(@Nonnull String data,
-                                         @Nonnull String password, @Nonnull String iv)
+    public static String encryptAsString(@Nonnull String algo,
+                                         @Nonnull byte[] data,
+                                         @Nonnull String password,
+                                         @Nonnull String iv)
+            throws Exception {
+        Preconditions.checkArgument(data != null && data.length > 0);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(password));
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(iv));
+
+        byte[] encrypted = encrypt(algo, data, password, iv);
+        return new String(Base64.encodeBase64(encrypted));
+    }
+
+    public static String encryptAsString(@Nonnull byte[] data,
+                                         @Nonnull String password,
+                                         @Nonnull String iv)
+            throws Exception {
+        return encryptAsString(CIPHER_ALGO, data, password, iv);
+    }
+
+    /**
+     * Encrypt the passed data buffer using the passcode.
+     *
+     * @param data     - Data Buffer.
+     * @param password - Passcode.
+     * @param iv       - IV Key
+     * @return - Base64 encoded String.
+     * @throws Exception
+     */
+    public static String encryptAsString(@Nonnull String algo,
+                                         @Nonnull String data,
+                                         @Nonnull String password,
+                                         @Nonnull String iv)
             throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(data));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(password));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(iv));
 
-        byte[] encrypted = encrypt(data.getBytes(GlobalConstants.defaultCharset()), password, iv);
+        byte[] encrypted = encrypt(algo, data.getBytes(GlobalConstants.defaultCharset()), password, iv);
         return new String(Base64.encodeBase64(encrypted));
+    }
+
+    public static String encryptAsString(@Nonnull String data,
+                                         @Nonnull String password,
+                                         @Nonnull String iv)
+            throws Exception {
+        return encryptAsString(CIPHER_ALGO, data, password, iv);
     }
 
     /**
@@ -155,20 +183,38 @@ public class CypherUtils {
      * @return - Decrypted Data Buffer.
      * @throws Exception
      */
-    public static byte[] decrypt(@Nonnull byte[] data, @Nonnull String password, @Nonnull String iv) throws Exception {
+    public static byte[] decrypt(@Nonnull String algo,
+                                 @Nonnull byte[] data,
+                                 @Nonnull String password,
+                                 @Nonnull String iv) throws Exception {
         Preconditions.checkArgument(data != null && data.length > 0);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(password));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(iv));
 
-        Cipher cipher = getCipher(password, iv, Cipher.DECRYPT_MODE);
+        Cipher cipher = getCipher(algo, password, iv, Cipher.DECRYPT_MODE);
         // decrypt the text
 
         return cipher.doFinal(data);
     }
 
-    private static Cipher getCipher(String password, String iv, int mode) throws Exception {
+    public static byte[] decrypt(@Nonnull byte[] data,
+                                 @Nonnull String password,
+                                 @Nonnull String iv) throws Exception {
+        return decrypt(CIPHER_ALGO, data, password, iv);
+    }
+
+    public static Cipher getCipher(@Nonnull String password,
+                                   @Nonnull String iv,
+                                   int mode) throws Exception {
+        return getCipher(CIPHER_ALGO, password, iv, mode);
+    }
+
+    public static Cipher getCipher(@Nonnull String algo,
+                                   @Nonnull String password,
+                                   @Nonnull String iv,
+                                   int mode) throws Exception {
         // Create key and cipher
-        Key aesKey = new SecretKeySpec(password.getBytes(GlobalConstants.defaultCharset()), CIPHER_TYPE);
+        Key aesKey = new SecretKeySpec(password.getBytes(GlobalConstants.defaultCharset()), algo);
         IvParameterSpec ivspec = new IvParameterSpec(iv.getBytes(GlobalConstants.defaultCharset()));
 
         Cipher cipher = Cipher.getInstance(CIPHER_ALGO);

@@ -14,22 +14,15 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.model;
+package ai.sapper.cdc.common.threads;
 
-import ai.sapper.cdc.common.model.Context;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
 
-@Getter
-@Setter
-public class Encrypted {
-    private String key;
-    private Context context = new Context();
+public interface ThreadManager {
+    ThreadManager add(@NonNull String name,
+                      @NonNull ManagedThread thread);
 
-    public Encrypted add(@NonNull String key,
-                         @NonNull String value) {
-        context.put(key, value);
-        return this;
-    }
+    ManagedThread get(@NonNull String name);
+
+    ManagedThread remove(@NonNull String name) throws Exception;
 }

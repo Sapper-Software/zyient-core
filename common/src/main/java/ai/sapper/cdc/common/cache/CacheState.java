@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.model;
+package ai.sapper.cdc.common.cache;
 
-import ai.sapper.cdc.common.model.Context;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import ai.sapper.cdc.common.AbstractState;
 
-@Getter
-@Setter
-public class Encrypted {
-    private String key;
-    private Context context = new Context();
+public class CacheState extends AbstractState<ECacheState> {
+    public CacheState() {
+        super(ECacheState.Error, ECacheState.Unknown);
+    }
 
-    public Encrypted add(@NonNull String key,
-                         @NonNull String value) {
-        context.put(key, value);
-        return this;
+    public boolean isAvailable() {
+        return (getState() == ECacheState.Available);
     }
 }

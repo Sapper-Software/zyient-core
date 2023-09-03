@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.io;
 
 import ai.sapper.cdc.common.config.ConfigReader;
+import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.common.utils.*;
 import ai.sapper.cdc.core.BaseEnv;
 import ai.sapper.cdc.core.DistributedLock;
@@ -881,7 +882,8 @@ public abstract class FileSystem implements Closeable {
 
     public FileInode setEncryption(@NonNull PathInfo path,
                                    @NonNull EncryptionType type,
-                                   String password) throws IOException {
+                                   String password,
+                                   Context context) throws IOException {
         FileInode inode = (FileInode) getInode(path);
         if (inode == null) {
             throw new IOException(String.format("File not found. [path=%s]", path.path()));
@@ -894,13 +896,14 @@ public abstract class FileSystem implements Closeable {
                 throw new IOException("Encryption key not specified in settings.");
             }
             Encrypted e = new Encrypted();
+            e.setContext(context);
             try {
                 String passKey = env.keyStore().read(settings.getEncryptionKey());
                 if (Strings.isNullOrEmpty(passKey)) {
                     throw new IOException(
                             String.format("Encryption key not found. [key=%s]", settings.getEncryptionKey()));
                 }
-                String key = CypherUtils.encryptAsString(password, passKey, getClass().getCanonicalName());
+                String key = CypherUtils.encryptAsString(password, passKey, settings.getEncryptionKey());
                 e.setKey(key);
                 inode.setEncrypted(e);
             } catch (Exception ex) {

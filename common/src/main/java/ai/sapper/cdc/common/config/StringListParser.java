@@ -19,7 +19,6 @@ package ai.sapper.cdc.common.config;
 import com.google.common.base.Strings;
 import lombok.NonNull;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 

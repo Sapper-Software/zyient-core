@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.model;
+package ai.sapper.cdc.common.cache.dynamic;
 
-import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.config.ConfigPath;
+import ai.sapper.cdc.common.config.Settings;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class Encrypted {
-    private String key;
-    private Context context = new Context();
-
-    public Encrypted add(@NonNull String key,
-                         @NonNull String value) {
-        context.put(key, value);
-        return this;
-    }
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+@ConfigPath(path = "cache-loader")
+public class AbstractCacheLoaderSettings extends Settings {
 }

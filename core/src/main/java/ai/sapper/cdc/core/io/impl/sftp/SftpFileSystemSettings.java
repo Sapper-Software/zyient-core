@@ -14,22 +14,27 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.io.model;
+package ai.sapper.cdc.core.io.impl.sftp;
 
-import ai.sapper.cdc.common.model.Context;
+import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.io.impl.RemoteFileSystemSettings;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class Encrypted {
-    private String key;
-    private Context context = new Context();
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class SftpFileSystemSettings extends RemoteFileSystemSettings {
+    @Config(name = "host")
+    private String host;
+    @Config(name = "username")
+    private String username;
+    @Config(name = "passKey")
+    private String passKey;
 
-    public Encrypted add(@NonNull String key,
-                         @NonNull String value) {
-        context.put(key, value);
-        return this;
+    public SftpFileSystemSettings() {
+        setType(SftpFileSystemSettings.class.getCanonicalName());
     }
 }

@@ -16,13 +16,22 @@
 
 package ai.sapper.cdc.common.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Getter
+@Setter
+@JsonTypeInfo(
+        use = JsonTypeInfo.Id.CLASS
+)
 public class Context {
-    public final Map<String, Object> params = new HashMap<>();
+    public Map<String, Object> params = new HashMap<>();
 
     public Context() {
     }
@@ -40,6 +49,7 @@ public class Context {
         return this;
     }
 
+    @JsonIgnore
     public Object get(@NonNull String key) {
         return params.get(key);
     }
@@ -56,6 +66,7 @@ public class Context {
         params.clear();
     }
 
+    @JsonIgnore
     public boolean isEmpty() {
         return params.isEmpty();
     }
