@@ -27,6 +27,7 @@ import ai.sapper.cdc.core.connections.ZookeeperConnection;
 import ai.sapper.cdc.core.connections.settings.ConnectionSettings;
 import ai.sapper.cdc.core.connections.settings.EConnectionType;
 import ai.sapper.cdc.core.connections.settings.MailConnectionSettings;
+import ai.sapper.cdc.core.stores.AbstractConnection;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import lombok.AccessLevel;
@@ -39,10 +40,8 @@ import org.apache.curator.framework.CuratorFramework;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class AbstractMailConnection<T> implements Connection, ICloseDelegate<T> {
-    private final Class<? extends MailConnectionSettings> settingsType;
+public abstract class AbstractMailConnection<T> extends AbstractConnection<T> implements ICloseDelegate<T> {
     private final String path;
-    protected MailConnectionSettings settings;
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
     protected BaseEnv<?> env;
@@ -50,14 +49,8 @@ public abstract class AbstractMailConnection<T> implements Connection, ICloseDel
 
     protected AbstractMailConnection(@NonNull Class<? extends MailConnectionSettings> settingsType,
                                      String path) {
-        this.settingsType = settingsType;
+        super(EConnectionType.email, settingsType);
         this.path = path;
-    }
-
-    @Override
-    public String name() {
-        Preconditions.checkNotNull(settings);
-        return settings.getName();
     }
 
     @Override
@@ -66,13 +59,7 @@ public abstract class AbstractMailConnection<T> implements Connection, ICloseDel
         synchronized (state) {
             if (state.isConnected()) return this;
             try {
-                if (Strings.isNullOrEmpty(path)) {
-                    configReader = new MailConfigReader(config, settingsType);
-                } else {
-                    configReader = new MailConfigReader(config, path, settingsType);
-                }
-                configReader.read();
-                settings = (MailConnectionSettings) configReader.settings();
+                super.init(config, env);
                 return setup(settings, env);
             } catch (Exception ex) {
                 state.error(ex);
@@ -89,20 +76,7 @@ public abstract class AbstractMailConnection<T> implements Connection, ICloseDel
         synchronized (state) {
             if (state.isConnected()) return this;
             try {
-                String p = this.path;
-                if (Strings.isNullOrEmpty(p)) {
-                    p = MailConfigReader.__CONFIG_PATH;
-                }
-                CuratorFramework client = connection.client();
-                String zkPath = new PathUtils.ZkPathBuilder(path)
-                        .withPath(p)
-                        .build();
-                ZkConfigReader reader = new ZkConfigReader(client, settingsType);
-                if (!reader.read(zkPath)) {
-                    throw new ConnectionError(
-                            String.format("Exchange Connection settings not found. [path=%s]", zkPath));
-                }
-                settings = (MailConnectionSettings) reader.settings();
+                super.init(name, connection, path, env);
                 return setup(settings, env);
             } catch (Exception ex) {
                 state.error(ex);

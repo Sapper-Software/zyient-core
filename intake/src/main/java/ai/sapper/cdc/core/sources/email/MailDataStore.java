@@ -1,4 +1,20 @@
-package ai.sapper.cdc.core.sources;
+/*
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package ai.sapper.cdc.core.sources.email;
 
 import ai.sapper.cdc.common.model.Context;
 import ai.sapper.cdc.common.model.entity.IEntity;
@@ -8,9 +24,9 @@ import ai.sapper.cdc.common.utils.ReflectionUtils;
 import ai.sapper.cdc.core.connections.mail.IMAPConnection;
 import ai.sapper.cdc.core.connections.mail.SMTPConnection;
 import ai.sapper.cdc.core.model.StringKey;
+import ai.sapper.cdc.core.sources.email.restq.MailRQLParser;
 import ai.sapper.cdc.core.stores.BaseSearchResult;
 import ai.sapper.cdc.core.stores.DataStoreException;
-import ai.sapper.cdc.core.stores.DataStoreManager;
 import ai.sapper.cdc.core.stores.impl.DataStoreAuditContext;
 import ai.sapper.cdc.core.stores.impl.EntitySearchResult;
 import ai.sapper.cdc.intake.model.AbstractMailMessage;
@@ -33,7 +49,6 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import javax.annotation.Nonnull;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -41,7 +56,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 @Getter
-@Setter
 @Accessors(fluent = true)
 public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder> {
     public static final String DEFAULT_IMAP_FOLDER = "INBOX";
@@ -50,55 +64,42 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     @Setter(AccessLevel.NONE)
     private SMTPConnection smtpConnection;
     @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     private Map<String, Folder> openedFolders = new HashMap<>();
 
+
     @Override
-    public void configureDataStore(@Nonnull DataStoreManager dataStoreManager) throws ConfigurationException {
-        Preconditions.checkState(config() instanceof MailDataSourceDbConfig);
+    public void configure() throws ConfigurationException {
+        Preconditions.checkArgument(settings instanceof MailDataSourceSettings);
+        MailDataSourceSettings settings = (MailDataSourceSettings) settings();
         try {
-            imapConnection = (IMAPConnection) dataStoreManager.getConnection(config().getConnectionName(), Store.class);
-            if (imapConnection == null) {
-                throw new ConfigurationException(String.format("IMAP Connection not found. [type=%s][name=%s]",
-                        IMAPConnection.class.getCanonicalName(), config().getConnectionName()));
-            }
-            withConnection(imapConnection);
+            Preconditions.checkArgument(connection() instanceof IMAPConnection);
+            imapConnection = (IMAPConnection) connection();
             Store store = imapConnection.connection();
             if (!store.isConnected()) {
                 throw new ConfigurationException(String.format("Store not connected. [name=%s]", name()));
             }
-            String smtp = ((MailDataSourceDbConfig) config()).getSmtpConnectionName();
-            if (!Strings.isNullOrEmpty(smtp)) {
-                smtpConnection = (SMTPConnection) ConnectionManager.get()
-                        .connection(((MailDataSourceDbConfig) config()).getSmtpConnectionName(), Session.class);
+            String sendConnection = settings.getSmtpConnectionName();
+            if (!Strings.isNullOrEmpty(sendConnection)) {
+                smtpConnection = dataStoreManager().getConnection(sendConnection, SMTPConnection.class);
                 if (smtpConnection == null) {
                     throw new ConfigurationException(String.format("SMTP Connection not found. [type=%s][name=%s]",
                             SMTPConnection.class.getCanonicalName(),
-                            ((MailDataSourceDbConfig) config()).getSmtpConnectionName()));
+                            sendConnection));
                 }
-            } else {
-                throw ConfigurationException.propertyNotFoundException("SMTP CONNECTION NAME");
             }
-            if (!Strings.isNullOrEmpty(((MailDataSourceDbConfig) config()).getMailbox())) {
-                mailbox = ((MailDataSourceDbConfig) config()).getMailbox();
-            } else {
+            mailbox = settings.getMailbox();
+            if (Strings.isNullOrEmpty(mailbox)) {
                 mailbox = DEFAULT_IMAP_FOLDER;
             }
-            if (config().getMaxResults() > 0) {
-                maxResults(config().getMaxResults());
-            } else {
-                maxResults(DEFAULT_MAX_RESULTS);
-            }
-
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
     }
 
     @Override
-    public MessageWrapper createWrappedMessage(@Nonnull String mailId,
-                                               @Nonnull EmailMessage email,
-                                               @Nonnull String sender) throws DataStoreException {
+    public MessageWrapper createWrappedMessage(@NonNull String mailId,
+                                               @NonNull EmailMessage email,
+                                               @NonNull String sender) throws DataStoreException {
         Message message = createMessage(mailId, email, sender);
         return new MessageWrapper(mailId, message);
     }
@@ -112,7 +113,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public Message createMessage(@Nonnull String mailId, @Nonnull EmailMessage email, @Nonnull String sender)
+    public Message createMessage(@NonNull String mailId, @NonNull EmailMessage email, @NonNull String sender)
             throws DataStoreException {
         try {
             Session session = null;
@@ -186,7 +187,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public MessageWrapper createMessage(@Nonnull String mailId, @Nonnull String sender, @Nonnull String[] sendTo,
+    public MessageWrapper createMessage(@NonNull String mailId, @NonNull String sender, @NonNull String[] sendTo,
                                         String[] ccTo, String[] bccTo, String subject) throws DataStoreException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(sender));
         Preconditions.checkArgument(sendTo != null && sendTo.length > 0);
@@ -234,8 +235,8 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
 
     @Override
     @SuppressWarnings("unchecked")
-    public <E extends IEntity<?>> E createEntity(@Nonnull E entity,
-                                                 @Nonnull Class<? extends E> entityClass,
+    public <E extends IEntity<?>> E createEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> entityClass,
                                                  Context context) throws DataStoreException {
         Preconditions.checkState(smtpConnection != null);
         Preconditions.checkArgument(entity instanceof MessageWrapper);
@@ -252,15 +253,15 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public <E extends IEntity<?>> E updateEntity(@Nonnull E entity,
-                                                 @Nonnull Class<? extends E> entityClass,
+    public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> entityClass,
                                                  Context context) throws DataStoreException {
         return create(entity, entityClass, context);
     }
 
     @Override
-    public <E extends IEntity<?>> boolean deleteEntity(@Nonnull Object key,
-                                                       @Nonnull Class<? extends E> entityClass,
+    public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
+                                                       @NonNull Class<? extends E> entityClass,
                                                        Context context) throws DataStoreException {
         MessageWrapper m = (MessageWrapper) findEntity(key, entityClass, context);
         if (m != null) {
@@ -279,8 +280,8 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
 
     @Override
     @SuppressWarnings({"unchecked"})
-    public <E extends IEntity<?>> E findEntity(@Nonnull Object key,
-                                               @Nonnull Class<? extends E> entityClass,
+    public <E extends IEntity<?>> E findEntity(@NonNull Object key,
+                                               @NonNull Class<? extends E> entityClass,
                                                Context context) throws DataStoreException {
         Preconditions.checkArgument(key instanceof String || key instanceof StringKey);
         Preconditions.checkArgument(ReflectionUtils.isSuperType(MessageWrapper.class, entityClass));
@@ -308,7 +309,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
                                                                int offset,
                                                                int maxResults,
-                                                               @Nonnull Class<? extends E> entityClass,
+                                                               @NonNull Class<? extends E> entityClass,
                                                                Context context) throws DataStoreException {
         return doSearch(query, offset, maxResults, null, entityClass, context);
     }
@@ -319,7 +320,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
                                                                int offset,
                                                                int maxResults,
                                                                Map<String, Object> parameters,
-                                                               @Nonnull Class<? extends E> entityClass,
+                                                               @NonNull Class<? extends E> entityClass,
                                                                Context context)
             throws DataStoreException {
         try {
@@ -383,14 +384,14 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
         ctx.setName(name());
         ctx.setConnectionType(connection().getClass().getCanonicalName());
         ctx.setConnectionName(connection().name());
-        ctx.setMailbox(((IMAPConnection) connection()).username());
+        ctx.setMailbox(((IMAPConnection) connection()).getUsername());
         ctx.setFolder(mailbox);
 
         return ctx;
     }
 
     @Override
-    public boolean isEmpty(@Nonnull String folder) throws DataStoreException {
+    public boolean isEmpty(@NonNull String folder) throws DataStoreException {
         try {
             Folder f = folder(folder, false);
             if (f != null) {
@@ -403,7 +404,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public boolean isEmpty(@Nonnull Folder folder) throws DataStoreException {
+    public boolean isEmpty(@NonNull Folder folder) throws DataStoreException {
         try {
             Folder[] children = folder.list();
             if (children != null && children.length > 0) {
@@ -426,7 +427,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public Folder getFolder(@Nonnull String name) throws DataStoreException {
+    public Folder getFolder(@NonNull String name) throws DataStoreException {
         return folder(name, false);
     }
 
@@ -464,7 +465,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public Folder createFolder(@Nonnull String name) throws DataStoreException {
+    public Folder createFolder(@NonNull String name) throws DataStoreException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
         try {
             if (name.indexOf('/') >= 0) {
@@ -664,7 +665,8 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     public void close() throws IOException {
         super.close();
         try {
-            imapConnection.close(threadId());
+            long threadId = Thread.currentThread().getId();
+            imapConnection.close(threadId);
             if (!openedFolders.isEmpty()) {
                 for (String key : openedFolders.keySet()) {
                     Folder f = openedFolders.get(key);
@@ -679,7 +681,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public void move(@Nonnull AbstractMailMessage<Message> message, @Nonnull String targetf) throws DataStoreException {
+    public void move(@NonNull AbstractMailMessage<Message> message, @NonNull String targetf) throws DataStoreException {
         Preconditions.checkArgument(message != null);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(targetf));
 
@@ -699,7 +701,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public void move(@Nonnull AbstractMailMessage<Message>[] messages, @Nonnull String targetf)
+    public void move(@NonNull AbstractMailMessage<Message>[] messages, @NonNull String targetf)
             throws DataStoreException {
         Preconditions.checkArgument(messages != null && messages.length > 0);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(targetf));
@@ -726,7 +728,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     @Override
-    public MessageWrapper readFromFile(@Nonnull String path) throws DataStoreException {
+    public MessageWrapper readFromFile(@NonNull String path) throws DataStoreException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
 
         File sf = new File(path);
@@ -741,7 +743,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
         }
     }
 
-    public void deleteChildFolders(@Nonnull String path) throws DataStoreException {
+    public void deleteChildFolders(@NonNull String path) throws DataStoreException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         try {
             Folder folder = folder(path, false);
@@ -758,11 +760,11 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
         }
     }
 
-    public boolean deleteFolder(@Nonnull String path, boolean recursive) throws DataStoreException {
+    public boolean deleteFolder(@NonNull String path, boolean recursive) throws DataStoreException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         try {
             Folder folder = folder(path, false);
-            LogUtils.debug(getClass(), String.format("Deleting MailBox folder. [folder=%s]", folder.getFullName()));
+            DefaultLogger.debug(String.format("Deleting MailBox folder. [folder=%s]", folder.getFullName()));
             if (recursive) {
                 Folder[] folders = folder.list();
                 if (folders != null && folders.length > 0) {
@@ -872,7 +874,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     }
 
     private void checkAndDelete(Folder folder) throws DataStoreException, MessagingException {
-        LogUtils.warn(getClass(), String.format("Checking folder [%s]...", folder.getFullName()));
+        DefaultLogger.warn( String.format("Checking folder [%s]...", folder.getFullName()));
         Folder[] children = folder.list();
         if (children != null && children.length > 0) {
             for (Folder f : children) {
@@ -880,12 +882,12 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
             }
         }
         if (isEmpty(folder)) {
-            LogUtils.info(getClass(), String.format("Deleting empty folder. [folder=%s]", folder.getFullName()));
+            DefaultLogger.info( String.format("Deleting empty folder. [folder=%s]", folder.getFullName()));
             if (!deleteFolder(folder.getFullName(), true)) {
-                LogUtils.error(getClass(), String.format("Failed to delete folder. [folder=%s]", folder.getFullName()));
+                DefaultLogger.error( String.format("Failed to delete folder. [folder=%s]", folder.getFullName()));
             }
         } else {
-            LogUtils.info(getClass(), String.format("Folder is not empty. [folder=%s]", folder.getFullName()));
+            DefaultLogger.info(String.format("Folder is not empty. [folder=%s]", folder.getFullName()));
         }
     }
 }

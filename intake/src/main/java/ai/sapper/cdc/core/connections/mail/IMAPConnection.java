@@ -48,22 +48,22 @@ public class IMAPConnection extends AbstractMailConnection<Store> {
 
     public String getEmailId() {
         Preconditions.checkState(settings instanceof IMAPConnectionSettings);
-        return settings.getEmailId();
+        return ((IMAPConnectionSettings) settings).getEmailId();
     }
 
     public String getMailServer() {
         Preconditions.checkState(settings instanceof IMAPConnectionSettings);
-        return settings.getMailServer();
+        return ((IMAPConnectionSettings) settings).getMailServer();
     }
 
     public int getPort() {
         Preconditions.checkState(settings instanceof IMAPConnectionSettings);
-        return settings.getPort();
+        return ((IMAPConnectionSettings) settings).getPort();
     }
 
     public String getUsername() {
         Preconditions.checkState(settings instanceof IMAPConnectionSettings);
-        return settings.getUsername();
+        return ((IMAPConnectionSettings) settings).getUsername();
     }
 
     public void open() throws Exception {
@@ -118,6 +118,7 @@ public class IMAPConnection extends AbstractMailConnection<Store> {
             if (!threadCache.contains()) {
                 open();
             }
+            IMAPConnectionSettings settings = (IMAPConnectionSettings) settings();
             Store store = threadCache.get();
             if (!store.isConnected()) {
                 String password = env.keyStore().read(settings.getPasskey());

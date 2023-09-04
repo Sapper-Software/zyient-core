@@ -90,7 +90,7 @@ public class ExchangeConnection extends AbstractMailConnection<ExchangeService> 
         }
         service.setUrl(new URI(settings.getMailServer()));
         if (settings.getRequestTimeout() > 0) {
-            service.setTimeout(settings().getRequestTimeout());
+            service.setTimeout(((ExchangeConnectionSettings) settings()).getRequestTimeout());
         }
         if (DefaultLogger.isTraceEnabled()) {
             service.setTraceEnabled(true);

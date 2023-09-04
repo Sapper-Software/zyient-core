@@ -8,7 +8,7 @@ import ai.sapper.cdc.common.utils.PathUtils;
 import ai.sapper.cdc.core.io.FileSystem;
 import ai.sapper.cdc.core.io.model.FileInode;
 import ai.sapper.cdc.core.io.model.PathInfo;
-import ai.sapper.cdc.core.sources.ExchangeDataStore;
+import ai.sapper.cdc.core.sources.email.ExchangeDataStore;
 import ai.sapper.cdc.core.stores.DataStoreException;
 import ai.sapper.cdc.core.utils.FileUtils;
 import ai.sapper.cdc.intake.flow.TaskContext;

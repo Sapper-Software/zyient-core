@@ -17,6 +17,7 @@
 package ai.sapper.cdc.core.connections.settings;
 
 import ai.sapper.cdc.common.config.Config;
+import ai.sapper.cdc.core.stores.AbstractConnectionSettings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +26,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class MailConnectionSettings extends ConnectionSettings {
+public abstract class MailConnectionSettings extends AbstractConnectionSettings {
     @Config(name = "server")
     protected String mailServer;
     @Config(name = "port", type = Integer.class)

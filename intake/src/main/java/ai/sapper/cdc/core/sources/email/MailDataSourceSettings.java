@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package ai.sapper.cdc.core.sources.settings;
+package ai.sapper.cdc.core.sources.email;
 
 import ai.sapper.cdc.common.config.Config;
 import ai.sapper.cdc.common.config.Settings;
+import ai.sapper.cdc.core.stores.AbstractDataStoreSettings;
 import ai.sapper.cdc.intake.model.EIntakeChannel;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -27,17 +28,15 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class MailDataSourceSettings extends Settings {
+public class MailDataSourceSettings extends AbstractDataStoreSettings {
     @Config(name = "name")
     private String name;
     @Config(name = "channel", type = EIntakeChannel.class)
     private EIntakeChannel channel;
     @Config(name = "partition", type = Short.class)
     private short partition;
-    @Config(name = "mailbox")
+    @Config(name = "mailbox", required = false)
     private String mailbox;
     @Config(name = "smtp", required = false)
     private String smtpConnectionName;
-    @Config(name = "connection")
-    private String connection;
 }

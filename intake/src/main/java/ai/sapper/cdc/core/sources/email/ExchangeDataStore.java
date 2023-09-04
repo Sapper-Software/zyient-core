@@ -1,29 +1,29 @@
-package ai.sapper.cdc.core.sources;
+/*
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
-import com.codekutter.common.Context;
-import com.codekutter.common.model.IEntity;
-import com.codekutter.common.model.StringKey;
-import com.codekutter.common.stores.BaseSearchResult;
-import com.codekutter.common.stores.DataStoreException;
-import com.codekutter.common.stores.DataStoreManager;
-import com.codekutter.common.stores.impl.DataStoreAuditContext;
-import com.codekutter.common.stores.impl.EntitySearchResult;
-import com.codekutter.common.utils.IOUtils;
-import com.codekutter.common.utils.LogUtils;
-import com.codekutter.common.utils.ReflectionUtils;
-import com.codekutter.zconfig.common.ConfigurationException;
+package ai.sapper.cdc.core.sources.email;
+
+import ai.sapper.cdc.core.connections.mail.ExchangeConnection;
+import ai.sapper.cdc.core.stores.DataStoreException;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.ingestion.common.connections.ExchangeConnection;
-import com.ingestion.common.ext.utils.MailUtils;
-import com.ingestion.common.model.AbstractMailMessage;
-import com.ingestion.common.model.EmailMessageWrapper;
-import com.ingestion.common.model.MailDataSourceDbConfig;
-import com.ingestion.common.model.MessageWrapper;
-import com.ingestion.common.utils.DateUtils;
-import com.vdurmont.emoji.EmojiParser;
+import jakarta.mail.Session;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import microsoft.exchange.webservices.data.core.ExchangeService;
@@ -48,17 +48,11 @@ import microsoft.exchange.webservices.data.search.FindItemsResults;
 import microsoft.exchange.webservices.data.search.FolderView;
 import microsoft.exchange.webservices.data.search.ItemView;
 import microsoft.exchange.webservices.data.search.filter.SearchFilter;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import javax.annotation.Nonnull;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.internet.MimeMessage;
 import java.io.*;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -67,7 +61,7 @@ import java.util.regex.Pattern;
 @Setter
 @Accessors(fluent = true)
 @SuppressWarnings({"rawtypes", "unchecked"})
-public class GMailDataStore extends AbstractMailDataStore<ExchangeService, EmailMessage, Folder> {
+public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, EmailMessage, Folder> {
     private static final int DEFAULT_SEND_CHECK_TIMEOUT = 60 * 1000;
     private static final String queryRegex = "\\{(.*)}:\\{(.*)}";
     public static final String DEFAULT_IMAP_FOLDER = "Inbox";
@@ -82,6 +76,11 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
     @Setter(AccessLevel.NONE)
     private ExtendedPropertyDefinition extendedPropertyDefinition;
 
+    @ConfigAttribute(name = "xml")
+    private String XML_REPLACE_REGEX;
+    @ConfigAttribute(name = "name")
+    private String XML_REPLACE_CHAR;
+
     @Override
     public String getMailUser() {
         if (exchangeConnection != null) {
@@ -91,8 +90,9 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
     }
 
     @Override
-    public EmailMessage createMessage(@Nonnull String mailId, @Nonnull com.ingestion.common.model.EmailMessage email,
-                                      @Nonnull String sender) throws DataStoreException {
+    public EmailMessage createMessage(@NonNull String mailId,
+                                      @NonNull EmailMessage email,
+                                      @NonNull String sender) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
         try {
             EmailMessage message = new EmailMessage(exchangeConnection.connection());
@@ -119,8 +119,8 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
             }
             message.setSubject(email.getHeader().getSubject());
             if (!Strings.isNullOrEmpty(email.getBody())) {
-                String bodyString=EmojiParser.parseToUnicode(email.getBody());
-                bodyString=EmojiParser.removeAllEmojis(bodyString);
+                String bodyString = EmojiParser.parseToUnicode(email.getBody());
+                bodyString = EmojiParser.removeAllEmojis(bodyString);
                 setMessageBody(message, bodyString);
             }
             if (email.getAttachments() != null && !email.getAttachments().isEmpty()) {
@@ -327,10 +327,10 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
                     fView.setTraversal(FolderTraversal.Shallow);
                     SearchFilter filter = new SearchFilter.IsEqualTo(FolderSchema.DisplayName, name);
                     if (exchangeConnection.useDelegate()) {
-                        fid =new FolderId(root, new Mailbox(exchangeConnection.delegateUser()));
-                    }else {
+                        fid = new FolderId(root, new Mailbox(exchangeConnection.delegateUser()));
+                    } else {
                         fid = new FolderId(root);
-                        }
+                    }
                     FindFoldersResults results = exchangeConnection.connection().findFolders(fid, filter, fView);
                     if (results != null && results.getFolders().size() > 0) {
                         folder = results.getFolders().get(0);
@@ -430,8 +430,8 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
                 WellKnownFolderName rf = WellKnownFolderName.valueOf(rootf);
                 if (exchangeConnection.useDelegate()) {
                     parent = Folder.bind(exchangeConnection.connection(), new FolderId(rf, new Mailbox(exchangeConnection.delegateUser())));
-                }else{
-                     parent = Folder.bind(exchangeConnection.connection(), rf);
+                } else {
+                    parent = Folder.bind(exchangeConnection.connection(), rf);
                 }
                 return createFolder(parent, parts, 1);
             }
@@ -727,6 +727,7 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
         }
     }
 
+
     @Override
     public void configureDataStore(@Nonnull DataStoreManager dataStoreManager) throws ConfigurationException {
         Preconditions.checkArgument(config() instanceof MailDataSourceDbConfig);
@@ -740,7 +741,9 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
                 mailbox = WellKnownFolderName.Inbox.name();
             }
             rootFolder = WellKnownFolderName.valueOf(mailbox);
-            jMailSession = Session.getDefaultInstance(new Properties());
+            Properties props = new Properties();
+            jMailSession = Session.getDefaultInstance(props);
+            jMailSession.getProperties().setProperty("mail.mime.address.strict", "false");
             if (config().getMaxResults() > 0) {
                 maxResults(config().getMaxResults());
             } else {
@@ -1025,6 +1028,7 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
     @Override
     public Map<String, Integer> getFolderMessageCounts(String parent) throws DataStoreException {
         try {
+            LogUtils.info(getClass(),String.format("Getting folder message count for [mailbox= %s]",this.getMailUser()));
             Folder folder = folder(rootFolder, parent);
             if (folder != null) {
                 Map<String, Integer> counts = new HashMap<>();
@@ -1074,8 +1078,67 @@ public class GMailDataStore extends AbstractMailDataStore<ExchangeService, Email
 
     @Override
     public void cleanUpEmptyFoldersBasedOnTimePeriod(String processingFolderPath, String folderPath, int timePeriod) throws DataStoreException {
-        //TODO this is not yet implemented
+        try {
+            Folder folder = folder(rootFolder, folderPath);
+            if (folder != null) {
+                Folder[] children = findChildFolders(folder, FolderTraversal.Shallow);
+                if (children != null && children.length > 0) {
+                    LogUtils.info(getClass(),String.format("sub folders found for folder: %s",folder.getDisplayName()));
+                    for (Folder child : children) {
+                        String fname = String.format("%s/%s", folderPath, child.getDisplayName());
+                        LogUtils.info(getClass(), String.format("checking folder : [%s]", fname));
+                        cleanUpEmptyFoldersBasedOnTimePeriod(processingFolderPath,fname,timePeriod);
+                        LogUtils.info(getClass(), String.format("checking completed for folder : [%s]", fname));
+                    }
+                    //all children are processed now
+                    LogUtils.info(getClass(), String.format("All subfolders checked for [%s]",folderPath));
+                    Folder[] childrenAfterProcessing = findChildFolders(folder, FolderTraversal.Shallow);
+                    if(childrenAfterProcessing==null || childrenAfterProcessing.length==0) {
+                        LogUtils.info(getClass(),String.format("The folder [%s] does not lead to any emails, hence will be deleted",folderPath));
+                        //would have already been deleted
+                        if(!withinTimePeriod(timePeriod,folderPath))  checkAndDelete(folder);
+                    }
+                } else {
+                        //this is a node that has no children hence only possibility is an hh folder
+                        if(!withinTimePeriod(timePeriod,folderPath))  checkAndDelete(folder);
+                }
+            }
+        } catch (Exception e) {
+            throw new DataStoreException(e);
+        }
     }
+
+    /**
+     * Checks if the processingFolderPath given conforms to the time period restriction from the current time.
+     * @param timePeriod in hours
+     * @param folderPath This is the folder path that is being checked. It should be of the format <processing_folder_path>/yyyy/MM/dd/hh
+     * @return
+     */
+    private boolean withinTimePeriod(int timePeriod,  String folderPath){
+        boolean isWithinTimePeriod=false;
+        Pattern p = Pattern.compile("\\d+");//for matching all the integers in the string
+        String year="0000",month="00",day="00",hour="00";
+        Matcher m = p.matcher(folderPath);
+        if(m.find()) year=m.group();
+        if(m.find()) month=m.group();
+        if(m.find()) day=m.group();
+        if(m.find()) hour=m.group();
+        String dateString = String.format("%s/%s/%s/%s",year,month,day,hour);
+        LogUtils.info(getClass(),String.format("Date information obtained from path %s, [date=%s]",folderPath,dateString));
+
+        try {
+            Date folderDate = new SimpleDateFormat("yyyy/MM/dd/hh").parse(dateString);
+            Date currentDate = new Date();
+            long milliDiff = (currentDate.getTime()-folderDate.getTime());
+            int timeDiffInHours =(int) (milliDiff/1000/60/60);
+            LogUtils.info(getClass(),String.format("[timePeriod limit=%d hours] [detected time difference = %d hours]",timePeriod,timeDiffInHours));
+            if(timeDiffInHours<=timePeriod) isWithinTimePeriod = true;
+        } catch (ParseException e) {
+            LogUtils.info(getClass(),"Parsing exception");
+        }
+        return isWithinTimePeriod;
+    }
+
 
     private void checkAndDelete(Folder folder) throws ServiceLocalException, DataStoreException {
         LogUtils.warn(getClass(), String.format("Cleaning folder [%s]...", folder.getDisplayName()));
