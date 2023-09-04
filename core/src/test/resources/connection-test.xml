@@ -26,7 +26,7 @@
         <demo>
         </demo>
         <keystore>
-            <class>ai.sapper.cdc.core.keystore.JavaKeyStore</class>
+            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
             <path>src/test/resources/test-keystore.jks</path>
         </keystore>
         <config>
@@ -36,7 +36,7 @@
                     <path>/test/env/connections</path>
                 </shared>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.hadoop.HdfsConnection</class>
+                    <class>io.zyient.base.core.connections.hadoop.HdfsConnection</class>
                     <hdfs>
                         <name>test-hdfs</name>
                         <namenode>
@@ -52,7 +52,7 @@
                     </hdfs>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.hadoop.HdfsHAConnection</class>
+                    <class>io.zyient.base.core.connections.hadoop.HdfsHAConnection</class>
                     <hdfs-ha>
                         <name>test-hdfs-ha</name>
                         <nameservice>ha-cluster</nameservice>
@@ -66,7 +66,7 @@
                     </hdfs-ha>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.ZookeeperConnection</class>
+                    <class>io.zyient.base.core.connections.ZookeeperConnection</class>
                     <zookeeper>
                         <name>test-zk</name>
                         <connectionString>192.168.2.16:2181</connectionString>
@@ -78,7 +78,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.ws.WebServiceConnection</class>
+                    <class>io.zyient.base.core.connections.ws.WebServiceConnection</class>
                     <rest>
                         <name>test-ws</name>
                         <endpoint>https://howtodoinjava.com/</endpoint>
@@ -89,7 +89,7 @@
                     </rest>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection</class>
+                    <class>io.zyient.base.core.connections.kafka.BasicKafkaProducerConnection</class>
                     <kafka>
                         <name>test-kafka-producer</name>
                         <mode>Producer</mode>
@@ -98,7 +98,7 @@
                     </kafka>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection</class>
+                    <class>io.zyient.base.core.connections.kafka.BasicKafkaConsumerConnection</class>
                     <kafka>
                         <name>test-kafka-consumer</name>
                         <mode>Consumer</mode>
@@ -110,7 +110,7 @@
                     </kafka>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.db.S2Connection</class>
+                    <class>io.zyient.base.core.connections.db.S2Connection</class>
                     <s2>
                         <name>test-s2</name>
                         <jdbcUrl>jdbc:singlestore://localhost:3306</jdbcUrl>
@@ -119,7 +119,7 @@
                     </s2>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.db.JdbcConnection</class>
+                    <class>io.zyient.base.core.connections.db.JdbcConnection</class>
                     <jdbc>
                         <name>test-jdbc</name>
                         <jdbcUrl>jdbc:mysql://192.168.2.19:3306</jdbcUrl>
@@ -129,7 +129,7 @@
                     </jdbc>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.db.MongoDbConnection</class>
+                    <class>io.zyient.base.core.connections.db.MongoDbConnection</class>
                     <mongodb>
                         <name>test-mongodb</name>
                         <host>192.168.2.30</host>

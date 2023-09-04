@@ -26,7 +26,7 @@
         </paths>
         <enableHeartbeat>false</enableHeartbeat>
         <keystore>
-            <class>ai.sapper.cdc.core.keystore.JavaKeyStore</class>
+            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
             <path>src/test/resources/oracle-keystore.ks</path>
         </keystore>
         <locks>
@@ -51,7 +51,7 @@
                     <path>/test/env</path>
                 </shared>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.hadoop.HdfsConnection</type>
+                    <type>io.zyient.base.core.connections.hadoop.HdfsConnection</type>
                     <hdfs>
                         <name>test-hdfs</name>
                         <namenode>
@@ -69,7 +69,7 @@
                     </hdfs>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.hadoop.HdfsHAConnection</type>
+                    <type>io.zyient.base.core.connections.hadoop.HdfsHAConnection</type>
                     <hdfs_ha>
                         <name>test-hdfs-ha</name>
                         <nameservice>ha-cluster</nameservice>
@@ -83,7 +83,7 @@
                     </hdfs_ha>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.ZookeeperConnection</type>
+                    <type>io.zyient.base.core.connections.ZookeeperConnection</type>
                     <zookeeper>
                         <name>test-zk</name>
                         <!--connectionString>192.168.0.5:2181,192.168.0.4:2181</connectionString -->
@@ -96,7 +96,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.ws.WebServiceConnection</type>
+                    <type>io.zyient.base.core.connections.ws.WebServiceConnection</type>
                     <rest>
                         <name>test-ws</name>
                         <endpoint>https://howtodoinjava.com/</endpoint>
@@ -107,7 +107,7 @@
                     </rest>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaProducerConnection</type>
+                    <type>io.zyient.base.core.connections.kafka.BasicKafkaProducerConnection</type>
                     <kafka>
                         <name>test-kafka-producer</name>
                         <mode>Producer</mode>
@@ -118,7 +118,7 @@
                     </kafka>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.kafka.BasicKafkaConsumerConnection</type>
+                    <type>io.zyient.base.core.connections.kafka.BasicKafkaConsumerConnection</type>
                     <kafka>
                         <name>test-kafka-consumer</name>
                         <mode>Consumer</mode>
@@ -130,7 +130,7 @@
                     </kafka>
                 </connection>
                 <connection>
-                    <type>ai.sapper.cdc.core.connections.db.OracleConnection</type>
+                    <type>io.zyient.base.core.connections.db.OracleConnection</type>
                     <oracle>
                         <name>test-oracle</name>
                         <jdbcUrl>jdbc:oracle:thin:@//localhost:1521</jdbcUrl>

@@ -1,9 +1,9 @@
 syntax = "proto2";
 
-package ai_sapper_cdc_entity_model;
+package io_zyient_cdc_entity_model;
 
 option java_multiple_files = true;
-option java_package = "ai.sapper.cdc.entity.model";
+option java_package = "io.zyient.cdc.entity.model";
 option java_outer_classname = "CDCMessageProto";
 
 message DbSource {

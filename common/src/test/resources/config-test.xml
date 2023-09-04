@@ -43,7 +43,7 @@
             </values>
         </int-list>
         <test>
-            <class>ai.sapper.cdc.common.config.ConfigReaderTest</class>
+            <class>config.ai.zyientj.common.ConfigReaderTest</class>
         </test>
     </test>
 </configuration>

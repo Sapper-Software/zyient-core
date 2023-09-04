@@ -27,14 +27,14 @@
         </paths>
         <managers>
             <state>
-                <stateManagerClass>ai.sapper.cdc.core.state.DemoStateManager</stateManagerClass>
+                <stateManagerClass>io.zyient.base.core.state.DemoStateManager</stateManagerClass>
                 <basePath>demo</basePath>
                 <connection>test-zk</connection>
                 <fileState>true</fileState>
                 <offsets>
                     <offsetManager>
                         <name>TestChronicleOffset</name>
-                        <type>ai.sapper.cdc.core.messaging.chronicle.ChronicleStateManager</type>
+                        <type>io.zyient.base.core.messaging.chronicle.ChronicleStateManager</type>
                         <connection>test-zk</connection>
                         <basePath>chronicle</basePath>
                     </offsetManager>
@@ -48,16 +48,16 @@
         <demo>
             <producer>
                 <builder>
-                    <type>ai.sapper.cdc.core.messaging.chronicle.builder.DemoProducerBuilder</type>
-                    <settingsType>ai.sapper.cdc.core.messaging.builders.MessageSenderSettings</settingsType>
+                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoProducerBuilder</type>
+                    <settingsType>io.zyient.base.core.messaging.builders.MessageSenderSettings</settingsType>
                 </builder>
                 <type>chronicle</type>
                 <connection>test-queue-producer</connection>
             </producer>
             <consumer>
                 <builder>
-                    <type>ai.sapper.cdc.core.messaging.chronicle.builder.DemoConsumerBuilder</type>
-                    <settingsType>ai.sapper.cdc.core.messaging.builders.MessageReceiverSettings</settingsType>
+                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoConsumerBuilder</type>
+                    <settingsType>io.zyient.base.core.messaging.builders.MessageReceiverSettings</settingsType>
                 </builder>
                 <type>chronicle</type>
                 <connection>test-queue-consumer</connection>
@@ -67,7 +67,7 @@
             </consumer>
         </demo>
         <keystore>
-            <class>ai.sapper.cdc.core.keystore.JavaKeyStore</class>
+            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
             <path>src/test/resources/test-keystore.jks</path>
         </keystore>
         <config>
@@ -77,7 +77,7 @@
                     <path>/test/env/connections</path>
                 </shared>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.ZookeeperConnection</class>
+                    <class>io.zyient.base.core.connections.ZookeeperConnection</class>
                     <zookeeper>
                         <name>test-zk</name>
                         <connectionString>192.168.2.16:2181</connectionString>
@@ -89,7 +89,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.chronicle.ChronicleConsumerConnection</class>
+                    <class>io.zyient.base.core.connections.chronicle.ChronicleConsumerConnection</class>
                     <chronicle>
                         <name>test-queue-consumer</name>
                         <queue>test-queue</queue>
@@ -99,7 +99,7 @@
                     </chronicle>
                 </connection>
                 <connection>
-                    <class>ai.sapper.cdc.core.connections.chronicle.ChronicleProducerConnection</class>
+                    <class>io.zyient.base.core.connections.chronicle.ChronicleProducerConnection</class>
                     <chronicle>
                         <name>test-queue-producer</name>
                         <queue>test-queue</queue>
