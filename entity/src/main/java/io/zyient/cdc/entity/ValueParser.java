@@ -17,11 +17,11 @@
 package io.zyient.cdc.entity;
 
 import com.google.protobuf.ByteString;
+import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.cdc.entity.model.*;
 import io.zyient.cdc.entity.schema.EntitySchema;
 import io.zyient.cdc.entity.types.*;
-import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
 import lombok.NonNull;
 
 import java.nio.ByteBuffer;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings;
+package io.zyient.base.core.connections.settings.chronicle;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -22,6 +22,7 @@ import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.connections.EMessageClientMode;
+import io.zyient.base.core.connections.settings.ConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

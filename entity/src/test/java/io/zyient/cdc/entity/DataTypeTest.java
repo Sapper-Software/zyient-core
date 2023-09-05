@@ -16,11 +16,11 @@
 
 package io.zyient.cdc.entity;
 
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.cdc.entity.avro.AvroEntitySchema;
 import io.zyient.cdc.entity.types.DataType;
 import io.zyient.cdc.entity.types.SizedDataType;
 import io.zyient.cdc.entity.types.TextType;
-import io.zyient.base.common.utils.DefaultLogger;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Types;

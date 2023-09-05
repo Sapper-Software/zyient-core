@@ -16,8 +16,8 @@
 
 package io.zyient.base.core.io;
 
-import io.zyient.base.core.io.model.FileSystemMetrics;
 import io.zyient.base.core.io.model.FileInode;
+import io.zyient.base.core.io.model.FileSystemMetrics;
 import io.zyient.base.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;

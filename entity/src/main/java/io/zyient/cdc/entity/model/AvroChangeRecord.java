@@ -18,8 +18,8 @@ package io.zyient.cdc.entity.model;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.cdc.entity.schema.SchemaEntity;
 import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.cdc.entity.schema.SchemaEntity;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

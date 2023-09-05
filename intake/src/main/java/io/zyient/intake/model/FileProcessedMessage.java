@@ -16,7 +16,7 @@
 
 package io.zyient.intake.model;
 
-import com.codekutter.common.model.EEntityState;
+import io.zyient.base.common.model.entity.EEntityState;
 import lombok.Data;
 
 @Data

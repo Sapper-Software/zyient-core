@@ -20,9 +20,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.DistributionSummary;
-import io.zyient.cdc.entity.schema.SchemaEntity;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.EventProcessorMetrics;
+import io.zyient.cdc.entity.schema.SchemaEntity;
 import lombok.NonNull;
 
 import java.util.Map;

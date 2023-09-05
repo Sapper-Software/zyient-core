@@ -19,10 +19,10 @@ package io.zyient.intake.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.intake.utils.MailUtils;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.utils.FileUtils;
+import io.zyient.intake.utils.MailUtils;
 import lombok.Getter;
 import lombok.Setter;
 

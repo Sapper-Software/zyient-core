@@ -18,9 +18,9 @@ package io.zyient.base.core.io.impl.mapped;
 
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.Writer;
-import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.impl.local.LocalFileSystem;
 import io.zyient.base.core.io.impl.local.LocalPathInfo;
+import io.zyient.base.core.io.model.FileInode;
 import lombok.NonNull;
 
 import java.io.IOException;

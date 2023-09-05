@@ -21,7 +21,7 @@ import com.mchange.v2.c3p0.ComboPooledDataSource;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
-import io.zyient.base.core.connections.settings.JdbcConnectionSettings;
+import io.zyient.base.core.connections.settings.db.JdbcConnectionSettings;
 import io.zyient.base.core.keystore.KeyStore;
 import lombok.Getter;
 import lombok.NonNull;

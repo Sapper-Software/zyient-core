@@ -16,10 +16,10 @@
 
 package io.zyient.cdc.entity;
 
+import io.zyient.base.core.connections.db.DbConnection;
 import io.zyient.cdc.entity.schema.EntitySchema;
 import io.zyient.cdc.entity.schema.SchemaEntity;
 import io.zyient.cdc.entity.types.CustomDataTypeMapper;
-import io.zyient.base.core.connections.db.DbConnection;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

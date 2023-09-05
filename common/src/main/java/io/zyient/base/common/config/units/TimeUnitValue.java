@@ -108,6 +108,34 @@ public class TimeUnitValue extends UnitValue<TimeUnit, Long> {
         throw new Exception(String.format("Failed to convert [%f][%s]", getValue(), getUnit().name()));
     }
 
+    public long normalized(@NonNull TimeUnit unit) throws Exception {
+        long value = normalized();
+        switch (unit) {
+            case MILLISECONDS -> {
+                return value;
+            }
+            case NANOSECONDS -> {
+                return TimeUnit.MILLISECONDS.toNanos(value);
+            }
+            case MICROSECONDS -> {
+                return TimeUnit.MILLISECONDS.toMicros(value);
+            }
+            case SECONDS -> {
+                return TimeUnit.MILLISECONDS.toSeconds(value);
+            }
+            case MINUTES -> {
+                return TimeUnit.MILLISECONDS.toMinutes(value);
+            }
+            case DAYS -> {
+                return TimeUnit.MILLISECONDS.toDays(value);
+            }
+            case HOURS -> {
+                return TimeUnit.MILLISECONDS.toHours(value);
+            }
+        }
+        throw new Exception(String.format("Failed to convert [%f][%s]", getValue(), unit.name()));
+    }
+
     @Override
     public String toString() {
         if (getUnit() != null) {

@@ -18,9 +18,9 @@ package io.zyient.base.core.stores.impl;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.base.core.stores.StoreSessionManager;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.StoreSessionManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

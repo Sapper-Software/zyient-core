@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings;
+package io.zyient.base.core.connections.settings.hadoop;
 
 import io.zyient.base.common.config.ConfigValueParser;
 import io.zyient.base.common.utils.DefaultLogger;

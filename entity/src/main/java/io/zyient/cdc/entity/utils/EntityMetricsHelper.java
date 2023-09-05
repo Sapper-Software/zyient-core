@@ -16,9 +16,9 @@
 
 package io.zyient.cdc.entity.utils;
 
-import io.zyient.cdc.entity.schema.SchemaEntity;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.utils.MetricsBase;
+import io.zyient.cdc.entity.schema.SchemaEntity;
 import lombok.NonNull;
 
 import java.util.Map;

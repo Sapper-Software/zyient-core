@@ -17,9 +17,9 @@
 package io.zyient.base.core.sources.email.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
 import io.zyient.base.core.stores.AbstractDataStoreSettings;
 import io.zyient.intake.model.EIntakeChannel;
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 

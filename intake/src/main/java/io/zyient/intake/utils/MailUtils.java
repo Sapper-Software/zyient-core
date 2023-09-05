@@ -16,13 +16,10 @@
 
 package io.zyient.intake.utils;
 
-import ai.sapper.cdc.intake.model.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
-import io.zyient.intake.flow.TaskContext;
-import io.zyient.intake.model.*;
 import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.common.utils.CypherUtils;
@@ -34,7 +31,8 @@ import io.zyient.base.core.io.model.PathInfo;
 import io.zyient.base.core.sources.email.ExchangeDataStore;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.utils.FileUtils;
-import io.zyientj.intake.model.*;
+import io.zyient.intake.flow.TaskContext;
+import io.zyient.intake.model.*;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import lombok.Getter;
@@ -766,15 +764,15 @@ public class MailUtils {
                 }
             }
 
-            if (!record.getPath().exists()) {
+            if (!pi.exists()) {
                 throw new IOException(
-                        String.format("Source file not found. [path=%s]", record.getPath().getAbsolutePath()));
+                        String.format("Source file not found. [path=%s]", inode.getAbsolutePath()));
             }
             try {
                 ZipUtils.unzip(record.getPath().getAbsolutePath(), outdir, decodingKey);
             } catch (Exception ex) {
                 record.setState(ERecordState.Error);
-                record.setError(ex);
+                record.get(ex);
                 record.setErrorMessage(ex.getLocalizedMessage());
                 return;
             }

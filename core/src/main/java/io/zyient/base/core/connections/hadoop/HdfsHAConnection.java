@@ -24,7 +24,7 @@ import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
-import io.zyient.base.core.connections.settings.HdfsConnectionSettings;
+import io.zyient.base.core.connections.settings.hadoop.HdfsConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

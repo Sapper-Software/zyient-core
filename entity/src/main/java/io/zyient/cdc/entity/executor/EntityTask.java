@@ -16,12 +16,12 @@
 
 package io.zyient.cdc.entity.executor;
 
+import io.zyient.base.core.executor.BaseTask;
+import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.cdc.entity.manager.SchemaManager;
 import io.zyient.cdc.entity.model.EntityReadState;
 import io.zyient.cdc.entity.model.TransactionId;
 import io.zyient.cdc.entity.schema.SchemaEntity;
-import io.zyient.base.core.executor.BaseTask;
-import io.zyient.base.core.state.BaseStateManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

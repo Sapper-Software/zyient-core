@@ -20,8 +20,8 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.core.connections.kafka.BasicKafkaProducerConnection;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.messaging.builders.MessageSenderBuilder;
-import io.zyient.base.core.messaging.kafka.BaseKafkaProducer;
 import io.zyient.base.core.messaging.builders.MessageSenderSettings;
+import io.zyient.base.core.messaging.kafka.BaseKafkaProducer;
 import io.zyient.base.core.messaging.kafka.KafkaPartitioner;
 import lombok.NonNull;
 

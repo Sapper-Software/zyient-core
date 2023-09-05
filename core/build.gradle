@@ -1,4 +1,3 @@
-
 configurations.all {
     exclude module: "logback-classic"
     exclude module: "log4j-to-slf4j"
@@ -24,8 +23,6 @@ dependencies {
     implementation 'org.apache.hadoop:hadoop-client:2.10.2'
 
     implementation 'org.apache.kafka:kafka-clients:3.4.0'
-    // https://mvnrepository.com/artifact/software.amazon.awssdk/s3
-    implementation 'software.amazon.awssdk:s3:2.20.26'
 
     // https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client
     implementation 'org.glassfish.jersey.core:jersey-client:3.1.3'
@@ -35,8 +32,12 @@ dependencies {
     implementation 'org.glassfish.jersey.media:jersey-media-json-binding:3.1.3'
     implementation 'org.glassfish.jersey.security:oauth2-client:3.1.3'
 
+    // https://mvnrepository.com/artifact/software.amazon.awssdk/s3
+    implementation 'software.amazon.awssdk:s3:2.20.140'
     // https://mvnrepository.com/artifact/software.amazon.awssdk/glacier
-    implementation 'software.amazon.awssdk:glacier:2.20.26'
+    implementation 'software.amazon.awssdk:glacier:2.20.140'
+    implementation 'software.amazon.awssdk:sns:2.20.140'
+    implementation 'software.amazon.awssdk:sqs:2.20.140'
     implementation 'com.azure:azure-storage-blob:12.21.1'
     implementation 'com.azure:azure-identity:1.10.0'
 
@@ -82,7 +83,7 @@ dependencies {
 }
 
 test {
-    jvmArgs ('--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED',
+    jvmArgs('--add-exports=java.base/jdk.internal.ref=ALL-UNNAMED',
             '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
             '--add-exports=jdk.unsupported/sun.misc=ALL-UNNAMED',
             '--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED',

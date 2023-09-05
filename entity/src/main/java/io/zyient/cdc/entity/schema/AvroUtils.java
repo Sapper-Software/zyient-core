@@ -16,8 +16,8 @@
 
 package io.zyient.cdc.entity.schema;
 
-import io.zyient.cdc.entity.model.AvroChangeRecord;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.cdc.entity.model.AvroChangeRecord;
 import lombok.NonNull;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;

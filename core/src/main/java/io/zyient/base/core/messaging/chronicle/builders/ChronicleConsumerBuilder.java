@@ -22,9 +22,9 @@ import io.zyient.base.core.connections.chronicle.ChronicleConsumerConnection;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
+import io.zyient.base.core.messaging.chronicle.BaseChronicleConsumer;
 import io.zyient.base.core.messaging.chronicle.ChronicleStateManager;
 import io.zyient.base.core.state.OffsetStateManager;
-import io.zyient.base.core.messaging.chronicle.BaseChronicleConsumer;
 import lombok.NonNull;
 
 public class ChronicleConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {

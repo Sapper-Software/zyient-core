@@ -120,43 +120,45 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         ChronicleOffsetValue lastIndex = state.getOffset().getOffsetRead();
         List<MessageObject<String, M>> messages = new ArrayList<>(batchSize());
         try {
-            while (remaining > 0) {
-                boolean read = false;
-                try (DocumentContext dc = tailer.readingDocument(true)) {
-                    if (dc.isPresent()) {
-                        if (!dc.isData()) {
-                            continue;
-                        }
-                        ReadResponse<M> response = parse(dc);
-                        response.index = new ChronicleOffsetValue(tailer.cycle(), tailer.index());
-                        if (response.index.compareTo(lastIndex) > 0) {
-                            lastIndex = response.index;
-                        }
-                        if (response.error != null) {
-                            if (response.error instanceof InvalidMessageError) {
-                                DefaultLogger.error("Error reading message.", response.error);
-                            } else {
-                                throw response.error;
+            synchronized (offsetMap) {
+                while (remaining > 0) {
+                    boolean read = false;
+                    try (DocumentContext dc = tailer.readingDocument(true)) {
+                        if (dc.isPresent()) {
+                            if (!dc.isData()) {
+                                continue;
                             }
-                        } else if (response.message != null) {
-                            response.message.index(response.index);
-                            messages.add(response.message);
-                            offsetMap.put(response.message.id(),
-                                    new ChronicleOffsetData(response.message.key(), response.index));
-                            read = true;
+                            ReadResponse<M> response = parse(dc);
+                            response.index = new ChronicleOffsetValue(tailer.cycle(), tailer.index());
+                            if (response.index.compareTo(lastIndex) > 0) {
+                                lastIndex = response.index;
+                            }
+                            if (response.error != null) {
+                                if (response.error instanceof InvalidMessageError) {
+                                    DefaultLogger.error("Error reading message.", response.error);
+                                } else {
+                                    throw response.error;
+                                }
+                            } else if (response.message != null) {
+                                response.message.index(response.index);
+                                messages.add(response.message);
+                                offsetMap.put(response.message.id(),
+                                        new ChronicleOffsetData(response.message.key(), response.index));
+                                read = true;
+                            }
                         }
                     }
-                }
-                if (!read) {
-                    long si = remaining / 10;
-                    if (si > 0) {
-                        RunUtils.sleep(si);
+                    if (!read) {
+                        long si = remaining / 10;
+                        if (si > 0) {
+                            RunUtils.sleep(si);
+                        }
+                        remaining -= System.currentTimeMillis() - stime;
+                        continue;
                     }
-                    remaining -= System.currentTimeMillis() - stime;
-                    continue;
-                }
-                if (messages.size() >= batchSize()) {
-                    break;
+                    if (messages.size() >= batchSize()) {
+                        break;
+                    }
                 }
             }
             if (lastIndex.compareTo(state.getOffset().getOffsetRead()) > 0) {
@@ -165,6 +167,7 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
             if (!messages.isEmpty()) {
                 return messages;
             }
+
             return null;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
@@ -231,7 +234,6 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                 if (currentOffset.compareTo(state.getOffset().getOffsetCommitted()) > 0) {
                     updateCommitState(currentOffset);
                 }
-
             }
         } catch (Exception ex) {
             throw new MessagingError(ex);

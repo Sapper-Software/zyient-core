@@ -17,8 +17,8 @@
 package io.zyient.cdc.entity.manager.zk;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.cdc.entity.manager.SchemaDataHandlerSettings;
 import io.zyient.base.common.config.Config;
+import io.zyient.cdc.entity.manager.SchemaDataHandlerSettings;
 import lombok.Getter;
 import lombok.Setter;
 

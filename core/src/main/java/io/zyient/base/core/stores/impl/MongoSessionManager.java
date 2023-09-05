@@ -17,8 +17,8 @@
 package io.zyient.base.core.stores.impl;
 
 import com.mongodb.client.ClientSession;
-import io.zyient.base.core.stores.StoreSessionManager;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.StoreSessionManager;
 import lombok.NonNull;
 
 public class MongoSessionManager extends StoreSessionManager<ClientSession, MongoTransaction> {

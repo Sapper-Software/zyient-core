@@ -17,6 +17,7 @@
 package io.zyient.base.core.connections.settings;
 
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.connections.settings.kafka.KafkaPartitionsParser;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

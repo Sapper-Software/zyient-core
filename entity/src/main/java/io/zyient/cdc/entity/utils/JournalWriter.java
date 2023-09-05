@@ -16,12 +16,12 @@
 
 package io.zyient.cdc.entity.utils;
 
-import io.zyient.cdc.entity.schema.SchemaEntity;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Writer;
 import io.zyient.base.core.io.model.DirectoryInode;
 import io.zyient.base.core.io.model.FileInode;
+import io.zyient.cdc.entity.schema.SchemaEntity;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

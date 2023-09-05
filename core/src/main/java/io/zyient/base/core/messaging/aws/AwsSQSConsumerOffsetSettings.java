@@ -14,22 +14,31 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings;
+package io.zyient.base.core.messaging.aws;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
+import io.zyient.base.core.state.OffsetStateManagerSettings;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <offsetManager>
+ *         <name>[Name]</name>
+ *         <type>[Class extends OffsetStateManager]</type>
+ *         <connection>ZooKeeper connection name</connection>
+ *         <basePath>ZooKeeper base path</basePath>
+ *         <locking>
+ *             -- optional
+ *             <retry>[Retry count]</retry>
+ *             <timeout>Lock acquire timeout</timeout>
+ *         </locking>
+ *     </offsetManager>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Db2ConnectionSettings extends JdbcConnectionSettings {
-    public static final String TYPE_DB2_Z = "DB2/z";
-    public static final String TYPE_DB2_LUW = "DB2/LUW";
-
-
-    @Config(name = "db2type", required = false)
-    private String db2Type = TYPE_DB2_LUW;
+public class AwsSQSConsumerOffsetSettings extends OffsetStateManagerSettings {
 }

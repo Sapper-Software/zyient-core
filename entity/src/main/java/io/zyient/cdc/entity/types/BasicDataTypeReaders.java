@@ -17,9 +17,9 @@
 package io.zyient.cdc.entity.types;
 
 import com.google.common.base.Strings;
+import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.cdc.entity.utils.ConversionUtils;
 import io.zyient.cdc.entity.utils.DateTimeHelper;
-import io.zyient.base.common.utils.ReflectionUtils;
 import lombok.NonNull;
 import org.apache.avro.util.Utf8;
 

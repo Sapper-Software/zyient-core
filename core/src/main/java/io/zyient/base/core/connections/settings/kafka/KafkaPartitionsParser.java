@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings;
+package io.zyient.base.core.connections.settings.kafka;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigValueParser;

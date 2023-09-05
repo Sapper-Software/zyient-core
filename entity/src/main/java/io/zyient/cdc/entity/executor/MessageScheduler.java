@@ -17,9 +17,9 @@
 package io.zyient.cdc.entity.executor;
 
 import com.google.common.base.Preconditions;
-import io.zyient.cdc.entity.model.TransactionId;
 import io.zyient.base.core.executor.BaseScheduler;
 import io.zyient.base.core.executor.BaseTask;
+import io.zyient.cdc.entity.model.TransactionId;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

@@ -20,11 +20,11 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
-import io.zyient.base.core.processing.ProcessorSettings;
 import io.zyient.base.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
 import io.zyient.base.core.messaging.builders.MessageSenderBuilder;
 import io.zyient.base.core.messaging.builders.MessageSenderSettings;
+import io.zyient.base.core.processing.ProcessorSettings;
 import lombok.Getter;
 import lombok.Setter;
 

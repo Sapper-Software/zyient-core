@@ -16,14 +16,14 @@
 
 package io.zyient.cdc.entity.manager;
 
-import io.zyient.cdc.entity.schema.Domain;
-import io.zyient.cdc.entity.schema.EntitySchema;
-import io.zyient.cdc.entity.schema.SchemaEntity;
-import io.zyient.cdc.entity.schema.SchemaVersion;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.Connection;
+import io.zyient.cdc.entity.schema.Domain;
+import io.zyient.cdc.entity.schema.EntitySchema;
+import io.zyient.cdc.entity.schema.SchemaEntity;
+import io.zyient.cdc.entity.schema.SchemaVersion;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

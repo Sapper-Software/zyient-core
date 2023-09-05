@@ -18,7 +18,7 @@ package io.zyient.base.core.connections.db;
 
 import io.zyient.base.core.connections.ConnectionConfig;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
-import io.zyient.base.core.connections.settings.JdbcConnectionSettings;
+import io.zyient.base.core.connections.settings.db.JdbcConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

@@ -18,7 +18,6 @@ package io.zyient.base.common.audit;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.*;
-import io.zyientj.common.model.*;
 import io.zyient.base.common.model.entity.IEntity;
 import lombok.Getter;
 import lombok.Setter;

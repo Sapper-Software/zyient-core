@@ -16,8 +16,8 @@
 
 package io.zyient.cdc.entity.types;
 
-import io.zyient.cdc.entity.schema.SchemaField;
 import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.cdc.entity.schema.SchemaField;
 import lombok.NonNull;
 import org.apache.commons.lang3.ObjectUtils;
 

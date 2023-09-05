@@ -21,7 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
-import io.zyient.base.core.connections.settings.JdbcConnectionSettings;
+import io.zyient.base.core.connections.settings.db.JdbcConnectionSettings;
 import io.zyient.base.core.keystore.KeyStore;
 import lombok.Getter;
 import lombok.NonNull;

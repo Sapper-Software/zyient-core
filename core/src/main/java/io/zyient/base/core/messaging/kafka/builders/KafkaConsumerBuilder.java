@@ -23,10 +23,10 @@ import io.zyient.base.core.connections.kafka.BasicKafkaConsumerConnection;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
+import io.zyient.base.core.messaging.kafka.BaseKafkaConsumer;
 import io.zyient.base.core.messaging.kafka.KafkaStateManager;
 import io.zyient.base.core.state.OffsetStateManager;
 import io.zyient.base.core.state.OffsetStateManagerSettings;
-import io.zyient.base.core.messaging.kafka.BaseKafkaConsumer;
 import lombok.NonNull;
 
 public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {

@@ -17,11 +17,11 @@
 package io.zyient.intake;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.intake.flow.TaskAuditRecord;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.intake.flow.TaskAuditRecord;
 import lombok.Getter;
 import lombok.Setter;
 

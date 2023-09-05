@@ -21,9 +21,9 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.kafka.BasicKafkaConsumerConnection;
 import io.zyient.base.core.messaging.MessageObject;
-import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
 import lombok.NonNull;
@@ -223,21 +223,23 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
         Preconditions.checkState(state().isAvailable());
         try {
             ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(timeout));
-            if (records != null && records.count() > 0) {
-                List<MessageObject<String, M>> array = new ArrayList<>(records.count());
-                Map<Integer, KafkaOffsetValue> offsets = new HashMap<>();
-                for (ConsumerRecord<String, byte[]> record : records) {
-                    M cd = deserialize(record.value());
-                    KafkaMessage<String, M> response = new KafkaMessage<>(record, cd);
+            synchronized (offsetMap) {
+                if (records != null && records.count() > 0) {
+                    List<MessageObject<String, M>> array = new ArrayList<>(records.count());
+                    Map<Integer, KafkaOffsetValue> offsets = new HashMap<>();
+                    for (ConsumerRecord<String, byte[]> record : records) {
+                        M cd = deserialize(record.value());
+                        KafkaMessage<String, M> response = new KafkaMessage<>(record, cd);
 
-                    array.add(response);
-                    offsetMap.put(response.id(), new KafkaOffsetData(record.key(), record));
-                    offsets.put(record.partition(), new KafkaOffsetValue(record.offset()));
+                        array.add(response);
+                        offsetMap.put(response.id(), new KafkaOffsetData(record.key(), record));
+                        offsets.put(record.partition(), new KafkaOffsetValue(record.offset()));
+                    }
+                    for (int partition : offsets.keySet()) {
+                        updateReadState(offsets.get(partition));
+                    }
+                    return array;
                 }
-                for (int partition : offsets.keySet()) {
-                    updateReadState(offsets.get(partition));
-                }
-                return array;
             }
             return null;
         } catch (Exception ex) {

@@ -17,7 +17,6 @@
 package io.zyient.cdc.entity.manager;
 
 import com.google.common.base.Preconditions;
-import io.zyient.cdc.entity.schema.*;
 import io.zyient.base.common.cache.Expireable;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.InvalidDataError;
@@ -25,6 +24,7 @@ import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.processing.ProcessorState;
+import io.zyient.cdc.entity.schema.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

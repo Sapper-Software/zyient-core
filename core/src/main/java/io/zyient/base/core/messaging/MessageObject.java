@@ -33,9 +33,9 @@ public class MessageObject<K, V> {
         New, ReSend, Snapshot, Backlog, Error, Retry, Forked, Recursive, Schema
     }
 
-    public static final String HEADER_CORRELATION_ID = "CDC_CORRELATION_ID";
-    public static final String HEADER_MESSAGE_ID = "CDC_MESSAGE_ID";
-    public static final String HEADER_MESSAGE_MODE = "CDC_MESSAGE_MODE";
+    public static final String HEADER_CORRELATION_ID = "ZYC_CORRELATION_ID";
+    public static final String HEADER_MESSAGE_ID = "ZYC_MESSAGE_ID";
+    public static final String HEADER_MESSAGE_MODE = "ZYC_MESSAGE_MODE";
 
     private String queue;
     private String id;

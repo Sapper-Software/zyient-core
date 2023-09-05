@@ -52,7 +52,7 @@ public class MessageReceiverSettings extends Settings {
     @Config(name = "offset.manager", required = false)
     private String offsetManager;
     @Config(name = "batchSize", required = false, type = Integer.class)
-    private int batchSize = -1;
+    private int batchSize = 1024;
     @Config(name = "receiverTimeout", required = false, parser = TimeValueParser.class)
-    private TimeUnitValue receiverTimeout = new TimeUnitValue(-1, TimeUnit.MILLISECONDS);
+    private TimeUnitValue receiverTimeout = new TimeUnitValue(30 * 1000, TimeUnit.MILLISECONDS);
 }
