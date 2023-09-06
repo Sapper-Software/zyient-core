@@ -17,5 +17,5 @@
 package io.zyient.base.core.io.encryption;
 
 public enum EncryptionType {
-    None, ProtectedZip, AES
+    None, ProtectedZip, ProtectedPDF, AES
 }
