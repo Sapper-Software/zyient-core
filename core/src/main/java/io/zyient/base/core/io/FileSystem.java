@@ -1003,7 +1003,7 @@ public abstract class FileSystem implements Closeable {
             tf.setPathInfo(parsePathInfo(tf.getPath()));
         }
         try {
-            doRename(source, tf);
+            doMove(source, tf);
             delete(source.getPathInfo(), true);
             return (FileInode) updateInode(tf);
         } catch (Throwable t) {
@@ -1021,7 +1021,17 @@ public abstract class FileSystem implements Closeable {
 
     protected abstract PathInfo renameFile(@NonNull FileInode source, @NonNull String name) throws IOException;
 
-    protected abstract void doRename(@NonNull FileInode source, @NonNull FileInode target) throws IOException;
+    protected abstract void doMove(@NonNull FileInode source, @NonNull FileInode target) throws IOException;
+
+    @SuppressWarnings("unchecked")
+    public <T extends PathInfo> T checkAndGetPath(@NonNull Inode inode) throws IOException {
+        T pi = (T) inode.getPathInfo();
+        if (pi == null) {
+            pi = (T) parsePathInfo(inode.getPath());
+            inode.setPathInfo(pi);
+        }
+        return pi;
+    }
 
     @Override
     public void close() throws IOException {

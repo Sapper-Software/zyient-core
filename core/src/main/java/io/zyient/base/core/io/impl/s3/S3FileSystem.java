@@ -133,11 +133,7 @@ public class S3FileSystem extends RemoteFileSystem {
     public FileInode create(@NonNull DirectoryInode dir,
                             @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
-        if (node.getPathInfo() == null) {
-            PathInfo pi = parsePathInfo(node.getPath());
-            node.setPathInfo(pi);
-        }
-        S3PathInfo pi = (S3PathInfo) node.getPathInfo();
+        S3PathInfo pi = checkAndGetPath(node);
         Preconditions.checkNotNull(pi);
         if (node.getPath() == null)
             node.setPath(pi.pathConfig());
@@ -196,13 +192,7 @@ public class S3FileSystem extends RemoteFileSystem {
                                      @NonNull String path,
                                      @NonNull InodeType type) throws IOException {
         String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
-        S3PathInfo pi = null;
-        if (parent.getPathInfo() == null) {
-            pi = (S3PathInfo) parsePathInfo(parent.getPath());
-            parent.setPathInfo(pi);
-        } else {
-            pi = (S3PathInfo) parent.getPathInfo();
-        }
+        S3PathInfo pi = checkAndGetPath(parent);
         return new S3PathInfo(this, parent.getDomain(), pi.bucket(), p, type);
     }
 
@@ -255,14 +245,8 @@ public class S3FileSystem extends RemoteFileSystem {
 
     @Override
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
-        S3PathInfo sp = (S3PathInfo) source.getPathInfo();
-        if (sp == null) {
-            sp = (S3PathInfo) parsePathInfo(source.getPath());
-        }
-        S3PathInfo tp = (S3PathInfo) target.getPathInfo();
-        if (tp == null) {
-            tp = (S3PathInfo) parsePathInfo(target.getPath());
-        }
+        S3PathInfo sp = checkAndGetPath(source);
+        S3PathInfo tp = checkAndGetPath(target);
         CopyObjectRequest cr = CopyObjectRequest.builder()
                 .sourceBucket(sp.bucket())
                 .sourceKey(sp.path())
@@ -275,22 +259,16 @@ public class S3FileSystem extends RemoteFileSystem {
     @Override
     protected PathInfo renameFile(@NonNull FileInode source,
                                   @NonNull String name) throws IOException {
-        S3PathInfo pi = (S3PathInfo) source.getPathInfo();
-        if (pi == null) {
-            pi = (S3PathInfo) parsePathInfo(source.getPath());
-        }
+        S3PathInfo pi = checkAndGetPath(source);
         String path = String.format("%s/%s", pi.parent(), name);
         return new S3PathInfo(this, pi.domain(), pi.bucket(), path, InodeType.File);
     }
 
     @Override
-    protected void doRename(@NonNull FileInode source,
-                            @NonNull FileInode target) throws IOException {
+    protected void doMove(@NonNull FileInode source,
+                          @NonNull FileInode target) throws IOException {
         doCopy(source, target);
-        S3PathInfo sp = (S3PathInfo) source.getPathInfo();
-        if (sp == null) {
-            sp = (S3PathInfo) parsePathInfo(source.getPath());
-        }
+        S3PathInfo sp = checkAndGetPath(source);
         delete(sp, false);
     }
 
@@ -340,12 +318,7 @@ public class S3FileSystem extends RemoteFileSystem {
     public FileInode upload(@NonNull File source,
                             @NonNull FileInode inode,
                             boolean clearLock) throws IOException {
-        S3PathInfo path = (S3PathInfo) inode.getPathInfo();
-        if (path == null) {
-            throw new IOException(
-                    String.format("Path information not set in inode. [domain=%s, path=%s]",
-                            inode.getDomain(), inode.getAbsolutePath()));
-        }
+        S3PathInfo path = checkAndGetPath(inode);
         S3FileUploader task = new S3FileUploader(this, client, inode, source, this, clearLock);
         uploader.submit(task);
         return inode;
@@ -353,12 +326,7 @@ public class S3FileSystem extends RemoteFileSystem {
 
     @Override
     public File download(@NonNull FileInode inode, long timeout) throws IOException {
-        S3PathInfo path = (S3PathInfo) inode.getPathInfo();
-        if (path == null) {
-            throw new IOException(
-                    String.format("Path information not set in inode. [domain=%s, path=%s]",
-                            inode.getDomain(), inode.getAbsolutePath()));
-        }
+        S3PathInfo path = checkAndGetPath(inode);
         if (exists(path)) {
             if (path.temp() == null) {
                 File tmp = getInodeTempPath(path);
@@ -456,10 +424,7 @@ public class S3FileSystem extends RemoteFileSystem {
 
         @Override
         protected Object upload() throws Throwable {
-            S3PathInfo pi = (S3PathInfo) inode.getPathInfo();
-            if (pi == null) {
-                throw new Exception("S3 Path information not specified...");
-            }
+            S3PathInfo pi = fs.checkAndGetPath(inode);
             if (!source.exists()) {
                 throw new IOException(String.format("Source file not found. [path=%s]", source.getAbsolutePath()));
             }

@@ -18,6 +18,7 @@ package io.zyient.base.core.io.impl.sftp;
 
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.model.Inode;
+import io.zyient.base.core.io.model.InodeType;
 import io.zyient.base.core.io.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
@@ -35,15 +36,27 @@ import java.util.Map;
 public class SftpPathInfo extends PathInfo {
     private File temp;
 
-    protected SftpPathInfo(@NonNull FileSystem fs, @NonNull Inode node) {
+    protected SftpPathInfo(@NonNull FileSystem fs,
+                           @NonNull Inode node) {
         super(fs, node);
     }
 
-    protected SftpPathInfo(@NonNull FileSystem fs, @NonNull String path, @NonNull String domain) {
+    protected SftpPathInfo(@NonNull FileSystem fs,
+                           @NonNull String path,
+                           @NonNull String domain) {
         super(fs, path, domain);
     }
 
-    protected SftpPathInfo(@NonNull FileSystem fs, @NonNull Map<String, String> config) {
+    protected SftpPathInfo(@NonNull FileSystem fs,
+                           @NonNull String path,
+                           @NonNull String domain,
+                           @NonNull InodeType type) {
+        super(fs, path, domain);
+        directory = (type == InodeType.Directory);
+    }
+
+    protected SftpPathInfo(@NonNull FileSystem fs,
+                           @NonNull Map<String, String> config) {
         super(fs, config);
     }
 

@@ -104,11 +104,7 @@ public class LocalFileSystem extends FileSystem {
             throw new IOException(String.format("Invalid directory name: recursive directory creation not supported. [name=%s]", name));
         }
         String path = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), name));
-        LocalPathInfo pd = (LocalPathInfo) parent.getPathInfo();
-        if (pd == null) {
-            pd = new LocalPathInfo(this, parent);
-            parent.setPathInfo(pd);
-        }
+        LocalPathInfo pd = checkAndGetPath(parent);
         if (!pd.file().exists()) {
             throw new IOException(String.format("Parent directory not found. [path=%s]", pd.file().getAbsolutePath()));
         }
@@ -178,11 +174,7 @@ public class LocalFileSystem extends FileSystem {
     public FileInode create(@NonNull DirectoryInode dir,
                             @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
-        if (node.getPathInfo() == null) {
-            PathInfo pi = parsePathInfo(node.getPath());
-            node.setPathInfo(pi);
-        }
-        LocalPathInfo pi = (LocalPathInfo) node.getPathInfo();
+        LocalPathInfo pi = checkAndGetPath(node);
         File pdir = pi.file().getParentFile();
         if (!pdir.exists()) {
             if (!pdir.mkdirs()) {
@@ -242,11 +234,7 @@ public class LocalFileSystem extends FileSystem {
 
     @Override
     protected Reader getReader(@NonNull FileInode inode) throws IOException {
-        LocalPathInfo pi = (LocalPathInfo) inode.getPathInfo();
-        if (pi == null) {
-            pi = new LocalPathInfo(this, inode);
-            inode.setPathInfo(pi);
-        }
+        LocalPathInfo pi = checkAndGetPath(inode);
         if (!pi.exists()) {
             throw new IOException(String.format("Local file not found. [path=%s]", inode.getAbsolutePath()));
         }
@@ -256,49 +244,30 @@ public class LocalFileSystem extends FileSystem {
     @Override
     protected Writer getWriter(@NonNull FileInode inode,
                                boolean overwrite) throws IOException {
-        LocalPathInfo pi = (LocalPathInfo) inode.getPathInfo();
-        if (pi == null) {
-            pi = new LocalPathInfo(this, inode);
-            inode.setPathInfo(pi);
-        }
+        LocalPathInfo pi = checkAndGetPath(inode);
         return new LocalWriter(inode, this, overwrite).open();
     }
 
     @Override
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
-        LocalPathInfo sp = (LocalPathInfo) source.getPathInfo();
-        if (sp == null) {
-            sp = (LocalPathInfo) parsePathInfo(source.getPath());
-        }
-        LocalPathInfo tp = (LocalPathInfo) target.getPathInfo();
-        if (tp == null) {
-            tp = (LocalPathInfo) parsePathInfo(target.getPath());
-        }
+        LocalPathInfo sp = checkAndGetPath(source);
+        LocalPathInfo tp = checkAndGetPath(target);
         FileUtils.copyFile(sp.file, tp.file);
     }
 
     @Override
     protected PathInfo renameFile(@NonNull FileInode source, @NonNull String name) throws IOException {
-        LocalPathInfo pi = (LocalPathInfo) source.getPathInfo();
-        if (pi == null) {
-            pi = (LocalPathInfo) parsePathInfo(source.getPath());
-        }
+        LocalPathInfo pi = checkAndGetPath(source);
         String dir = pi.file.getParent();
         String path = String.format("%s/%s", dir, name);
         return new LocalPathInfo(this, path, source.getDomain());
     }
 
     @Override
-    protected void doRename(@NonNull FileInode source,
-                            @NonNull FileInode target) throws IOException {
-        LocalPathInfo sp = (LocalPathInfo) source.getPathInfo();
-        if (sp == null) {
-            sp = (LocalPathInfo) parsePathInfo(source.getPath());
-        }
-        LocalPathInfo tp = (LocalPathInfo) target.getPathInfo();
-        if (tp == null) {
-            tp = (LocalPathInfo) parsePathInfo(target.getPath());
-        }
+    protected void doMove(@NonNull FileInode source,
+                          @NonNull FileInode target) throws IOException {
+        LocalPathInfo sp = checkAndGetPath(source);
+        LocalPathInfo tp = checkAndGetPath(target);
         if (!sp.file.renameTo(tp.file)) {
             throw new IOException(
                     String.format("Failed to rename file. [source=%s][target=%s]",
@@ -310,13 +279,7 @@ public class LocalFileSystem extends FileSystem {
     public FileInode upload(@NonNull File source,
                             @NonNull FileInode inode,
                             boolean clearLock) throws IOException {
-        LocalPathInfo pi = null;
-        if (inode.getPathInfo() == null) {
-            pi = (LocalPathInfo) parsePathInfo(inode.getPath());
-            inode.setPathInfo(pi);
-        } else {
-            pi = (LocalPathInfo) inode.getPathInfo();
-        }
+        LocalPathInfo pi = checkAndGetPath(inode);
         if (pi.exists()) {
             if (!delete(pi, false)) {
                 throw new IOException(
@@ -349,13 +312,7 @@ public class LocalFileSystem extends FileSystem {
 
     @Override
     public File download(@NonNull FileInode inode, long timeout) throws IOException {
-        LocalPathInfo pi = null;
-        if (inode.getPathInfo() == null) {
-            pi = (LocalPathInfo) parsePathInfo(inode.getPath());
-            inode.setPathInfo(pi);
-        } else {
-            pi = (LocalPathInfo) inode.getPathInfo();
-        }
+        LocalPathInfo pi = checkAndGetPath(inode);
         return pi.file();
     }
 

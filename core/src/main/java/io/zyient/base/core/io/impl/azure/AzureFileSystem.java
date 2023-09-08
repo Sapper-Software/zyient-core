@@ -124,11 +124,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     @Override
     public FileInode create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
-        if (node.getPathInfo() == null) {
-            PathInfo pi = parsePathInfo(node.getPath());
-            node.setPathInfo(pi);
-        }
-        AzurePathInfo pi = (AzurePathInfo) node.getPathInfo();
+        AzurePathInfo pi = checkAndGetPath(node);
         Preconditions.checkNotNull(pi);
         if (node.getPath() == null)
             node.setPath(pi.pathConfig());
@@ -194,23 +190,16 @@ public class AzureFileSystem extends RemoteFileSystem {
                                      @NonNull String path,
                                      @NonNull InodeType type) throws IOException {
         String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
-        AzurePathInfo pi = null;
-        if (parent.getPathInfo() == null) {
-            pi = (AzurePathInfo) parsePathInfo(parent.getPath());
-            parent.setPathInfo(pi);
-        } else {
-            pi = (AzurePathInfo) parent.getPathInfo();
-        }
+        AzurePathInfo pi = checkAndGetPath(parent);
         return new AzurePathInfo(this, pi.domain(), pi.container(), p, type);
     }
 
     @Override
     public boolean exists(@NonNull PathInfo path) throws IOException {
-        if (path instanceof AzurePathInfo) {
+        if (path instanceof AzurePathInfo pi) {
             if (path.directory()) {
                 return true;
             }
-            AzurePathInfo pi = (AzurePathInfo) path;
             BlobContainerClient cc = client.getContainer(pi.container());
             if (cc != null && cc.exists()) {
                 AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
@@ -234,37 +223,21 @@ public class AzureFileSystem extends RemoteFileSystem {
 
     @Override
     protected Reader getReader(@NonNull FileInode inode) throws IOException {
-        AzurePathInfo pi = (AzurePathInfo) inode.getPathInfo();
-        if (pi == null) {
-            AzureContainer container = (AzureContainer) domainMap.get(inode.getDomain());
-            pi = new AzurePathInfo(this, inode, container.getContainer());
-            inode.setPathInfo(pi);
-        }
+        AzurePathInfo pi = checkAndGetPath(inode);
         return new AzureReader(this, inode).open();
     }
 
     @Override
     protected Writer getWriter(@NonNull FileInode inode, boolean overwrite) throws IOException {
-        AzurePathInfo pi = (AzurePathInfo) inode.getPathInfo();
-        if (pi == null) {
-            AzureContainer container = (AzureContainer) domainMap.get(inode.getDomain());
-            pi = new AzurePathInfo(this, inode, container.getContainer());
-            inode.setPathInfo(pi);
-        }
+        AzurePathInfo pi = checkAndGetPath(inode);
         return new AzureWriter(inode, this, overwrite).open();
     }
 
     @Override
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
-        AzurePathInfo sp = (AzurePathInfo) source.getPathInfo();
-        if (sp == null) {
-            sp = (AzurePathInfo) parsePathInfo(source.getPath());
-        }
-        AzurePathInfo tp = (AzurePathInfo) target.getPathInfo();
-        if (tp == null) {
-            tp = (AzurePathInfo) parsePathInfo(target.getPath());
-        }
+        AzurePathInfo sp = checkAndGetPath(source);
+        AzurePathInfo tp = checkAndGetPath(target);
         BlobContainerClient sc = client.getContainer(sp.container());
         if (sc == null || !sc.exists()) {
             throw new IOException(String.format("Azure Container not found. [container=%s]", sp.container()));
@@ -289,21 +262,15 @@ public class AzureFileSystem extends RemoteFileSystem {
     @Override
     protected PathInfo renameFile(@NonNull FileInode source,
                                   @NonNull String name) throws IOException {
-        AzurePathInfo pi = (AzurePathInfo) source.getPathInfo();
-        if (pi == null) {
-            pi = (AzurePathInfo) parsePathInfo(source.getPath());
-        }
+        AzurePathInfo pi = checkAndGetPath(source);
         String path = String.format("%s/%s", pi.parent(), name);
         return new AzurePathInfo(this, pi.domain(), pi.container(), path, InodeType.File);
     }
 
     @Override
-    protected void doRename(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
+    protected void doMove(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         doCopy(source, target);
-        AzurePathInfo sp = (AzurePathInfo) source.getPathInfo();
-        if (sp == null) {
-            sp = (AzurePathInfo) parsePathInfo(source.getPath());
-        }
+        AzurePathInfo sp = checkAndGetPath(source);
         delete(sp, false);
     }
 
@@ -358,12 +325,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     public FileInode upload(@NonNull File source,
                             @NonNull FileInode inode,
                             boolean clearLock) throws IOException {
-        AzurePathInfo path = (AzurePathInfo) inode.getPathInfo();
-        if (path == null) {
-            throw new IOException(
-                    String.format("Path information not set in inode. [domain=%s, path=%s]",
-                            inode.getDomain(), inode.getAbsolutePath()));
-        }
+        AzurePathInfo path = checkAndGetPath(inode);
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
         AzureFileUploader task = new AzureFileUploader(this, client, inode, source,
                 this, clearLock,
@@ -374,12 +336,7 @@ public class AzureFileSystem extends RemoteFileSystem {
 
     @Override
     public File download(@NonNull FileInode inode, long timeout) throws IOException {
-        AzurePathInfo path = (AzurePathInfo) inode.getPathInfo();
-        if (path == null) {
-            throw new IOException(
-                    String.format("Path information not set in inode. [domain=%s, path=%s]",
-                            inode.getDomain(), inode.getAbsolutePath()));
-        }
+        AzurePathInfo path = checkAndGetPath(inode);
         if (exists(path)) {
             if (path.temp() == null) {
                 File tmp = getInodeTempPath(path);
@@ -457,10 +414,8 @@ public class AzureFileSystem extends RemoteFileSystem {
 
         @Override
         protected Object upload() throws Throwable {
-            AzurePathInfo pi = (AzurePathInfo) inode.getPathInfo();
-            if (pi == null) {
-                throw new Exception("Azure Path information not specified...");
-            }
+            Preconditions.checkArgument(fs instanceof AzureFileSystem);
+            AzurePathInfo pi = fs.checkAndGetPath(inode);
             if (!source.exists()) {
                 throw new IOException(String.format("Source file not found. [path=%s]", source.getAbsolutePath()));
             }
