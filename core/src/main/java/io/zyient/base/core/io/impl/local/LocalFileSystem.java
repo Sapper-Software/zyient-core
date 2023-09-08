@@ -252,6 +252,12 @@ public class LocalFileSystem extends FileSystem {
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         LocalPathInfo sp = checkAndGetPath(source);
         LocalPathInfo tp = checkAndGetPath(target);
+        if (tp.file.exists()) {
+            if (!tp.file.delete()) {
+                throw new IOException(
+                        String.format("Failed to delete existing file. [path=%s]", tp.file.getAbsolutePath()));
+            }
+        }
         FileUtils.copyFile(sp.file, tp.file);
     }
 
@@ -268,6 +274,12 @@ public class LocalFileSystem extends FileSystem {
                           @NonNull FileInode target) throws IOException {
         LocalPathInfo sp = checkAndGetPath(source);
         LocalPathInfo tp = checkAndGetPath(target);
+        if (tp.file.exists()) {
+            if (!tp.file.delete()) {
+                throw new IOException(
+                        String.format("Failed to delete existing file. [path=%s]", tp.file.getAbsolutePath()));
+            }
+        }
         if (!sp.file.renameTo(tp.file)) {
             throw new IOException(
                     String.format("Failed to rename file. [source=%s][target=%s]",

@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.utils;
 
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.BaseEnvSettings;
@@ -70,6 +71,8 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
 
     public BaseEnv<EDemoState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         withStoreKey(TEST_PASSWD);
+        CompositeMeterRegistry registry = new CompositeMeterRegistry();
+        BaseEnv.registry(registry);
         super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
 
         configNode = baseConfig().configurationAt(__CONFIG_PATH);

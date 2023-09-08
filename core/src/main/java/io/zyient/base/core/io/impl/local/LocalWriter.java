@@ -85,7 +85,6 @@ public class LocalWriter extends Writer {
     }
 
     protected void getLocalCopy() throws Exception {
-        checkOpen();
         if (path.file.exists()) {
             FileUtils.copyFile(path.file, temp);
             temp = Reader.checkDecompress(temp, inode, fs);

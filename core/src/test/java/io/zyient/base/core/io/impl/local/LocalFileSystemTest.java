@@ -39,7 +39,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LocalFileSystemTest {
-    private static final String __CONFIG_FILE = "src/test/resources/local/fs-mapped-test.xml";
+    private static final String __CONFIG_FILE = "src/test/resources/local/fs-local-test.xml";
     private static final String FS_DEMO = "local-test-1";
     private static final String FS_DEMO_DOMAIN = "local-demo-1";
 
@@ -180,7 +180,9 @@ class LocalFileSystemTest {
                 }
                 assertEquals(size, written);
             }
-
+            FileInode ti = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            fs.copy(fi, ti.getPathInfo());
+            assertTrue(ti.getPathInfo().exists());
             assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -236,7 +238,9 @@ class LocalFileSystemTest {
                 }
                 assertEquals(size, written);
             }
-
+            FileInode ti = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            fs.move(fi, ti.getPathInfo());
+            assertTrue(ti.getPathInfo().exists());
             assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

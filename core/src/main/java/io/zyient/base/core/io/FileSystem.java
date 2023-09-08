@@ -962,16 +962,7 @@ public abstract class FileSystem implements Closeable {
 
     public FileInode copy(@NonNull FileInode source,
                           @NonNull PathInfo target) throws IOException {
-        return copy(source, target, false);
-    }
-
-    public FileInode copy(@NonNull FileInode source,
-                          @NonNull PathInfo target,
-                          boolean overwrite) throws IOException {
         FileInode tf = (FileInode) getInode(target);
-        if (!overwrite && tf != null) {
-            throw new IOException(String.format("Target file already exists. [path=%s]", target.path()));
-        }
         if (tf == null) {
             tf = create(target);
         }
@@ -990,12 +981,8 @@ public abstract class FileSystem implements Closeable {
     protected abstract void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException;
 
     public FileInode move(@NonNull FileInode source,
-                          @NonNull PathInfo target,
-                          boolean overwrite) throws IOException {
+                          @NonNull PathInfo target) throws IOException {
         FileInode tf = (FileInode) getInode(target);
-        if (!overwrite && tf != null) {
-            throw new IOException(String.format("Target file already exists. [path=%s]", target.path()));
-        }
         if (tf == null) {
             tf = create(target);
         }
@@ -1013,10 +1000,9 @@ public abstract class FileSystem implements Closeable {
     }
 
     public FileInode rename(@NonNull FileInode source,
-                            @NonNull String name,
-                            boolean overwrite) throws IOException {
+                            @NonNull String name) throws IOException {
         PathInfo target = renameFile(source, name);
-        return move(source, target, overwrite);
+        return move(source, target);
     }
 
     protected abstract PathInfo renameFile(@NonNull FileInode source, @NonNull String name) throws IOException;
