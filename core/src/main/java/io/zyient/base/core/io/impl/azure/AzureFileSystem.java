@@ -24,6 +24,8 @@ import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobUploadFromFileOptions;
 import com.azure.storage.blob.options.BlobUploadFromUrlOptions;
+import com.azure.storage.blob.sas.BlobContainerSasPermission;
+import com.azure.storage.blob.sas.BlobServiceSasSignatureValues;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
@@ -46,6 +48,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 @Getter
@@ -197,6 +200,10 @@ public class AzureFileSystem extends RemoteFileSystem {
     @Override
     public boolean exists(@NonNull PathInfo path) throws IOException {
         if (path instanceof AzurePathInfo pi) {
+            Inode node = getInode(path);
+            if (node == null) {
+                return false;
+            }
             if (path.directory()) {
                 return true;
             }
@@ -249,7 +256,11 @@ public class AzureFileSystem extends RemoteFileSystem {
         try {
             BlobClient bs = sc.getBlobClient(getBlobName(sp));
             BlobClient bt = tc.getBlobClient(getBlobName(tp));
-            BlobUploadFromUrlOptions options = new BlobUploadFromUrlOptions(bs.getBlobUrl());
+            BlobServiceSasSignatureValues sas = new BlobServiceSasSignatureValues(OffsetDateTime.now().plusHours(1),
+                    BlobContainerSasPermission.parse("r"));
+            String sasToken = bs.generateSas(sas);
+            BlobUploadFromUrlOptions options = new BlobUploadFromUrlOptions(bs.getBlobUrl() + "?" + sasToken)
+                    .setCopySourceBlobProperties(true);
             Duration timeout = Duration.ofSeconds(settings.getUploadTimeout());
             Response<BlockBlobItem> response = bt.getBlockBlobClient()
                     .uploadFromUrlWithResponse(options, timeout, null);

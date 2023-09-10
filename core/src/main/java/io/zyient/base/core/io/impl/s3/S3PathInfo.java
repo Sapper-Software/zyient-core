@@ -85,6 +85,7 @@ public class S3PathInfo extends PathInfo {
      */
     @Override
     public boolean exists() throws IOException {
+        Preconditions.checkNotNull(fs());
         if (path().endsWith("/")) return true;
         return fs().exists(this);
     }
@@ -95,6 +96,7 @@ public class S3PathInfo extends PathInfo {
      */
     @Override
     public long size() throws IOException {
+        Preconditions.checkNotNull(fs());
         if (temp.exists()) {
             Path p = Paths.get(temp.toURI());
             dataSize(Files.size(p));

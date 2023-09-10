@@ -72,6 +72,19 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
         ConfigReader reader = new ConfigReader(config, FileSystemIndexerSettings.class);
         reader.read();
         settings = (FileSystemIndexerSettings) reader.settings();
+        setup();
+    }
+
+    public void init(@NonNull FileSystemIndexerSettings settings,
+                     @NonNull BaseEnv<?> env,
+                     @NonNull FileSystem fs) throws ConfigurationException {
+        this.settings = settings;
+        this.env = env;
+        this.fs = fs;
+        setup();
+    }
+
+    private void setup() throws ConfigurationException {
         try {
             File dir = new File(settings.getDirectory());
             if (!dir.exists()) {

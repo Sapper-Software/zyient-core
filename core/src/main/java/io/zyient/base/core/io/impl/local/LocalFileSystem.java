@@ -227,7 +227,7 @@ public class LocalFileSystem extends FileSystem {
         Inode node = getInode(path);
         if (node != null) {
             LocalPathInfo pi = (LocalPathInfo) parsePathInfo(node.getPath());
-            return pi.exists();
+            return pi.file.exists();
         }
         return false;
     }

@@ -104,13 +104,17 @@ public abstract class FileSystem implements Closeable {
             this.env = env;
             this.settings = settings;
             setup();
+            if (this.settings.getIndexerSettings() != null) {
+                indexer = new FileSystemIndexer();
+                indexer.init(settings.getIndexerSettings(), env, this);
+            }
             return this;
         } catch (Exception ex) {
             throw new IOException(ex);
         }
     }
 
-    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                      @NonNull BaseEnv<?> env,
                      @NonNull FileSystemConfigReader configReader) throws Exception {
         this.env = env;
@@ -118,6 +122,13 @@ public abstract class FileSystem implements Closeable {
         configReader.read();
         this.settings = (FileSystemSettings) configReader.settings();
         setup();
+        String ip = FileSystemIndexerSettings.path();
+        HierarchicalConfiguration<ImmutableNode> config = configReader.config();
+        if (ConfigReader.checkIfNodeExists(config, ip)) {
+            indexer = new FileSystemIndexer();
+            indexer.init(config, env, this);
+            this.settings.setIndexerSettings(indexer.settings());
+        }
     }
 
     private void setup() throws Exception {
@@ -181,12 +192,7 @@ public abstract class FileSystem implements Closeable {
                     String.format("Path is not a directory. [path=%s]", tmpDir.getAbsolutePath()));
         }
         metrics = new FileSystemMetrics(getClass().getSimpleName(), settings.getName(), "FILESYSTEM", env);
-        String ip = FileSystemIndexerSettings.path();
-        HierarchicalConfiguration<ImmutableNode> config = configReader.config();
-        if (ConfigReader.checkIfNodeExists(config, ip)) {
-            indexer = new FileSystemIndexer();
-            indexer.init(config, env, this);
-        }
+
     }
 
     protected FileSystem postInit() throws IOException {

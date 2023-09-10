@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.io.impl.local;
 
+import com.google.common.base.Preconditions;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.model.Inode;
 import io.zyient.base.core.io.model.PathInfo;
@@ -79,7 +80,8 @@ public class LocalPathInfo extends PathInfo {
      */
     @Override
     public boolean exists() throws IOException {
-        return file.exists();
+        Preconditions.checkNotNull(fs());
+        return fs().exists(this);
     }
 
     /**

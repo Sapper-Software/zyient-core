@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.io.impl.sftp;
 
+import com.google.common.base.Preconditions;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.model.Inode;
 import io.zyient.base.core.io.model.InodeType;
@@ -68,11 +69,13 @@ public class SftpPathInfo extends PathInfo {
 
     @Override
     public boolean exists() throws IOException {
+        Preconditions.checkNotNull(fs());
         return fs().exists(this);
     }
 
     @Override
     public long size() throws IOException {
+        Preconditions.checkNotNull(fs());
         if (temp.exists()) {
             Path p = Paths.get(temp.toURI());
             dataSize(Files.size(p));

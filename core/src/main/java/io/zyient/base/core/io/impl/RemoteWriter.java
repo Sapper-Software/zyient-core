@@ -73,7 +73,6 @@ public abstract class RemoteWriter extends Writer {
 
     @Override
     protected void getLocalCopy() throws Exception {
-        checkOpen();
         if (fs.exists(inode.getPathInfo())) {
             File file = fs.download(inode, cache.settings().getDownloadTimeout());
             if (file == null) return;
@@ -92,6 +91,7 @@ public abstract class RemoteWriter extends Writer {
 
     @Override
     public void doWrite(byte @NonNull [] data, int offset, int length) throws IOException {
+        checkOpen();
         outputStream.write(data, (int) offset, (int) length);
         dataSize += length;
     }

@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.io.impl.azure;
 
-import com.azure.storage.blob.BlobClient;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.core.io.FileSystem;
@@ -85,9 +84,9 @@ public class AzurePathInfo extends LocalPathInfo {
      */
     @Override
     public boolean exists() throws IOException {
+        Preconditions.checkNotNull(fs());
         try {
-            BlobClient c = client.getContainer(container).getBlobClient(path());
-            return c.exists();
+            return fs().exists(this);
         } catch (Exception ex) {
             return false;
         }
@@ -99,6 +98,7 @@ public class AzurePathInfo extends LocalPathInfo {
      */
     @Override
     public long size() throws IOException {
+        Preconditions.checkNotNull(fs());
         if (temp != null && temp.exists()) {
             Path p = Paths.get(temp.toURI());
             dataSize(Files.size(p));

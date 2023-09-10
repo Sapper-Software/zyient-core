@@ -21,6 +21,7 @@ import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
+import io.zyient.base.core.io.indexing.FileSystemIndexerSettings;
 import io.zyient.base.core.model.ESettingsSource;
 import lombok.Getter;
 import lombok.Setter;
@@ -115,4 +116,5 @@ public abstract class FileSystemSettings extends Settings {
     private Container defaultContainer;
     private Map<String, Container> containers;
     private ESettingsSource source = ESettingsSource.File;
+    private FileSystemIndexerSettings indexerSettings;
 }

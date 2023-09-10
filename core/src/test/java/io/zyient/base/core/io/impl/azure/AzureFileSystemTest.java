@@ -19,6 +19,7 @@ package io.zyient.base.core.io.impl.azure;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
+import io.zyient.base.common.utils.DateTimeUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.FileSystemManager;
@@ -46,6 +47,8 @@ class AzureFileSystemTest {
     private static FileSystemManager manager;
     private static DemoEnv env = new DemoEnv();
     private static FileSystem fs;
+    private static String BASE_DIR;
+
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -56,6 +59,8 @@ class AzureFileSystemTest {
         Preconditions.checkNotNull(manager);
         fs = manager.get(FS_DEMO);
         Preconditions.checkNotNull(fs);
+        String dtDir = DateTimeUtils.formatTimestamp("yyyy/MM/dd/HH/mm");
+        BASE_DIR = String.format("demo/azure/%s/%s", fs.getClass().getSimpleName(), dtDir);
     }
 
     @AfterAll
@@ -66,7 +71,7 @@ class AzureFileSystemTest {
     @Test
     void create() {
         try {
-            String dir = String.format("demo/azure/%s", UUID.randomUUID().toString());
+            String dir = String.format("%s/%s/create", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
@@ -84,7 +89,7 @@ class AzureFileSystemTest {
     @Test
     void delete() {
         try {
-            String dir = String.format("demo/azure/%s", UUID.randomUUID().toString());
+            String dir = String.format("%s/%s/delete", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
@@ -118,7 +123,7 @@ class AzureFileSystemTest {
     @Test
     void getReader() {
         try {
-            String dir = String.format("demo/azure/%s", UUID.randomUUID().toString());
+            String dir = String.format("%s/%s/reader", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
@@ -151,6 +156,9 @@ class AzureFileSystemTest {
                 }
                 assertEquals(written, size);
             }
+            FileInode ti = fs.create(di, String.format("copied_%s.tmp", UUID.randomUUID().toString()));
+            fs.copy(fi, ti.getPathInfo());
+            assertTrue(ti.getPathInfo().exists());
             assertTrue(fs.delete(fi.getPathInfo()));
             assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
@@ -164,11 +172,11 @@ class AzureFileSystemTest {
     @Test
     void getWriter() {
         try {
-            String dir = String.format("demo/azure/%s", UUID.randomUUID().toString());
+            String dir = String.format("%s/%s/writer", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
             DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            FileInode fi = fs.create(di, String.format("test/%s.tmp", UUID.randomUUID().toString()));
+            FileInode fi = fs.create(di, String.format("%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
@@ -207,7 +215,10 @@ class AzureFileSystemTest {
                 }
                 assertEquals(written, size);
             }
-            assertTrue(fs.delete(fi.getPathInfo()));
+            FileInode ti = fs.create(di, String.format("moved_%s.tmp", UUID.randomUUID().toString()));
+            fs.move(fi, ti.getPathInfo());
+            assertTrue(ti.getPathInfo().exists());
+            assertFalse(fi.getPathInfo().exists());
             assertTrue(fs.delete(di.getPathInfo(), true));
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
