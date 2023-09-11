@@ -107,6 +107,7 @@ public abstract class FileSystem implements Closeable {
             if (this.settings.getIndexerSettings() != null) {
                 indexer = new FileSystemIndexer();
                 indexer.init(settings.getIndexerSettings(), env, this);
+                addVisitor(indexer);
             }
             return this;
         } catch (Exception ex) {
@@ -128,6 +129,7 @@ public abstract class FileSystem implements Closeable {
             indexer = new FileSystemIndexer();
             indexer.init(config, env, this);
             this.settings.setIndexerSettings(indexer.settings());
+            addVisitor(indexer);
         }
     }
 
@@ -192,7 +194,6 @@ public abstract class FileSystem implements Closeable {
                     String.format("Path is not a directory. [path=%s]", tmpDir.getAbsolutePath()));
         }
         metrics = new FileSystemMetrics(getClass().getSimpleName(), settings.getName(), "FILESYSTEM", env);
-
     }
 
     protected FileSystem postInit() throws IOException {

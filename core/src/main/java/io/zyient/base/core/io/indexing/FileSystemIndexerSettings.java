@@ -23,6 +23,25 @@ import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <fs>
+ *         <fileSystems>
+ *             <fileSystem>
+ *                 <type>[FS class]</type>
+ *                 <name>[File System name, must be unique in a namespace]</name>
+ *                 ...
+ *                 <indexer>
+ *                     <directory>[Path to index storage]</directory>
+ *                     <mapped>[Used Memory mapped index. default=true]</mapped>
+ *                     <poolSize>[Executor pool size, default=4]</poolSize>
+ *                 </indexer>
+ *             </fileSystem>
+ *             ...
+ *         </fileSystems>
+ *     </fs>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -31,6 +50,8 @@ import lombok.Setter;
 public class FileSystemIndexerSettings extends Settings {
     @Config(name = "directory")
     private String directory;
+    @Config(name = "connection")
+    private String zkConnection;
     @Config(name = "mapped", required = false, type = Boolean.class)
     private boolean useMappedFiles = true;
     @Config(name = "poolSize", required = false, type = Integer.class)

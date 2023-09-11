@@ -23,8 +23,8 @@
         <source>demo</source>
         <paths>
             <connections>config</connections>
-            <registry>/test/cdc-core/registry</registry>
-            <root>/test/cdc-core</root>
+            <registry>/test/filesystem/registry</registry>
+            <root>/test/filesystem</root>
         </paths>
         <demo>
         </demo>
@@ -32,6 +32,10 @@
             <class>io.zyient.base.core.keystore.JavaKeyStore</class>
             <path>src/test/resources/azure/azure-keystore.ks</path>
         </keystore>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/env</path>
+        </locks>
         <fs>
             <zkPath>/test/filesystem/admin</zkPath>
             <zkConnection>test-zk</zkConnection>
@@ -57,6 +61,10 @@
                         </container>
                         <default>local-demo-1</default>
                     </containers>
+                    <indexer>
+                        <directory>/tmp/zyient/fs/index</directory>
+                        <connection>test-zk</connection>
+                    </indexer>
                 </fileSystem>
             </fileSystems>
         </fs>

@@ -16,6 +16,10 @@
 
 package io.zyient.base.core.io.indexing;
 
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.experimental.Accessors;
+
 public class InodeIndexConstants {
     public static final String NAME_FS_PATH = "fsPath";
     public static final String NAME_UUID = "UUID";
@@ -28,5 +32,29 @@ public class InodeIndexConstants {
     public static final String NAME_NAME = "name";
     public static final String NAME_ATTRS = "attributes";
     public static final String NAME_STATE = "state";
+    public static final String NAME_CREATE_DATE = "created";
+    public static final String NAME_MODIFIED_DATE = "modified";
 
+    @Getter
+    @Accessors(fluent = true)
+    public enum InodeQuery {
+        FS_PATH(NAME_FS_PATH),
+        UUID(NAME_UUID),
+        DOMAIN(NAME_DOMAIN),
+        PATH(NAME_PATH),
+        ABSOLUTE_PATH(NAME_ABSOLUTE_PATH),
+        TYPE(NAME_TYPE),
+        ZK_PATH(NAME_ZK_PATH),
+        NAME(NAME_NAME),
+        ATTRIBUTES(NAME_ATTRS),
+        STATE(NAME_STATE),
+        CREATED(NAME_CREATE_DATE),
+        MODIFIED(NAME_MODIFIED_DATE);
+
+        private final String term;
+
+        InodeQuery(@NonNull String term) {
+            this.term = term;
+        }
+    }
 }

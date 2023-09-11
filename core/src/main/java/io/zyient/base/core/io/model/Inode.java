@@ -44,7 +44,9 @@ public abstract class Inode {
     private Map<String, String> path;
     @Indexed(name = InodeIndexConstants.NAME_ABSOLUTE_PATH)
     private String absolutePath;
+    @Indexed(name = InodeIndexConstants.NAME_CREATE_DATE)
     private long createTimestamp = 0;
+    @Indexed(name = InodeIndexConstants.NAME_MODIFIED_DATE)
     private long updateTimestamp = 0;
     private long syncTimestamp = 0;
     @Indexed(name = InodeIndexConstants.NAME_TYPE)

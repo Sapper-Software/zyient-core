@@ -16,14 +16,20 @@
 
 package io.zyient.base.core.io.indexing;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.DistributedLock;
+import io.zyient.base.core.connections.ZookeeperConnection;
 import io.zyient.base.core.index.IndexBuilder;
 import io.zyient.base.core.index.SearchCursor;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.impl.PostOperationVisitor;
+import io.zyient.base.core.io.model.EFileState;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.Inode;
 import lombok.Getter;
@@ -32,6 +38,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -47,6 +54,7 @@ import org.apache.lucene.store.NIOFSDirectory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,6 +71,10 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
     private IndexSearcher search;
     private Directory baseDir;
     private ExecutorService executor;
+    private ZookeeperConnection connection;
+    private DistributedLock indexLock;
+    private String zkBasePath;
+    private FileIndexerState state;
 
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                      @NonNull BaseEnv<?> env,
@@ -86,63 +98,167 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
 
     private void setup() throws ConfigurationException {
         try {
-            File dir = new File(settings.getDirectory());
-            if (!dir.exists()) {
-                if (!dir.mkdirs()) {
-                    throw new IOException(String.format("Failed to create directory. [path=%s]", settings.getDirectory()));
-                }
+            connection = env.connectionManager().getConnection(settings().getZkConnection(), ZookeeperConnection.class);
+            if (connection == null) {
+                throw new ConfigurationException(
+                        String.format("ZooKeeper Connection not found. [name=%s]",
+                                settings.getZkConnection()));
             }
-            if (settings().isUseMappedFiles()) {
-                baseDir = new MMapDirectory(dir.toPath());
-            } else {
-                baseDir = new NIOFSDirectory(dir.toPath());
-            }
-            executor = Executors.newFixedThreadPool(settings().getPoolSize());
-            IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
-            writer = new IndexWriter(baseDir, indexWriterConfig);
+            zkBasePath = new PathUtils.ZkPathBuilder(fs.zkPath())
+                    .withPath("indexer")
+                    .build();
 
-            search = new IndexSearcher(DirectoryReader.open(baseDir), executor);
+            indexLock = env.createLock(getLockPath(), "fs", fs.settings().getName());
+            indexLock.lock();
+            try {
+                state = checkAndGetState();
+                File dir = new File(settings.getDirectory());
+                if (!dir.exists()) {
+                    if (!dir.mkdirs()) {
+                        throw new IOException(String.format("Failed to create directory. [path=%s]", settings.getDirectory()));
+                    }
+                }
+                if (settings().isUseMappedFiles()) {
+                    baseDir = new MMapDirectory(dir.toPath());
+                } else {
+                    baseDir = new NIOFSDirectory(dir.toPath());
+                }
+                executor = Executors.newFixedThreadPool(settings().getPoolSize());
+                IndexWriterConfig indexWriterConfig = new IndexWriterConfig(analyzer);
+                writer = new IndexWriter(baseDir, indexWriterConfig);
+                if (!state.initialized()) {
+                    state.setState(EFileIndexerState.Initialized);
+                    state = save(state);
+                }
+                search = new IndexSearcher(DirectoryReader.open(writer), executor);
+            } finally {
+                indexLock.unlock();
+            }
         } catch (Exception ex) {
+            if (state != null) {
+                state.error(ex);
+            }
             throw new ConfigurationException(ex);
         }
     }
 
+    private FileIndexerState checkAndGetState() throws Exception {
+        FileIndexerState state = getState();
+        if (state == null) {
+            state = new FileIndexerState();
+            state.setFsName(fs.settings().getName());
+            state.setFsZkPath(fs.zkPath());
+            state.setCount(0);
+            state.setTimeCreated(System.currentTimeMillis());
+            state.setTimeUpdated(System.currentTimeMillis());
+        }
+        return state;
+    }
+
+    private FileIndexerState save(FileIndexerState state) throws Exception {
+        state.setTimeUpdated(System.currentTimeMillis());
+        String json = JSONUtils.asString(state, FileIndexerState.class);
+        String path = getStatePath();
+        CuratorFramework client = connection.client();
+        if (client.checkExists().forPath(path) == null) {
+            client.create().creatingParentsIfNeeded().forPath(path);
+        }
+        client.setData().forPath(path, json.getBytes(StandardCharsets.UTF_8));
+        return state;
+    }
+
+    private FileIndexerState getState() throws Exception {
+        String path = getStatePath();
+        CuratorFramework client = connection().client();
+        if (client.checkExists().forPath(path) != null) {
+            return JSONUtils.read(client, path, FileIndexerState.class);
+        }
+        return null;
+    }
+
+    private String getStatePath() {
+        return new PathUtils.ZkPathBuilder(zkBasePath)
+                .withPath("state")
+                .build();
+    }
+
+    private String getLockPath() {
+        return new PathUtils.ZkPathBuilder(zkBasePath)
+                .withPath("__lock")
+                .build();
+    }
+
     public void index(@NonNull FileInode inode) throws Exception {
-        Document doc = builder.build(inode);
-        writer.addDocument(doc);
+        Preconditions.checkState(state != null && state.initialized());
+        indexLock.lock();
+        try {
+            state = getState();
+            Document doc = builder.build(inode);
+            writer.addDocument(doc);
+            writer.commit();
+            if (inode.getState().getState() == EFileState.New) {
+                state.setCount(state().getCount() + 1);
+                state = save(state);
+            }
+        } finally {
+            indexLock.unlock();
+        }
     }
 
     public boolean delete(@NonNull FileInode inode) throws Exception {
-        Document doc = findById(inode.getUuid());
-        if (doc != null) {
-            long ret = writer.deleteDocuments(
-                    new Term(InodeIndexConstants.NAME_UUID, String.format("\"%s\"", inode.getUuid())));
-            if (ret > 1) {
-                throw new Exception(
-                        String.format("Index corrupted: multiple document deleted. [count=%s][uuid=%s]",
-                                ret, inode.getUuid()));
+        Preconditions.checkState(state != null && state.initialized());
+        indexLock.lock();
+        try {
+            state = getState();
+            Document doc = findById(inode.getUuid());
+            if (doc != null) {
+                long ret = writer.deleteDocuments(
+                        new Term(InodeIndexConstants.NAME_UUID, String.format("\"%s\"", inode.getUuid())));
+                if (ret > 1) {
+                    throw new Exception(
+                            String.format("Index corrupted: multiple document deleted. [count=%s][uuid=%s]",
+                                    ret, inode.getUuid()));
+                }
+                if (ret == 1) {
+                    state.setCount(state().getCount() - 1);
+                    state = save(state);
+                }
+                return (ret == 1);
             }
-            return (ret == 1);
+            return false;
+        } finally {
+            indexLock.unlock();
         }
-        return false;
     }
 
     public boolean delete(@NonNull String fsPath) throws Exception {
-        Document doc = findByFsPath(fsPath);
-        if (doc != null) {
-            long ret = writer.deleteDocuments(
-                    new Term(InodeIndexConstants.NAME_FS_PATH, String.format("\"%s\"", fsPath)));
-            if (ret > 1) {
-                throw new Exception(
-                        String.format("Index corrupted: multiple document deleted. [count=%s][faPath=%s]",
-                                ret, fsPath));
+        Preconditions.checkState(state != null && state.initialized());
+        indexLock.lock();
+        try {
+            state = getState();
+            Document doc = findByFsPath(fsPath);
+            if (doc != null) {
+                long ret = writer.deleteDocuments(
+                        new Term(InodeIndexConstants.NAME_FS_PATH, String.format("\"%s\"", fsPath)));
+                if (ret > 1) {
+                    throw new Exception(
+                            String.format("Index corrupted: multiple document deleted. [count=%s][faPath=%s]",
+                                    ret, fsPath));
+                }
+                if (ret == 1) {
+                    state.setCount(state().getCount() - 1);
+                    state = save(state);
+                }
+                return (ret == 1);
             }
-            return (ret == 1);
+            return false;
+        } finally {
+            indexLock.unlock();
         }
-        return false;
     }
 
     public SearchCursor reader(@NonNull Query query, int pageSize, int pageBuffers) throws Exception {
+        Preconditions.checkState(state != null && state.initialized());
         return new SearchCursor(baseDir, query)
                 .withPageSize(pageSize)
                 .withPageBuffers(pageBuffers)
@@ -171,6 +287,7 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
     }
 
     public Document findBy(@NonNull String name, @NonNull String value) throws Exception {
+        Preconditions.checkState(state != null && state.initialized());
         Query query = new TermQuery(new Term(name, String.format("\"%s\"", value)));
         TopDocs topDocs = search.search(query, 1);
         for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
@@ -185,6 +302,12 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
         return null;
     }
 
+    public SearchCursor find(@NonNull FileIndexFilter filter) throws Exception {
+        Preconditions.checkState(state != null && state.initialized());
+        Query query = filter.build();
+        return reader(query);
+    }
+
     @Override
     public void close() throws IOException {
         if (writer != null && writer.isOpen()) {
@@ -195,6 +318,7 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
         if (search != null) {
             search = null;
         }
+        state = null;
     }
 
     @Override
@@ -217,22 +341,30 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
             delete((FileInode) node);
         } else {
             try (SearchCursor cursor = findByDirectory(node.getFsPath())) {
-                while (true) {
-                    Collection<Document> docs = cursor.fetch();
-                    if (docs == null) break;
-                    for (Document doc : docs) {
-                        String fsPath = doc.get(InodeIndexConstants.NAME_FS_PATH);
-                        if (!Strings.isNullOrEmpty(fsPath)) {
-                            long ret = writer.deleteDocuments(
-                                    new Term(InodeIndexConstants.NAME_FS_PATH, String.format("\"%s\"", fsPath)));
-                            if (ret > 1) {
-                                throw new Exception(
-                                        String.format("Index corrupted: multiple document deleted. [count=%s][faPath=%s]",
-                                                ret, fsPath));
+                indexLock.lock();
+                try {
+                    state = getState();
+                    while (true) {
+                        Collection<Document> docs = cursor.fetch();
+                        if (docs == null) break;
+                        for (Document doc : docs) {
+                            String fsPath = doc.get(InodeIndexConstants.NAME_FS_PATH);
+                            if (!Strings.isNullOrEmpty(fsPath)) {
+                                long ret = writer.deleteDocuments(
+                                        new Term(InodeIndexConstants.NAME_FS_PATH, String.format("\"%s\"", fsPath)));
+                                if (ret > 1) {
+                                    throw new Exception(
+                                            String.format("Index corrupted: multiple document deleted. [count=%s][faPath=%s]",
+                                                    ret, fsPath));
+                                }
+                                DefaultLogger.trace(String.format("Delete index: [path=%s]", fsPath));
+                                state.setCount(state().getCount() - 1);
                             }
-                            DefaultLogger.trace(String.format("Delete index: [path=%s]", fsPath));
                         }
                     }
+                    state = save(state);
+                } finally {
+                    indexLock.unlock();
                 }
             }
         }

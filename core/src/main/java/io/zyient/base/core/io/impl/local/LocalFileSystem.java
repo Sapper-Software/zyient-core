@@ -202,13 +202,11 @@ public class LocalFileSystem extends FileSystem {
                           boolean recursive) throws IOException {
         Preconditions.checkArgument(path instanceof LocalPathInfo);
         if (deleteInode(path, recursive)) {
-            if (path.exists()) {
-                if (((LocalPathInfo) path).file().isDirectory() && recursive) {
-                    FileUtils.deleteDirectory(((LocalPathInfo) path).file());
-                    return !path.exists();
-                } else {
-                    return ((LocalPathInfo) path).file().delete();
-                }
+            if (((LocalPathInfo) path).file().isDirectory() && recursive) {
+                FileUtils.deleteDirectory(((LocalPathInfo) path).file());
+                return !path.exists();
+            } else {
+                return ((LocalPathInfo) path).file().delete();
             }
         }
         return false;
