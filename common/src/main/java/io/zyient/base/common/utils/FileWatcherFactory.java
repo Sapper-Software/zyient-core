@@ -27,7 +27,10 @@ public class FileWatcherFactory {
     private static final Map<String, FileWatcher> watchers = new HashMap<>();
     private static final Map<String, Thread> runners = new HashMap<>();
 
-    public static FileWatcher create(@NonNull String name, @NonNull String directory, String regex, @NonNull FileWatcher.FileWatcherCallback callback) throws IOException {
+    public static FileWatcher create(@NonNull String name,
+                                     @NonNull String directory,
+                                     String regex,
+                                     @NonNull FileWatcher.FileWatcherCallback callback) throws IOException {
         synchronized (watchers) {
             if (watchers.containsKey(name)) {
                 FileWatcher watcher = watchers.get(name);

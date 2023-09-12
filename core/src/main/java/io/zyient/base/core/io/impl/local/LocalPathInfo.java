@@ -45,7 +45,7 @@ public class LocalPathInfo extends PathInfo {
         }
     }
 
-    protected LocalPathInfo(@NonNull FileSystem fs,
+    public LocalPathInfo(@NonNull FileSystem fs,
                             @NonNull String path,
                             @NonNull String domain) {
         super(fs, path, domain);

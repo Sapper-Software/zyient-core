@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.io.indexing;
+package io.zyient.base.core.io.sync;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.AbstractState;
 import lombok.Getter;
@@ -25,19 +26,19 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class FileIndexerState extends AbstractState<EFileIndexerState> {
+public class FileSystemSyncState extends AbstractState<EFileSystemSyncState> {
     private long timeCreated;
+    private long timeSynced;
     private long timeUpdated;
     private String fsZkPath;
     private String fsName;
-    private int count;
 
-    public FileIndexerState() {
-        super(EFileIndexerState.Error, EFileIndexerState.Unknown);
+    public FileSystemSyncState() {
+        super(EFileSystemSyncState.Error, EFileSystemSyncState.Unknown);
     }
 
-    public boolean initialized() {
-        return (getState() == EFileIndexerState.Initialized
-                || getState() == EFileIndexerState.ReIndexing);
+    @JsonIgnore
+    public boolean isRunning() {
+        return (getState() == EFileSystemSyncState.Running);
     }
 }

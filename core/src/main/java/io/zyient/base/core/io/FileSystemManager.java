@@ -22,12 +22,16 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
+import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.ZookeeperConnection;
 import io.zyient.base.core.io.model.FileSystemManagerSettings;
 import io.zyient.base.core.io.model.FileSystemSettings;
+import io.zyient.base.core.io.sync.FileSystemSync;
+import io.zyient.base.core.io.sync.FileSystemSyncSettings;
 import io.zyient.base.core.model.ESettingsSource;
+import io.zyient.base.core.processing.ProcessorState;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -36,6 +40,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -43,17 +48,20 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class FileSystemManager {
+public class FileSystemManager implements Closeable {
     public static final String __CONFIG_PATH = "fs";
     public static final String __CONFIG_PATH_DEFS = "fileSystems";
     public static final String __CONFIG_PATH_DEF = "fileSystem";
 
+    private final ProcessorState state = new ProcessorState();
     private BaseEnv<?> env;
     @Getter(AccessLevel.NONE)
     private final Map<String, FileSystem> fileSystems = new HashMap<>();
     private ZookeeperConnection zkConnection;
     private String zkBasePath;
     private FileSystemManagerSettings settings;
+    private final Map<String, FileSystemSync> syncers = new HashMap<>();
+    private final Map<String, Thread> syncerThreads = new HashMap<>();
 
     public FileSystemManager init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                   @NonNull BaseEnv<?> env) throws IOException {
@@ -81,12 +89,15 @@ public class FileSystemManager {
                     if (settings.isAutoSave()) {
                         save();
                     }
+                    readSyncSettings(reader.config());
                 } finally {
                     lock.unlock();
                 }
             }
+            state.setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
+            state.error(ex);
             fileSystems.clear();
             DefaultLogger.error(ex.getLocalizedMessage());
             DefaultLogger.stacktrace(ex);
@@ -94,8 +105,44 @@ public class FileSystemManager {
         }
     }
 
+    private void readSyncSettings(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        if (ConfigReader.checkIfNodeExists(config, FileSystemSyncSettings.path())) {
+            if (ConfigReader.checkIfNodeExists(config, FileSystemSyncSettings.path())) {
+                List<HierarchicalConfiguration<ImmutableNode>> nodes
+                        = config.configurationsAt(FileSystemSyncSettings.path());
+                if (nodes != null && !nodes.isEmpty()) {
+                    for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                        readSyncConfig(node);
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void readSyncConfig(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        Class<?> type = ConfigReader.readAsClass(config);
+        if (!ReflectionUtils.isSuperType(FileSystemSync.class, type)) {
+            throw new Exception(String.format("Invalid File Sync implementation. [type=%s]", type.getCanonicalName()));
+        }
+        Class<? extends FileSystemSync> syncClass = (Class<? extends FileSystemSync>) type;
+        FileSystemSync syncer = syncClass.getDeclaredConstructor().newInstance();
+        ConfigReader reader = new ConfigReader(config, null, syncer.getSettingsType());
+        reader.read();
+        FileSystemSyncSettings settings = (FileSystemSyncSettings) reader.settings();
+        FileSystem fs = get(settings.getFs());
+        if (fs == null) {
+            throw new Exception(String.format("File System not found. [name=%s]", settings.getFs()));
+        }
+        syncer.init(settings, fs, env);
+        Thread thread = new Thread(syncer, String.format("SYNCER-[%s]", fs.settings.getName()));
+        thread.start();
+        syncerThreads.put(fs.settings.getName(), thread);
+        syncers.put(fs.settings.getName(), syncer);
+    }
+
     private DistributedLock getLock() throws Exception {
-        return env.createCustomLock("fs-root-lock", zkBasePath, zkConnection, 10000);
+        return env.createCustomLock("filesystem-manager", zkBasePath, zkConnection, 10000);
     }
 
 
@@ -316,4 +363,34 @@ public class FileSystemManager {
     }
 
 
+    @Override
+    public void close() throws IOException {
+        if (state.isRunning()) {
+            state.setState(ProcessorState.EProcessorState.Stopped);
+        }
+        if (!syncers.isEmpty()) {
+            for (String name : syncers.keySet()) {
+                syncers.get(name).close();
+                try {
+                    Thread t = syncerThreads.get(name);
+                    if (t != null) {
+                        t.join();
+                    } else {
+                        throw new Exception(String.format("Syncer thread not found. [name=%s]", name));
+                    }
+                } catch (Exception ex) {
+                    DefaultLogger.stacktrace(ex);
+                    DefaultLogger.error(ex.getLocalizedMessage());
+                }
+            }
+            syncers.clear();
+            syncerThreads.clear();
+        }
+        if (!fileSystems.isEmpty()) {
+            for (String name : fileSystems.keySet()) {
+                fileSystems.get(name).close();
+            }
+            fileSystems.clear();
+        }
+    }
 }

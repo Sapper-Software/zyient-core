@@ -17,6 +17,7 @@
 package io.zyient.base.common.utils;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -41,13 +42,17 @@ public class FileWatcher implements Runnable {
 
     private boolean running = false;
 
-    public FileWatcher(@NonNull String directory, @NonNull String regex) {
+    public FileWatcher(@NonNull String directory,
+                       String regex) {
         File di = new File(directory);
         Preconditions.checkState(di.exists());
 
         this.directory = directory;
         this.regex = regex;
-        this.pattern = Pattern.compile(regex);
+        if (!Strings.isNullOrEmpty(regex))
+            this.pattern = Pattern.compile(regex);
+        else
+            pattern = null;
     }
 
     public FileWatcher withCallback(@NonNull FileWatcherCallback callback) {
@@ -70,13 +75,21 @@ public class FileWatcher implements Runnable {
                 final WatchKey wk = watchService.poll(__POLL_TIMEOUT, TimeUnit.MILLISECONDS);
                 if (wk != null) {
                     for (WatchEvent<?> event : wk.pollEvents()) {
-                        //we only register "ENTRY_MODIFY" so the context is always a Path.
-                        final Path changed = (Path) event.context();
-                        final String name = changed.toFile().getName();
-                        final Matcher matcher = pattern.matcher(name);
-                        if (matcher.matches()) {
-                            Path cp = Paths.get(String.format("%s/%s", directory, changed.toString()));
-                            callback.handle(cp.toAbsolutePath().toString(), event.kind());
+                        if (event.context() instanceof Path changed) {
+                            final String name = changed.toFile().getName();
+                            boolean call = false;
+                            if (pattern != null) {
+                                final Matcher matcher = pattern.matcher(name);
+                                if (matcher.matches()) {
+                                    call = true;
+                                }
+                            } else {
+                                call = true;
+                            }
+                            if (call) {
+                                Path cp = Paths.get(String.format("%s/%s", directory, changed.toString()));
+                                callback.handle(name, cp.toAbsolutePath().toString(), event.kind());
+                            }
                         }
                     }
                     // reset the key
@@ -96,6 +109,8 @@ public class FileWatcher implements Runnable {
     }
 
     public static interface FileWatcherCallback {
-        void handle(@NonNull String path, WatchEvent.Kind<?> eventKind) throws IOException;
+        void handle(@NonNull String watcher,
+                    @NonNull String path,
+                    WatchEvent.Kind<?> eventKind) throws IOException;
     }
 }

@@ -14,30 +14,29 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.io.indexing;
+package io.zyient.base.core.io.sync.local;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.AbstractState;
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.StringListParser;
+import io.zyient.base.common.config.units.TimeUnitValue;
+import io.zyient.base.common.config.units.TimeValueParser;
+import io.zyient.base.core.io.sync.FileSystemSyncSettings;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class FileIndexerState extends AbstractState<EFileIndexerState> {
-    private long timeCreated;
-    private long timeUpdated;
-    private String fsZkPath;
-    private String fsName;
-    private int count;
-
-    public FileIndexerState() {
-        super(EFileIndexerState.Error, EFileIndexerState.Unknown);
-    }
-
-    public boolean initialized() {
-        return (getState() == EFileIndexerState.Initialized
-                || getState() == EFileIndexerState.ReIndexing);
-    }
+public class LocalFsSyncSettings extends FileSystemSyncSettings {
+    @Config(name = "scanOnStart", required = false, type = Boolean.class)
+    private boolean scanOnStart = false;
+    @Config(name = "fullScanInterval", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue fullScanInterval = new TimeUnitValue(6, TimeUnit.HOURS);
+    @Config(name = "filters", required = false, parser = StringListParser.class)
+    private List<String> filters = null;
 }
