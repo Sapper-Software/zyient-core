@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.FileSystemManager;
 import io.zyient.base.core.io.Reader;
@@ -33,7 +34,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -246,6 +250,43 @@ class LocalFileSystemTest {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(ex.getLocalizedMessage());
             fail(ex);
+        }
+    }
+
+    @Test
+    void sync() {
+        try {
+            String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
+            DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
+            assertNotNull(di);
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            File d = new File(di.getAbsolutePath());
+            assertTrue(d.exists() && d.isDirectory());
+            List<File> files = new ArrayList<>();
+            for (int ii = 0; ii < 10; ii++) {
+                File file = new File(String.format("%s/sync_%d.txt", d.getAbsolutePath(), ii));
+                writeToFile(file);
+                files.add(file);
+            }
+            RunUtils.sleep(30 * 1000);
+            for (File file : files) {
+                LocalPathInfo pi = new LocalPathInfo(fs, file.getAbsolutePath(), di.getDomain());
+                assertNotNull(fs.getInode(pi));
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(ex.getLocalizedMessage());
+            fail(ex);
+        }
+    }
+
+    private void writeToFile(File file) throws Exception {
+        try (FileOutputStream writer = new FileOutputStream(file)) {
+            for (int ii = 0; ii < 200; ii++) {
+                String str = String.format("[%s] Test write line [%d]...\n", UUID.randomUUID().toString(), ii);
+                byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
+                writer.write(bytes);
+            }
         }
     }
 }

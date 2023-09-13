@@ -28,6 +28,29 @@ import lombok.Setter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * <pre>
+ *     <fs>
+ *         <fileSystems>
+ *             <fileSystem>
+ *                 <type>[FS class]</type>
+ *                 <name>[File System name, must be unique in a namespace]</name>
+ *                 ...
+ *             </fileSystem>
+ *             ...
+ *         </fileSystems>
+ *         <sync>
+ *             <class>File System syncer implementation class</class>
+ *             <fileSystem>Associated file system name</fileSystem>
+ *             <zkConnection>ZooKeeper connection name</zkConnection>
+ *             <frequency>[Sync frequency, default=1min]</frequency>
+ *             <scanOnStart>[Sync file system on startup, default = false]</scanOnStart>
+ *             <fullScanInterval>[Full file system scan interval, default = 6Hrs]</fullScanInterval>
+ *             <filters>[File/Directory filters for sync. default=none]</filters>
+ *         </sync>
+ *     </fs>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

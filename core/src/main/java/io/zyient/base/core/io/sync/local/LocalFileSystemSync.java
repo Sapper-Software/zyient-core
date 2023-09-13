@@ -20,17 +20,21 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.FileWatcher;
 import io.zyient.base.common.utils.FileWatcherFactory;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.impl.local.LocalFileSystem;
 import io.zyient.base.core.io.impl.local.LocalPathInfo;
 import io.zyient.base.core.io.model.DirectoryInode;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.Inode;
+import io.zyient.base.core.io.sync.EFileSystemSyncState;
 import io.zyient.base.core.io.sync.FileSystemSync;
 import io.zyient.base.core.io.sync.FileSystemSyncSettings;
 import lombok.NonNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
@@ -38,8 +42,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -48,8 +55,11 @@ public class LocalFileSystemSync extends FileSystemSync implements FileWatcher.F
     private List<Pattern> filters;
     private long fullScanTime = 0;
     private final Map<String, LinkedBlockingQueue<EventEntry>> eventQueues = new HashMap<>();
+    private final ExecutorService executor = Executors.newFixedThreadPool(1);
+    private final ReentrantLock scanLock = new ReentrantLock();
+    private boolean scanRunning = false;
 
-    protected LocalFileSystemSync() {
+    public LocalFileSystemSync() {
         super(LocalFsSyncSettings.class);
     }
 
@@ -76,11 +86,30 @@ public class LocalFileSystemSync extends FileSystemSync implements FileWatcher.F
                 eventQueues.put(domain, new LinkedBlockingQueue<>());
                 FileWatcherFactory.create(domain, di.getFsPath(), null, this);
             }
+            if (((LocalFsSyncSettings) settings).isScanOnStart()) {
+                scan();
+            } else {
+                fullScanTime = System.currentTimeMillis();
+            }
+            state.setState(EFileSystemSyncState.Running);
             return this;
         } catch (Exception ex) {
             state.error(ex);
             throw new IOException(ex);
+        } finally {
+            try {
+                save(state);
+            } catch (Exception ex) {
+                DefaultLogger.error(ex.getLocalizedMessage());
+                DefaultLogger.stacktrace(ex);
+            }
         }
+    }
+
+    private void scan() throws Exception {
+        if (scanRunning) return;
+        Scanner scanner = new Scanner((LocalFileSystem) fs, domains, this);
+        executor.submit(scanner);
     }
 
     @Override
@@ -144,6 +173,10 @@ public class LocalFileSystemSync extends FileSystemSync implements FileWatcher.F
                 }
             }
         }
+        if ((System.currentTimeMillis() - fullScanTime)
+                > ((LocalFsSyncSettings) settings).getFullScanInterval().normalized()) {
+            scan();
+        }
     }
 
     private boolean doFilter(String path) {
@@ -178,16 +211,80 @@ public class LocalFileSystemSync extends FileSystemSync implements FileWatcher.F
     public void close() throws IOException {
         super.close();
         FileWatcherFactory.shutdown();
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(2000, TimeUnit.MILLISECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
     }
 
-    private static class EventEntry {
-        private final WatchEvent.Kind<?> eventType;
-        private final String path;
-
-        public EventEntry(@NonNull WatchEvent.Kind<?> eventType,
-                          @NonNull String path) {
+    private record EventEntry(WatchEvent.Kind<?> eventType, String path) {
+        private EventEntry(@NonNull WatchEvent.Kind<?> eventType,
+                           @NonNull String path) {
             this.eventType = eventType;
             this.path = path;
+        }
+    }
+
+    private record Scanner(LocalFileSystem fs, Map<String, DirectoryInode> domains,
+                           LocalFileSystemSync syncer) implements Runnable {
+
+
+        @Override
+        public void run() {
+            syncer.scanLock.lock();
+            while (!syncer.isRunning()) {
+                RunUtils.sleep(10);
+            }
+            try {
+                syncer.scanRunning = true;
+                for (String domain : domains.keySet()) {
+                    DirectoryInode node = domains.get(domain);
+                    File dir = new File(node.getAbsolutePath());
+                    if (dir.exists()) {
+                        DefaultLogger.debug(String.format("Scanning domain folder. [path=%s]", dir.getAbsolutePath()));
+                    }
+                    runScan(domain, dir);
+                }
+                syncer.fullScanTime = System.currentTimeMillis();
+                syncer.state.setTimeSynced(System.currentTimeMillis());
+                syncer.save(syncer.state);
+                syncer.scanRunning = false;
+            } catch (Exception ex) {
+                syncer.state.error(ex);
+                DefaultLogger.error(ex.getLocalizedMessage());
+                DefaultLogger.stacktrace(ex);
+            } finally {
+                syncer.scanLock.unlock();
+            }
+        }
+
+        private void runScan(String domain, File dir) throws Exception {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (!syncer.doFilter(file.getAbsolutePath()))
+                        continue;
+                    if (file.isDirectory()) {
+                        runScan(domain, file);
+                    } else {
+                        LocalPathInfo pi = new LocalPathInfo(fs, file.getAbsolutePath(), domain);
+                        if (!syncer.checkFileExists(pi)) {
+                            Inode node = fs.create(pi);
+                            if (node == null) {
+                                throw new IOException(
+                                        String.format("Failed to create Inode. [domain=%s][path=%s]",
+                                                domain, file.getAbsolutePath()));
+                            }
+                            DefaultLogger.debug(String.format("Created Inode. [domain=%s][path=%s]",
+                                    domain, file.getAbsolutePath()));
+                        }
+                    }
+                }
+            }
         }
     }
 }

@@ -19,6 +19,7 @@ package io.zyient.base.common.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.zyient.base.common.GlobalConstants;
 import lombok.NonNull;
 import org.apache.curator.framework.CuratorFramework;
 
@@ -26,7 +27,8 @@ import java.nio.charset.Charset;
 import java.util.Map;
 
 public class JSONUtils {
-    private static final ObjectMapper mapper = new ObjectMapper();
+
+    private static final ObjectMapper mapper = GlobalConstants.getJsonMapper();
 
     public static ObjectMapper mapper() {
         return mapper;
@@ -46,6 +48,9 @@ public class JSONUtils {
 
     public static <T> T read(byte[] data, Class<? extends T> type) throws JsonProcessingException {
         String json = new String(data, Charset.defaultCharset());
+        if (Strings.isNullOrEmpty(json)) return null;
+        if (NetUtils.isIPV4Address(json)) return null;
+        if (!isJson(json)) return null;
         return mapper.readValue(json, type);
     }
 
@@ -78,8 +83,8 @@ public class JSONUtils {
     }
 
     public static void write(@NonNull CuratorFramework client,
-                      @NonNull String path,
-                      @NonNull Object value) throws Exception {
+                             @NonNull String path,
+                             @NonNull Object value) throws Exception {
         if (client.checkExists().forPath(path) == null) {
             client.create().forPath(path);
         }

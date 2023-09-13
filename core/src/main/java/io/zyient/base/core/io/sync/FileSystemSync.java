@@ -117,8 +117,7 @@ public abstract class FileSystemSync implements Closeable, Runnable {
             if (domain.compareTo(path.domain()) == 0)
                 return true;
         }
-        Inode node = fs.getInode(path);
-        return (node != null);
+        return (fs.checkPathExists(path));
     }
 
     protected FileSystemSyncState save(@NonNull FileSystemSyncState state) throws Exception {

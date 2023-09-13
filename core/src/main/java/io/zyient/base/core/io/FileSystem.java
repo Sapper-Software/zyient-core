@@ -517,6 +517,21 @@ public abstract class FileSystem implements Closeable {
         }
     }
 
+    public boolean checkPathExists(@NonNull PathInfo path) throws IOException {
+        Preconditions.checkState(state.isConnected());
+        DirectoryInode dnode = domains.get(path.domain());
+        if (dnode == null) {
+            throw new IOException(String.format("Domain directory node not found. [domain=%s]", path.domain()));
+        }
+        try {
+            String zpath = getInodeZkPath(dnode, path.path());
+            CuratorFramework client = zkConnection.client();
+            return client.checkExists().forPath(zpath) != null;
+        } catch (Exception ex) {
+            throw new IOException(ex);
+        }
+    }
+
     public Inode getInode(@NonNull PathInfo path) throws IOException {
         return getInode(path.domain(), path.path());
     }

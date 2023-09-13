@@ -16,14 +16,26 @@
 
 package io.zyient.base.common.utils;
 
+import lombok.NonNull;
+
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class NetUtils {
+    public static final String IPV4_REGEX = "^((0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)\\.){3}(0|1\\d?\\d?|2[0-4]?\\d?|25[0-5]?|[3-9]\\d?)$";
+    public static final Pattern ipv4Pattern = Pattern.compile(IPV4_REGEX);
+
+    public static boolean isIPV4Address(@NonNull String value) {
+        Matcher m = ipv4Pattern.matcher(value);
+        return m.matches();
+    }
+
     public static List<InetAddress> getInetAddresses() throws Exception {
         List<InetAddress> addresses = new ArrayList<>();
         Enumeration e = NetworkInterface.getNetworkInterfaces();

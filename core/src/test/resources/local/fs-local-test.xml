@@ -57,7 +57,7 @@
                     <containers>
                         <container>
                             <domain>local-demo-1</domain>
-                            <path>/tmp/test/fs/local-demo-1</path>
+                            <path>/home/subhagho/temp</path>
                         </container>
                         <default>local-demo-1</default>
                     </containers>
@@ -67,6 +67,13 @@
                     </indexer>
                 </fileSystem>
             </fileSystems>
+            <sync>
+                <class>io.zyient.base.core.io.sync.local.LocalFileSystemSync</class>
+                <fileSystem>local-test-1</fileSystem>
+                <zkConnection>test-zk</zkConnection>
+                <scanOnStart>true</scanOnStart>
+                <frequency>15s</frequency>
+            </sync>
         </fs>
         <config>
             <connections>
