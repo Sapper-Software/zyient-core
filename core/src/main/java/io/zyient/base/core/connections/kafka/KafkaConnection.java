@@ -23,6 +23,7 @@ import io.zyient.base.common.config.ZkConfigReader;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.*;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.connections.settings.kafka.KafkaSettings;

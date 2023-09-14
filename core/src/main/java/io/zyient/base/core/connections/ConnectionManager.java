@@ -24,6 +24,7 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.keystore.KeyStore;

@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections;
+package io.zyient.base.core.connections.common;
 
+import io.zyient.base.core.connections.ConnectionError;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

@@ -25,7 +25,7 @@ import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.ConnectionManager;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings;

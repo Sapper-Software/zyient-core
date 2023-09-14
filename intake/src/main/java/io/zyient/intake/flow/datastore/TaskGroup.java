@@ -26,7 +26,7 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.DataStoreManager;

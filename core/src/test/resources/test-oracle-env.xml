@@ -83,7 +83,7 @@
                     </hdfs_ha>
                 </connection>
                 <connection>
-                    <type>io.zyient.base.core.connections.ZookeeperConnection</type>
+                    <type>io.zyient.base.core.connections.common.ZookeeperConnection</type>
                     <zookeeper>
                         <name>test-zk</name>
                         <!--connectionString>192.168.0.5:2181,192.168.0.4:2181</connectionString -->

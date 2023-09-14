@@ -21,7 +21,7 @@ import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.EMessageClientMode;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;

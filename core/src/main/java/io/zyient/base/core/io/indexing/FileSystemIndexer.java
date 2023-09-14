@@ -24,7 +24,7 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.index.IndexBuilder;
 import io.zyient.base.core.index.SearchCursor;
 import io.zyient.base.core.io.FileSystem;

@@ -19,6 +19,7 @@ package io.zyient.base.core.connections;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zyient.base.common.AbstractState;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import lombok.NonNull;

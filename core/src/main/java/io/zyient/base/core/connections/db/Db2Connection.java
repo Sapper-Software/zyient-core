@@ -23,7 +23,7 @@ import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.db.Db2ConnectionSettings;
 import io.zyient.base.core.connections.settings.db.JdbcConnectionSettings;
 import io.zyient.base.core.keystore.KeyStore;

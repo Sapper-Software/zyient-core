@@ -29,7 +29,7 @@ import io.zyient.base.common.threads.ThreadManager;
 import io.zyient.base.common.utils.NetUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.connections.ConnectionManager;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.io.FileSystemManager;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.ModuleInstance;

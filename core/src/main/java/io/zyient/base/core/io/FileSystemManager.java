@@ -25,7 +25,7 @@ import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.io.model.FileSystemManagerSettings;
 import io.zyient.base.core.io.model.FileSystemSettings;
 import io.zyient.base.core.io.sync.FileSystemSync;

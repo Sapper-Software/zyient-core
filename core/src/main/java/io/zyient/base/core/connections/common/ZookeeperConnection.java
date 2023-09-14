@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections;
+package io.zyient.base.core.connections.common;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ZkConfigReader;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.connections.Connection;
+import io.zyient.base.core.connections.ConnectionConfig;
+import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
-import io.zyient.base.core.connections.settings.ZookeeperSettings;
+import io.zyient.base.core.connections.settings.common.ZookeeperSettings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;

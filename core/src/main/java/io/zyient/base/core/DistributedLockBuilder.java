@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.model.LockDef;
 import lombok.Getter;
 import lombok.NonNull;

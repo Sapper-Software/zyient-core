@@ -75,7 +75,7 @@
                     <connection>test-zk</connection>
                 </shared>
                 <connection>
-                    <class>io.zyient.base.core.connections.ZookeeperConnection</class>
+                    <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
                     <zookeeper>
                         <name>test-zk</name>
                         <connectionString>192.168.2.16:2181</connectionString>

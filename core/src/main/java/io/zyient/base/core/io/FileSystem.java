@@ -24,7 +24,7 @@ import io.zyient.base.common.utils.*;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.Connection;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.io.encryption.EncryptionHandler;
 import io.zyient.base.core.io.encryption.EncryptionType;
 import io.zyient.base.core.io.impl.PostOperationVisitor;

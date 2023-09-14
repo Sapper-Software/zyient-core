@@ -20,7 +20,7 @@
     <!-- Logging Properties -->
     <Properties>
         <Property name="LOG_PATTERN">%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %p %m%n</Property>
-        <Property name="APP_LOG_ROOT">/tmp/sapper/logs/cdc</Property>
+        <Property name="APP_LOG_ROOT">/tmp/zyient/logs/core</Property>
     </Properties>
 
     <Appenders>
@@ -31,8 +31,8 @@
         </Console>
 
         <!-- File Appenders on need basis -->
-        <RollingFile name="services" fileName="${APP_LOG_ROOT}/CDC-core-tests.log"
-                     filePattern="${APP_LOG_ROOT}/HadoopCDC-core-%d{yyyy-MM-dd}-%i.log">
+        <RollingFile name="services" fileName="${APP_LOG_ROOT}/zyient-core-tests.log"
+                     filePattern="${APP_LOG_ROOT}/zyient-core-%d{yyyy-MM-dd}-%i.log">
             <PatternLayout pattern="${LOG_PATTERN}"/>
             <Policies>
                 <SizeBasedTriggeringPolicy size="10MB"/>
@@ -50,7 +50,7 @@
         </Logger>
 
 
-        <Logger name="ai.sapper" additivity="false" level="debug">
+        <Logger name="io.zyient" additivity="false" level="debug">
             <AppenderRef ref="services"/>
         </Logger>
 

@@ -30,7 +30,7 @@ import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.ConnectionManager;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.annotations.IShardProvider;
 import io.zyient.base.core.stores.annotations.SchemaSharded;

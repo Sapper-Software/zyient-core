@@ -22,7 +22,7 @@ import io.zyient.base.common.model.InvalidDataError;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.DistributedLock;
-import io.zyient.base.core.connections.ZookeeperConnection;
+import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.cdc.entity.manager.SchemaDataHandler;
 import io.zyient.cdc.entity.manager.SchemaDataHandlerSettings;
 import io.zyient.cdc.entity.manager.zk.model.ZkEntitySchema;

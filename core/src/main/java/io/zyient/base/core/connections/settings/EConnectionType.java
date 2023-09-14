@@ -17,7 +17,7 @@
 package io.zyient.base.core.connections.settings;
 
 public enum EConnectionType {
-    kafka, zookeeper, db, rest, hadoop, debezium, others, chronicle, email, notification, sqs;
+    kafka, zookeeper, db, rest, hadoop, debezium, others, chronicle, email, notification, sqs, serviceBus;
 
     public static EConnectionType parse(String name) {
         for (EConnectionType type : EConnectionType.values()) {

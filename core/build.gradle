@@ -38,8 +38,6 @@ dependencies {
     implementation 'software.amazon.awssdk:glacier:2.20.140'
     implementation 'software.amazon.awssdk:sns:2.20.140'
     implementation 'software.amazon.awssdk:sqs:2.20.140'
-    implementation 'com.azure:azure-storage-blob:12.21.1'
-    implementation 'com.azure:azure-identity:1.10.0'
 
     // https://mvnrepository.com/artifact/com.singlestore/singlestore-jdbc-client
     implementation 'com.singlestore:singlestore-jdbc-client:1.1.4'
@@ -51,7 +49,10 @@ dependencies {
     implementation 'com.ibm.db2:jcc:11.5.8.0'
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
     implementation 'com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11'
+    implementation 'com.azure:azure-identity:1.10.0'
+    implementation 'com.azure:azure-storage-blob:12.21.1'
     implementation 'com.azure:azure-data-tables:12.3.9'
+    implementation 'com.azure:azure-messaging-servicebus:7.14.3'
     implementation 'io.netty:netty-tcnative:2.0.59.Final'
 
     implementation 'io.prometheus:simpleclient:0.16.0'
