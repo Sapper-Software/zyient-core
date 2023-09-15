@@ -70,7 +70,7 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
         String mr = serialize(message.value());
         final Map<String, MessageAttributeValue> attributes = new HashMap<>();
         attributes.put(MessageObject.HEADER_MESSAGE_ID, MessageAttributeValue.builder()
-                        .stringValue(message.id())
+                .stringValue(message.id())
                 .build());
         attributes.put(MessageObject.HEADER_CORRELATION_ID, MessageAttributeValue.builder()
                 .stringValue(message.correlationId())
@@ -103,6 +103,7 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
     }
 
     protected abstract String serialize(@NonNull M message) throws MessagingError;
+
     @Override
     public void close() throws IOException {
         if (state().isAvailable()) {

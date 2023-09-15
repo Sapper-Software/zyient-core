@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.messaging.aws;
+package io.zyient.base.core.messaging.azure;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -24,23 +24,19 @@ import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.OffsetStateManager;
 import io.zyient.base.core.state.OffsetStateManagerSettings;
 import io.zyient.base.core.state.StateManagerError;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-@Getter
-@Accessors(fluent = true)
-public class AwsSQSStateManager extends OffsetStateManager<AwsSQSOffset> {
+public class AzureMessagingStateManager extends OffsetStateManager<AzureMessageOffset> {
     @Override
-    public OffsetStateManager<AwsSQSOffset> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                                 @NonNull BaseEnv<?> env) throws StateManagerError {
+    public OffsetStateManager<AzureMessageOffset> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                                       @NonNull BaseEnv<?> env) throws StateManagerError {
         try {
-            super.init(xmlConfig, env, AwsSQSConsumerOffsetSettings.class);
+            super.init(xmlConfig, env, AzureMessagingConsumerOffsetSettings.class);
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             state().error(ex);
             DefaultLogger.stacktrace(ex);
             throw new StateManagerError(ex);
@@ -48,31 +44,31 @@ public class AwsSQSStateManager extends OffsetStateManager<AwsSQSOffset> {
     }
 
     @Override
-    public OffsetStateManager<AwsSQSOffset> init(@NonNull OffsetStateManagerSettings settings,
-                                                 @NonNull BaseEnv<?> env) throws StateManagerError {
-        Preconditions.checkArgument(settings instanceof AwsSQSConsumerOffsetSettings);
+    public OffsetStateManager<AzureMessageOffset> init(@NonNull OffsetStateManagerSettings settings,
+                                                       @NonNull BaseEnv<?> env) throws StateManagerError {
         try {
             setup(settings, env);
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             state().error(ex);
             DefaultLogger.stacktrace(ex);
             throw new StateManagerError(ex);
         }
     }
 
-
-    public AwsSQSConsumerState get(@NonNull String name) throws StateManagerError {
+    public AzureMessagingConsumerState get(@NonNull String name) throws StateManagerError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        return get(AwsSQSConsumerState.OFFSET_TYPE, name, AwsSQSConsumerState.class);
+        return get(AzureMessagingConsumerState.OFFSET_TYPE, name, AzureMessagingConsumerState.class);
     }
 
-    public AwsSQSConsumerState create(@NonNull String name, @NonNull String queue) throws StateManagerError {
+    public AzureMessagingConsumerState create(@NonNull String name, @NonNull String queue) throws StateManagerError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        AwsSQSConsumerState state = create(AwsSQSConsumerState.OFFSET_TYPE, name, AwsSQSConsumerState.class);
-        state.setQueue(name);
-        AwsSQSOffset offset = new AwsSQSOffset();
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(queue));
+        AzureMessagingConsumerState state
+                = create(AzureMessagingConsumerState.OFFSET_TYPE, name, AzureMessagingConsumerState.class);
+        state.setQueue(queue);
+        AzureMessageOffset offset = new AzureMessageOffset();
         offset.setQueue(queue);
         state.setOffset(offset);
         return update(state);

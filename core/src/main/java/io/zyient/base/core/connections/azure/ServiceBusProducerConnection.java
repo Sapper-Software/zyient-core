@@ -38,6 +38,7 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public class ServiceBusProducerConnection extends ServiceBusConnection {
     private ServiceBusSenderClient client;
+    private String sessionId;
 
     @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
@@ -74,6 +75,7 @@ public class ServiceBusProducerConnection extends ServiceBusConnection {
         if (this.settings.getMode() != EMessageClientMode.Producer) {
             throw new ConnectionError("Connection not configured as producer...");
         }
+        sessionId = env.moduleInstance().getInstanceId();
         state.setState(EConnectionState.Initialized);
         return this;
     }

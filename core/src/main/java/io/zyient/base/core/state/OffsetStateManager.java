@@ -216,7 +216,7 @@ public abstract class OffsetStateManager<T extends Offset> {
     }
 
     @SuppressWarnings("unchecked")
-    protected <R extends OffsetState<?, T>> R update(@NonNull R offset) throws StateManagerError {
+    public  <R extends OffsetState<?, T>> R update(@NonNull R offset) throws StateManagerError {
         Preconditions.checkState(state.isAvailable());
         try {
             CuratorFramework client = connection.client();
