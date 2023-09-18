@@ -26,5 +26,5 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public class AzureMessage<M> extends MessageObject<String, M> {
     private String session;
-    private long messageId;
+    private long sequence;
 }

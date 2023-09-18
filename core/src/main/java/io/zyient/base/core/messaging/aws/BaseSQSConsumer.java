@@ -284,7 +284,9 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
         String value = getAttributeValue(MessageObject.HEADER_MESSAGE_MODE, attributes, false);
         sqsm.mode(MessageObject.MessageMode.valueOf(value));
         sqsm.key(getAttributeValue(SQSMessage.HEADER_MESSAGE_KEY, attributes, false));
-
+        value = getAttributeValue(SQSMessage.HEADER_MESSAGE_TIMESTAMP, attributes, false);
+        Preconditions.checkNotNull(value);
+        sqsm.timestamp(Long.parseLong(value));
         M m = deserialize(message.body());
         sqsm.value(m);
 

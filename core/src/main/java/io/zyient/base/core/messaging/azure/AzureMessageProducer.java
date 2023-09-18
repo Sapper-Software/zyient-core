@@ -62,7 +62,8 @@ public abstract class AzureMessageProducer<M> extends MessageSender<String, M> {
                 .setMessageId(message.id())
                 .setCorrelationId(message.correlationId())
                 .setSessionId(producer.sessionId());
-        m.addContext(MessageObject.HEADER_MESSAGE_MODE, message.mode().name());
+        m.getApplicationProperties()
+                .put(MessageObject.HEADER_MESSAGE_MODE, message.mode().name());
         producer.client().sendMessage(m);
         return message;
     }

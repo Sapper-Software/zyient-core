@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.messaging.azure;
 
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
@@ -27,13 +28,16 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public class AzureMessageOffsetData {
     private String key;
+    private ServiceBusReceivedMessage message;
     private AzureMessageOffsetValue index;
     private boolean acked = false;
 
     public AzureMessageOffsetData(@NonNull String key,
-                                  @NonNull AzureMessageOffsetValue index) {
+                                  @NonNull AzureMessageOffsetValue index,
+                                  @NonNull ServiceBusReceivedMessage message) {
         Preconditions.checkArgument(index.getIndex() >= 0);
         this.index = index;
         this.key = key;
+        this.message = message;
     }
 }

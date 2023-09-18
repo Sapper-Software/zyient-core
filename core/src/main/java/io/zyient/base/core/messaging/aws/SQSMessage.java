@@ -26,7 +26,9 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 public class SQSMessage<M> extends MessageObject<String, M> {
     public static final String HEADER_MESSAGE_KEY = "ZYC_HEADER_KEY";
+    public static final String HEADER_MESSAGE_TIMESTAMP = "ZYC_HEADER_TIMESTAMP";
 
     private String sqsMessageId;
     private long sequence;
+    private long timestamp;
 }

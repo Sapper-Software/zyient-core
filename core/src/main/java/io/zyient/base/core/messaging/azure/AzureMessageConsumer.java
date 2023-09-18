@@ -16,6 +16,8 @@
 
 package io.zyient.base.core.messaging.azure;
 
+import com.azure.core.util.IterableStream;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.model.Context;
@@ -24,16 +26,16 @@ import io.zyient.base.core.connections.azure.ServiceBusConsumerConnection;
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
-import io.zyient.base.core.messaging.aws.BaseSQSConsumer;
 import io.zyient.base.core.processing.ProcessorState;
+import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
+import io.zyient.base.core.state.StateManagerError;
 import lombok.NonNull;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M> {
@@ -65,12 +67,139 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
                 offsetMap.get(id).acked(true);
                 found = true;
             } else {
-                DefaultLogger.warn(String.format("[%s] Message not found. [id=%s]", queueUrl, id));
+                DefaultLogger.warn(
+                        String.format("[%s] Message not found. [id=%s]", consumer.settings().getQueue(), id));
             }
         }
         if (found) {
             commit();
         }
+    }
+
+    @Override
+    public int commit() throws MessagingError {
+        Preconditions.checkState(state().isAvailable());
+        int count = 0;
+        AzureMessageOffsetValue lastIndex = state.getOffset().getOffsetCommitted();
+        try {
+            synchronized (offsetMap) {
+                if (!offsetMap.isEmpty()) {
+                    List<AzureMessageOffsetData> acked = new ArrayList<>();
+                    for (String key : offsetMap.keySet()) {
+                        AzureMessageOffsetData d = offsetMap.get(key);
+                        if (d.acked()) {
+                            acked.add(d);
+                            if (d.index().getIndex() > lastIndex.getIndex()) {
+                                lastIndex = d.index();
+                            }
+                        }
+                    }
+                    if (!acked.isEmpty()) {
+                        for (AzureMessageOffsetData message : acked) {
+                            consumer.client().complete(message.message());
+                            offsetMap.remove(message.key());
+                        }
+                        updateCommitState(lastIndex);
+                    }
+                }
+                return count;
+            }
+        } catch (Exception ex) {
+            throw new MessagingError(ex);
+        }
+    }
+
+    @Override
+    public boolean stateful() {
+        return true;
+    }
+
+    @Override
+    public MessageObject<String, M> receive(long timeout) throws MessagingError {
+        Preconditions.checkState(state().isAvailable());
+        if (cache.isEmpty()) {
+            List<MessageObject<String, M>> batch = nextBatch(timeout);
+            if (batch != null) {
+                cache.addAll(batch);
+            }
+        }
+        if (!cache.isEmpty()) {
+            return cache.poll();
+        }
+        return null;
+    }
+
+    @Override
+    public List<MessageObject<String, M>> nextBatch(long timeout) throws MessagingError {
+        Preconditions.checkState(state().isAvailable());
+        AzureMessageOffsetValue lastIndex = state.getOffset().getOffsetRead();
+        try {
+            IterableStream<ServiceBusReceivedMessage> records =
+                    consumer.client().receiveMessages(batchSize, Duration.of(timeout, ChronoUnit.MILLIS));
+            synchronized (offsetMap) {
+                List<MessageObject<String, M>> messages = new ArrayList<>();
+                long sequence = lastIndex.getIndex();
+                for (ServiceBusReceivedMessage message : records) {
+                    try {
+                        AzureMessage<M> m = parse(message);
+                        if (m.sequence() > sequence) {
+                            sequence = m.sequence();
+                        }
+                        AzureMessageOffsetValue ov = new AzureMessageOffsetValue(m.sequence());
+                        offsetMap.put(m.id(), new AzureMessageOffsetData(m.id(), ov, message));
+                        messages.add(m);
+                    } catch (Exception ex) {
+                        DefaultLogger.error(String.format("Failed to parse message. [ID=%s]", message.getMessageId()));
+                    }
+                }
+                if (sequence > lastIndex.getIndex()) {
+                    lastIndex.setIndex(sequence);
+                    updateReadState(lastIndex);
+                }
+
+                if (!messages.isEmpty()) {
+                    return messages;
+                }
+            }
+            return null;
+        } catch (Exception ex) {
+            throw new MessagingError(ex);
+        }
+    }
+
+    private void updateReadState(AzureMessageOffsetValue offset) throws StateManagerError {
+        if (!stateful()) return;
+        state.getOffset().setOffsetRead(offset);
+        state = stateManager.update(state);
+    }
+
+    private void updateCommitState(AzureMessageOffsetValue offset) throws Exception {
+        if (!stateful()) return;
+        if (offset.getIndex() > state.getOffset().getOffsetRead().getIndex()) {
+            throw new Exception(
+                    String.format("[topic=%s] Offsets out of sync. [read=%d][committing=%d]",
+                            consumer.name(), state.getOffset().getOffsetRead().getIndex(), offset.getIndex()));
+        }
+        state.getOffset().setOffsetCommitted(offset);
+        state = stateManager.update(state);
+    }
+
+    private AzureMessage<M> parse(ServiceBusReceivedMessage message) throws Exception {
+        AzureMessage<M> m = new AzureMessage<>();
+        m.id(message.getMessageId());
+        m.correlationId(message.getCorrelationId());
+        m.session(message.getSessionId());
+        m.key(message.getSubject());
+        m.sequence(message.getSequenceNumber());
+        Object mode = message.getApplicationProperties().get(MessageObject.HEADER_MESSAGE_MODE);
+        Preconditions.checkArgument(mode instanceof String);
+        m.mode(MessageObject.MessageMode.valueOf((String) mode));
+        return m;
+    }
+
+    @Override
+    public void seek(@NonNull Offset offset, Context context) throws MessagingError {
+
     }
 
     @Override

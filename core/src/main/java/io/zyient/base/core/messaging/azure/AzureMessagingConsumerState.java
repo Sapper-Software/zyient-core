@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.state.OffsetState;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter

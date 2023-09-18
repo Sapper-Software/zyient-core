@@ -81,6 +81,9 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
         attributes.put(SQSMessage.HEADER_MESSAGE_KEY, MessageAttributeValue.builder()
                 .stringValue(message.key())
                 .build());
+        attributes.put(SQSMessage.HEADER_MESSAGE_TIMESTAMP, MessageAttributeValue.builder()
+                .stringValue(String.valueOf(System.nanoTime()))
+                .build());
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
                 .messageAttributes(attributes)
