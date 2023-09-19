@@ -26,6 +26,7 @@ import io.zyient.base.core.connections.EMessageClientMode;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.azure.AzureServiceBusConnectionSettings;
+import io.zyient.base.core.connections.settings.azure.QueueOrTopic;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -85,11 +86,19 @@ public class ServiceBusProducerConnection extends ServiceBusConnection {
         try {
             synchronized (state) {
                 if (!isConnected()) {
-                    client = new ServiceBusClientBuilder()
-                            .connectionString(settings.getConnectionString())
-                            .sender()
-                            .topicName(settings.getQueue())
-                            .buildClient();
+                    if (settings.getQueueOrTopic() == QueueOrTopic.Queue) {
+                        client = new ServiceBusClientBuilder()
+                                .connectionString(settings.getConnectionString())
+                                .sender()
+                                .topicName(settings.getQueue())
+                                .buildClient();
+                    } else {
+                        client = new ServiceBusClientBuilder()
+                                .connectionString(settings.getConnectionString())
+                                .sender()
+                                .queueName(settings.getQueue())
+                                .buildClient();
+                    }
                     state.setState(EConnectionState.Connected);
                 }
             }

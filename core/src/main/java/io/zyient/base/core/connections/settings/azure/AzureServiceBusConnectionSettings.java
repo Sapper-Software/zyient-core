@@ -26,6 +26,28 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+/**
+ * <pre>
+ *     <connections>
+ *         <shared>
+ *              <connection>[ZooKeeper connection name]</connection>
+ *              <path>[Connections registry path]</path>
+ *         </shared>
+ *         <connection>
+ *             <class>[Connection class]</class>
+ *             <[type]>
+ *                 <name>[Connection name, must be unique]</name>
+ *                 <connectionString>[Service Bus connection string]</connectionString>
+ *                 <queue>[Queue name]</queue>
+ *             </[type]>
+ *
+ *         </connection>
+ *     </connections>
+ *     ...
+ *     <save>[Save connections to ZooKeeper, default=false]</save>
+ *     <override>[Override saved connections, default = true]</override>
+ * </pre>
+ */
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -34,6 +56,7 @@ public class AzureServiceBusConnectionSettings extends ConnectionSettings {
     public static class Constants {
         public static final String CONFIG_CONNECTION_STRING = "connectionString";
         public static final String CONFIG_QUEUE_NAME = "queue";
+        public static final String CONFIG_QUEUE_OR_TOPIC = "queueOrTopic";
     }
 
     @Config(name = Constants.CONFIG_CONNECTION_STRING)
@@ -42,6 +65,8 @@ public class AzureServiceBusConnectionSettings extends ConnectionSettings {
     private String queue;
     @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
     private EMessageClientMode mode = EMessageClientMode.Producer;
+    @Config(name = Constants.CONFIG_QUEUE_OR_TOPIC, required = false, type = QueueOrTopic.class)
+    private QueueOrTopic queueOrTopic = QueueOrTopic.Queue;
 
     public AzureServiceBusConnectionSettings() {
         setType(EConnectionType.db);
@@ -52,6 +77,7 @@ public class AzureServiceBusConnectionSettings extends ConnectionSettings {
         Preconditions.checkArgument(settings instanceof AzureServiceBusConnectionSettings);
         connectionString = ((AzureServiceBusConnectionSettings) settings).getConnectionString();
         queue = ((AzureServiceBusConnectionSettings) settings).queue;
-        mode = ((AzureServiceBusConnectionSettings) settings).getMode();
+        mode = ((AzureServiceBusConnectionSettings) settings).mode;
+        queueOrTopic = ((AzureServiceBusConnectionSettings) settings).queueOrTopic;
     }
 }
