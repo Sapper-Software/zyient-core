@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings.aws;
+package io.zyient.base.core.connections;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.core.connections.MessageConnectionSettings;
+import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,16 +28,27 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class AwsSQSConnectionSettings extends MessageConnectionSettings {
-    @Config(name = "region")
-    private String region;
-
-    protected AwsSQSConnectionSettings() {
-        super(EConnectionType.sqs);
+public abstract class MessageConnectionSettings extends ConnectionSettings {
+    public static class Constants {
+        public static final String CONFIG_QUEUE_NAME = "queue";
+        public static final String CONFIG_BATCH_SIZE = "batchSize";
     }
 
-    protected AwsSQSConnectionSettings(@NonNull AwsSQSConnectionSettings settings) {
+    @Config(name = Constants.CONFIG_QUEUE_NAME)
+    private String queue;
+    @Config(name = Constants.CONFIG_BATCH_SIZE, required = false, type = Integer.class)
+    private int batchSize = 128;
+    @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
+    private EMessageClientMode mode = EMessageClientMode.Producer;
+
+    protected MessageConnectionSettings(@NonNull EConnectionType type) {
+        setType(type);
+    }
+
+    protected MessageConnectionSettings(@NonNull MessageConnectionSettings settings) {
         super(settings);
-        region = settings.region;
+        queue = settings.queue;
+        batchSize = settings.batchSize;
+        mode = settings.mode;
     }
 }

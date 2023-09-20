@@ -36,10 +36,9 @@ import org.apache.curator.framework.CuratorFramework;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class ServiceBusConnection implements MessageConnection {
+public abstract class ServiceBusConnection extends MessageConnection {
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
-    protected AzureServiceBusConnectionSettings settings;
     protected ServiceBusConnectionConfig config;
     protected BaseEnv<?> env;
 

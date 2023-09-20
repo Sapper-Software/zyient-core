@@ -45,7 +45,7 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
         try {
             Preconditions.checkState(connection() instanceof AwsSQSProducerConnection);
             producer = (AwsSQSProducerConnection) connection();
-            AwsSQSConnectionSettings settings = producer.settings();
+            AwsSQSConnectionSettings settings = (AwsSQSConnectionSettings) producer.settings();
             GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                     .queueName(settings.getQueue())
                     .build();

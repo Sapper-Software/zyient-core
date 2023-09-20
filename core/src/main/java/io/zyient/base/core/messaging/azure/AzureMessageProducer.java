@@ -51,7 +51,7 @@ public abstract class AzureMessageProducer<M> extends MessageSender<String, M> {
     @Override
     public MessageObject<String, M> send(@NonNull MessageObject<String, M> message) throws MessagingError {
         Preconditions.checkState(state().isAvailable());
-        AzureServiceBusConnectionSettings settings = producer.settings();
+        AzureServiceBusConnectionSettings settings = (AzureServiceBusConnectionSettings) producer.settings();
         if (Strings.isNullOrEmpty(message.correlationId())) {
             message.correlationId(message.id());
         }

@@ -16,11 +16,13 @@
 
 package io.zyient.base.core.connections.kafka;
 
+import com.google.common.base.Preconditions;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
+import io.zyient.base.core.connections.settings.kafka.KafkaSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -38,9 +40,10 @@ public class BasicKafkaConsumerConnection extends KafkaConsumerConnection<String
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
         super.init(xmlConfig, env);
-        settings().getProperties()
+        Preconditions.checkState(settings instanceof KafkaSettings);
+        ((KafkaSettings) settings).getProperties()
                 .put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        settings().getProperties()
+        ((KafkaSettings) settings).getProperties()
                 .put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 
         return this;
@@ -52,9 +55,10 @@ public class BasicKafkaConsumerConnection extends KafkaConsumerConnection<String
                            @NonNull String path,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
         super.init(name, connection, path, env);
-        settings().getProperties()
+        Preconditions.checkState(settings instanceof KafkaSettings);
+        ((KafkaSettings) settings).getProperties()
                 .put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        settings().getProperties()
+        ((KafkaSettings) settings).getProperties()
                 .put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 
         return this;
@@ -64,9 +68,10 @@ public class BasicKafkaConsumerConnection extends KafkaConsumerConnection<String
     public Connection setup(@NonNull ConnectionSettings settings,
                             @NonNull BaseEnv<?> env) throws ConnectionError {
         super.setup(settings, env);
-        settings().getProperties()
+        Preconditions.checkState(settings instanceof KafkaSettings);
+        ((KafkaSettings) settings).getProperties()
                 .put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        settings().getProperties()
+        ((KafkaSettings) settings).getProperties()
                 .put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 
         return this;

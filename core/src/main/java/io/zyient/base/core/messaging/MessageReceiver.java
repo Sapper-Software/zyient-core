@@ -38,12 +38,15 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
 
     private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
-    private int batchSize = 32;
     private AbstractAuditLogger<?> auditLogger;
     private OffsetStateManager<?> offsetStateManager;
     private boolean stateful = false;
     private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
 
+    public int batchSize() {
+        Preconditions.checkNotNull(connection);
+        return connection.settings().getBatchSize();
+    }
 
     public MessageReceiver<I, M> withReceiveTimeout(long receiveTimeout) {
         Preconditions.checkArgument(receiveTimeout > 0);
@@ -69,13 +72,6 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
 
     public MessageReceiver<I, M> withAuditLogger(AbstractAuditLogger<?> auditLogger) {
         this.auditLogger = auditLogger;
-        return this;
-    }
-
-    public MessageReceiver<I, M> withBatchSize(int batchSize) {
-        if (batchSize > 0) {
-            this.batchSize = batchSize;
-        }
         return this;
     }
 

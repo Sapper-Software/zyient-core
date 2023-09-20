@@ -21,8 +21,9 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
-import io.zyient.base.core.connections.EMessageClientMode;
+import io.zyient.base.core.connections.MessageConnectionSettings;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
+import io.zyient.base.core.connections.settings.EConnectionType;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -35,13 +36,9 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ChronicleSettings extends ConnectionSettings {
-    @Config(name = "queue")
-    private String queue;
+public class ChronicleSettings extends MessageConnectionSettings {
     @Config(name = "baseDir")
     private String baseDir;
-    @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
-    private EMessageClientMode mode = EMessageClientMode.Producer;
     @Config(name = "retention", required = false, parser = TimeValueParser.class)
     private TimeUnitValue cleanUpTTL = new TimeUnitValue(5L * 60 * 60 * 1000, TimeUnit.MILLISECONDS); // Default = 5Hrs
     @Config(name = "rollCycle", required = false, type = RollCycles.class)
@@ -50,13 +47,12 @@ public class ChronicleSettings extends ConnectionSettings {
     private int indexSpacing = 64;
 
     public ChronicleSettings() {
-
+        super(EConnectionType.chronicle);
     }
 
     public ChronicleSettings(@NonNull ConnectionSettings settings) {
-        super(settings);
+        super((MessageConnectionSettings) settings);
         Preconditions.checkArgument(settings instanceof ChronicleSettings);
-        queue = ((ChronicleSettings) settings).queue;
         baseDir = ((ChronicleSettings) settings).baseDir;
         cleanUpTTL = ((ChronicleSettings) settings).cleanUpTTL;
         rollCycle = ((ChronicleSettings) settings).rollCycle;

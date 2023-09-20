@@ -18,8 +18,7 @@ package io.zyient.base.core.connections.settings.kafka;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.core.connections.EMessageClientMode;
-import io.zyient.base.core.connections.settings.ConnectionSettings;
+import io.zyient.base.core.connections.MessageConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import lombok.Getter;
 import lombok.NonNull;
@@ -51,38 +50,30 @@ import java.util.Properties;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class KafkaSettings extends ConnectionSettings {
+public class KafkaSettings extends MessageConnectionSettings {
     public static final String PROP_CLIENT_ID = "client.id";
     public static class Constants {
         public static final String CONFIG_FILE_CONFIG = "config";
         public static final String CONFIG_PARTITIONS = "consumer.partitions";
-        public static final String CONFIG_TOPIC = "topic";
     }
 
     @Config(name = Constants.CONFIG_FILE_CONFIG)
     private String configPath;
     private Properties properties;
-    @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
-    private EMessageClientMode mode = EMessageClientMode.Producer;
-    @Config(name = Constants.CONFIG_TOPIC, required = false)
-    private String topic;
     @Config(name = Constants.CONFIG_PARTITIONS, required = false, type = List.class, parser = KafkaPartitionsParser.class)
     private List<Integer> partitions;
 
     public KafkaSettings() {
-        setType(EConnectionType.kafka);
+        super(EConnectionType.kafka);
     }
 
     public KafkaSettings(@NonNull KafkaSettings settings) {
         super(settings);
-        setType(EConnectionType.kafka);
         configPath = settings.configPath;
         if (settings.properties != null) {
             properties = new Properties(settings.properties.size());
             properties.putAll(settings.properties);
         }
-        mode = settings.mode;
-        topic = settings.topic;
         if (settings.partitions != null) {
             partitions = new ArrayList<>(settings.partitions);
         }

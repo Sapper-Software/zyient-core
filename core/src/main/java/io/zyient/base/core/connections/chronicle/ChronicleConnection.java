@@ -42,10 +42,9 @@ import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class ChronicleConnection implements MessageConnection {
+public abstract class ChronicleConnection extends MessageConnection {
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
-    private ChronicleSettings settings;
     private ChronicleConfig config;
     @Getter(AccessLevel.NONE)
     protected ChronicleQueue queue;
@@ -123,8 +122,8 @@ public abstract class ChronicleConnection implements MessageConnection {
     }
 
     protected void setupQueue() throws Exception {
-        Preconditions.checkNotNull(settings);
-        messageDir = String.format("%s/%s", settings.getBaseDir(), settings.getQueue());
+        Preconditions.checkState(settings instanceof ChronicleSettings);
+        messageDir = String.format("%s/%s", ((ChronicleSettings) settings).getBaseDir(), settings.getQueue());
         File dir = new File(messageDir);
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
@@ -132,8 +131,8 @@ public abstract class ChronicleConnection implements MessageConnection {
             }
         }
         queue = ChronicleQueue.singleBuilder(dir)
-                .indexSpacing(settings.getIndexSpacing())
-                .rollCycle(settings.getRollCycle())
+                .indexSpacing(((ChronicleSettings) settings).getIndexSpacing())
+                .rollCycle(((ChronicleSettings) settings).getRollCycle())
                 .build();
     }
 

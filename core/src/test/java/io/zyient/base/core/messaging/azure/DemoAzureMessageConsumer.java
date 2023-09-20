@@ -14,16 +14,25 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections;
+package io.zyient.base.core.messaging.azure;
 
-public abstract class MessageConnection implements Connection {
-    protected MessageConnectionSettings settings;
+import io.zyient.base.core.messaging.MessageReceiver;
+import io.zyient.base.core.messaging.MessagingError;
+import lombok.NonNull;
 
-    public MessageConnectionSettings settings() {
-        return settings;
+public class DemoAzureMessageConsumer extends AzureMessageConsumer<String> {
+    @Override
+    public void ack(@NonNull String message, boolean commit) throws MessagingError {
+
     }
 
-    public abstract boolean canSend();
+    @Override
+    public MessageReceiver<String, String> init() throws MessagingError {
+        return null;
+    }
 
-    public abstract boolean canReceive();
+    @Override
+    protected String deserialize(byte[] message) throws MessagingError {
+        return null;
+    }
 }

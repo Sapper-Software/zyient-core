@@ -23,6 +23,7 @@ import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.EMessageClientMode;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
+import io.zyient.base.core.connections.settings.kafka.KafkaSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -100,12 +101,13 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
     }
 
     private void setup() throws Exception {
+        Preconditions.checkState(settings instanceof KafkaSettings);
         if (settings().getMode() != EMessageClientMode.Consumer) {
             throw new ConfigurationException("Connection not initialized in Consumer mode.");
         }
 
         settings().setConnectionClass(getClass());
-        Properties props = settings().getProperties();
+        Properties props = ((KafkaSettings) settings).getProperties();
         if (props.containsKey(CONFIG_MAX_POLL_RECORDS)) {
             String s = props.getProperty(CONFIG_MAX_POLL_RECORDS);
             batchSize = Integer.parseInt(s);
@@ -120,13 +122,14 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
      */
     @Override
     public Connection connect() throws ConnectionError {
+        Preconditions.checkState(settings instanceof KafkaSettings);
         synchronized (state) {
             Preconditions.checkState(connectionState() == EConnectionState.Initialized);
             try {
-                consumer = new KafkaConsumer<K, V>(settings().getProperties());
-                List<TopicPartition> parts = new ArrayList<>(settings().getPartitions().size());
-                for (int part : settings().getPartitions()) {
-                    TopicPartition tp = new TopicPartition(settings().getTopic(), part);
+                consumer = new KafkaConsumer<K, V>(((KafkaSettings) settings).getProperties());
+                List<TopicPartition> parts = new ArrayList<>(((KafkaSettings) settings).getPartitions().size());
+                for (int part : ((KafkaSettings) settings).getPartitions()) {
+                    TopicPartition tp = new TopicPartition(settings.getQueue(), part);
                     parts.add(tp);
                 }
                 consumer.assign(parts);

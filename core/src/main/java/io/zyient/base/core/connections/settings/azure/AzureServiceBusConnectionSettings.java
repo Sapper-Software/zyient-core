@@ -19,7 +19,7 @@ package io.zyient.base.core.connections.settings.azure;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.core.connections.EMessageClientMode;
+import io.zyient.base.core.connections.MessageConnectionSettings;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import lombok.Getter;
@@ -52,32 +52,25 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class AzureServiceBusConnectionSettings extends ConnectionSettings {
+public class AzureServiceBusConnectionSettings extends MessageConnectionSettings {
     public static class Constants {
         public static final String CONFIG_CONNECTION_STRING = "connectionString";
-        public static final String CONFIG_QUEUE_NAME = "queue";
         public static final String CONFIG_QUEUE_OR_TOPIC = "queueOrTopic";
     }
 
     @Config(name = Constants.CONFIG_CONNECTION_STRING)
     private String connectionString;
-    @Config(name = Constants.CONFIG_QUEUE_NAME)
-    private String queue;
-    @Config(name = EMessageClientMode.CONFIG_MODE, required = false, type = EMessageClientMode.class)
-    private EMessageClientMode mode = EMessageClientMode.Producer;
     @Config(name = Constants.CONFIG_QUEUE_OR_TOPIC, required = false, type = QueueOrTopic.class)
     private QueueOrTopic queueOrTopic = QueueOrTopic.Queue;
 
     public AzureServiceBusConnectionSettings() {
-        setType(EConnectionType.db);
+        super(EConnectionType.serviceBus);
     }
 
     public AzureServiceBusConnectionSettings(@NonNull ConnectionSettings settings) {
-        super(settings);
+        super((MessageConnectionSettings) settings);
         Preconditions.checkArgument(settings instanceof AzureServiceBusConnectionSettings);
         connectionString = ((AzureServiceBusConnectionSettings) settings).getConnectionString();
-        queue = ((AzureServiceBusConnectionSettings) settings).queue;
-        mode = ((AzureServiceBusConnectionSettings) settings).mode;
         queueOrTopic = ((AzureServiceBusConnectionSettings) settings).queueOrTopic;
     }
 }

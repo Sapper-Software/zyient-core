@@ -81,19 +81,20 @@ public class ServiceBusConsumerConnection extends ServiceBusConnection {
 
     @Override
     public Connection connect() throws ConnectionError {
+        Preconditions.checkState(settings instanceof AzureServiceBusConnectionSettings);
         try {
             synchronized (state) {
                 if (!isConnected()) {
-                    if (settings.getQueueOrTopic() == QueueOrTopic.Queue) {
+                    if (((AzureServiceBusConnectionSettings) settings).getQueueOrTopic() == QueueOrTopic.Queue) {
                         client = new ServiceBusClientBuilder()
-                                .connectionString(settings.getConnectionString())
+                                .connectionString(((AzureServiceBusConnectionSettings) settings).getConnectionString())
                                 .receiver()
                                 .queueName(settings.getQueue())
                                 .subscriptionName(env.moduleInstance().getInstanceId())
                                 .buildClient();
                     } else {
                         client = new ServiceBusClientBuilder()
-                                .connectionString(settings.getConnectionString())
+                                .connectionString(((AzureServiceBusConnectionSettings) settings).getConnectionString())
                                 .receiver()
                                 .topicName(settings.getQueue())
                                 .subscriptionName(env.moduleInstance().getInstanceId())

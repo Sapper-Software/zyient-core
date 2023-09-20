@@ -23,6 +23,7 @@ import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.EMessageClientMode;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
+import io.zyient.base.core.connections.settings.kafka.KafkaSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -106,11 +107,12 @@ public class KafkaProducerConnection<K, V> extends KafkaConnection {
      */
     @Override
     public Connection connect() throws ConnectionError {
+        Preconditions.checkState(settings instanceof KafkaSettings);
         synchronized (state) {
             Preconditions.checkState(connectionState() == EConnectionState.Initialized);
             if (!state.isConnected()) {
                 try {
-                    producer = new KafkaProducer<K, V>(settings().getProperties());
+                    producer = new KafkaProducer<K, V>(((KafkaSettings) settings).getProperties());
 
                     state.setState(EConnectionState.Connected);
                 } catch (Throwable t) {

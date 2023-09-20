@@ -80,7 +80,6 @@ public class AwsSQSConsumerConnection extends AwsSQSConnection {
         }
     }
 
-
     private void setup() throws Exception {
         AwsSQSConnectionSettings settings = (AwsSQSConnectionSettings) settings();
         if (settings.getMode() != EMessageClientMode.Consumer) {

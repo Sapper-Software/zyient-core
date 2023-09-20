@@ -23,6 +23,7 @@ import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.azure.ServiceBusConsumerConnection;
+import io.zyient.base.core.connections.settings.azure.AzureServiceBusConnectionSettings;
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
@@ -36,6 +37,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M> {
@@ -73,6 +75,28 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
         }
         if (found) {
             commit();
+        }
+    }
+
+    @Override
+    public void ack(@NonNull String message, boolean commit) throws MessagingError {
+
+    }
+
+    @Override
+    public MessageReceiver<String, M> init() throws MessagingError {
+        Preconditions.checkState(connection() instanceof ServiceBusConsumerConnection);
+        consumer = (ServiceBusConsumerConnection) connection();
+        cache = new ArrayBlockingQueue<>(batchSize());
+        try {
+            if (!consumer.isConnected()) {
+                consumer.connect();
+            }
+            AzureServiceBusConnectionSettings settings = (AzureServiceBusConnectionSettings) consumer.settings();
+            return this;
+        } catch (Exception ex) {
+            state.error(ex);
+            throw new MessagingError(ex);
         }
     }
 

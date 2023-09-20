@@ -21,6 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.DirectoryCleaner;
 import io.zyient.base.core.connections.chronicle.ChronicleProducerConnection;
+import io.zyient.base.core.connections.settings.chronicle.ChronicleSettings;
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.MessageSender;
 import io.zyient.base.core.messaging.MessagingError;
@@ -54,7 +55,7 @@ public abstract class BaseChronicleProducer<M> extends MessageSender<String, M> 
             appender = producer.get(id);
             dirCleaner = new DirectoryCleaner(producer.messageDir(),
                     true,
-                    producer.settings().getCleanUpTTL().normalized(),
+                    ((ChronicleSettings) producer.settings()).getCleanUpTTL().normalized(),
                     60 * 1000);
             cleanerThread = new Thread(dirCleaner,
                     String.format("QUEUE-%s-CLEANER", producer.settings().getName()));

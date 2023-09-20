@@ -43,10 +43,9 @@ import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class AwsSQSConnection implements MessageConnection {
+public abstract class AwsSQSConnection extends MessageConnection {
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
-    protected AwsSQSConnectionSettings settings;
     protected AwsSQSConnectionConfig config;
     protected SqsClient client;
     protected BaseEnv<?> env;
@@ -129,8 +128,9 @@ public abstract class AwsSQSConnection implements MessageConnection {
 
     @Override
     public Connection connect() throws ConnectionError {
+        Preconditions.checkState(settings instanceof AwsSQSConnectionSettings);
         if (!state.isConnected()) {
-            Region region = Region.of(settings.getRegion());
+            Region region = Region.of(((AwsSQSConnectionSettings) settings).getRegion());
             client = SqsClient.builder()
                     .region(region)
                     .credentialsProvider(ProfileCredentialsProvider.create())

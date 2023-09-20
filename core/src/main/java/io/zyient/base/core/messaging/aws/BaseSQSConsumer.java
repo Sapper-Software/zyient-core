@@ -46,13 +46,6 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
     private AwsSQSConsumerState state;
     private TimeUnitValue ackTimeout = new TimeUnitValue(2 * 60 * 1000, TimeUnit.MILLISECONDS);
     private String queueUrl;
-    private int batchSize;
-
-    public BaseSQSConsumer<M> withBatchSize(int batchSize) {
-        Preconditions.checkArgument(batchSize > 0);
-        this.batchSize = batchSize;
-        return this;
-    }
 
     public BaseSQSConsumer<M> withAckTimeout(@NonNull TimeUnitValue value) {
         ackTimeout = value;
@@ -146,12 +139,13 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
     public MessageReceiver<String, M> init() throws MessagingError {
         Preconditions.checkState(connection() instanceof AwsSQSConsumerConnection);
         consumer = (AwsSQSConsumerConnection) connection();
+        AwsSQSConnectionSettings settings = (AwsSQSConnectionSettings) consumer.settings();
+
         cache = new ArrayBlockingQueue<>(batchSize());
         try {
             if (!consumer.isConnected()) {
                 consumer.connect();
             }
-            AwsSQSConnectionSettings settings = consumer.settings();
             GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                     .queueName(settings.getQueue())
                     .build();
@@ -236,7 +230,7 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
                     .queueUrl(queueUrl)
                     .visibilityTimeout(ackTimeout.normalized().intValue())
                     .waitTimeSeconds(t)
-                    .maxNumberOfMessages(batchSize)
+                    .maxNumberOfMessages(batchSize())
                     .build();
             List<Message> records = consumer.getClient().receiveMessage(receiveRequest).messages();
             synchronized (offsetMap) {

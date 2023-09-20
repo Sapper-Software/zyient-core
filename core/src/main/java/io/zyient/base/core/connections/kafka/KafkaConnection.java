@@ -43,12 +43,11 @@ import java.util.Properties;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class KafkaConnection implements MessageConnection {
+public abstract class KafkaConnection extends MessageConnection {
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
 
     private KafkaConfig kafkaConfig;
-    private KafkaSettings settings;
 
     /**
      * @return
@@ -150,8 +149,8 @@ public abstract class KafkaConnection implements MessageConnection {
     }
 
     public String topic() {
-        Preconditions.checkState(settings != null);
-        return settings.getTopic();
+        Preconditions.checkState(settings instanceof KafkaSettings);
+        return settings.getQueue();
     }
 
     @Override
