@@ -17,6 +17,7 @@
 package io.zyient.base.core.connections.db;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
@@ -68,8 +69,11 @@ public class JdbcConnection extends DbConnection {
 
     @Override
     public Connection connect() throws ConnectionError {
-        KeyStore keyStore = connectionManager().keyStore();
-        Preconditions.checkNotNull(keyStore);
+        KeyStore keyStore = null;
+        if (Strings.isNullOrEmpty(password)) {
+            keyStore = connectionManager().keyStore();
+            Preconditions.checkNotNull(keyStore);
+        }
         synchronized (state) {
             if (state.isConnected()) return this;
             Preconditions.checkState(state.getState() == EConnectionState.Initialized);

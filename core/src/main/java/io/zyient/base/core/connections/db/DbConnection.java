@@ -52,7 +52,7 @@ public abstract class DbConnection implements Connection {
     protected ConnectionManager connectionManager;
     protected final String zkNode;
     @Getter(AccessLevel.NONE)
-    private String password;
+    protected String password;
 
     public DbConnection(@NonNull String zkNode) {
         this.zkNode = zkNode;

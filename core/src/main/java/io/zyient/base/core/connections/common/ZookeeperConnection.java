@@ -91,7 +91,7 @@ public class ZookeeperConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
             } catch (Throwable t) {
                 state.error(t);
-                throw new ConnectionError("Error opening HDFS connection.", t);
+                throw new ConnectionError("Error opening ZooKeeper connection.", t);
             }
         }
         return this;

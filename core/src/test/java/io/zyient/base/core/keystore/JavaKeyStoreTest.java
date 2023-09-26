@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core;
+package io.zyient.base.core.keystore;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.keystore.JavaKeyStore;
-import io.zyient.base.core.keystore.KeyStore;
-import io.zyient.base.core.utils.DemoEnv;
 import io.zyient.base.core.utils.JavaKeyStoreUtil;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -36,16 +31,14 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class JavaKeyStoreTest {
-    private static final String __CONFIG_FILE = "src/test/resources/keystore.xml";
+    private static final String __CONFIG_FILE = "src/test/resources/keystore/keystore.xml";
     private static final String __CONFIG_PATH = "config";
     private static XMLConfiguration xmlConfiguration = null;
-    private static DemoEnv env = new DemoEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
         xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
         Preconditions.checkState(xmlConfiguration != null);
-        env.init(xmlConfiguration);
     }
 
     @Test
@@ -66,9 +59,7 @@ class JavaKeyStoreTest {
             util.setValue("Dummy");
             util.run();
 
-            HierarchicalConfiguration<ImmutableNode> configNode = xmlConfiguration.configurationAt("");
-            KeyStore store = new JavaKeyStore().withPassword(password);
-            store.init(configNode, env);
+            KeyStore store = util.getEnv().keyStore();
 
             store.save(keyName, keyValue);
             store.flush();

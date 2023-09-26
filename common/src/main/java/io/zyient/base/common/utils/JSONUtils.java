@@ -46,11 +46,16 @@ public class JSONUtils {
         return mapper.writeValueAsString(obj);
     }
 
-    public static <T> T read(byte[] data, Class<? extends T> type) throws JsonProcessingException {
+    public static <T> T read(byte[] data, Class<? extends T> type) throws Exception {
         String json = new String(data, Charset.defaultCharset());
         if (Strings.isNullOrEmpty(json)) return null;
         if (NetUtils.isIPV4Address(json)) return null;
-        if (!isJson(json)) return null;
+        if (ReflectionUtils.isPrimitiveTypeOrString(type)) {
+            return ReflectionUtils.getValueFromString(type, json);
+        }
+        if (!isJson(json)) {
+            return null;
+        }
         return mapper.readValue(json, type);
     }
 

@@ -72,7 +72,7 @@ public class BaseEnvSettings extends Settings {
     private String module;
     @Config(name = Constants.CONFIG_INSTANCE)
     private String instance;
-    @Config(name = Constants.CONFIG_CONNECTIONS)
+    @Config(name = Constants.CONFIG_CONNECTIONS, required = false)
     private String connectionConfigPath;
     @Config(name = Constants.CONFIG_REGISTRY_PATH, required = false)
     private String registryPath;
@@ -82,7 +82,7 @@ public class BaseEnvSettings extends Settings {
     private TimeUnitValue heartbeatFreq = new TimeUnitValue(1L, TimeUnit.MINUTES);
     @Config(name = Constants.CONFIG_STATE_MANAGER_TYPE, required = false, type = Class.class)
     private Class<? extends BaseStateManager> stateManagerClass;
-    @Config(name = Constants.CONFIG_BASE_PATH)
+    @Config(name = Constants.CONFIG_BASE_PATH, required = false)
     private String basePath;
     @JsonIgnore
     private HierarchicalConfiguration<ImmutableNode> managersConfig;

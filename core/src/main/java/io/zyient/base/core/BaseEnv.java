@@ -234,7 +234,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
 
     @SuppressWarnings("unchecked")
     public void setup(@NonNull String module,
-                      @NonNull String connectionsConfigPath) throws ConfigurationException {
+                      String connectionsConfigPath) throws ConfigurationException {
         try {
 
             if (ConfigReader.checkIfNodeExists(baseConfig, KeyStore.__CONFIG_PATH)) {
@@ -250,9 +250,11 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
             }
             this.storeKey = null;
 
-            connectionManager = new ConnectionManager()
-                    .withKeyStore(keyStore);
-            connectionManager.init(baseConfig, this, connectionsConfigPath);
+            if (!Strings.isNullOrEmpty(connectionsConfigPath)) {
+                connectionManager = new ConnectionManager()
+                        .withKeyStore(keyStore);
+                connectionManager.init(baseConfig, this, connectionsConfigPath);
+            }
 
             if (ConfigReader.checkIfNodeExists(baseConfig, DistributedLockBuilder.Constants.CONFIG_LOCKS)) {
                 dLockBuilder.init(baseConfig, module, this);

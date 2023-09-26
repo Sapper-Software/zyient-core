@@ -79,7 +79,7 @@ public class DefaultLogger {
         }
     }
 
-    public static void error(@NonNull String msg) {
+    public static void error(String msg) {
         LOGGER.error(msg);
     }
 

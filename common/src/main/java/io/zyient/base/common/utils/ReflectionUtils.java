@@ -867,6 +867,37 @@ public class ReflectionUtils {
         return false;
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> T getValueFromString(@NonNull Class<? extends T> type,
+                                           @NonNull String value) throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
+        Preconditions.checkArgument(isPrimitiveTypeOrString(type));
+        Object ret = null;
+        if (type.equals(String.class)) {
+            ret = value;
+        } else if (isNumericType(type)) {
+            if (isBoolean(type)) {
+                ret = Boolean.parseBoolean(value);
+            } else if (isShort(type)) {
+                ret = Short.parseShort(value);
+            } else if (isInt(type)) {
+                ret = Integer.parseInt(value);
+            } else if (isLong(type)) {
+                ret = Long.parseLong(value);
+            } else if (isFloat(type)) {
+                ret = Float.parseFloat(value);
+            } else if (isDouble(type)) {
+                ret = Double.parseDouble(value);
+            }
+        } else if (type.equals(Class.class)) {
+            ret = Class.forName(value);
+        }
+        if (ret != null) {
+            return (T) ret;
+        }
+        throw new Exception(String.format("Type not supported. [type=%s]", type.getCanonicalName()));
+    }
+
     public static boolean isNumericType(@NonNull Class<?> type) {
         return type.equals(Short.class) || type.equals(short.class)
                 || type.equals(Integer.class) || type.equals(int.class) ||

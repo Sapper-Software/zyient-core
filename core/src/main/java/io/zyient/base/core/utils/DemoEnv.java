@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.utils;
 
+import com.google.common.base.Strings;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.core.BaseEnv;
@@ -62,6 +63,7 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
 
     private HierarchicalConfiguration<ImmutableNode> configNode;
     private final String module = "TEST";
+    private String passKey = TEST_PASSWD;
 
     @Getter
     @Setter
@@ -70,7 +72,8 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
     }
 
     public BaseEnv<EDemoState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        withStoreKey(TEST_PASSWD);
+        if (Strings.isNullOrEmpty(storeKey()))
+            withStoreKey(TEST_PASSWD);
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
         super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);

@@ -24,6 +24,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.keystore.KeyStore;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -44,6 +45,7 @@ public class JavaKeyStoreUtil {
     @Parameter(names = {"--passwd", "-p"}, required = true, description = "Key Store password.")
     private String password;
     private EConfigFileType fileSource = EConfigFileType.File;
+    @Setter(AccessLevel.NONE)
     private DemoEnv env = new DemoEnv();
 
     @SuppressWarnings("unchecked")
@@ -53,7 +55,10 @@ public class JavaKeyStoreUtil {
         }
         Preconditions.checkNotNull(fileSource);
         HierarchicalConfiguration<ImmutableNode> config = ConfigReader.read(configFile, fileSource);
+        env.withStoreKey(password);
         env.init(config);
+
+        config = env.baseConfig();
 
         String c = config.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
         if (Strings.isNullOrEmpty(c)) {

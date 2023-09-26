@@ -23,6 +23,7 @@ import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.common.utils.CypherUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.db.JdbcConnection;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -42,6 +43,7 @@ public class DbKeyStore extends KeyStore {
     public static final String DB_COLUMN_TIMESTAMP = "key_timestamp";
     public static final String CONFIG_NAME = "name";
     public static final String CONFIG_IV_SPEC = "iv";
+    public static final String CONFIG_SCHEMA = "db";
 
     private static class KeyRecord {
         private String namespace;
@@ -65,19 +67,26 @@ public class DbKeyStore extends KeyStore {
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
+            String pwd = password;
             config = configNode.configurationAt(__CONFIG_PATH);
             Preconditions.checkNotNull(config);
             name = config.getString(CONFIG_NAME);
             ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
+            password = CypherUtils.checkPassword(password, name);
+            withPassword(password);
+
+            HierarchicalConfiguration<ImmutableNode> dbc
+                    = config.configurationAt(ConnectionManager.Constants.CONFIG_CONNECTION_LIST);
             connection = (JdbcConnection) new JdbcConnection()
-                    .withPassword(password);
-            connection.init(config, env);
+                    .withPassword(pwd);
+            connection
+                    .init(dbc, env)
+                    .connect();
+
             iv = config.getString(CONFIG_IV_SPEC);
             ConfigReader.checkStringValue(iv, getClass(), CONFIG_IV_SPEC);
+            iv = CypherUtils.formatIvString(iv);
             passwdHash = ChecksumUtils.generateHash(password);
-            connection = (JdbcConnection) new JdbcConnection()
-                    .withPassword(password);
-            connection.init(config, env);
             checkDbSetup();
             this.env = env;
         } catch (Exception ex) {
@@ -88,15 +97,18 @@ public class DbKeyStore extends KeyStore {
     private synchronized void checkDbSetup() throws Exception {
         try (Connection connection = this.connection.getConnection()) {
             DatabaseMetaData metaData = connection.getMetaData();
+            boolean found = false;
             try (ResultSet rs = metaData.getTables(null, null, null, new String[]{"TABLE"})) {
                 while (rs.next()) {
                     String name = rs.getString("TABLE_NAME");
                     if (DB_TABLE_NAME.compareToIgnoreCase(name) == 0) {
-                        return;
+                        found = true;
+                        break;
                     }
                 }
             }
-            createDbTable(connection);
+            if (!found)
+                createDbTable(connection);
             fetchRecords(connection);
         }
     }
@@ -256,6 +268,7 @@ public class DbKeyStore extends KeyStore {
                     if (record.timestamp > syncTimestamp) {
                         if (record.isNew) {
                             insertKey(record, connection);
+                            record.isNew = false;
                         } else {
                             updateKey(record, connection);
                         }

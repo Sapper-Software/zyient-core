@@ -22,6 +22,7 @@ import com.beust.jcommander.ParameterException;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.GlobalConstants;
+import lombok.NonNull;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.annotation.Nonnull;
@@ -29,6 +30,7 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.Console;
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.util.ArrayList;
@@ -52,6 +54,33 @@ public class CypherUtils {
     private boolean help = false;
     @Parameter(description = "Other program arguments")
     private List<String> otherArgs = new ArrayList<>();
+
+    public static String checkPassword(@Nonnull String password, @Nonnull String name) throws Exception {
+        String pwd = String.format("%s--%s", name, password);
+        byte[] buff = pwd.getBytes(StandardCharsets.UTF_8);
+        if (buff.length < 16 ) {
+            throw new Exception(
+                    String.format("Invalid password. expected lengths=(16, 24, 32). [length=%d]", buff.length));
+        }
+        if (buff.length > 32) {
+            pwd = pwd.substring(0, 32);
+        } else if (buff.length > 24) {
+            pwd = pwd.substring(0, 24);
+        } else if (buff.length > 16) {
+            pwd = pwd.substring(0, 16);
+        }
+        return pwd;
+    }
+
+    public static String formatIvString(@NonNull String iv) throws Exception {
+        byte[] buff = iv.getBytes(StandardCharsets.UTF_8);
+        if (buff.length > 16) {
+            iv = new String(buff, 0, 16, StandardCharsets.UTF_8);
+        } else if (buff.length < 16) {
+            throw new Exception(String.format("Invalid IV Spec string, less than 16 bytes. [value=%s]", iv));
+        }
+        return iv;
+    }
 
     /**
      * Get an MD5 hash of the specified key.
@@ -213,10 +242,10 @@ public class CypherUtils {
                                    @Nonnull String iv,
                                    int mode) throws Exception {
         // Create key and cipher
-        Key aesKey = new SecretKeySpec(password.getBytes(GlobalConstants.defaultCharset()), algo);
+        Key aesKey = new SecretKeySpec(password.getBytes(GlobalConstants.defaultCharset()), CIPHER_TYPE);
         IvParameterSpec ivspec = new IvParameterSpec(iv.getBytes(GlobalConstants.defaultCharset()));
 
-        Cipher cipher = Cipher.getInstance(CIPHER_ALGO);
+        Cipher cipher = Cipher.getInstance(algo);
         cipher.init(mode, aesKey, ivspec);
 
         return cipher;

@@ -25,6 +25,7 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
+import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -54,14 +55,20 @@ public class ZkKeyStore extends KeyStore {
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
+            String pwd = password;
             config = configNode.configurationAt(__CONFIG_PATH);
             Preconditions.checkNotNull(config);
-            connection = new ZookeeperConnection()
-                    .withPassword(password);
-            connection.init(config, env);
-            connection.connect();
             name = config.getString(CONFIG_NAME);
             ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
+            password = CypherUtils.checkPassword(password, name);
+            withPassword(password);
+
+            HierarchicalConfiguration<ImmutableNode> zkc
+                    = config.configurationAt(ConnectionManager.Constants.CONFIG_CONNECTION_LIST);
+            connection = new ZookeeperConnection()
+                    .withPassword(pwd);
+            connection.init(zkc, env);
+            connection.connect();
             zkBasePath = new PathUtils.ZkPathBuilder(config.getString(CONFIG_ZK_PATH))
                     .withPath(name)
                     .build();
@@ -72,6 +79,7 @@ public class ZkKeyStore extends KeyStore {
             }
             iv = config.getString(CONFIG_IV_SPEC);
             ConfigReader.checkStringValue(iv, getClass(), CONFIG_IV_SPEC);
+            iv = CypherUtils.formatIvString(iv);
             passwdHash = ChecksumUtils.generateHash(password);
             this.env = env;
         } catch (Exception ex) {
@@ -117,7 +125,12 @@ public class ZkKeyStore extends KeyStore {
         String path = new PathUtils.ZkPathBuilder(zkBasePath)
                 .withPath(name)
                 .build();
-        return JSONUtils.read(client, path, String.class);
+        String value = JSONUtils.read(client, path, String.class);
+        if (!Strings.isNullOrEmpty(value)) {
+            byte[] data = CypherUtils.decrypt(value, password, iv);
+            return new String(data, StandardCharsets.UTF_8);
+        }
+        return null;
     }
 
     @Override
