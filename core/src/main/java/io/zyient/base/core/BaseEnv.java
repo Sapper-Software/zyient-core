@@ -246,7 +246,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                 Class<? extends KeyStore> cls = (Class<? extends KeyStore>) Class.forName(c);
                 keyStore = cls.getDeclaredConstructor().newInstance();
                 keyStore.withPassword(storeKey)
-                        .init(baseConfig);
+                        .init(baseConfig, this);
             }
             this.storeKey = null;
 

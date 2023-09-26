@@ -43,7 +43,6 @@ public class JdbcConnection extends DbConnection {
         super(JdbcConnectionConfig.__CONFIG_PATH);
     }
 
-
     @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {

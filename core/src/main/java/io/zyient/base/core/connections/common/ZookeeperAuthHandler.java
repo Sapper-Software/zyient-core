@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.connections.common;
 
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.ConnectionError;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -23,6 +24,9 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 
 public interface ZookeeperAuthHandler {
+    ZookeeperAuthHandler withPassword(@NonNull String password);
+
     void setup(@NonNull CuratorFrameworkFactory.Builder builder,
-               @NonNull HierarchicalConfiguration<ImmutableNode> config) throws ConnectionError;
+               @NonNull HierarchicalConfiguration<ImmutableNode> config,
+               @NonNull BaseEnv<?> env) throws ConnectionError;
 }

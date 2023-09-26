@@ -17,10 +17,12 @@
 package io.zyient.base.core;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.connections.TestUtils;
 import io.zyient.base.core.keystore.JavaKeyStore;
 import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.base.core.utils.DemoEnv;
 import io.zyient.base.core.utils.JavaKeyStoreUtil;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -37,11 +39,13 @@ class JavaKeyStoreTest {
     private static final String __CONFIG_FILE = "src/test/resources/keystore.xml";
     private static final String __CONFIG_PATH = "config";
     private static XMLConfiguration xmlConfiguration = null;
+    private static DemoEnv env = new DemoEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
-        xmlConfiguration = TestUtils.readFile(__CONFIG_FILE);
+        xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
         Preconditions.checkState(xmlConfiguration != null);
+        env.init(xmlConfiguration);
     }
 
     @Test
@@ -64,7 +68,7 @@ class JavaKeyStoreTest {
 
             HierarchicalConfiguration<ImmutableNode> configNode = xmlConfiguration.configurationAt("");
             KeyStore store = new JavaKeyStore().withPassword(password);
-            store.init(configNode);
+            store.init(configNode, env);
 
             store.save(keyName, keyValue);
             store.flush();

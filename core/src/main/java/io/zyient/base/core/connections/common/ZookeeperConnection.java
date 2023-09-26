@@ -49,6 +49,9 @@ public class ZookeeperConnection implements Connection {
     private CuratorFrameworkFactory.Builder builder;
     private ZookeeperConfig config;
     private ZookeeperSettings settings;
+    private BaseEnv<?> env;
+    @Getter(AccessLevel.NONE)
+    private String password;
 
     /**
      * @return
@@ -56,6 +59,11 @@ public class ZookeeperConnection implements Connection {
     @Override
     public String name() {
         return settings.getName();
+    }
+
+    public ZookeeperConnection withPassword(@NonNull String password) {
+        this.password = password;
+        return this;
     }
 
     /**
@@ -72,6 +80,7 @@ public class ZookeeperConnection implements Connection {
                     close();
                 }
                 state.clear();
+                this.env = env;
 
                 config = new ZookeeperConfig(xmlConfig);
                 config.read();
@@ -99,7 +108,10 @@ public class ZookeeperConnection implements Connection {
             Class<? extends ZookeeperAuthHandler> cls
                     = (Class<? extends ZookeeperAuthHandler>) Class.forName(settings.getAuthenticationHandler());
             ZookeeperAuthHandler authHandler = cls.getDeclaredConstructor().newInstance();
-            authHandler.setup(builder, config.config());
+            if (!Strings.isNullOrEmpty(password)) {
+                authHandler.withPassword(password);
+            }
+            authHandler.setup(builder, config.config(), env);
         }
         if (!Strings.isNullOrEmpty(settings.getNamespace())) {
             builder.namespace(settings.getNamespace());
@@ -125,6 +137,7 @@ public class ZookeeperConnection implements Connection {
                     close();
                 }
                 state.clear();
+                this.env = env;
 
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)

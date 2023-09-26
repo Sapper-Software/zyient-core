@@ -17,6 +17,7 @@
 package io.zyient.base.core.keystore;
 
 import com.google.common.base.Strings;
+import io.zyient.base.core.BaseEnv;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -47,16 +48,18 @@ public abstract class KeyStore {
         return this;
     }
 
-    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode) throws ConfigurationException {
+    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
+                     @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
-            init(configNode, extractValue(password, CIPHER_TYPE));
+            init(configNode, extractValue(password, CIPHER_TYPE), env);
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
     }
 
     public abstract void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
-                              @NonNull String password) throws ConfigurationException;
+                              @NonNull String password,
+                              @NonNull BaseEnv<?> env) throws ConfigurationException;
 
     public void save(@NonNull String name,
                      @NonNull String value) throws Exception {
@@ -82,9 +85,9 @@ public abstract class KeyStore {
     public abstract String read(@NonNull String name,
                                 @NonNull String password) throws Exception;
 
-    public abstract void delete(@NonNull String name) throws Exception;
+    public abstract void delete(@NonNull String name, @NonNull String password) throws Exception;
 
-    public abstract void delete() throws Exception;
+    public abstract void delete(@NonNull String password) throws Exception;
 
     public String flush() throws Exception {
         return flush(extractValue(password, CIPHER_TYPE));

@@ -19,6 +19,7 @@ package io.zyient.base.core.keystore;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.ChecksumUtils;
+import io.zyient.base.core.BaseEnv;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -48,7 +49,8 @@ public class JavaKeyStore extends KeyStore {
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
-                     @NonNull String password) throws ConfigurationException {
+                     @NonNull String password,
+                     @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             config = configNode.configurationAt(__CONFIG_PATH);
             Preconditions.checkNotNull(config);
@@ -139,13 +141,18 @@ public class JavaKeyStore extends KeyStore {
     }
 
     @Override
-    public void delete(@NonNull String name) throws Exception {
+    public void delete(@NonNull String name,
+                       @NonNull String password) throws Exception {
+        String hash = ChecksumUtils.generateHash(password);
+        Preconditions.checkArgument(hash.equals(passwdHash));
         Preconditions.checkNotNull(store);
         store.deleteEntry(name);
     }
 
     @Override
-    public void delete() throws Exception {
+    public void delete(@NonNull String password) throws Exception {
+        String hash = ChecksumUtils.generateHash(password);
+        Preconditions.checkArgument(hash.equals(passwdHash));
         Preconditions.checkNotNull(store);
         Enumeration<String> aliases = store.aliases();
         while (aliases.hasMoreElements()) {

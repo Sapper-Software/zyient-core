@@ -51,9 +51,16 @@ public abstract class DbConnection implements Connection {
     protected JdbcConnectionSettings settings;
     protected ConnectionManager connectionManager;
     protected final String zkNode;
+    @Getter(AccessLevel.NONE)
+    private String password;
 
     public DbConnection(@NonNull String zkNode) {
         this.zkNode = zkNode;
+    }
+
+    public DbConnection withPassword(@NonNull String password) {
+        this.password = password;
+        return this;
     }
 
     @Override
@@ -129,10 +136,16 @@ public abstract class DbConnection implements Connection {
         builder.append("?")
                 .append(Constants.DB_KEY_USER)
                 .append(settings.getUser());
-        String pk = settings.getPassword();
-        builder.append("&")
-                .append(Constants.DB_KEY_PASSWD)
-                .append(keyStore.read(pk));
+        if (Strings.isNullOrEmpty(password)) {
+            String pk = settings.getPassword();
+            builder.append("&")
+                    .append(Constants.DB_KEY_PASSWD)
+                    .append(keyStore.read(pk));
+        } else {
+            builder.append("&")
+                    .append(Constants.DB_KEY_PASSWD)
+                    .append(password);
+        }
         builder.append("&")
                 .append(Constants.DB_KEY_POOL_SIZE)
                 .append(settings.getPoolSize());

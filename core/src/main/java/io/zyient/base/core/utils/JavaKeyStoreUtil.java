@@ -44,13 +44,17 @@ public class JavaKeyStoreUtil {
     @Parameter(names = {"--passwd", "-p"}, required = true, description = "Key Store password.")
     private String password;
     private EConfigFileType fileSource = EConfigFileType.File;
+    private DemoEnv env = new DemoEnv();
 
+    @SuppressWarnings("unchecked")
     public void run() throws Exception {
         if (!Strings.isNullOrEmpty(configSource)) {
             fileSource = EConfigFileType.parse(configSource);
         }
         Preconditions.checkNotNull(fileSource);
         HierarchicalConfiguration<ImmutableNode> config = ConfigReader.read(configFile, fileSource);
+        env.init(config);
+
         String c = config.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
         if (Strings.isNullOrEmpty(c)) {
             throw new ConfigurationException(
@@ -59,7 +63,7 @@ public class JavaKeyStoreUtil {
         Class<? extends KeyStore> cls = (Class<? extends KeyStore>) Class.forName(c);
         KeyStore keyStore = cls.getDeclaredConstructor().newInstance();
         keyStore.withPassword(password)
-                .init(config);
+                .init(config, env);
         keyStore.save(key, value);
         keyStore.flush();
     }

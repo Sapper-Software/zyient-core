@@ -75,7 +75,7 @@ public class JdbcConnectionSettings extends ConnectionSettings {
     private String db;
     @Config(name = Constants.CONFIG_USER)
     private String user;
-    @Config(name = Constants.CONFIG_PASS_KEY)
+    @Config(name = Constants.CONFIG_PASS_KEY, required = false)
     private String password;
     @Config(name = Constants.CONFIG_POOL_SIZE, required = false, type = Integer.class)
     private int poolSize = 32;
@@ -93,5 +93,10 @@ public class JdbcConnectionSettings extends ConnectionSettings {
         user = ((JdbcConnectionSettings) settings).user;
         password = ((JdbcConnectionSettings) settings).password;
         poolSize = ((JdbcConnectionSettings) settings).poolSize;
+    }
+
+    @Override
+    public void validate() throws Exception {
+        super.validate();
     }
 }
