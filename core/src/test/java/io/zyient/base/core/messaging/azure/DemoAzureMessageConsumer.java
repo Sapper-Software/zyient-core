@@ -20,19 +20,11 @@ import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
 import lombok.NonNull;
 
+import java.nio.charset.StandardCharsets;
+
 public class DemoAzureMessageConsumer extends AzureMessageConsumer<String> {
     @Override
-    public void ack(@NonNull String message, boolean commit) throws MessagingError {
-
-    }
-
-    @Override
-    public MessageReceiver<String, String> init() throws MessagingError {
-        return null;
-    }
-
-    @Override
     protected String deserialize(byte[] message) throws MessagingError {
-        return null;
+        return new String(message, StandardCharsets.UTF_8);
     }
 }

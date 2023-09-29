@@ -179,11 +179,11 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             } else {
                 seek(partition, 0);
             }
-            if (offset.getOffsetCommitted() != offset.getOffsetRead()) {
+            if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
                 DefaultLogger.warn(
                         String.format("[topic=%s][partition=%d] Read offset ahead of committed, potential resends.",
                                 topic, partition.partition()));
-                offset.setOffsetRead(offset.getOffsetCommitted());
+                offset.setOffsetRead(new KafkaOffsetValue(offset.getOffsetCommitted()));
                 stateManager.update(state);
             }
         }

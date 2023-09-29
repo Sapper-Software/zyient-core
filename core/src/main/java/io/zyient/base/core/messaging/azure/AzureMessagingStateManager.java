@@ -70,6 +70,8 @@ public class AzureMessagingStateManager extends OffsetStateManager<AzureMessageO
         state.setQueue(queue);
         AzureMessageOffset offset = new AzureMessageOffset();
         offset.setQueue(queue);
+        offset.setOffsetRead(new AzureMessageOffsetValue());
+        offset.setOffsetCommitted(new AzureMessageOffsetValue());
         state.setOffset(offset);
         return update(state);
     }

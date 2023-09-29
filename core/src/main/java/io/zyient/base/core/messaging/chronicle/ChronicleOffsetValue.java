@@ -43,6 +43,11 @@ public class ChronicleOffsetValue extends OffsetValue {
         this.index = index;
     }
 
+    public ChronicleOffsetValue(@NonNull ChronicleOffsetValue source) {
+        this.cycle = source.cycle;
+        this.index = source.index;
+    }
+
     @Override
     public String asString() {
         return String.format("%d.%d", cycle, index);

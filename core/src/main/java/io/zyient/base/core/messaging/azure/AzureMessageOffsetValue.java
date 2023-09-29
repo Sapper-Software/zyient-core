@@ -31,7 +31,7 @@ import lombok.ToString;
         property = "@class")
 @ToString
 public class AzureMessageOffsetValue extends OffsetValue {
-    private long index;
+    private long index = 0;
 
     public AzureMessageOffsetValue() {
 
@@ -39,6 +39,10 @@ public class AzureMessageOffsetValue extends OffsetValue {
 
     public AzureMessageOffsetValue(long index) {
         this.index = index;
+    }
+
+    public AzureMessageOffsetValue(@NonNull AzureMessageOffsetValue source) {
+        this.index = source.index;
     }
 
     @Override

@@ -72,19 +72,12 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
                     state = stateManager.create(consumer.name(), consumer.settings().getQueue());
                 }
                 ChronicleOffset offset = state.getOffset();
-                if (offset.getOffsetCommitted().getIndex() > 0) {
-                    seek(offset.getOffsetCommitted(), true);
-                } else {
-                    ChronicleOffsetValue v = new ChronicleOffsetValue();
-                    v.setCycle(0);
-                    v.setIndex(0);
-                    seek(v, false);
-                }
+                seek(offset.getOffsetCommitted(), offset.getOffsetCommitted().getIndex() > 0);
                 if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
                     DefaultLogger.warn(
                             String.format("[topic=%s] Read offset ahead of committed, potential resends.",
                                     consumer.name()));
-                    offset.setOffsetRead(offset.getOffsetCommitted());
+                    offset.setOffsetRead(new ChronicleOffsetValue(offset.getOffsetCommitted()));
                     stateManager.update(state);
                 }
             }

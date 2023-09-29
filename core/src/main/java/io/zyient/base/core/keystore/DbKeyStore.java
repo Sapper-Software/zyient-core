@@ -43,7 +43,6 @@ public class DbKeyStore extends KeyStore {
     public static final String DB_COLUMN_TIMESTAMP = "key_timestamp";
     public static final String CONFIG_NAME = "name";
     public static final String CONFIG_IV_SPEC = "iv";
-    public static final String CONFIG_SCHEMA = "db";
 
     private static class KeyRecord {
         private String namespace;

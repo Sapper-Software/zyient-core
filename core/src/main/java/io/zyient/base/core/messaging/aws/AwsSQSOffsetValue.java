@@ -37,6 +37,10 @@ public class AwsSQSOffsetValue extends OffsetValue {
 
     }
 
+    public AwsSQSOffsetValue(@NonNull AwsSQSOffsetValue source) {
+        this.index = source.index;
+    }
+
     public AwsSQSOffsetValue(long index) {
         this.index = index;
     }

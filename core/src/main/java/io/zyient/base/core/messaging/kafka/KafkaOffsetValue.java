@@ -38,6 +38,10 @@ public class KafkaOffsetValue extends OffsetValue {
         this.value = value;
     }
 
+    public KafkaOffsetValue(@NonNull KafkaOffsetValue source) {
+        this.value = source.value;
+    }
+
     @Override
     public String asString() {
         return String.valueOf(value);

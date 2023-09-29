@@ -74,6 +74,9 @@ public class ChronicleStateManager extends OffsetStateManager<ChronicleOffset> {
         state.setQueue(name);
         ChronicleOffset offset = new ChronicleOffset();
         offset.setQueue(queue);
+        offset.setOffsetRead(new ChronicleOffsetValue());
+        offset.setOffsetCommitted(new ChronicleOffsetValue());
+
         state.setOffset(offset);
         return update(state);
     }

@@ -27,6 +27,7 @@ import io.zyient.base.core.connections.settings.azure.AzureServiceBusConnectionS
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
+import io.zyient.base.core.messaging.chronicle.ChronicleOffsetValue;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
@@ -92,12 +93,34 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
             if (!consumer.isConnected()) {
                 consumer.connect();
             }
-            AzureServiceBusConnectionSettings settings = (AzureServiceBusConnectionSettings) consumer.settings();
+            AzureServiceBusConnectionSettings settings
+                    = (AzureServiceBusConnectionSettings) consumer.settings();
+            if (stateful()) {
+                Preconditions.checkState(offsetStateManager() instanceof AzureMessagingStateManager);
+                stateManager = (AzureMessagingStateManager) offsetStateManager();
+                state = stateManager.get(consumer.name());
+                if (state == null) {
+                    state = stateManager.create(consumer.name(), consumer.settings().getQueue());
+                }
+                AzureMessageOffset offset = state.getOffset();
+                seek(offset.getOffsetCommitted(), offset.getOffsetCommitted().getIndex() > 0);
+                if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
+                    DefaultLogger.warn(
+                            String.format("[topic=%s] Read offset ahead of committed, potential resends.",
+                                    consumer.name()));
+                    offset.setOffsetRead(new AzureMessageOffsetValue(offset.getOffsetCommitted()));
+                    stateManager.update(state);
+                }
+            }
             return this;
         } catch (Exception ex) {
             state.error(ex);
             throw new MessagingError(ex);
         }
+    }
+
+    private void seek(AzureMessageOffsetValue offset, boolean next) throws Exception {
+
     }
 
     @Override

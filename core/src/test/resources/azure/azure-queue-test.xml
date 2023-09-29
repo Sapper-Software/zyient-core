@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <env>
+        <name>TEST</name>
+        <module>TEST-ENV</module>
+        <instance>Test</instance>
+        <paths>
+            <connections>config</connections>
+            <registry>/test/registry</registry>
+            <root>/test</root>
+        </paths>
+        <managers>
+            <state>
+                <stateManagerClass>io.zyient.base.core.state.DemoStateManager</stateManagerClass>
+                <basePath>demo</basePath>
+                <connection>test-zk</connection>
+                <fileState>true</fileState>
+                <offsets>
+                    <offsetManager>
+                        <name>AzureQueueOffset</name>
+                        <type>io.zyient.base.core.messaging.azure.AzureMessagingStateManager</type>
+                        <connection>test-zk</connection>
+                        <basePath>chronicle</basePath>
+                    </offsetManager>
+                </offsets>
+            </state>
+        </managers>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/registry</path>
+        </locks>
+        <demo>
+            <producer>
+                <builder>
+                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoProducerBuilder</type>
+                    <settingsType>io.zyient.base.core.messaging.builders.MessageSenderSettings</settingsType>
+                </builder>
+                <type>chronicle</type>
+                <connection>test-queue-producer</connection>
+            </producer>
+            <consumer>
+                <builder>
+                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoConsumerBuilder</type>
+                    <settingsType>io.zyient.base.core.messaging.builders.MessageReceiverSettings</settingsType>
+                </builder>
+                <type>chronicle</type>
+                <connection>test-queue-consumer</connection>
+                <offset>
+                    <manager>TestChronicleOffset</manager>
+                </offset>
+            </consumer>
+        </demo>
+        <keystore>
+            <name>test-zk-keystore</name>
+            <class>io.zyient.base.core.keystore.ZkKeyStore</class>
+            <path>/io/zyient/test/keystore</path>
+            <iv>e68250d0-a406-40c6-8b23-cfbffcbd4502</iv>
+            <connection>
+                <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                <zookeeper>
+                    <name>keystore-zk</name>
+                    <connectionString>192.168.2.16:2181</connectionString>
+                    <retry>
+                        <interval>1500</interval>
+                        <retries>5</retries>
+                    </retry>
+                    <connectionTimeout>10000</connectionTimeout>
+                </zookeeper>
+            </connection>
+        </keystore>
+        <config>
+            <connections>
+                <shared>
+                    <connection>test-zk</connection>
+                    <path>/test/env/connections</path>
+                </shared>
+                <connection>
+                    <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                    <zookeeper>
+                        <name>test-zk</name>
+                        <connectionString>192.168.2.16:2181</connectionString>
+                        <retry>
+                            <interval>1500</interval>
+                            <retries>5</retries>
+                        </retry>
+                        <connectionTimeout>10000</connectionTimeout>
+                    </zookeeper>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.connections.chronicle.ChronicleConsumerConnection</class>
+                    <chronicle>
+                        <name>test-queue-consumer</name>
+                        <queue>test-queue</queue>
+                        <mode>Consumer</mode>
+                        <baseDir>/tmp/test/chronicle/queue</baseDir>
+                        <retention>8H</retention>
+                    </chronicle>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.connections.chronicle.ChronicleProducerConnection</class>
+                    <chronicle>
+                        <name>test-queue-producer</name>
+                        <queue>test-queue</queue>
+                        <mode>Producer</mode>
+                        <baseDir>/tmp/test/chronicle/queue</baseDir>
+                        <retention>8H</retention>
+                    </chronicle>
+                </connection>
+            </connections>
+        </config>
+    </env>
+</configuration>
