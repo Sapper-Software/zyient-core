@@ -18,14 +18,18 @@ package io.zyient.base.core.messaging.chronicle.builders;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.connections.chronicle.ChronicleConsumerConnection;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
 import io.zyient.base.core.messaging.chronicle.BaseChronicleConsumer;
+import io.zyient.base.core.messaging.chronicle.BaseChronicleProducer;
 import io.zyient.base.core.messaging.chronicle.ChronicleStateManager;
 import io.zyient.base.core.state.OffsetStateManager;
 import lombok.NonNull;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 public class ChronicleConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
     private final Class<? extends BaseChronicleConsumer<M>> type;
@@ -36,6 +40,12 @@ public class ChronicleConsumerBuilder<M> extends MessageReceiverBuilder<String, 
         this.type = type;
     }
 
+    public ChronicleConsumerBuilder(@NonNull Class<? extends BaseChronicleConsumer<M>> type) {
+        super(ChronicleConsumerSettings.class);
+        this.type = type;
+    }
+
+    @SuppressWarnings("unchecked")
     @Override
     public BaseChronicleConsumer<M> build(@NonNull MessageReceiverSettings settings) throws Exception {
         Preconditions.checkNotNull(env());
@@ -62,6 +72,17 @@ public class ChronicleConsumerBuilder<M> extends MessageReceiverBuilder<String, 
         }
         if (settings.getReceiverTimeout().normalized() > 0) {
             consumer.withReceiveTimeout(settings.getReceiverTimeout().normalized());
+        }
+        if (ConfigReader.checkIfNodeExists(config, ChronicleConsumerSettings.__CONFIG_PATH_ERRORS)) {
+            HierarchicalConfiguration<ImmutableNode> ec
+                    = config.configurationAt(ChronicleConsumerSettings.__CONFIG_PATH_ERRORS);
+            Class<? extends BaseChronicleProducer<M>> type
+                    = (Class<? extends BaseChronicleProducer<M>>) ConfigReader.readAsClass(ec);
+            ChronicleProducerBuilder<M> builder = new ChronicleProducerBuilder<>(type);
+            BaseChronicleProducer<M> producer = (BaseChronicleProducer<M>) builder.build(ec);
+            return (BaseChronicleConsumer<M>) consumer
+                    .withErrorQueue(producer)
+                    .init();
         }
         return (BaseChronicleConsumer<M>) consumer.init();
     }

@@ -338,6 +338,11 @@ public abstract class BaseChronicleConsumer<M> extends MessageReceiver<String, M
         }
     }
 
+    @Override
+    public String getMessageId(@NonNull MessageObject<String, M> message) {
+        return message.id();
+    }
+
     protected abstract M deserialize(byte[] message) throws MessagingError;
 
     @Getter

@@ -27,14 +27,19 @@ import lombok.NonNull;
 public class SQSProducerBuilder<M> extends MessageSenderBuilder<String, M> {
     private final Class<? extends BaseSQSProducer<M>> type;
 
-    protected SQSProducerBuilder(@NonNull Class<? extends MessageSenderSettings> settingsType,
-                                 @NonNull Class<? extends BaseSQSProducer<M>> type) {
+    public SQSProducerBuilder(@NonNull Class<? extends MessageSenderSettings> settingsType,
+                              @NonNull Class<? extends BaseSQSProducer<M>> type) {
         super(settingsType);
         this.type = type;
     }
 
+    public SQSProducerBuilder(@NonNull Class<? extends BaseSQSProducer<M>> type) {
+        super(MessageSenderSettings.class);
+        this.type = type;
+    }
+
     @Override
-public BaseSQSProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
+    public BaseSQSProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
         Preconditions.checkNotNull(env());
         Preconditions.checkArgument(settings.getType() == EConnectionType.sqs);
         AwsSQSProducerConnection connection = env().connectionManager()

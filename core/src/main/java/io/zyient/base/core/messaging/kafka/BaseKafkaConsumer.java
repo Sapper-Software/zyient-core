@@ -299,6 +299,11 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
     protected abstract M deserialize(byte[] message) throws MessagingError;
 
     @Override
+    public String getMessageId(@NonNull MessageObject<String, M> message) {
+        return message.id();
+    }
+
+    @Override
     public void close() throws IOException {
         if (state().isAvailable()) {
             state().setState(ProcessorState.EProcessorState.Stopped);

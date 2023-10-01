@@ -22,12 +22,12 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.connections.azure.ServiceBusConsumerConnection;
 import io.zyient.base.core.connections.settings.azure.AzureServiceBusConnectionSettings;
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
-import io.zyient.base.core.messaging.chronicle.ChronicleOffsetValue;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
@@ -81,7 +81,26 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
 
     @Override
     public void ack(@NonNull String message, boolean commit) throws MessagingError {
-
+        Preconditions.checkState(state().isAvailable());
+        if (offsetMap.containsKey(message)) {
+            synchronized (offsetMap) {
+                try {
+                    if (commit) {
+                        AzureMessageOffsetData d = offsetMap.remove(message);
+                        consumer.client().complete(d.message());
+                        AzureMessageOffsetValue lastIndex = state.getOffset().getOffsetCommitted();
+                        if (d.index().compareTo(lastIndex) > 0) {
+                            updateCommitState(d.index());
+                        }
+                    } else {
+                        AzureMessageOffsetData d = offsetMap.get(message);
+                        d.acked(true);
+                    }
+                } catch (Exception ex) {
+                    throw new MessagingError(ex);
+                }
+            }
+        }
     }
 
     @Override
@@ -120,7 +139,8 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
     }
 
     private void seek(AzureMessageOffsetValue offset, boolean next) throws Exception {
-
+        String json = JSONUtils.asString(offset, offset.getClass());
+        throw new MessagingError(String.format("Seek not supported. [seek offset=%s]", json));
     }
 
     @Override
@@ -136,7 +156,7 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
                         AzureMessageOffsetData d = offsetMap.get(key);
                         if (d.acked()) {
                             acked.add(d);
-                            if (d.index().getIndex() > lastIndex.getIndex()) {
+                            if (d.index().compareTo(lastIndex) > 0) {
                                 lastIndex = d.index();
                             }
                         }
@@ -265,6 +285,11 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
             cache.clear();
             cache = null;
         }
+    }
+
+    @Override
+    public String getMessageId(@NonNull MessageObject<String, M> message) {
+        return message.id();
     }
 
     protected abstract M deserialize(byte[] message) throws MessagingError;

@@ -14,18 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.messaging.builders;
+package io.zyient.base.core.messaging.kafka.builders;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import io.zyient.base.common.config.units.TimeUnitValue;
-import io.zyient.base.common.config.units.TimeValueParser;
-import io.zyient.base.core.connections.settings.EConnectionType;
+import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
@@ -38,8 +32,8 @@ import java.util.concurrent.TimeUnit;
  *         <batchSize>[Receive batch size, default = -1(ignore)]</batchSize>
  *         <receiverTimeout>[Receiver timeout, default = -1(ignore)]</receiverTimeout>
  *         <errorQueue>
- *             <class>[Chronicle Producer implementation class]</class>
- *             -- Chronicle Producer settings --
+ *             <class>[Kafka Producer implementation class]</class>
+ *             -- Kafka Producer settings --
  *             <type>[EConnectionType]</type>
  *             ...
  *         </errorQueue>
@@ -50,16 +44,5 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class MessageReceiverSettings extends Settings {
-    public static final String __CONFIG_PATH_ERRORS = "errorQueue";
-    @Config(name = "type", type = EConnectionType.class)
-    private EConnectionType type;
-    @Config(name = "connection")
-    private String connection;
-    @Config(name = "offset.manager", required = false)
-    private String offsetManager;
-    @Config(name = "batchSize", required = false, type = Integer.class)
-    private int batchSize = 1024;
-    @Config(name = "receiverTimeout", required = false, parser = TimeValueParser.class)
-    private TimeUnitValue receiverTimeout = new TimeUnitValue(30 * 1000, TimeUnit.MILLISECONDS);
+public class KafkaReceiverSettings extends MessageReceiverSettings {
 }

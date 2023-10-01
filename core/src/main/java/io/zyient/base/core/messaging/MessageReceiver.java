@@ -42,6 +42,12 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
     private OffsetStateManager<?> offsetStateManager;
     private boolean stateful = false;
     private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
+    private MessageSender<I, M> errors;
+
+    public MessageReceiver<I, M> withErrorQueue(@NonNull MessageSender<I, M> errors) {
+        this.errors = errors;
+        return this;
+    }
 
     public int batchSize() {
         Preconditions.checkNotNull(connection);
@@ -94,4 +100,17 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
     public abstract OffsetState<?, ?> currentOffset(Context context) throws MessagingError;
 
     public abstract void seek(@NonNull Offset offset, Context context) throws MessagingError;
+
+    public void error(@NonNull MessageObject<I, M> message) throws MessagingError {
+        error(message, false);
+    }
+
+    public void error(@NonNull MessageObject<I, M> message, boolean commit) throws MessagingError {
+        if (errors != null) {
+            errors.send(message);
+        }
+        ack(getMessageId(message), commit);
+    }
+
+    public abstract I getMessageId(@NonNull MessageObject<I, M> message);
 }

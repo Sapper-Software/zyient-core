@@ -33,6 +33,11 @@ public class AzureMessageProducerBuilder<M> extends MessageSenderBuilder<String,
         this.type = type;
     }
 
+    protected AzureMessageProducerBuilder(@NonNull Class<? extends AzureMessageProducer<M>> type) {
+        super(MessageSenderSettings.class);
+        this.type = type;
+    }
+
     @Override
     public AzureMessageProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
         Preconditions.checkNotNull(env());

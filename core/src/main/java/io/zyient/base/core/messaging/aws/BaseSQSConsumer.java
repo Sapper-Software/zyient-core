@@ -47,26 +47,29 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
     private TimeUnitValue ackTimeout = new TimeUnitValue(2 * 60 * 1000, TimeUnit.MILLISECONDS);
     private String queueUrl;
 
-    public BaseSQSConsumer<M> withAckTimeout(@NonNull TimeUnitValue value) {
-        ackTimeout = value;
-        return this;
-    }
-
     @Override
     public void ack(@NonNull String message, boolean commit) throws MessagingError {
         Preconditions.checkState(state().isAvailable());
         if (offsetMap.containsKey(message)) {
             synchronized (offsetMap) {
-                if (commit) {
-                    AwsSQSOffsetData v = offsetMap.remove(message);
-                    if (v != null) {
-                        delete(v);
+                try {
+                    if (commit) {
+                        AwsSQSOffsetData v = offsetMap.remove(message);
+                        if (v != null) {
+                            delete(v);
+                            AwsSQSOffsetValue lastIndex = state.getOffset().getOffsetCommitted();
+                            if (v.index().compareTo(lastIndex) > 0) {
+                                updateCommitState(v.index());
+                            }
+                        }
+                    } else {
+                        AwsSQSOffsetData v = offsetMap.get(message);
+                        if (v != null) {
+                            v.acked(true);
+                        }
                     }
-                } else {
-                    AwsSQSOffsetData v = offsetMap.get(message);
-                    if (v != null) {
-                        v.acked(true);
-                    }
+                } catch (Exception ex) {
+                    throw new MessagingError(ex);
                 }
             }
         }
@@ -108,7 +111,7 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
                                     .receiptHandle(v.receipt())
                                     .build();
                             entries.add(entry);
-                            if (v.index().getIndex() > lastIndex.getIndex()) {
+                            if (v.index().compareTo(lastIndex) > 0) {
                                 lastIndex.setIndex(v.index().getIndex());
                             }
                             count++;
@@ -346,6 +349,11 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
         } catch (Exception ex) {
             throw new MessagingError(ex);
         }
+    }
+
+    @Override
+    public String getMessageId(@NonNull MessageObject<String, M> message) {
+        return message.id();
     }
 
     protected abstract M deserialize(String message) throws MessagingError;

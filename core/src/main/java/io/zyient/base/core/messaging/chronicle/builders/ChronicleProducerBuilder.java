@@ -33,6 +33,11 @@ public class ChronicleProducerBuilder<M> extends MessageSenderBuilder<String, M>
         this.type = type;
     }
 
+    public ChronicleProducerBuilder(@NonNull Class<? extends BaseChronicleProducer<M>> type) {
+        super(MessageSenderSettings.class);
+        this.type = type;
+    }
+
     @Override
     public BaseChronicleProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
         Preconditions.checkNotNull(env());

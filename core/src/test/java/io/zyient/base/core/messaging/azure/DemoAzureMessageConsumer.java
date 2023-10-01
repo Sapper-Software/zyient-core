@@ -16,9 +16,7 @@
 
 package io.zyient.base.core.messaging.azure;
 
-import io.zyient.base.core.messaging.MessageReceiver;
 import io.zyient.base.core.messaging.MessagingError;
-import lombok.NonNull;
 
 import java.nio.charset.StandardCharsets;
 

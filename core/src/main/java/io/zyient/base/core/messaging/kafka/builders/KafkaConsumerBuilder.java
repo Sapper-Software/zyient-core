@@ -24,20 +24,23 @@ import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
 import io.zyient.base.core.messaging.kafka.BaseKafkaConsumer;
+import io.zyient.base.core.messaging.kafka.BaseKafkaProducer;
 import io.zyient.base.core.messaging.kafka.KafkaStateManager;
 import io.zyient.base.core.state.OffsetStateManager;
 import io.zyient.base.core.state.OffsetStateManagerSettings;
 import lombok.NonNull;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
     private final Class<? extends BaseKafkaConsumer<M>> type;
 
-    protected KafkaConsumerBuilder(@NonNull Class<? extends BaseKafkaConsumer<M>> type,
-                                   @NonNull Class<? extends MessageReceiverSettings> settingsType) {
-        super(settingsType);
+    protected KafkaConsumerBuilder(@NonNull Class<? extends BaseKafkaConsumer<M>> type) {
+        super(KafkaReceiverSettings.class);
         this.type = type;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public BaseKafkaConsumer<M> build(@NonNull MessageReceiverSettings settings) throws Exception {
         Preconditions.checkNotNull(env());
@@ -65,6 +68,17 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
         }
         if (settings.getReceiverTimeout().normalized() > 0) {
             consumer.withReceiveTimeout(settings.getReceiverTimeout().normalized());
+        }
+        if (ConfigReader.checkIfNodeExists(config, KafkaReceiverSettings.__CONFIG_PATH_ERRORS)) {
+            HierarchicalConfiguration<ImmutableNode> ec
+                    = config.configurationAt(KafkaReceiverSettings.__CONFIG_PATH_ERRORS);
+            Class<? extends BaseKafkaProducer<M>> type
+                    = (Class<? extends BaseKafkaProducer<M>>) ConfigReader.readAsClass(ec);
+            KafkaProducerBuilder<M> builder = new KafkaProducerBuilder<>(type);
+            BaseKafkaProducer<M> producer = (BaseKafkaProducer<M>) builder.build(ec);
+            return (BaseKafkaConsumer<M>) consumer
+                    .withErrorQueue(producer)
+                    .init();
         }
         return (BaseKafkaConsumer<M>) consumer.init();
     }

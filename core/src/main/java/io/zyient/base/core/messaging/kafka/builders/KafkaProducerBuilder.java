@@ -28,9 +28,14 @@ import lombok.NonNull;
 public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
     private final Class<? extends BaseKafkaProducer<M>> type;
 
-    protected KafkaProducerBuilder(@NonNull Class<? extends BaseKafkaProducer<M>> type,
+    public KafkaProducerBuilder(@NonNull Class<? extends BaseKafkaProducer<M>> type,
                                    @NonNull Class<? extends MessageSenderSettings> settingsType) {
         super(settingsType);
+        this.type = type;
+    }
+
+    public KafkaProducerBuilder(@NonNull Class<? extends BaseKafkaProducer<M>> type) {
+        super(KafkaProducerSettings.class);
         this.type = type;
     }
 
