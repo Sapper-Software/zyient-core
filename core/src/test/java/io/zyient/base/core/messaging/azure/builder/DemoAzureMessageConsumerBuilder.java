@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.messaging.chronicle.builder;
+package io.zyient.base.core.messaging.azure.builder;
 
-import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
-import io.zyient.base.core.messaging.chronicle.DemoChronicleConsumer;
-import io.zyient.base.core.messaging.chronicle.builders.ChronicleConsumerBuilder;
+import io.zyient.base.core.messaging.azure.AzureMessageConsumer;
+import io.zyient.base.core.messaging.azure.DemoAzureMessageConsumer;
+import io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerBuilder;
+import lombok.NonNull;
 
-public class DemoConsumerBuilder extends ChronicleConsumerBuilder<String> {
-    protected DemoConsumerBuilder() {
-        super(DemoChronicleConsumer.class);
+public class DemoAzureMessageConsumerBuilder extends AzureMessageConsumerBuilder<String> {
+    public DemoAzureMessageConsumerBuilder() {
+        super(DemoAzureMessageConsumer.class);
     }
 }

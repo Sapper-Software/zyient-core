@@ -48,21 +48,21 @@
         <demo>
             <producer>
                 <builder>
-                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoProducerBuilder</type>
+                    <type>io.zyient.base.core.messaging.azure.builder.DemoAzureMessageProducerBuilder</type>
                     <settingsType>io.zyient.base.core.messaging.builders.MessageSenderSettings</settingsType>
                 </builder>
-                <type>chronicle</type>
+                <type>serviceBus</type>
                 <connection>test-queue-producer</connection>
             </producer>
             <consumer>
                 <builder>
-                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoConsumerBuilder</type>
-                    <settingsType>io.zyient.base.core.messaging.builders.MessageReceiverSettings</settingsType>
+                    <type>io.zyient.base.core.messaging.azure.builder.DemoAzureMessageConsumerBuilder</type>
+                    <settingsType>io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerSettings</settingsType>
                 </builder>
-                <type>chronicle</type>
+                <type>serviceBus</type>
                 <connection>test-queue-consumer</connection>
                 <offset>
-                    <manager>TestChronicleOffset</manager>
+                    <manager>TestAzureMessagingOffset</manager>
                 </offset>
             </consumer>
         </demo>
@@ -103,23 +103,23 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>io.zyient.base.core.connections.chronicle.ChronicleConsumerConnection</class>
-                    <chronicle>
+                    <class>io.zyient.base.core.connections.azure.ServiceBusConsumerConnection</class>
+                    <serviceBus>
                         <name>test-queue-consumer</name>
-                        <queue>test-queue</queue>
+                        <queue>test-azure-queue</queue>
                         <mode>Consumer</mode>
-                        <baseDir>/tmp/test/chronicle/queue</baseDir>
-                        <retention>8H</retention>
-                    </chronicle>
+                        <connectionString>azure-test-queue</connectionString>
+                        <queueOrTopic>Queue</queueOrTopic>
+                    </serviceBus>
                 </connection>
                 <connection>
-                    <class>io.zyient.base.core.connections.chronicle.ChronicleProducerConnection</class>
+                    <class>io.zyient.base.core.connections.azure.ServiceBusProducerConnection</class>
                     <chronicle>
                         <name>test-queue-producer</name>
-                        <queue>test-queue</queue>
+                        <queue>test-azure-queue</queue>
                         <mode>Producer</mode>
-                        <baseDir>/tmp/test/chronicle/queue</baseDir>
-                        <retention>8H</retention>
+                        <connectionString>azure-test-queue</connectionString>
+                        <queueOrTopic>Queue</queueOrTopic>
                     </chronicle>
                 </connection>
             </connections>
