@@ -19,6 +19,7 @@ package io.zyient.base.core.connections.azure;
 import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
@@ -87,15 +88,17 @@ public class ServiceBusProducerConnection extends ServiceBusConnection {
         try {
             synchronized (state) {
                 if (!isConnected()) {
+                    String connectionString = getConnectionString();
+                    Preconditions.checkState(!Strings.isNullOrEmpty(connectionString));
                     if (((AzureServiceBusConnectionSettings) settings).getQueueOrTopic() == QueueOrTopic.Queue) {
                         client = new ServiceBusClientBuilder()
-                                .connectionString(((AzureServiceBusConnectionSettings) settings).getConnectionString())
+                                .connectionString(connectionString)
                                 .sender()
                                 .topicName(settings.getQueue())
                                 .buildClient();
                     } else {
                         client = new ServiceBusClientBuilder()
-                                .connectionString(((AzureServiceBusConnectionSettings) settings).getConnectionString())
+                                .connectionString(connectionString)
                                 .sender()
                                 .queueName(settings.getQueue())
                                 .buildClient();

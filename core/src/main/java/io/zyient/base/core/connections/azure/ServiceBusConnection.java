@@ -26,6 +26,7 @@ import io.zyient.base.core.connections.MessageConnection;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.connections.settings.azure.AzureServiceBusConnectionSettings;
+import io.zyient.base.core.keystore.KeyStore;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -41,6 +42,7 @@ public abstract class ServiceBusConnection extends MessageConnection {
     protected final ConnectionState state = new ConnectionState();
     protected ServiceBusConnectionConfig config;
     protected BaseEnv<?> env;
+    protected KeyStore keyStore;
 
     @Override
     public String name() {
@@ -51,6 +53,9 @@ public abstract class ServiceBusConnection extends MessageConnection {
     public void read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                      @NonNull BaseEnv<?> env) throws Exception {
         this.env = env;
+        keyStore = env.keyStore();
+        Preconditions.checkNotNull(keyStore);
+
         config = new ServiceBusConnectionConfig(xmlConfig);
         config.read();
         settings = (AzureServiceBusConnectionSettings) config.settings();
@@ -62,6 +67,9 @@ public abstract class ServiceBusConnection extends MessageConnection {
                      @NonNull String path,
                      @NonNull BaseEnv<?> env) throws Exception {
         this.env = env;
+        keyStore = env.keyStore();
+        Preconditions.checkNotNull(keyStore);
+
         CuratorFramework client = connection.client();
         String zkPath = new PathUtils.ZkPathBuilder(path)
                 .withPath(ServiceBusConnectionConfig.__CONFIG_PATH)
@@ -73,6 +81,10 @@ public abstract class ServiceBusConnection extends MessageConnection {
         }
         settings = (AzureServiceBusConnectionSettings) reader.settings();
         settings.validate();
+    }
+
+    protected String getConnectionString() throws Exception {
+        return keyStore.read(((AzureServiceBusConnectionSettings) settings).getConnectionString());
     }
 
     @Override

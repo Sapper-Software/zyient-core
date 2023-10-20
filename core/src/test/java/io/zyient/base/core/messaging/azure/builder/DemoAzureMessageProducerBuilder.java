@@ -22,7 +22,7 @@ import io.zyient.base.core.messaging.azure.builders.AzureMessageProducerBuilder;
 import lombok.NonNull;
 
 public class DemoAzureMessageProducerBuilder extends AzureMessageProducerBuilder<String> {
-    protected DemoAzureMessageProducerBuilder() {
+    public DemoAzureMessageProducerBuilder() {
         super(DemoAzureMessageProducer.class);
     }
 }

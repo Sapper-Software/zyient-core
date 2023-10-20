@@ -57,7 +57,8 @@
             <consumer>
                 <builder>
                     <type>io.zyient.base.core.messaging.azure.builder.DemoAzureMessageConsumerBuilder</type>
-                    <settingsType>io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerSettings</settingsType>
+                    <settingsType>io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerSettings
+                    </settingsType>
                 </builder>
                 <type>serviceBus</type>
                 <connection>test-queue-consumer</connection>
@@ -104,23 +105,27 @@
                 </connection>
                 <connection>
                     <class>io.zyient.base.core.connections.azure.ServiceBusConsumerConnection</class>
-                    <serviceBus>
-                        <name>test-queue-consumer</name>
-                        <queue>test-azure-queue</queue>
-                        <mode>Consumer</mode>
-                        <connectionString>azure-test-queue</connectionString>
-                        <queueOrTopic>Queue</queueOrTopic>
-                    </serviceBus>
+                    <azure>
+                        <messaging>
+                            <name>test-queue-consumer</name>
+                            <queue>test-azure-queue</queue>
+                            <mode>Consumer</mode>
+                            <connectionString>azure-test-queue</connectionString>
+                            <queueOrTopic>Queue</queueOrTopic>
+                        </messaging>
+                    </azure>
                 </connection>
                 <connection>
                     <class>io.zyient.base.core.connections.azure.ServiceBusProducerConnection</class>
-                    <chronicle>
-                        <name>test-queue-producer</name>
-                        <queue>test-azure-queue</queue>
-                        <mode>Producer</mode>
-                        <connectionString>azure-test-queue</connectionString>
-                        <queueOrTopic>Queue</queueOrTopic>
-                    </chronicle>
+                    <azure>
+                        <messaging>
+                            <name>test-queue-producer</name>
+                            <queue>test-azure-queue</queue>
+                            <mode>Producer</mode>
+                            <connectionString>azure-test-queue</connectionString>
+                            <queueOrTopic>Queue</queueOrTopic>
+                        </messaging>
+                    </azure>
                 </connection>
             </connections>
         </config>
