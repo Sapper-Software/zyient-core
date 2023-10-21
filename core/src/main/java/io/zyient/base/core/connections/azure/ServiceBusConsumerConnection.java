@@ -103,6 +103,7 @@ public class ServiceBusConsumerConnection extends ServiceBusConnection {
                                 .subscriptionName(env.moduleInstance().getInstanceId())
                                 .buildClient();
                     }
+                    state.setState(EConnectionState.Connected);
                 }
             }
             return this;

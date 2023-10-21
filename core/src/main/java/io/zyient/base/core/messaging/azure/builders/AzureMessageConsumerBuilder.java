@@ -83,6 +83,7 @@ public class AzureMessageConsumerBuilder<M> extends MessageReceiverBuilder<Strin
                     .withErrorQueue(producer)
                     .init();
         }
-        return (AzureMessageConsumer<M>) consumer.init();
+        return (AzureMessageConsumer<M>) consumer.withBatchSize(settings.getBatchSize())
+                .init();
     }
 }

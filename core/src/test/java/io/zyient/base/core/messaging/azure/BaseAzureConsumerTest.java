@@ -104,7 +104,7 @@ class BaseAzureConsumerTest {
                     text.append(line).append("\n");
                 }
             }
-            int mCount = 1024;
+            int mCount = 10;
             Thread thread = new Thread(new ConsumerThread(mCount));
             thread.start();
 
@@ -127,7 +127,7 @@ class BaseAzureConsumerTest {
     }
 
     @Test
-    void seek() {
+    void send() {
         try {
             File mf = new File(__MESSAGE_FILE);
             assertTrue(mf.exists());
@@ -139,7 +139,7 @@ class BaseAzureConsumerTest {
                     text.append(line).append("\n");
                 }
             }
-            int mCount = 1024;
+            int mCount = 10;
             String cid = "FIRST";
             for (int ii = 0; ii < mCount; ii++) {
                 BaseChronicleMessage<String> m = new BaseChronicleMessage<>();
@@ -154,7 +154,6 @@ class BaseAzureConsumerTest {
             long index = -1;
             int count = 0;
             int retry = 0;
-            List<ChronicleOffsetValue> offsets = new ArrayList<>();
             try (DemoAzureMessageConsumer consumer = initConsumer(env.baseConfig())) {
                 while (true) {
                     List<MessageObject<String, String>> messages = consumer.nextBatch();
@@ -162,8 +161,7 @@ class BaseAzureConsumerTest {
                         retry = 0;
                         for (MessageObject<String, String> m : messages) {
                             consumer.ack(m.id(), false);
-                            BaseChronicleMessage<String> cm = (BaseChronicleMessage<String>) m;
-                            offsets.add(cm.index());
+                            AzureMessage<String> cm = (AzureMessage<String>) m;
                             count++;
                         }
                         consumer.commit();

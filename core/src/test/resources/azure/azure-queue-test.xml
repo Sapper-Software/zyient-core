@@ -63,7 +63,7 @@
                 <type>serviceBus</type>
                 <connection>test-queue-consumer</connection>
                 <offset>
-                    <manager>TestAzureMessagingOffset</manager>
+                    <manager>AzureQueueOffset</manager>
                 </offset>
             </consumer>
         </demo>

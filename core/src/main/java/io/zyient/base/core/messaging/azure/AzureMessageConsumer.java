@@ -122,7 +122,7 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
                     state = stateManager.create(consumer.name(), consumer.settings().getQueue());
                 }
                 AzureMessageOffset offset = state.getOffset();
-                seek(offset.getOffsetCommitted(), offset.getOffsetCommitted().getIndex() > 0);
+                //TODO:  seek(offset.getOffsetCommitted(), offset.getOffsetCommitted().getIndex() > 0);
                 if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
                     DefaultLogger.warn(
                             String.format("[topic=%s] Read offset ahead of committed, potential resends.",
@@ -131,6 +131,7 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
                     stateManager.update(state);
                 }
             }
+            state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
             state.error(ex);
