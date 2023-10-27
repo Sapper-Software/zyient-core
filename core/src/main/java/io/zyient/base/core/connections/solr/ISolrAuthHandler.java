@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.messaging.azure.builder;
+package io.zyient.base.core.connections.solr;
 
-import io.zyient.base.core.messaging.azure.DemoAzureMessageConsumer;
-import io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerBuilder;
+import io.zyient.base.core.connections.settings.solr.SolrConnectionSettings;
+import lombok.NonNull;
+import org.apache.solr.client.solrj.SolrClient;
 
-public class DemoAzureMessageConsumerBuilder extends AzureMessageConsumerBuilder<String> {
-    public DemoAzureMessageConsumerBuilder() {
-        super(DemoAzureMessageConsumer.class);
-    }
+public interface ISolrAuthHandler {
+    void init(@NonNull SolrClient client, @NonNull SolrConnectionSettings settings) throws Exception;
 }

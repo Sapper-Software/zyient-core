@@ -16,10 +16,8 @@
 
 package io.zyient.base.core.messaging.azure.builder;
 
-import io.zyient.base.core.messaging.azure.AzureMessageProducer;
 import io.zyient.base.core.messaging.azure.DemoAzureMessageProducer;
 import io.zyient.base.core.messaging.azure.builders.AzureMessageProducerBuilder;
-import lombok.NonNull;
 
 public class DemoAzureMessageProducerBuilder extends AzureMessageProducerBuilder<String> {
     public DemoAzureMessageProducerBuilder() {

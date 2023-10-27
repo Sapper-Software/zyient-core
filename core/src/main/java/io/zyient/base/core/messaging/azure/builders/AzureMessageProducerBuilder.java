@@ -41,7 +41,7 @@ public class AzureMessageProducerBuilder<M> extends MessageSenderBuilder<String,
     @Override
     public AzureMessageProducer<M> build(@NonNull MessageSenderSettings settings) throws Exception {
         Preconditions.checkNotNull(env());
-        Preconditions.checkArgument(settings.getType() == EConnectionType.serviceBus);
+        Preconditions.checkArgument(settings.getType() == EConnectionType.servicebus);
         ServiceBusProducerConnection connection = env().connectionManager()
                 .getConnection(settings.getConnection(), ServiceBusProducerConnection.class);
         if (connection == null) {

@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.messaging.azure.builder;
+package io.zyient.base.core.connections.settings.solr;
 
-import io.zyient.base.core.messaging.azure.DemoAzureMessageConsumer;
-import io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerBuilder;
-
-public class DemoAzureMessageConsumerBuilder extends AzureMessageConsumerBuilder<String> {
-    public DemoAzureMessageConsumerBuilder() {
-        super(DemoAzureMessageConsumer.class);
-    }
+public enum SolrClientTypes {
+    Basic, LoadBalanced, Cloud, Concurrent
 }

@@ -86,30 +86,16 @@ public class WebServiceConnection implements Connection {
     @Override
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
-        synchronized (state) {
-            try {
-                config = new WebServiceConnectionConfig(xmlConfig);
-                config.read();
-                settings = (WebServiceConnectionSettings) config.settings();
-                JerseyClientBuilder builder = builder();
-                if (this.settings.getAuthHandler() != null) {
-                    handler = this.settings.getAuthHandler().getDeclaredConstructor()
-                            .newInstance();
-                    HierarchicalConfiguration<ImmutableNode> node = config.config()
-                            .configurationAt(WebServiceConnectionSettings.Constants.CONFIG_AUTH_PATH);
-                    handler.init(node, env);
-                    handler.build(builder);
-                    this.settings.setAuthSettings(handler.settings());
-                }
-                client = builder.build();
-                name = this.settings.getName();
-                endpoint = new URL(this.settings.getEndpoint());
-                state.setState(EConnectionState.Initialized);
-                return this;
-            } catch (Exception ex) {
-                state.error(ex);
-                throw new ConnectionError(ex);
-            }
+        try {
+            config = new WebServiceConnectionConfig(xmlConfig);
+            config.read();
+            settings = (WebServiceConnectionSettings) config.settings();
+            settings.validate();
+
+            return setup(settings, env);
+        } catch (Exception ex) {
+            state.error(ex);
+            throw new ConnectionError(ex);
         }
     }
 
@@ -118,33 +104,23 @@ public class WebServiceConnection implements Connection {
                            @NonNull ZookeeperConnection connection,
                            @NonNull String path,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
-        synchronized (state) {
-            try {
-                if (state.isConnected()) {
-                    close();
-                }
-                state.clear();
-
-                CuratorFramework client = connection.client();
-                String zkPath = new PathUtils.ZkPathBuilder(path)
-                        .withPath(WebServiceConnectionConfig.__CONFIG_PATH)
-                        .build();
-                ZkConfigReader reader = new ZkConfigReader(client, WebServiceConnectionSettings.class);
-                if (!reader.read(zkPath)) {
-                    throw new ConnectionError(
-                            String.format("WebService Connection settings not found. [path=%s]", zkPath));
-                }
-                settings = (WebServiceConnectionSettings) reader.settings();
-                settings.validate();
-
-                setup(settings, env);
-                state.setState(EConnectionState.Initialized);
-            } catch (Exception ex) {
-                state.error(ex);
-                throw new ConnectionError(ex);
+        try {
+            CuratorFramework client = connection.client();
+            String zkPath = new PathUtils.ZkPathBuilder(path)
+                    .withPath(WebServiceConnectionConfig.__CONFIG_PATH)
+                    .build();
+            ZkConfigReader reader = new ZkConfigReader(client, WebServiceConnectionSettings.class);
+            if (!reader.read(zkPath)) {
+                throw new ConnectionError(
+                        String.format("WebService Connection settings not found. [path=%s]", zkPath));
             }
+            settings = (WebServiceConnectionSettings) reader.settings();
+            settings.validate();
+            return setup(settings, env);
+        } catch (Exception ex) {
+            state.error(ex);
+            throw new ConnectionError(ex);
         }
-        return this;
     }
 
     @Override
@@ -152,6 +128,7 @@ public class WebServiceConnection implements Connection {
                             @NonNull BaseEnv<?> env) throws ConnectionError {
         Preconditions.checkArgument(settings instanceof WebServiceConnectionSettings);
         synchronized (state) {
+            if (state.isConnected()) return this;
             try {
                 this.settings = (WebServiceConnectionSettings) settings;
                 JerseyClientBuilder builder = builder();
@@ -168,7 +145,6 @@ public class WebServiceConnection implements Connection {
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
-                state.error(ex);
                 state.error(ex);
                 throw new ConnectionError(ex);
             }

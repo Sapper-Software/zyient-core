@@ -64,7 +64,7 @@ public class AzureServiceBusConnectionSettings extends MessageConnectionSettings
     private QueueOrTopic queueOrTopic = QueueOrTopic.Queue;
 
     public AzureServiceBusConnectionSettings() {
-        super(EConnectionType.serviceBus);
+        super(EConnectionType.servicebus);
     }
 
     public AzureServiceBusConnectionSettings(@NonNull ConnectionSettings settings) {

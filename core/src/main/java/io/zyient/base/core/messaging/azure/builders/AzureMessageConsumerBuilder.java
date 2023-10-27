@@ -49,7 +49,7 @@ public class AzureMessageConsumerBuilder<M> extends MessageReceiverBuilder<Strin
     @Override
     public AzureMessageConsumer<M> build(@NonNull MessageReceiverSettings settings) throws Exception {
         Preconditions.checkNotNull(env());
-        Preconditions.checkArgument(settings.getType() == EConnectionType.serviceBus);
+        Preconditions.checkArgument(settings.getType() == EConnectionType.servicebus);
         ServiceBusConsumerConnection connection = env().connectionManager()
                 .getConnection(settings.getConnection(), ServiceBusConsumerConnection.class);
         if (connection == null) {

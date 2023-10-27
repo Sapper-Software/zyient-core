@@ -24,11 +24,7 @@ import io.zyient.base.core.messaging.azure.builder.DemoAzureMessageConsumerBuild
 import io.zyient.base.core.messaging.azure.builder.DemoAzureMessageProducerBuilder;
 import io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerBuilder;
 import io.zyient.base.core.messaging.azure.builders.AzureMessageProducerBuilder;
-import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
-import io.zyient.base.core.messaging.builders.MessageSenderSettings;
-import io.zyient.base.core.messaging.chronicle.*;
-import io.zyient.base.core.messaging.chronicle.builders.ChronicleConsumerBuilder;
-import io.zyient.base.core.messaging.chronicle.builders.ChronicleProducerBuilder;
+import io.zyient.base.core.messaging.chronicle.BaseChronicleMessage;
 import io.zyient.base.core.utils.DemoEnv;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -40,9 +36,7 @@ import org.junit.jupiter.api.Test;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 

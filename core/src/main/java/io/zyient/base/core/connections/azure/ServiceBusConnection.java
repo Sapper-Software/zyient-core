@@ -104,7 +104,7 @@ public abstract class ServiceBusConnection extends MessageConnection {
 
     @Override
     public EConnectionType type() {
-        return EConnectionType.serviceBus;
+        return EConnectionType.servicebus;
     }
 
     @Override

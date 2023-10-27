@@ -33,13 +33,13 @@ configurations.all {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = "ai.sapper.cdc"
+            groupId = "io.zyient.core"
             from components.java
 
             pom {
-                name = 'CDC Core Framework'
-                description = 'CDC - Core Framework Libraries.'
-                url = 'https://sapper.ai'
+                name = 'Zyient Java Core Framework'
+                description = 'Zyient Java - Core Framework Libraries.'
+                url = 'https://zyient.io/'
 
                 licenses {
                     license {

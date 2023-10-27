@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.messaging.chronicle.builder;
 
-import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
 import io.zyient.base.core.messaging.chronicle.DemoChronicleConsumer;
 import io.zyient.base.core.messaging.chronicle.builders.ChronicleConsumerBuilder;
 
