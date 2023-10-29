@@ -63,8 +63,6 @@ public class FileItemRecord extends BaseEntity<IdKey> {
     private Map<String, String> fileLocation;
     @Column(name = "file_location_url")
     private String fileLocationUrl;
-    @Column(name = "file_pdf_location_url")
-    private String filePdfLocationUrl;
     @Column(name = "processed_timestamp")
     private long processedTimestamp;
     @Column(name = "read_timestamp")

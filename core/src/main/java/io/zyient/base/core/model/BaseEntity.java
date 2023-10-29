@@ -24,6 +24,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
+import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 
@@ -34,6 +35,10 @@ public abstract class BaseEntity<K extends IKey> implements IEntity<K> {
     @Setter(AccessLevel.NONE)
     @Transient
     private final EntityState state = new EntityState();
+    @Column(name = "time_created")
+    private long createdTime;
+    @Column(name = "time_updated")
+    private long updatedTime;
 
     public BaseEntity() {
         state.setState(EEntityState.Syncing);

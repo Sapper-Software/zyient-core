@@ -31,7 +31,7 @@ import java.util.Set;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class AbstractConnectionSettings extends ConnectionSettings {
+public abstract class AbstractConnectionSettings extends ConnectionSettings {
     @Config(name = "supportedTypes", required = false, parser = ClassSetParser.class)
     private Set<Class<?>> supportedTypes = new HashSet<>();
 

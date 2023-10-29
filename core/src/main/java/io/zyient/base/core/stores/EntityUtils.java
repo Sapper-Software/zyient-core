@@ -14,15 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores;
 
-import com.mongodb.client.ClientSession;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.base.common.model.entity.IEntity;
 
-@Getter
-@Setter
-public class MongoTransaction {
-    private ClientSession session;
-    private boolean active;
+import javax.persistence.Table;
+
+public class EntityUtils {
+    @SuppressWarnings("unchecked")
+    public static String getCollection(IEntity<?> entity) {
+        return getCollection((Class<? extends IEntity<?>>) entity.getClass());
+    }
+
+    public static String getCollection(Class<? extends IEntity<?>> type) {
+        String name = type.getSimpleName();
+        if (type.isAnnotationPresent(Table.class)) {
+            Table table = type.getAnnotation(Table.class);
+            name = table.name();
+        }
+        return name;
+    }
 }

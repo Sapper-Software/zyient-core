@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.settings;
+package io.zyient.base.core.stores.impl.settings.mongo;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
@@ -23,7 +23,6 @@ import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.connections.settings.db.JdbcConnectionSettings;
-import io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings;
 import io.zyient.base.core.stores.AbstractConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
@@ -34,33 +33,33 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @ConfigPath(path = "mongo")
-public class MongoDSConnectionSettings extends AbstractConnectionSettings {
+public class MongoDbConnectionSettings extends AbstractConnectionSettings {
 
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_USER)
     private String user;
-    @Config(name = MongoDbConnectionSettings.Constants.CONFIG_HOST)
+    @Config(name = io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings.Constants.CONFIG_HOST)
     private String host;
-    @Config(name = MongoDbConnectionSettings.Constants.CONFIG_PORT, required = false, type = Integer.class)
+    @Config(name = io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings.Constants.CONFIG_PORT, required = false, type = Integer.class)
     private int port = 27017;
-    @Config(name = MongoDbConnectionSettings.Constants.CONFIG_DB)
+    @Config(name = io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings.Constants.CONFIG_DB)
     private String db;
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_PASS_KEY)
     private String password;
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_POOL_SIZE, required = false, type = Integer.class)
     private int poolSize = 32;
 
-    public MongoDSConnectionSettings() {
+    public MongoDbConnectionSettings() {
         setType(EConnectionType.db);
     }
 
-    public MongoDSConnectionSettings(@NonNull ConnectionSettings settings) {
+    public MongoDbConnectionSettings(@NonNull ConnectionSettings settings) {
         super(settings);
-        Preconditions.checkArgument(settings instanceof MongoDSConnectionSettings);
-        this.user = ((MongoDSConnectionSettings) settings).getUser();
-        this.host = ((MongoDSConnectionSettings) settings).getHost();
-        this.port = ((MongoDSConnectionSettings) settings).getPort();
-        this.db = ((MongoDSConnectionSettings) settings).getDb();
-        this.password = ((MongoDSConnectionSettings) settings).getPassword();
-        this.poolSize = ((MongoDSConnectionSettings) settings).getPoolSize();
+        Preconditions.checkArgument(settings instanceof MongoDbConnectionSettings);
+        this.user = ((MongoDbConnectionSettings) settings).getUser();
+        this.host = ((MongoDbConnectionSettings) settings).getHost();
+        this.port = ((MongoDbConnectionSettings) settings).getPort();
+        this.db = ((MongoDbConnectionSettings) settings).getDb();
+        this.password = ((MongoDbConnectionSettings) settings).getPassword();
+        this.poolSize = ((MongoDbConnectionSettings) settings).getPoolSize();
     }
 }

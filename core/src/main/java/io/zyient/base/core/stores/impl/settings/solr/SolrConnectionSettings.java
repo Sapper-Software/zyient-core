@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings.solr;
+package io.zyient.base.core.stores.impl.settings.solr;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.StringListParser;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
-import io.zyient.base.core.connections.settings.ConnectionSettings;
-import io.zyient.base.core.connections.solr.ISolrAuthHandler;
+import io.zyient.base.core.stores.AbstractConnectionSettings;
+import io.zyient.base.core.stores.impl.solr.ISolrAuthHandler;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class SolrConnectionSettings extends ConnectionSettings {
+public class SolrConnectionSettings extends AbstractConnectionSettings {
     public static final String __CONFIG_PATH = "solr";
     public static class ConstantKeys {
         public static final int DEFAULT_LIVE_CHECK_INTERVAL = 60 * 1000;

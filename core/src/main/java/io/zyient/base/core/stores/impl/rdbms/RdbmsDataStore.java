@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores.impl.rdbms;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.BaseEntity;
-import io.zyient.base.core.stores.BaseSearchResult;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.IDGenerator;
-import io.zyient.base.core.stores.TransactionDataStore;
-import io.zyient.base.core.stores.impl.settings.RdbmsStoreSettings;
+import io.zyient.base.core.stores.*;
+import io.zyient.base.core.stores.impl.DataStoreAuditContext;
+import io.zyient.base.core.stores.impl.settings.rdbms.RdbmsStoreSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.Session;

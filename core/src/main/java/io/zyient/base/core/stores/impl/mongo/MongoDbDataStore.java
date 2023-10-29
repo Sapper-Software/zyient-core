@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores.impl.mongo;
 
 import com.github.vincentrussell.query.mongodb.sql.converter.MongoDBQueryHolder;
 import com.github.vincentrussell.query.mongodb.sql.converter.QueryConverter;
@@ -38,12 +38,10 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.model.BaseEntity;
-import io.zyient.base.core.stores.BaseSearchResult;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.JsonReference;
-import io.zyient.base.core.stores.TransactionDataStore;
+import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.annotations.Reference;
-import io.zyient.base.core.stores.impl.settings.MongoDbSettings;
+import io.zyient.base.core.stores.impl.DataStoreAuditContext;
+import io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.bson.Document;
@@ -65,7 +63,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
     public void configure() throws ConfigurationException {
         Preconditions.checkState(settings instanceof MongoDbSettings);
         try {
-            MongoDSConnection connection = (MongoDSConnection) connection();
+            MongoDbConnection connection = (MongoDbConnection) connection();
             if (!connection.isConnected()) {
                 connection.connect();
             }
@@ -94,7 +92,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkState(isInTransaction());
         try {
             ClientSession session = sessionManager().session();
-            String cname = getCollection(entity);
+            String cname = EntityUtils.getCollection(entity);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -338,7 +336,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkState(isInTransaction());
         try {
             ClientSession session = sessionManager().session();
-            String cname = getCollection(entity);
+            String cname = EntityUtils.getCollection(entity);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -424,7 +422,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkArgument(key instanceof String);
         try {
             ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
+            String cname = EntityUtils.getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -447,7 +445,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkArgument(key instanceof String);
         try {
             ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
+            String cname = EntityUtils.getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -474,7 +472,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkNotNull(database);
         try {
             ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
+            String cname = EntityUtils.getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -525,7 +523,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkNotNull(database);
         try {
             ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
+            String cname = EntityUtils.getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -586,19 +584,5 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
     @Override
     public boolean isThreadSafe() {
         return true;
-    }
-
-    @SuppressWarnings("unchecked")
-    private String getCollection(IEntity<?> entity) {
-        return getCollection((Class<? extends IEntity<?>>) entity.getClass());
-    }
-
-    private String getCollection(Class<? extends IEntity<?>> type) {
-        String name = type.getSimpleName();
-        if (type.isAnnotationPresent(Table.class)) {
-            Table table = type.getAnnotation(Table.class);
-            name = table.name();
-        }
-        return name;
     }
 }

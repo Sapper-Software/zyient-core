@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.solr;
+package io.zyient.base.core.stores.impl.solr;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -27,8 +27,8 @@ import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
-import io.zyient.base.core.connections.settings.solr.SolrConnectionSettings;
-import lombok.AccessLevel;
+import io.zyient.base.core.stores.AbstractConnection;
+import io.zyient.base.core.stores.impl.settings.solr.SolrConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -43,13 +43,15 @@ import java.util.concurrent.TimeUnit;
 
 @Getter
 @Accessors(fluent = true)
-public class SolrConnection implements Connection {
+public class SolrConnection extends AbstractConnection<SolrClient> {
     private SolrConnectionSettings settings;
-    @Getter(AccessLevel.NONE)
-    private final ConnectionState state = new ConnectionState();
     private SolrClient client;
     private ISolrAuthHandler authHandler = null;
     private BaseEnv<?> env;
+
+    public SolrConnection() {
+        super(EConnectionType.solr, SolrConnectionSettings.class);
+    }
 
     @Override
     public String name() {
@@ -70,7 +72,7 @@ public class SolrConnection implements Connection {
 
             return setup(settings, env);
         } catch (Exception ex) {
-            state.error(ex);
+            state().error(ex);
             throw new ConnectionError(ex);
         }
     }
@@ -94,7 +96,7 @@ public class SolrConnection implements Connection {
             settings.validate();
             return setup(settings, env);
         } catch (Exception ex) {
-            state.error(ex);
+            state().error(ex);
             throw new ConnectionError(ex);
         }
     }
@@ -105,10 +107,10 @@ public class SolrConnection implements Connection {
         Preconditions.checkArgument(settings instanceof SolrConnectionSettings);
         try {
             this.env = env;
-            state.setState(EConnectionState.Initialized);
+            state().setState(EConnectionState.Initialized);
             return this;
         } catch (Exception ex) {
-            state.error(ex);
+            state().error(ex);
             throw new ConnectionError(ex);
         }
     }
@@ -116,8 +118,9 @@ public class SolrConnection implements Connection {
     @Override
     public Connection connect() throws ConnectionError {
         Preconditions.checkNotNull(settings);
-        synchronized (state) {
-            if (state.isConnected()) return this;
+        Preconditions.checkState(!state().hasError());
+        synchronized (state()) {
+            if (state().isConnected()) return this;
             try {
                 switch (settings.getClientType()) {
                     case Basic -> {
@@ -139,10 +142,10 @@ public class SolrConnection implements Connection {
                             .newInstance();
                     authHandler.init(client, settings);
                 }
-                state.setState(EConnectionState.Connected);
+                state().setState(EConnectionState.Connected);
                 return this;
             } catch (Exception ex) {
-                state.error(ex);
+                state().error(ex);
                 throw new ConnectionError(ex);
             }
         }
@@ -213,18 +216,13 @@ public class SolrConnection implements Connection {
     }
 
     @Override
-    public Throwable error() {
-        return state.getError();
+    public boolean hasTransactionSupport() {
+        return false;
     }
 
     @Override
-    public EConnectionState connectionState() {
-        return state.getState();
-    }
+    public void close(@NonNull SolrClient connection) throws ConnectionError {
 
-    @Override
-    public boolean isConnected() {
-        return state.isConnected();
     }
 
     @Override
@@ -239,13 +237,13 @@ public class SolrConnection implements Connection {
 
     @Override
     public void close() throws IOException {
-        synchronized (state) {
+        synchronized (state()) {
             if (client != null) {
                 client.close();
                 client = null;
             }
-            if (state.isConnected()) {
-                state.setState(EConnectionState.Closed);
+            if (state().isConnected()) {
+                state().setState(EConnectionState.Closed);
             }
         }
     }

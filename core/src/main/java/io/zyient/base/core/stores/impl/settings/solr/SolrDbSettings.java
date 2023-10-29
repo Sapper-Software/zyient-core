@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores.impl.settings.solr;
 
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.core.stores.BaseSearchResult;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.ConfigPath;
+import io.zyient.base.core.stores.AbstractDataStoreSettings;
+import io.zyient.base.core.stores.EDataStoreType;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collection;
-
 @Getter
 @Setter
-public class EntitySearchResult<T extends IEntity<?>> extends BaseSearchResult<T> {
-    private Collection<T> entities;
-
-    public EntitySearchResult(@Nonnull Class<? extends IEntity<?>> type) {
-        super(type);
-    }
-
-    public void add(@Nonnull T entity) {
-        if (entities == null) {
-            entities = new ArrayList<>();
-        }
-        entities.add(entity);
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+@ConfigPath(path = "solr")
+public class SolrDbSettings extends AbstractDataStoreSettings {
+    public SolrDbSettings() {
+        setType(EDataStoreType.kvstore);
     }
 }

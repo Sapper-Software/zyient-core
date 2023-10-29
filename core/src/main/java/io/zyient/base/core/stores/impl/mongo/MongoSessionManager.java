@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores.impl.mongo;
 
 import com.mongodb.client.ClientSession;
 import io.zyient.base.core.stores.DataStoreException;
@@ -22,9 +22,9 @@ import io.zyient.base.core.stores.StoreSessionManager;
 import lombok.NonNull;
 
 public class MongoSessionManager extends StoreSessionManager<ClientSession, MongoTransaction> {
-    private final MongoDSConnection connection;
+    private final MongoDbConnection connection;
 
-    public MongoSessionManager(@NonNull MongoDSConnection connection,
+    public MongoSessionManager(@NonNull MongoDbConnection connection,
                                long sessionTimeout) {
         super(sessionTimeout);
         this.connection = connection;

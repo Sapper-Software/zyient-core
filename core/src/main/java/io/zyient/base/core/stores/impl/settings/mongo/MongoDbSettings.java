@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.settings;
+package io.zyient.base.core.stores.impl.settings.mongo;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;

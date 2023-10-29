@@ -24,7 +24,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.BaseSearchResult;
-import io.zyient.base.core.stores.impl.EntitySearchResult;
+import io.zyient.base.core.stores.EntitySearchResult;
 import lombok.NonNull;
 import org.hibernate.Session;
 

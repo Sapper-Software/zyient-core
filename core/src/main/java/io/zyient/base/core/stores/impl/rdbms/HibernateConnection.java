@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores.impl.rdbms;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -26,7 +26,7 @@ import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.stores.AbstractConnection;
-import io.zyient.base.core.stores.impl.settings.HibernateConnectionSettings;
+import io.zyient.base.core.stores.impl.settings.rdbms.HibernateConnectionSettings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;

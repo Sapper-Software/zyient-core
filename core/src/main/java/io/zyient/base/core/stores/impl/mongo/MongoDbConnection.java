@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores.impl.mongo;
 
 import com.google.common.base.Preconditions;
 import com.mongodb.client.ClientSession;
@@ -29,7 +29,7 @@ import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.stores.AbstractConnection;
-import io.zyient.base.core.stores.impl.settings.MongoDSConnectionSettings;
+import io.zyient.base.core.stores.impl.settings.mongo.MongoDbConnectionSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -38,14 +38,14 @@ import java.io.IOException;
 
 @Getter
 @Accessors(fluent = true)
-public class MongoDSConnection extends AbstractConnection<ClientSession> {
-    private MongoDSConnectionSettings settings;
+public class MongoDbConnection extends AbstractConnection<ClientSession> {
+    private MongoDbConnectionSettings settings;
     protected ConnectionManager connectionManager;
     private BaseEnv<?> env;
     private MongoClient client;
 
-    public MongoDSConnection() {
-        super(EConnectionType.db, MongoDSConnectionSettings.class);
+    public MongoDbConnection() {
+        super(EConnectionType.db, MongoDbConnectionSettings.class);
     }
 
     @Override
@@ -56,7 +56,7 @@ public class MongoDSConnection extends AbstractConnection<ClientSession> {
                     close();
                 }
                 state().clear();
-                this.settings = (MongoDSConnectionSettings) settings;
+                this.settings = (MongoDbConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
                 state().setState(EConnectionState.Initialized);
                 return this;

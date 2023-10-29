@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings.solr;
+package io.zyient.base.core.stores.impl.mongo;
 
-public enum SolrClientTypes {
-    Basic, LoadBalanced, Cloud, Concurrent
+import com.mongodb.client.ClientSession;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class MongoTransaction {
+    private ClientSession session;
+    private boolean active;
 }

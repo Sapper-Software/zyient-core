@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl;
+package io.zyient.base.core.stores;
 
 
 import com.fasterxml.jackson.core.JsonGenerator;

@@ -14,12 +14,29 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.solr;
+package io.zyient.base.core.stores;
 
-import io.zyient.base.core.connections.settings.solr.SolrConnectionSettings;
-import lombok.NonNull;
-import org.apache.solr.client.solrj.SolrClient;
+import io.zyient.base.common.model.entity.IEntity;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface ISolrAuthHandler {
-    void init(@NonNull SolrClient client, @NonNull SolrConnectionSettings settings) throws Exception;
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Collection;
+
+@Getter
+@Setter
+public class EntitySearchResult<T extends IEntity<?>> extends BaseSearchResult<T> {
+    private Collection<T> entities;
+
+    public EntitySearchResult(@Nonnull Class<? extends IEntity<?>> type) {
+        super(type);
+    }
+
+    public void add(@Nonnull T entity) {
+        if (entities == null) {
+            entities = new ArrayList<>();
+        }
+        entities.add(entity);
+    }
 }
