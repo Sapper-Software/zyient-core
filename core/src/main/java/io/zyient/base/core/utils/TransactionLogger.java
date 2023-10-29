@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TransactionLogger extends DefaultLogger {
-    private static final Logger LOG = LoggerFactory.getLogger("ai.sapper");
+    private static final Logger LOG = LoggerFactory.getLogger("io.zyient");
 
     public void debug(@NonNull Class<?> caller, Object txId, String mesg) {
         LOG.debug(String.format("[TXID=%s][%s]: %s", txId, caller.getCanonicalName(), mesg));

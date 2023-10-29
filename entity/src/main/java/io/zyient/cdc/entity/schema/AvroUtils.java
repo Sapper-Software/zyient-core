@@ -31,7 +31,7 @@ public class AvroUtils {
     private static final String SCHEMA_REPLACE = "__SCHEMA__";
     private static final String AVRO_SCHEMA_WRAPPER = String.format("{\n" +
                     "\t\"type\" : \"record\",\n" +
-                    "\t\"namespace\" : \"ai.sapper.cdc.deltas\", \n" +
+                    "\t\"namespace\" : \"io.zyient.cdc.deltas\", \n" +
                     "\t\"name\" : \"ChangeDelta\", \n" +
                     "\t\"fields\" : [\n" +
                     "\t\t{ \"name\" : \"%s\", \"type\" : \"long\" }, \n" +

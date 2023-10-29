@@ -33,7 +33,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class PathUtils {
-    public static final String TEMP_PATH = String.format("%s/sapper/cdc/tmp", System.getProperty("java.io.tmpdir"));
+    public static final String TEMP_PATH = String.format("%s/zyient/framework/temp", System.getProperty("java.io.tmpdir"));
 
     private static final Pattern PAT_FILENAME_REMOVE_INVALID_CHARACTERS = Pattern.compile("[<>:\"/\\\\|?*\\x00-\\x1F]");
     private static final Pattern PAT_FILENAME_REMOVE_LEADING_CHARACTERS = Pattern.compile("^[\\s.]+([^\\s.].*)$");

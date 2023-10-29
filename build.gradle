@@ -11,7 +11,7 @@ repositories {
     mavenCentral()
 }
 
-group 'ai.sapper.cdc'
+group 'io.zyient.framework'
 version '1.0-SNAPSHOT'
 
 configurations.all {
@@ -33,7 +33,7 @@ configurations.all {
 publishing {
     publications {
         mavenJava(MavenPublication) {
-            groupId = "io.zyient.core"
+            groupId = "io.zyient.framework"
             from components.java
 
             pom {
@@ -57,7 +57,7 @@ publishing {
                 scm {
                     connection = 'scm:git:git@github.com:subhagho/hcdc.git'
                     developerConnection = 'scm:git:git@github.com:subhagho/hcdc.git'
-                    url = 'https://sapper.ai'
+                    url = 'https://zyient.io'
                 }
             }
         }
@@ -74,7 +74,7 @@ subprojects {
     apply plugin: 'java-library'
     apply plugin: 'idea'
 
-    group 'ai.sapper.cdc'
+    group 'io.zyient.framework'
     version '1.0-SNAPSHOT'
 
     java {

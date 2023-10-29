@@ -1,7 +1,7 @@
 [
   {
     "type": "enum",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "EngineType",
     "symbols": [
       "MySQL",
@@ -18,7 +18,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbSource",
     "fields": [
       {
@@ -27,7 +27,7 @@
       },
       {
         "name": "type",
-        "type": "ai.sapper.cdc.avro.EngineType"
+        "type": "io.zyient.cdc.avro.EngineType"
       },
       {
         "name": "hostname",
@@ -52,7 +52,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbEntity",
     "fields": [
       {
@@ -72,7 +72,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "Version",
     "fields": [
       {
@@ -87,7 +87,7 @@
   },
   {
     "type": "enum",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "EDbDataType",
     "symbols": [
       "BOOLEAN",
@@ -119,12 +119,12 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbDataType",
     "fields": [
       {
         "name": "type",
-        "type": "ai.sapper.cdc.avro.EDbDataType"
+        "type": "io.zyient.cdc.avro.EDbDataType"
       },
       {
         "name": "size",
@@ -178,7 +178,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbColumn",
     "fields": [
       {
@@ -187,7 +187,7 @@
       },
       {
         "name": "type",
-        "type": "ai.sapper.cdc.avro.DbDataType"
+        "type": "io.zyient.cdc.avro.DbDataType"
       },
       {
         "name": "position",
@@ -209,7 +209,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbKeyColumn",
     "fields": [
       {
@@ -224,37 +224,37 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbPrimaryKey",
     "fields": [
       {
         "name": "columns",
         "type": {
           "type": "array",
-          "items": "ai.sapper.cdc.avro.DbKeyColumn"
+          "items": "io.zyient.cdc.avro.DbKeyColumn"
         }
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbTable",
     "fields": [
       {
         "name": "entity",
-        "type": "ai.sapper.cdc.avro.DbEntity"
+        "type": "io.zyient.cdc.avro.DbEntity"
       },
       {
         "name": "columns",
         "type": {
           "type": "array",
-          "items": "ai.sapper.cdc.avro.DbColumn"
+          "items": "io.zyient.cdc.avro.DbColumn"
         }
       },
       {
         "name": "keys",
-        "type": "ai.sapper.cdc.avro.DbPrimaryKey"
+        "type": "io.zyient.cdc.avro.DbPrimaryKey"
       },
       {
         "name": "charset",
@@ -268,7 +268,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "BooleanColumnData",
     "fields": [
       {
@@ -279,7 +279,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "IntegerColumnData",
     "fields": [
       {
@@ -290,7 +290,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "BigIntColumnData",
     "fields": [
       {
@@ -301,7 +301,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "LongColumnData",
     "fields": [
       {
@@ -312,7 +312,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "FloatColumnData",
     "fields": [
       {
@@ -323,7 +323,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DoubleColumnData",
     "fields": [
       {
@@ -334,12 +334,12 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "BigDecColumnData",
     "fields": [
       {
         "name": "value",
-        "type": "ai.sapper.cdc.avro.BigIntColumnData"
+        "type": "io.zyient.cdc.avro.BigIntColumnData"
       },
       {
         "name": "scale",
@@ -353,7 +353,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "StringColumnData",
     "fields": [
       {
@@ -372,7 +372,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "BinaryColumnData",
     "fields": [
       {
@@ -383,7 +383,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "NullColumnData",
     "fields": [
       {
@@ -394,7 +394,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "JsonColumnData",
     "fields": [
       {
@@ -409,85 +409,85 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbPrimitiveValue",
     "fields": [
       {
         "name": "data",
         "type": [
-          "ai.sapper.cdc.avro.BooleanColumnData",
-          "ai.sapper.cdc.avro.IntegerColumnData",
-          "ai.sapper.cdc.avro.BigIntColumnData",
-          "ai.sapper.cdc.avro.LongColumnData",
-          "ai.sapper.cdc.avro.FloatColumnData",
-          "ai.sapper.cdc.avro.DoubleColumnData",
-          "ai.sapper.cdc.avro.BigDecColumnData",
-          "ai.sapper.cdc.avro.StringColumnData",
-          "ai.sapper.cdc.avro.BinaryColumnData",
-          "ai.sapper.cdc.avro.NullColumnData"
+          "io.zyient.cdc.avro.BooleanColumnData",
+          "io.zyient.cdc.avro.IntegerColumnData",
+          "io.zyient.cdc.avro.BigIntColumnData",
+          "io.zyient.cdc.avro.LongColumnData",
+          "io.zyient.cdc.avro.FloatColumnData",
+          "io.zyient.cdc.avro.DoubleColumnData",
+          "io.zyient.cdc.avro.BigDecColumnData",
+          "io.zyient.cdc.avro.StringColumnData",
+          "io.zyient.cdc.avro.BinaryColumnData",
+          "io.zyient.cdc.avro.NullColumnData"
         ]
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbValue",
     "fields": [
       {
         "name": "data",
         "type": [
-          "ai.sapper.cdc.avro.DbPrimitiveValue",
-          "ai.sapper.cdc.avro.JsonColumnData"
+          "io.zyient.cdc.avro.DbPrimitiveValue",
+          "io.zyient.cdc.avro.JsonColumnData"
         ]
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbColumnData",
     "fields": [
       {
         "name": "data",
         "type": [
-          "ai.sapper.cdc.avro.DbPrimitiveValue",
-          "ai.sapper.cdc.avro.JsonColumnData"
+          "io.zyient.cdc.avro.DbPrimitiveValue",
+          "io.zyient.cdc.avro.JsonColumnData"
         ]
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbRecord",
     "fields": [
       {
         "name": "data",
         "type": {
           "type": "array",
-          "items": "ai.sapper.cdc.avro.DbColumnData"
+          "items": "io.zyient.cdc.avro.DbColumnData"
         }
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbKey",
     "fields": [
       {
         "name": "values",
         "type": {
           "type": "array",
-          "items": "ai.sapper.cdc.avro.DbColumnData"
+          "items": "io.zyient.cdc.avro.DbColumnData"
         }
       }
     ]
   },
   {
     "type": "enum",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "ChangeType",
     "symbols": [
       "CREATE",
@@ -497,46 +497,46 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbChangeRecord",
     "fields": [
       {
         "name": "entity",
-        "type": "ai.sapper.cdc.avro.DbEntity"
+        "type": "io.zyient.cdc.avro.DbEntity"
       },
       {
         "name": "version",
-        "type": "ai.sapper.cdc.avro.Version"
+        "type": "io.zyient.cdc.avro.Version"
       },
       {
         "name": "type",
-        "type": "ai.sapper.cdc.avro.ChangeType"
+        "type": "io.zyient.cdc.avro.ChangeType"
       },
       {
         "name": "before",
         "type": [
-          "ai.sapper.cdc.avro.DbRecord",
+          "io.zyient.cdc.avro.DbRecord",
           "null"
         ]
       },
       {
         "name": "after",
         "type": [
-          "ai.sapper.cdc.avro.DbRecord",
+          "io.zyient.cdc.avro.DbRecord",
           "null"
         ]
       },
       {
         "name": "filter",
         "type": [
-          "ai.sapper.cdc.avro.DbRecord",
+          "io.zyient.cdc.avro.DbRecord",
           "null"
         ]
       },
       {
         "name": "filter",
         "type": [
-          "ai.sapper.cdc.avro.DbKey",
+          "io.zyient.cdc.avro.DbKey",
           "null"
         ]
       }
@@ -544,7 +544,7 @@
   },
   {
     "type": "enum",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "ColumnOp",
     "symbols": [
       "ADD",
@@ -555,7 +555,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbDropTable",
     "fields": [
       {
@@ -566,67 +566,67 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbAlterColumn",
     "fields": [
       {
         "name": "op",
-        "type": "ai.sapper.cdc.avro.ColumnOp"
+        "type": "io.zyient.cdc.avro.ColumnOp"
       },
       {
         "name": "column",
-        "type": "ai.sapper.cdc.avro.DbColumn"
+        "type": "io.zyient.cdc.avro.DbColumn"
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbAlteredColumns",
     "fields": [
       {
         "name": "column",
         "type": {
           "type": "array",
-          "items": "ai.sapper.cdc.avro.DbAlterColumn"
+          "items": "io.zyient.cdc.avro.DbAlterColumn"
         }
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbAlterKey",
     "fields": [
       {
         "name": "column",
         "type": {
           "type": "array",
-          "items": "ai.sapper.cdc.avro.DbAlterColumn"
+          "items": "io.zyient.cdc.avro.DbAlterColumn"
         }
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbAlterTable",
     "fields": [
       {
         "name": "entity",
-        "type": "ai.sapper.cdc.avro.DbEntity"
+        "type": "io.zyient.cdc.avro.DbEntity"
       },
       {
         "name": "columns",
         "type": [
-          "ai.sapper.cdc.avro.DbAlteredColumns",
+          "io.zyient.cdc.avro.DbAlteredColumns",
           "null"
         ]
       },
       {
         "name": "columns",
         "type": [
-          "ai.sapper.cdc.avro.DbAlterKey",
+          "io.zyient.cdc.avro.DbAlterKey",
           "null"
         ]
       },
@@ -641,7 +641,7 @@
   },
   {
     "type": "enum",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "SchemaChangeType",
     "symbols": [
       "CREATE",
@@ -652,34 +652,34 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "DbSchemaChange",
     "fields": [
       {
         "name": "entity",
-        "type": "ai.sapper.cdc.avro.DbEntity"
+        "type": "io.zyient.cdc.avro.DbEntity"
       },
       {
         "name": "type",
-        "type": "ai.sapper.cdc.avro.SchemaChangeType"
+        "type": "io.zyient.cdc.avro.SchemaChangeType"
       },
       {
         "name": "version",
-        "type": "ai.sapper.cdc.avro.Version"
+        "type": "io.zyient.cdc.avro.Version"
       },
       {
         "name": "op",
         "type": [
-          "ai.sapper.cdc.avro.DbTable",
-          "ai.sapper.cdc.avro.DbDropTable",
-          "ai.sapper.cdc.avro.DbAlterTable"
+          "io.zyient.cdc.avro.DbTable",
+          "io.zyient.cdc.avro.DbDropTable",
+          "io.zyient.cdc.avro.DbAlterTable"
         ]
       }
     ]
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "Sequence",
     "fields": [
       {
@@ -694,7 +694,7 @@
   },
   {
     "type": "enum",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "EventType",
     "symbols": [
       "SCHEMA",
@@ -705,7 +705,7 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "Transaction",
     "fields": [
       {
@@ -714,7 +714,7 @@
       },
       {
         "name": "sequence",
-        "type": "ai.sapper.cdc.avro.Sequence"
+        "type": "io.zyient.cdc.avro.Sequence"
       },
       {
         "name": "timestamp",
@@ -728,30 +728,30 @@
   },
   {
     "type": "record",
-    "namespace": "ai.sapper.cdc.avro",
+    "namespace": "io.zyient.cdc.avro",
     "name": "ChangeEvent",
     "fields": [
       {
         "name": "source",
-        "type": "ai.sapper.cdc.avro.DbSource"
+        "type": "io.zyient.cdc.avro.DbSource"
       },
       {
         "name": "entity",
-        "type": "ai.sapper.cdc.avro.DbEntity"
+        "type": "io.zyient.cdc.avro.DbEntity"
       },
       {
         "name": "type",
-        "type": "ai.sapper.cdc.avro.EventType"
+        "type": "io.zyient.cdc.avro.EventType"
       },
       {
         "name": "tnx",
-        "type": "ai.sapper.cdc.avro.Transaction"
+        "type": "io.zyient.cdc.avro.Transaction"
       },
       {
         "name": "change",
         "type": [
-          "ai.sapper.cdc.avro.DbSchemaChange",
-          "ai.sapper.cdc.avro.DbChangeRecord"
+          "io.zyient.cdc.avro.DbSchemaChange",
+          "io.zyient.cdc.avro.DbChangeRecord"
         ]
       }
     ]

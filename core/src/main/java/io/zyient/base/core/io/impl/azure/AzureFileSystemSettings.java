@@ -43,7 +43,7 @@ import lombok.Setter;
  *                 <hierarchical>[true|false, default = false]</hierarchical>
  *                 <client>
  *                     <endpointUrl>[End-point URL]</endpointUrl>
- *                     <authClass>[Authentication implementing class (ai.sapper.cdc.core.io.impl.azure.SharedKeyAuth)]</authClass>
+ *                     <authClass>[Authentication implementing class (io.zyient.cdc.core.io.impl.azure.SharedKeyAuth)]</authClass>
  *                     <account>[Account name]</account>
  *                     <auth>
  *                          <authKey>[Authentication Key]</authKey>

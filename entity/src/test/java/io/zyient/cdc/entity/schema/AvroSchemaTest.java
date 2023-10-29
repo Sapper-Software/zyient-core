@@ -25,7 +25,7 @@ class AvroSchemaTest {
     private static final String SCHEMA_1 = "{\n" +
             "  \"type\" : \"record\",\n" +
             "  \"name\" : \"record\",\n" +
-            "  \"namespace\" : \"ai.sapper.hcdc\",\n" +
+            "  \"namespace\" : \"io.zyient.hcdc\",\n" +
             "  \"fields\" : [ {\n" +
             "    \"name\" : \"genres\",\n" +
             "    \"type\" : [ \"null\", \"string\" ],\n" +
@@ -44,7 +44,7 @@ class AvroSchemaTest {
     private static final String SCHEMA_2 = "{\n" +
             "  \"type\" : \"record\",\n" +
             "  \"name\" : \"record\",\n" +
-            "  \"namespace\" : \"ai.sapper.hcdc\",\n" +
+            "  \"namespace\" : \"io.zyient.hcdc\",\n" +
             "  \"fields\" : [ {\n" +
             "    \"name\" : \"genres\",\n" +
             "    \"type\" : [ \"null\", \"string\" ],\n" +

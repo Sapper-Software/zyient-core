@@ -6,7 +6,7 @@ pluginManagement {
 }
 
 
-rootProject.name = 'cdc-core'
+rootProject.name = 'zyient-core'
 include 'common'
 include 'entity'
 include 'core'

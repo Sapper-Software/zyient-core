@@ -565,7 +565,7 @@ public class SchemaHelper {
         private static final String REGEX = "^\\{\\s*(.*\\r*\\n*\\s*)}$";
         private static final Pattern PATTERN = Pattern.compile(REGEX);
         private Map<String, Field> fields;
-        private String namespace = "ai.sapper.cdc.schemas.avro";
+        private String namespace = "io.zyient.cdc.schemas.avro";
         private String reference;
 
         public ObjectField(@NonNull String name) {
