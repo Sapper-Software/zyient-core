@@ -11,4 +11,5 @@ include 'common'
 include 'entity'
 include 'core'
 include 'intake'
+include 'case-management'
 
