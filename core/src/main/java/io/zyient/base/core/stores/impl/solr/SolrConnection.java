@@ -39,15 +39,19 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Getter
 @Accessors(fluent = true)
 public class SolrConnection extends AbstractConnection<SolrClient> {
     private SolrConnectionSettings settings;
-    private SolrClient client;
     private ISolrAuthHandler authHandler = null;
     private BaseEnv<?> env;
+    private final Map<String, SolrClient> clients = new HashMap<>();
 
     public SolrConnection() {
         super(EConnectionType.solr, SolrConnectionSettings.class);
@@ -120,20 +124,32 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
         Preconditions.checkNotNull(settings);
         Preconditions.checkState(!state().hasError());
         synchronized (state()) {
-            if (state().isConnected()) return this;
+            state().setState(EConnectionState.Connected);
+            return this;
+        }
+    }
+
+    public SolrClient connect(@NonNull String collection) throws ConnectionError {
+        Preconditions.checkNotNull(settings);
+        Preconditions.checkState(state().isConnected());
+        synchronized (state()) {
             try {
+                if (clients.containsKey(collection)) {
+                    return clients.get(collection);
+                }
+                SolrClient client = null;
                 switch (settings.getClientType()) {
                     case Basic -> {
-                        buildBasicClient();
+                        client = buildBasicClient(collection);
                     }
                     case Cloud -> {
-                        buildCloudClient();
+                        client = buildCloudClient(collection);
                     }
                     case Concurrent -> {
-                        buildConcurrentClient();
+                        client = buildConcurrentClient(collection);
                     }
                     case LoadBalanced -> {
-                        buildLBClient();
+                        client = buildLBClient(collection);
                     }
                 }
                 if (settings.getAuthHandler() != null) {
@@ -142,25 +158,26 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
                             .newInstance();
                     authHandler.init(client, settings);
                 }
-                state().setState(EConnectionState.Connected);
-                return this;
+                clients.put(collection, client);
+                return client;
             } catch (Exception ex) {
-                state().error(ex);
                 throw new ConnectionError(ex);
             }
         }
     }
 
-    private void buildBasicClient() throws Exception {
-        client = new Http2SolrClient.Builder(settings.getUrls().get(0))
+    private SolrClient buildBasicClient(String collection) throws Exception {
+        String url = String.format("%s/%s", settings.getUrls().get(0), collection);
+        return new Http2SolrClient.Builder(url)
                 .withResponseParser(new JsonMapResponseParser())
                 .withConnectionTimeout(settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRequestTimeout(settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 
-    private void buildLBClient() throws Exception {
-        Http2SolrClient solr = new Http2SolrClient.Builder(settings.getUrls().get(0))
+    private SolrClient buildLBClient(String collection) throws Exception {
+        String url = String.format("%s/%s", settings.getUrls().get(0), collection);
+        Http2SolrClient solr = new Http2SolrClient.Builder(url)
                 .withResponseParser(new JsonMapResponseParser())
                 .withConnectionTimeout(settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRequestTimeout(settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
@@ -176,23 +193,28 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
         }
         String[] arr = new String[settings.getUrls().size()];
         for (int ii = 0; ii < settings.getUrls().size(); ii++) {
-            arr[ii] = settings.getUrls().get(ii);
+            arr[ii] = String.format("%s/%s", settings.getUrls().get(ii), collection);
         }
-        client = new LBHttp2SolrClient.Builder(solr, arr)
+        return new LBHttp2SolrClient.Builder(solr, arr)
                 .setAliveCheckInterval(liveCheck, TimeUnit.MILLISECONDS)
                 .build();
     }
 
-    private void buildCloudClient() throws Exception {
-        client = new CloudHttp2SolrClient.Builder(settings.getUrls())
+    private SolrClient buildCloudClient(String collection) throws Exception {
+        List<String> arr = new ArrayList<>(settings.getUrls().size());
+        for (String url : settings.getUrls()) {
+            arr.add(String.format("%s/%s", url, collection));
+        }
+        return new CloudHttp2SolrClient.Builder(arr)
                 .withResponseParser(new JsonMapResponseParser())
                 .withZkConnectTimeout((int) settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRetryExpiryTime((int) settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 
-    private void buildConcurrentClient() throws Exception {
-        Http2SolrClient solr = new Http2SolrClient.Builder(settings.getUrls().get(0))
+    private SolrClient buildConcurrentClient(String collection) throws Exception {
+        String url = String.format("%s/%s", settings.getUrls().get(0), collection);
+        Http2SolrClient solr = new Http2SolrClient.Builder(url)
                 .withResponseParser(new JsonMapResponseParser())
                 .withConnectionTimeout(settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRequestTimeout(settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
@@ -209,7 +231,7 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
                 threads = Integer.parseInt(ss);
             }
         }
-        client = new ConcurrentUpdateHttp2SolrClient.Builder(settings.getUrls().get(0), solr)
+        return new ConcurrentUpdateHttp2SolrClient.Builder(settings.getUrls().get(0), solr)
                 .withQueueSize(queueSize)
                 .withThreadCount(threads)
                 .build();
@@ -222,7 +244,24 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
 
     @Override
     public void close(@NonNull SolrClient connection) throws ConnectionError {
-
+        synchronized (state()) {
+            try {
+                String key = null;
+                for (String name : clients.keySet()) {
+                    SolrClient sc = clients.get(name);
+                    if (sc.equals(connection)) {
+                        key = name;
+                        break;
+                    }
+                }
+                if (!Strings.isNullOrEmpty(key)) {
+                    clients.remove(key);
+                }
+                connection.close();
+            } catch (Exception ex) {
+                throw new ConnectionError(ex);
+            }
+        }
     }
 
     @Override
@@ -238,9 +277,11 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
     @Override
     public void close() throws IOException {
         synchronized (state()) {
-            if (client != null) {
-                client.close();
-                client = null;
+            if (!clients.isEmpty()) {
+                for (SolrClient client : clients.values()) {
+                    client.close();
+                }
+                clients.clear();
             }
             if (state().isConnected()) {
                 state().setState(EConnectionState.Closed);

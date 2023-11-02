@@ -31,6 +31,7 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
+import dev.morphia.annotations.Entity;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
@@ -55,7 +56,6 @@ import java.util.List;
 import java.util.Map;
 
 public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoTransaction> {
-    public static final String FIELD_DOC_ID = "_id";
 
     private MongoDatabase database;
 
@@ -88,230 +88,30 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
         checkState();
+        Preconditions.checkArgument(entity instanceof MongoEntity<?>);
         Preconditions.checkNotNull(database);
         Preconditions.checkState(isInTransaction());
         try {
             ClientSession session = sessionManager().session();
-            String cname = EntityUtils.getCollection(entity);
+            String cname = getCollection(entity.getClass());
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
+            ((MongoEntity<?>) entity).set_id(entity.getKey().stringKey());
+            ((MongoEntity<?>) entity).set_type(entity.getClass().getCanonicalName());
+            ((MongoEntity<?>) entity).setCreatedTime(System.nanoTime());
+            ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
             MongoCollection<Document> collection = database.getCollection(cname);
-            entity = checkAndCreateReference(entity, type, context, session);
             String json = JSONUtils.asString(entity, type);
             Document doc = Document.parse(json);
-            doc.put(FIELD_DOC_ID, entity.getKey().stringKey());
+            doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
+            doc.put(JsonFieldConstants.FIELD_DOC_TYPE, entity.getClass().getCanonicalName());
             InsertOneResult r = collection.insertOne(session, doc);
-            if (entity instanceof BaseEntity<?>) {
-                ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
-            }
+            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
-        }
-    }
-
-    private <E extends IEntity<?>> E checkAndCreateReference(E entity,
-                                                             Class<? extends E> type,
-                                                             Context context,
-                                                             ClientSession session) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(type);
-        if (fields != null) {
-            for (Field field : fields) {
-                if (field.isAnnotationPresent(Reference.class)) {
-                    Reference ref = field.getAnnotation(Reference.class);
-                    String tf = ref.reference();
-                    if (!Strings.isNullOrEmpty(tf)) {
-                        Object value = ReflectionUtils.getFieldValue(entity, field, true);
-                        if (value == null) continue;
-                        if (!(value instanceof IEntity<?>)) {
-                            throw new Exception(
-                                    String.format("Invalid embedded field. [field=%s][type=%s]",
-                                            field.getName(), field.getType().getCanonicalName()));
-                        }
-                        Field rfield = ReflectionUtils.findField(type, tf);
-                        if (rfield == null) {
-                            throw new DataStoreException(
-                                    String.format("Reference field not found. [field=%s][type=%s]",
-                                            tf, type.getCanonicalName()));
-                        }
-                        if (!ReflectionUtils.isSuperType(JsonReference.class, rfield.getType())) {
-                            throw new DataStoreException(
-                                    String.format("Invalid reference field type. [type=%s][class=%s]",
-                                            rfield.getType().getCanonicalName(), type.getCanonicalName()));
-                        }
-                        Class<? extends IEntity<?>> rtype = ref.target();
-                        entity = nestedUpdates(entity,
-                                type,
-                                context,
-                                session,
-                                field,
-                                value,
-                                rfield,
-                                new EEntityState[]{EEntityState.New},
-                                rtype);
-                    }
-                }
-            }
-        }
-        return entity;
-    }
-
-    private <E extends IEntity<?>> E nestedUpdates(E entity,
-                                                   Class<? extends E> type,
-                                                   Context context,
-                                                   ClientSession session,
-                                                   Field sourceField,
-                                                   Object sourceValue,
-                                                   Field referenceField,
-                                                   EEntityState[] states,
-                                                   Class<? extends IEntity<?>> referenceType) throws Exception {
-        JsonReference ref = (JsonReference) ReflectionUtils.getFieldValue(entity, referenceField, true);
-        if (ref == null) {
-            ref = new JsonReference();
-        }
-        if (sourceField.isAnnotationPresent(OneToMany.class)) {
-            OneToMany o2m = sourceField.getAnnotation(OneToMany.class);
-            CascadeType[] cascadeTypes = o2m.cascade();
-            if (ReflectionUtils.implementsInterface(Collection.class, sourceField.getType())) {
-                handleCollectionCreate(referenceType,
-                        context,
-                        session,
-                        sourceField,
-                        sourceValue,
-                        referenceField,
-                        cascadeTypes,
-                        states,
-                        ref);
-            } else if (ReflectionUtils.isSuperType(Map.class, sourceField.getType())) {
-                if (!sourceField.isAnnotationPresent(MapKey.class)) {
-                    throw new Exception(
-                            String.format("Map Key not found. [field=%s][class=%s]",
-                                    sourceField.getName(), type.getCanonicalName()));
-                }
-                handleMapCreate(referenceType,
-                        context,
-                        session,
-                        sourceField,
-                        sourceValue,
-                        referenceField,
-                        cascadeTypes,
-                        states,
-                        ref);
-            } else {
-                throw new Exception(
-                        String.format("Unsupported field type. [type=%s][class=%s]",
-                                sourceField.getType().getCanonicalName(), type.getCanonicalName()));
-            }
-        } else if (sourceField.isAnnotationPresent(ManyToMany.class)) {
-            ManyToMany m2m = sourceField.getAnnotation(ManyToMany.class);
-            CascadeType[] cascadeTypes = m2m.cascade();
-            if (ReflectionUtils.implementsInterface(Collection.class, sourceField.getType())) {
-                handleCollectionCreate(referenceType,
-                        context,
-                        session,
-                        sourceField,
-                        sourceValue,
-                        referenceField,
-                        cascadeTypes,
-                        states,
-                        ref);
-            } else if (ReflectionUtils.isSuperType(Map.class, sourceField.getType())) {
-                if (!sourceField.isAnnotationPresent(MapKey.class)) {
-                    throw new Exception(
-                            String.format("Map Key not found. [field=%s][class=%s]",
-                                    sourceField.getName(), type.getCanonicalName()));
-                }
-                handleMapCreate(referenceType,
-                        context,
-                        session,
-                        sourceField,
-                        sourceValue,
-                        referenceField,
-                        cascadeTypes,
-                        states,
-                        ref);
-            } else {
-                throw new Exception(
-                        String.format("Unsupported field type. [type=%s][class=%s]",
-                                sourceField.getType().getCanonicalName(), type.getCanonicalName()));
-            }
-        } else if (sourceField.isAnnotationPresent(OneToOne.class)) {
-            OneToOne o2o = sourceField.getAnnotation(OneToOne.class);
-            IEntity<?> ie = (IEntity<?>) sourceValue;
-            ref.add(ie, EEntityState.New);
-            CascadeType[] cascadeTypes = o2o.cascade();
-            if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
-                boolean create = true;
-                if (ie instanceof BaseEntity<?>) {
-                    if (((BaseEntity<?>) ie).getState().getState() != EEntityState.New) {
-                        create = false;
-                    }
-                }
-                if (create) {
-                    create(ie, ie.getClass(), context);
-                }
-            }
-        }
-        ReflectionUtils.setValue(ref, entity, referenceField);
-        return entity;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <E extends IEntity<?>> void handleCollectionCreate(Class<? extends E> type,
-                                                               Context context,
-                                                               ClientSession session,
-                                                               Field sourceField,
-                                                               Object sourceValue,
-                                                               Field referenceField,
-                                                               CascadeType[] cascadeTypes,
-                                                               EEntityState[] states,
-                                                               JsonReference ref) throws Exception {
-        Collection<E> values = (Collection<E>) sourceValue;
-        ref.addAll(values);
-        if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
-            for (E value : values) {
-                if (value instanceof BaseEntity<?>) {
-                    if (!((BaseEntity<?>) value).getState().inState(states)) {
-                        continue;
-                    }
-                }
-                create(value, value.getClass(), context);
-            }
-        }
-    }
-
-    private boolean hasCascadeType(CascadeType type, CascadeType[] values) {
-        for (CascadeType value : values) {
-            if (type == value || value == CascadeType.ALL)
-                return true;
-        }
-        return false;
-    }
-
-    @SuppressWarnings("unchecked")
-    private <E extends IEntity<?>> void handleMapCreate(Class<? extends E> type,
-                                                        Context context,
-                                                        ClientSession session,
-                                                        Field sourceField,
-                                                        Object sourceValue,
-                                                        Field referenceField,
-                                                        CascadeType[] cascadeTypes,
-                                                        EEntityState[] states,
-                                                        JsonReference ref) throws Exception {
-        Map<?, E> values = (Map<?, E>) sourceValue;
-        ref.addAll(values);
-        if (hasCascadeType(CascadeType.PERSIST, cascadeTypes)) {
-            for (Object k : values.keySet()) {
-                E value = values.get(k);
-                if (value instanceof BaseEntity<?>) {
-                    if (!((BaseEntity<?>) value).getState().inState(states)) {
-                        continue;
-                    }
-                }
-                create(value, value.getClass(), context);
-            }
         }
     }
 
@@ -332,20 +132,22 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
         checkState();
+        Preconditions.checkArgument(entity instanceof MongoEntity<?>);
         Preconditions.checkNotNull(database);
         Preconditions.checkState(isInTransaction());
         try {
             ClientSession session = sessionManager().session();
-            String cname = EntityUtils.getCollection(entity);
+            String cname = getCollection(entity.getClass());
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
+            ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
             MongoCollection<Document> collection = database.getCollection(cname);
-            entity = checkAndUpdateReference(entity, type, context, session);
             String json = JSONUtils.asString(entity, type);
             Document doc = Document.parse(json);
-            doc.put(FIELD_DOC_ID, entity.getKey().stringKey());
-            Bson filter = Filters.eq(FIELD_DOC_ID, entity.getKey().stringKey());
+            doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
+            doc.put(JsonFieldConstants.FIELD_DOC_TYPE, entity.getClass().getCanonicalName());
+            Bson filter = Filters.eq(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
             UpdateResult r = collection.updateOne(filter, doc);
             if (r.getMatchedCount() == 0) {
                 throw new DataStoreException(
@@ -356,9 +158,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                         String.format("Entity not found. [kaye=%s][type=%s]",
                                 entity.getKey().stringKey(), type.getCanonicalName()));
             }
-            if (entity instanceof BaseEntity<?>) {
-                ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
-            }
+            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -366,50 +166,16 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         }
     }
 
-    private <E extends IEntity<?>> E checkAndUpdateReference(E entity,
-                                                             Class<? extends E> type,
-                                                             Context context,
-                                                             ClientSession session) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(type);
-        if (fields != null) {
-            for (Field field : fields) {
-                if (field.isAnnotationPresent(Reference.class)) {
-                    Reference ref = field.getAnnotation(Reference.class);
-                    String tf = ref.reference();
-                    if (!Strings.isNullOrEmpty(tf)) {
-                        Object value = ReflectionUtils.getFieldValue(entity, field, true);
-                        if (value == null) continue;
-                        if (!(value instanceof IEntity<?>)) {
-                            throw new Exception(
-                                    String.format("Invalid embedded field. [field=%s][type=%s]",
-                                            field.getName(), field.getType().getCanonicalName()));
-                        }
-                        Field rfield = ReflectionUtils.findField(type, tf);
-                        if (rfield == null) {
-                            throw new DataStoreException(
-                                    String.format("Reference field not found. [field=%s][type=%s]",
-                                            tf, type.getCanonicalName()));
-                        }
-                        if (!ReflectionUtils.isSuperType(JsonReference.class, rfield.getType())) {
-                            throw new DataStoreException(
-                                    String.format("Invalid reference field type. [type=%s][class=%s]",
-                                            rfield.getType().getCanonicalName(), type.getCanonicalName()));
-                        }
-                        Class<? extends IEntity<?>> rtype = ref.target();
-                        entity = nestedUpdates(entity,
-                                type,
-                                context,
-                                session,
-                                field,
-                                value,
-                                rfield,
-                                new EEntityState[]{EEntityState.New, EEntityState.Updated},
-                                rtype);
-                    }
-                }
-            }
+    private String getCollection(Class<?> type) throws Exception {
+        String name = null;
+        if (type.isAnnotationPresent(Entity.class)) {
+            Entity e = type.getAnnotation(Entity.class);
+            name = e.value();
         }
-        return entity;
+        if (Strings.isNullOrEmpty(name)) {
+            name = type.getSimpleName();
+        }
+        return name;
     }
 
     @Override
@@ -422,12 +188,12 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkArgument(key instanceof String);
         try {
             ClientSession session = sessionManager().session();
-            String cname = EntityUtils.getCollection(type);
+            String cname = getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
             MongoCollection<Document> collection = database.getCollection(cname);
-            Bson filter = Filters.eq(FIELD_DOC_ID, key);
+            Bson filter = Filters.eq(JsonFieldConstants.FIELD_DOC_ID, key);
             DeleteResult r = collection.deleteOne(filter);
             return (r.getDeletedCount() == 1);
         } catch (Exception ex) {
@@ -445,12 +211,12 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkArgument(key instanceof String);
         try {
             ClientSession session = sessionManager().session();
-            String cname = EntityUtils.getCollection(type);
+            String cname = getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
             MongoCollection<Document> collection = database.getCollection(cname);
-            Bson filter = Filters.eq(FIELD_DOC_ID, key);
+            Bson filter = Filters.eq(JsonFieldConstants.FIELD_DOC_ID, key);
             FindIterable<Document> documents = collection.find(filter);
             for (Document document : documents) {
                 String json = document.toJson();
@@ -472,7 +238,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkNotNull(database);
         try {
             ClientSession session = sessionManager().session();
-            String cname = EntityUtils.getCollection(type);
+            String cname = getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }
@@ -523,7 +289,7 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         Preconditions.checkNotNull(database);
         try {
             ClientSession session = sessionManager().session();
-            String cname = EntityUtils.getCollection(type);
+            String cname = getCollection(type);
             if (!collectionExists(cname)) {
                 database.createCollection(cname);
             }

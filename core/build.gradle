@@ -82,6 +82,7 @@ dependencies {
     implementation 'org.apache.lucene:lucene-core:9.7.0'
     implementation 'org.apache.solr:solr-solrj:9.4.0'
     implementation 'com.github.vincentrussell:sql-to-mongo-db-query-converter:1.21'
+    implementation 'dev.morphia.morphia:morphia-core:2.4.6'
 
     implementation 'org.apache.commons:commons-vfs2:2.9.0'
 }

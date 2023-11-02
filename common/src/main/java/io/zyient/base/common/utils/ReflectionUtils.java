@@ -929,6 +929,22 @@ public class ReflectionUtils {
         }
     }
 
+    public static boolean isCollection(@NonNull Class<?> type) {
+        return (implementsInterface(Collection.class, type));
+    }
+
+    public static boolean isCollection(@NonNull Field field) {
+        return isCollection(field.getType());
+    }
+
+    public static boolean isMap(@NonNull Class<?> type) {
+        return implementsInterface(Map.class, type);
+    }
+
+    public static boolean isMap(@NonNull Field field) {
+        return isMap(field.getType());
+    }
+
     /**
      * Check is the passed type (or its ancestor) implements the specified interface.
      *

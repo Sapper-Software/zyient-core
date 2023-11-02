@@ -16,22 +16,7 @@
 
 package io.zyient.base.core.stores;
 
-import io.zyient.base.common.model.entity.IEntity;
-
-import javax.persistence.Table;
-
-public class EntityUtils {
-    @SuppressWarnings("unchecked")
-    public static String getCollection(IEntity<?> entity) {
-        return getCollection((Class<? extends IEntity<?>>) entity.getClass());
-    }
-
-    public static String getCollection(Class<? extends IEntity<?>> type) {
-        String name = type.getSimpleName();
-        if (type.isAnnotationPresent(Table.class)) {
-            Table table = type.getAnnotation(Table.class);
-            name = table.name();
-        }
-        return name;
-    }
+public class JsonFieldConstants {
+    public static String FIELD_DOC_ID = "_id";
+    public static String FIELD_DOC_TYPE = "_type";
 }
