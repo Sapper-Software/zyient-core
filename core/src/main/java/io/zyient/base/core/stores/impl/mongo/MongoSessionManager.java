@@ -16,15 +16,15 @@
 
 package io.zyient.base.core.stores.impl.mongo;
 
-import com.mongodb.client.ClientSession;
+import dev.morphia.transactions.MorphiaSession;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.StoreSessionManager;
 import lombok.NonNull;
 
-public class MongoSessionManager extends StoreSessionManager<ClientSession, MongoTransaction> {
-    private final MongoDbConnection connection;
+public class MongoSessionManager extends StoreSessionManager<MorphiaSession, MongoTransaction> {
+    private final MorphiaConnection connection;
 
-    public MongoSessionManager(@NonNull MongoDbConnection connection,
+    public MongoSessionManager(@NonNull MorphiaConnection connection,
                                long sessionTimeout) {
         super(sessionTimeout);
         this.connection = connection;
@@ -36,7 +36,7 @@ public class MongoSessionManager extends StoreSessionManager<ClientSession, Mong
     }
 
     @Override
-    protected ClientSession create() throws DataStoreException {
+    protected MorphiaSession create() throws DataStoreException {
         try {
             return connection.getConnection().startSession();
         } catch (Exception ex) {
@@ -45,12 +45,12 @@ public class MongoSessionManager extends StoreSessionManager<ClientSession, Mong
     }
 
     @Override
-    protected void close(@NonNull ClientSession session) throws DataStoreException {
+    protected void close(@NonNull MorphiaSession session) throws DataStoreException {
         session.close();
     }
 
     @Override
-    protected MongoTransaction beingTransaction(@NonNull ClientSession session) throws DataStoreException {
+    protected MongoTransaction beingTransaction(@NonNull MorphiaSession session) throws DataStoreException {
         if (!session.hasActiveTransaction()) {
             session.startTransaction();
         }
@@ -61,7 +61,7 @@ public class MongoSessionManager extends StoreSessionManager<ClientSession, Mong
     }
 
     @Override
-    protected void commit(@NonNull ClientSession session,
+    protected void commit(@NonNull MorphiaSession session,
                           @NonNull MongoTransaction transaction) throws DataStoreException {
         if (!transaction.isActive() || !transaction.getSession().hasActiveTransaction()) {
             throw new DataStoreException("Transaction instance is not active...");
@@ -71,7 +71,7 @@ public class MongoSessionManager extends StoreSessionManager<ClientSession, Mong
     }
 
     @Override
-    protected void rollback(@NonNull ClientSession session,
+    protected void rollback(@NonNull MorphiaSession session,
                             @NonNull MongoTransaction transaction) throws DataStoreException {
         if (!transaction.isActive() || !transaction.getSession().hasActiveTransaction()) {
             throw new DataStoreException("Transaction instance is not active...");

@@ -26,50 +26,42 @@ import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
-import com.mongodb.client.*;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.DeleteResult;
-import com.mongodb.client.result.InsertOneResult;
-import com.mongodb.client.result.UpdateResult;
+import dev.morphia.DeleteOptions;
 import dev.morphia.annotations.Entity;
+import dev.morphia.query.MorphiaCursor;
+import dev.morphia.query.Query;
+import dev.morphia.query.filters.Filters;
+import dev.morphia.transactions.MorphiaSession;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
-import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
-import io.zyient.base.core.stores.annotations.Reference;
 import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 
-import javax.persistence.*;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoTransaction> {
-
-    private MongoDatabase database;
+public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, MongoTransaction> {
 
     @Override
     public void configure() throws ConfigurationException {
         Preconditions.checkState(settings instanceof MongoDbSettings);
         try {
-            MongoDbConnection connection = (MongoDbConnection) connection();
+            MorphiaConnection connection = (MorphiaConnection) connection();
             if (!connection.isConnected()) {
                 connection.connect();
             }
             sessionManager(new MongoSessionManager(connection,
                     ((MongoDbSettings) settings).getSessionTimeout().normalized()));
-            database = connection.getConnection().getDatabase(((MongoDbSettings) settings).getDb());
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
@@ -89,25 +81,19 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                  Context context) throws DataStoreException {
         checkState();
         Preconditions.checkArgument(entity instanceof MongoEntity<?>);
-        Preconditions.checkNotNull(database);
         Preconditions.checkState(isInTransaction());
         try {
-            ClientSession session = sessionManager().session();
-            String cname = getCollection(entity.getClass());
-            if (!collectionExists(cname)) {
-                database.createCollection(cname);
-            }
+            MorphiaSession session = sessionManager().session();
             ((MongoEntity<?>) entity).set_id(entity.getKey().stringKey());
             ((MongoEntity<?>) entity).set_type(entity.getClass().getCanonicalName());
             ((MongoEntity<?>) entity).setCreatedTime(System.nanoTime());
             ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
-            MongoCollection<Document> collection = database.getCollection(cname);
             String json = JSONUtils.asString(entity, type);
             Document doc = Document.parse(json);
             doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
             doc.put(JsonFieldConstants.FIELD_DOC_TYPE, entity.getClass().getCanonicalName());
-            InsertOneResult r = collection.insertOne(session, doc);
-            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+            entity = session.save(entity);
+            ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -115,50 +101,33 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         }
     }
 
-    private boolean collectionExists(String name) {
-        try (MongoCursor<String> cursor = database.listCollectionNames().cursor()) {
-            while (cursor.hasNext()) {
-                String n = cursor.next();
-                if (n.compareTo(name) == 0) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     @Override
+    @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
         checkState();
         Preconditions.checkArgument(entity instanceof MongoEntity<?>);
-        Preconditions.checkNotNull(database);
         Preconditions.checkState(isInTransaction());
         try {
-            ClientSession session = sessionManager().session();
-            String cname = getCollection(entity.getClass());
-            if (!collectionExists(cname)) {
-                database.createCollection(cname);
-            }
+            MorphiaSession session = sessionManager().session();
             ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
-            MongoCollection<Document> collection = database.getCollection(cname);
             String json = JSONUtils.asString(entity, type);
             Document doc = Document.parse(json);
             doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
             doc.put(JsonFieldConstants.FIELD_DOC_TYPE, entity.getClass().getCanonicalName());
-            Bson filter = Filters.eq(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
-            UpdateResult r = collection.updateOne(filter, doc);
-            if (r.getMatchedCount() == 0) {
-                throw new DataStoreException(
-                        String.format("Entity not found. [kaye=%s][type=%s]",
-                                entity.getKey().stringKey(), type.getCanonicalName()));
-            } else if (r.getMatchedCount() > 1) {
-                throw new DataStoreException(
-                        String.format("Entity not found. [kaye=%s][type=%s]",
-                                entity.getKey().stringKey(), type.getCanonicalName()));
+            Query<E> query = (Query<E>) session.find(type)
+                    .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey()));
+            try (MorphiaCursor<E> cursor = query.iterator()) {
+                List<E> found = cursor.toList();
+                if (found.size() != 1) {
+                    throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+                            type.getCanonicalName(), entity.getKey().stringKey()));
+                }
+                entity = session.save(entity);
             }
-            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+
+            ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -166,36 +135,36 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
         }
     }
 
-    private String getCollection(Class<?> type) throws Exception {
-        String name = null;
-        if (type.isAnnotationPresent(Entity.class)) {
-            Entity e = type.getAnnotation(Entity.class);
-            name = e.value();
-        }
-        if (Strings.isNullOrEmpty(name)) {
-            name = type.getSimpleName();
-        }
-        return name;
-    }
-
     @Override
+    @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
                                                        @NonNull Class<? extends E> type,
                                                        Context context) throws DataStoreException {
         checkState();
-        Preconditions.checkNotNull(database);
         Preconditions.checkState(isInTransaction());
-        Preconditions.checkArgument(key instanceof String);
+        Preconditions.checkArgument(key instanceof String || key instanceof IKey);
         try {
-            ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
-            if (!collectionExists(cname)) {
-                database.createCollection(cname);
+            String k = null;
+            if (key instanceof String) {
+                k = (String) key;
+            } else {
+                k = ((IKey) key).stringKey();
             }
-            MongoCollection<Document> collection = database.getCollection(cname);
-            Bson filter = Filters.eq(JsonFieldConstants.FIELD_DOC_ID, key);
-            DeleteResult r = collection.deleteOne(filter);
-            return (r.getDeletedCount() == 1);
+            MorphiaSession session = sessionManager().session();
+            Query<E> query = (Query<E>) session.find(type)
+                    .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
+            try (MorphiaCursor<E> cursor = query.iterator()) {
+                List<E> found = cursor.toList();
+                if (found.size() != 1) {
+                    throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+                            type.getCanonicalName(), k));
+                }
+                DeleteResult dr = query.delete(new DeleteOptions().multi(false));
+                if (dr.getDeletedCount() != 1) {
+                    return false;
+                }
+            }
+            return true;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
@@ -203,29 +172,48 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                @NonNull Class<? extends E> type,
                                                Context context) throws DataStoreException {
         checkState();
-        Preconditions.checkNotNull(database);
-        Preconditions.checkArgument(key instanceof String);
+        Preconditions.checkArgument(key instanceof String || key instanceof IKey);
         try {
-            ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
-            if (!collectionExists(cname)) {
-                database.createCollection(cname);
+            MorphiaSession session = sessionManager().session();
+            String k = null;
+            if (key instanceof String) {
+                k = (String) key;
+            } else {
+                k = ((IKey) key).stringKey();
             }
-            MongoCollection<Document> collection = database.getCollection(cname);
-            Bson filter = Filters.eq(JsonFieldConstants.FIELD_DOC_ID, key);
-            FindIterable<Document> documents = collection.find(filter);
-            for (Document document : documents) {
-                String json = document.toJson();
-                return JSONUtils.read(json, type);
+            Query<E> query = (Query<E>) session.find(type)
+                    .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
+            try (MorphiaCursor<E> cursor = query.iterator()) {
+                List<E> found = cursor.toList();
+                if (!found.isEmpty()) {
+                    if (found.size() > 1) {
+                        throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+                                type.getCanonicalName(), k));
+                    }
+                    return found.get(0);
+                }
             }
             return null;
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
+    }
+
+    private String getCollection(Class<?> type) {
+        if (type.isAnnotationPresent(Entity.class)) {
+            Entity e = type.getAnnotation(Entity.class);
+            String name = e.value();
+            if (Strings.isNullOrEmpty(name)) {
+                name = type.getSimpleName();
+            }
+            return name;
+        }
+        return null;
     }
 
     @Override
@@ -235,32 +223,25 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                                @NonNull Class<? extends E> type,
                                                                Context context) throws DataStoreException {
         checkState();
-        Preconditions.checkNotNull(database);
         try {
-            ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
-            if (!collectionExists(cname)) {
-                database.createCollection(cname);
-            }
-            MongoCollection<Document> collection = database.getCollection(cname);
+            MorphiaSession session = sessionManager().session();
             QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
-            if (cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
+            String cname = getCollection(type);
+            if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
                 throw new DataStoreException(
                         String.format("Query does not match entity collection. [expected=%s][query=%s]",
                                 cname, mongoDBQueryHolder.getCollection()));
             }
             mongoDBQueryHolder.setOffset(offset);
             mongoDBQueryHolder.setLimit(maxResults);
-            try (QueryResultIterator<Document> distinctIterable = queryConverter.run(database)) {
+            try (QueryResultIterator<Document> distinctIterable = queryConverter.run(session.getDatabase())) {
                 List<Document> documents = Lists.newArrayList(distinctIterable);
                 List<E> entities = new ArrayList<>();
                 for (Document document : documents) {
                     String json = document.toJson();
                     E entity = JSONUtils.read(json, type);
-                    if (entity instanceof BaseEntity) {
-                        ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
-                    }
+                    ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
                     entities.add(entity);
                 }
                 if (!entities.isEmpty()) {
@@ -286,16 +267,16 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                                                                @NonNull Class<? extends E> type,
                                                                Context context) throws DataStoreException {
         checkState();
-        Preconditions.checkNotNull(database);
         try {
-            ClientSession session = sessionManager().session();
-            String cname = getCollection(type);
-            if (!collectionExists(cname)) {
-                database.createCollection(cname);
-            }
-            MongoCollection<Document> collection = database.getCollection(cname);
+            MorphiaSession session = sessionManager().session();
             QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
+            String cname = getCollection(type);
+            if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
+                throw new DataStoreException(
+                        String.format("Query does not match entity collection. [expected=%s][query=%s]",
+                                cname, mongoDBQueryHolder.getCollection()));
+            }
             if (cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
                 throw new DataStoreException(
                         String.format("Query does not match entity collection. [expected=%s][query=%s]",
@@ -310,15 +291,13 @@ public class MongoDbDataStore extends TransactionDataStore<ClientSession, MongoT
                     qd.put(key, v);
                 }
             }
-            try (QueryResultIterator<Document> distinctIterable = queryConverter.run(database)) {
+            try (QueryResultIterator<Document> distinctIterable = queryConverter.run(session.getDatabase())) {
                 List<Document> documents = Lists.newArrayList(distinctIterable);
                 List<E> entities = new ArrayList<>();
                 for (Document document : documents) {
                     String json = document.toJson();
                     E entity = JSONUtils.read(json, type);
-                    if (entity instanceof BaseEntity) {
-                        ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
-                    }
+                    ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
                     entities.add(entity);
                 }
                 if (!entities.isEmpty()) {

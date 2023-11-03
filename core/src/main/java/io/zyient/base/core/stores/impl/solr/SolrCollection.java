@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.mongo;
+package io.zyient.base.core.stores.impl.solr;
 
-import dev.morphia.transactions.MorphiaSession;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.base.common.GlobalConstants;
 
-@Getter
-@Setter
-public class MongoTransaction {
-    private MorphiaSession session;
-    private boolean active;
+import java.lang.annotation.*;
+
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Inherited
+public @interface SolrCollection {
+    String value() default GlobalConstants.EMPTY;
 }

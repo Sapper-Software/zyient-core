@@ -19,4 +19,6 @@ package io.zyient.base.core.stores;
 public class JsonFieldConstants {
     public static String FIELD_DOC_ID = "_id";
     public static String FIELD_DOC_TYPE = "_type";
+    public static String FIELD_DOC_CREATED = "_create_time";
+    public static String FIELD_DOC_LAST_UPDATED = "_update_time";
 }

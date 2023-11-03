@@ -33,7 +33,7 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @ConfigPath(path = "mongo")
-public class MongoDbConnectionSettings extends AbstractConnectionSettings {
+public class MorphiaConnectionSettings extends AbstractConnectionSettings {
 
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_USER)
     private String user;
@@ -48,18 +48,18 @@ public class MongoDbConnectionSettings extends AbstractConnectionSettings {
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_POOL_SIZE, required = false, type = Integer.class)
     private int poolSize = 32;
 
-    public MongoDbConnectionSettings() {
+    public MorphiaConnectionSettings() {
         setType(EConnectionType.db);
     }
 
-    public MongoDbConnectionSettings(@NonNull ConnectionSettings settings) {
+    public MorphiaConnectionSettings(@NonNull ConnectionSettings settings) {
         super(settings);
-        Preconditions.checkArgument(settings instanceof MongoDbConnectionSettings);
-        this.user = ((MongoDbConnectionSettings) settings).getUser();
-        this.host = ((MongoDbConnectionSettings) settings).getHost();
-        this.port = ((MongoDbConnectionSettings) settings).getPort();
-        this.db = ((MongoDbConnectionSettings) settings).getDb();
-        this.password = ((MongoDbConnectionSettings) settings).getPassword();
-        this.poolSize = ((MongoDbConnectionSettings) settings).getPoolSize();
+        Preconditions.checkArgument(settings instanceof MorphiaConnectionSettings);
+        this.user = ((MorphiaConnectionSettings) settings).getUser();
+        this.host = ((MorphiaConnectionSettings) settings).getHost();
+        this.port = ((MorphiaConnectionSettings) settings).getPort();
+        this.db = ((MorphiaConnectionSettings) settings).getDb();
+        this.password = ((MorphiaConnectionSettings) settings).getPassword();
+        this.poolSize = ((MorphiaConnectionSettings) settings).getPoolSize();
     }
 }

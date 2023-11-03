@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
         property = "@class")
 @ConfigPath(path = "mongodb")
 public class MongoDbSettings extends AbstractDataStoreSettings {
-    @Config(name = "db")
-    private String db;
+    @Config(name = "model")
+    private String modelPackage;
     @Config(name = "sessionTimeout", required = false, parser = TimeValueParser.class)
     private TimeUnitValue sessionTimeout = new TimeUnitValue(30 * 60 * 1000, TimeUnit.MILLISECONDS);
 

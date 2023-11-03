@@ -21,21 +21,15 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
-import io.zyient.base.core.index.Indexed;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.BaseSearchResult;
 import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.EntityUtils;
 import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.common.SolrInputDocument;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 public class SolrDataStore extends AbstractDataStore<SolrClient> {
@@ -52,49 +46,16 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
-    private <E extends IEntity<?>> SolrInputDocument serialize(E entity) throws Exception {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField(EntityUtils.FIELD_DOC_ID, entity.getKey().stringKey());
-        doc.addField(EntityUtils.FIELD_DOC_LAST_UPDATED, System.nanoTime());
-        serialize(entity, null, doc);
-        return doc;
-    }
-
-    private void serialize(Object value,
-                           String prefix,
-                           SolrInputDocument doc) throws Exception {
-        if (value == null) return;
-        Field[] fields = ReflectionUtils.getAllFields(value.getClass());
-        if (fields != null) {
-            for (Field field : fields) {
-                if (field.isAnnotationPresent(Indexed.class)) {
-                    Indexed ix = field.getAnnotation(Indexed.class);
-                    if (ix.stored() == org.apache.lucene.document.Field.Store.YES) {
-                        Object fv = ReflectionUtils.getFieldValue(value, field, true);
-                        String name = ix.name();
-                        if (Strings.isNullOrEmpty(name)) {
-                            name = field.getName();
-                        }
-                        if (!Strings.isNullOrEmpty(prefix)) {
-                            name = String.format("%s.%s", prefix, name);
-                        }
-                        if (ReflectionUtils.isPrimitiveTypeOrString(field)) {
-                            doc.addField(name, fv);
-                        } else if (field.isEnumConstant()) {
-                            Enum<?> e = (Enum<?>) fv;
-                            if (e != null)
-                                doc.addField(name, e.name());
-                            else
-                                doc.addField(name, null);
-                        } else if (field.getType().isArray() || ReflectionUtils.isCollection(field)) {
-                            if (ix.deep()) {
-
-                            }
-                        }
-                    }
-                }
+    private String getCollection(Class<?> type) throws Exception {
+        if (type.isAnnotationPresent(SolrCollection.class)) {
+            SolrCollection sc = type.getAnnotation(SolrCollection.class);
+            String name = sc.value();
+            if (Strings.isNullOrEmpty(name)) {
+                name = type.getSimpleName();
             }
+            return name.toLowerCase();
         }
+        throw new Exception(String.format("Annotation not found. [type=%s]", type.getCanonicalName()));
     }
 
     @Override
@@ -104,10 +65,9 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         checkState();
         try {
             SolrConnection connection = (SolrConnection) connection();
-            SolrClient client = connection.client();
-            String collection = EntityUtils.getCollection(entity);
-            entity = EntityUtils.checkAndCreateReference(entity, type, context, this);
-            String json = JSONUtils.asString(entity, type);
+            String cname = getCollection(type);
+            SolrClient client = connection.connect(cname);
+
 
             return entity;
         } catch (Exception ex) {
