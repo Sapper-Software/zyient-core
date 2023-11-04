@@ -26,7 +26,12 @@ import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
+import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import dev.morphia.DeleteOptions;
 import dev.morphia.annotations.Entity;
 import dev.morphia.query.MorphiaCursor;
@@ -39,12 +44,15 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -80,20 +88,40 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
         checkState();
-        Preconditions.checkArgument(entity instanceof MongoEntity<?>);
         Preconditions.checkState(isInTransaction());
         try {
             MorphiaSession session = sessionManager().session();
-            ((MongoEntity<?>) entity).set_id(entity.getKey().stringKey());
-            ((MongoEntity<?>) entity).set_type(entity.getClass().getCanonicalName());
-            ((MongoEntity<?>) entity).setCreatedTime(System.nanoTime());
-            ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
-            String json = JSONUtils.asString(entity, type);
-            Document doc = Document.parse(json);
-            doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
-            doc.put(JsonFieldConstants.FIELD_DOC_TYPE, entity.getClass().getCanonicalName());
-            entity = session.save(entity);
-            ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+            entity.validate();
+            if (entity instanceof MongoEntity<?>) {
+                ((MongoEntity<?>) entity).setCreatedTime(System.nanoTime());
+                ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                entity = session.save(entity);
+                ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+            } else {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
+                String json = JSONUtils.asString(entity, entity.getClass());
+                Document doc = Document.parse(json);
+                doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
+                doc.put(JsonFieldConstants.FIELD_DOC_TYPE, type.getCanonicalName());
+                if (!(entity instanceof BaseEntity<?>)) {
+                    doc.put(JsonFieldConstants.FIELD_DOC_CREATED, System.nanoTime());
+                    doc.put(JsonFieldConstants.FIELD_DOC_LAST_UPDATED, System.nanoTime());
+                }
+                String cname = getCollection(type);
+                MongoDatabase db = session.getDatabase();
+                InsertOneResult ir = db.getCollection(cname)
+                        .insertOne(doc);
+                if (!ir.wasAcknowledged()) {
+                    throw new DataStoreException(String.format("Insert not acknowledged. [type=%s][id=%s]",
+                            type.getCanonicalName(), entity.getKey().stringKey()));
+                }
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                }
+            }
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -107,27 +135,60 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
         checkState();
-        Preconditions.checkArgument(entity instanceof MongoEntity<?>);
         Preconditions.checkState(isInTransaction());
         try {
             MorphiaSession session = sessionManager().session();
-            ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
-            String json = JSONUtils.asString(entity, type);
-            Document doc = Document.parse(json);
-            doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
-            doc.put(JsonFieldConstants.FIELD_DOC_TYPE, entity.getClass().getCanonicalName());
-            Query<E> query = (Query<E>) session.find(type)
-                    .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey()));
-            try (MorphiaCursor<E> cursor = query.iterator()) {
-                List<E> found = cursor.toList();
-                if (found.size() != 1) {
-                    throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+            entity.validate();
+            if (entity instanceof MongoEntity<?>) {
+                ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                Query<E> query = (Query<E>) session.find(type)
+                        .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey()));
+                try (MorphiaCursor<E> cursor = query.iterator()) {
+                    List<E> found = cursor.toList();
+                    if (found.size() != 1) {
+                        throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+                                type.getCanonicalName(), entity.getKey().stringKey()));
+                    }
+                    entity = session.save(entity);
+                    ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+                }
+            } else {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
+                String json = JSONUtils.asString(entity, entity.getClass());
+                Document doc = Document.parse(json);
+                doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.getKey().stringKey());
+                doc.put(JsonFieldConstants.FIELD_DOC_TYPE, type.getCanonicalName());
+                if (!(entity instanceof BaseEntity<?>)) {
+                    doc.put(JsonFieldConstants.FIELD_DOC_CREATED, System.nanoTime());
+                    doc.put(JsonFieldConstants.FIELD_DOC_LAST_UPDATED, System.nanoTime());
+                }
+                String cname = getCollection(type);
+                MongoDatabase db = session.getDatabase();
+                Bson filter = com.mongodb.client.model.Filters.eq(JsonFieldConstants.FIELD_DOC_ID,
+                        entity.getKey().stringKey());
+                UpdateResult ur = db.getCollection(cname)
+                        .updateOne(filter, doc);
+                if (!ur.wasAcknowledged()) {
+                    throw new DataStoreException(String.format("Insert not acknowledged. [type=%s][id=%s]",
                             type.getCanonicalName(), entity.getKey().stringKey()));
                 }
-                entity = session.save(entity);
+                if (ur.getMatchedCount() == 0) {
+                    throw new DataStoreException(
+                            String.format("Entity not found. [kaye=%s][type=%s]",
+                                    entity.getKey().stringKey(), type.getCanonicalName()));
+                } else if (ur.getMatchedCount() > 1) {
+                    throw new DataStoreException(
+                            String.format("Entity not found. [kaye=%s][type=%s]",
+                                    entity.getKey().stringKey(), type.getCanonicalName()));
+                }
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                }
             }
 
-            ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -151,18 +212,27 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                 k = ((IKey) key).stringKey();
             }
             MorphiaSession session = sessionManager().session();
-            Query<E> query = (Query<E>) session.find(type)
-                    .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
-            try (MorphiaCursor<E> cursor = query.iterator()) {
-                List<E> found = cursor.toList();
-                if (found.size() != 1) {
-                    throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
-                            type.getCanonicalName(), k));
+            if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
+                Query<E> query = (Query<E>) session.find(type)
+                        .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
+                try (MorphiaCursor<E> cursor = query.iterator()) {
+                    List<E> found = cursor.toList();
+                    if (found.size() != 1) {
+                        throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+                                type.getCanonicalName(), k));
+                    }
+                    DeleteResult dr = query.delete(new DeleteOptions().multi(false));
+                    if (dr.getDeletedCount() != 1) {
+                        return false;
+                    }
                 }
-                DeleteResult dr = query.delete(new DeleteOptions().multi(false));
-                if (dr.getDeletedCount() != 1) {
-                    return false;
-                }
+            } else {
+                MongoDatabase db = session.getDatabase();
+                String cname = getCollection(type);
+                Bson filter = com.mongodb.client.model.Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k);
+                DeleteResult dr = db.getCollection(cname)
+                        .deleteOne(filter);
+                return (dr.getDeletedCount() == 1);
             }
             return true;
         } catch (Exception ex) {
@@ -186,16 +256,27 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             } else {
                 k = ((IKey) key).stringKey();
             }
-            Query<E> query = (Query<E>) session.find(type)
-                    .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
-            try (MorphiaCursor<E> cursor = query.iterator()) {
-                List<E> found = cursor.toList();
-                if (!found.isEmpty()) {
-                    if (found.size() > 1) {
-                        throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
-                                type.getCanonicalName(), k));
+            if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
+                Query<E> query = (Query<E>) session.find(type)
+                        .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
+                try (MorphiaCursor<E> cursor = query.iterator()) {
+                    List<E> found = cursor.toList();
+                    if (!found.isEmpty()) {
+                        if (found.size() > 1) {
+                            throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
+                                    type.getCanonicalName(), k));
+                        }
+                        return found.get(0);
                     }
-                    return found.get(0);
+                }
+            } else {
+                String cname = getCollection(type);
+                MongoCollection<Document> collection = session.getDatabase().getCollection(cname);
+                Bson filter = com.mongodb.client.model.Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k);
+                FindIterable<Document> documents = collection.find(filter);
+                for (Document document : documents) {
+                    String json = document.toJson();
+                    return JSONUtils.read(json, type);
                 }
             }
             return null;
@@ -205,15 +286,15 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     }
 
     private String getCollection(Class<?> type) {
+        String name = null;
         if (type.isAnnotationPresent(Entity.class)) {
             Entity e = type.getAnnotation(Entity.class);
-            String name = e.value();
-            if (Strings.isNullOrEmpty(name)) {
-                name = type.getSimpleName();
-            }
-            return name;
+            name = e.value();
         }
-        return null;
+        if (Strings.isNullOrEmpty(name)) {
+            name = type.getSimpleName();
+        }
+        return name;
     }
 
     @Override

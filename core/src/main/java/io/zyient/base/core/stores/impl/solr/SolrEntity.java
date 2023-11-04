@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.mongo;
+package io.zyient.base.core.stores.impl.solr;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import dev.morphia.annotations.Id;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationException;
@@ -31,6 +30,7 @@ import io.zyient.base.core.model.EntityState;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.solr.client.solrj.beans.Field;
 
 import java.util.List;
 
@@ -38,15 +38,22 @@ import java.util.List;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class MongoEntity<K extends IKey> implements IEntity<K> {
-    @Id
+public abstract class SolrEntity<K extends IKey> implements IEntity<K> {
+    @Field
     private String _id;
+    @Field
     private String _type;
-    @JsonIgnore
     @Setter(AccessLevel.NONE)
+    @JsonIgnore
     private final EntityState state = new EntityState();
+    @Field
     private long createdTime;
+    @Field
     private long updatedTime;
+
+    protected SolrEntity() {
+
+    }
 
     /**
      * Validate this entity instance.
@@ -81,12 +88,12 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K> {
      */
     @Override
     public IEntity<K> copyChanges(IEntity<K> source, Context context) throws CopyException {
-        Preconditions.checkArgument(source instanceof MongoEntity<K>);
-        _id = ((MongoEntity<K>) source)._id;
+        Preconditions.checkArgument(source instanceof SolrEntity<K>);
+        _id = ((SolrEntity<K>) source).get_id();
         _type = getClass().getCanonicalName();
-        createdTime = ((MongoEntity<K>) source).createdTime;
-        updatedTime = ((MongoEntity<K>) source).updatedTime;
-        state.setState(((MongoEntity<K>) source).state.getState());
+        createdTime = ((SolrEntity<K>) source).createdTime;
+        updatedTime = ((SolrEntity<K>) source).updatedTime;
+        state.setState(((SolrEntity<K>) source).state.getState());
         return this;
     }
 }

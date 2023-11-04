@@ -48,8 +48,6 @@ public class AbstractDataStoreSettings extends Settings {
     private Class<? extends AbstractConnection<?>> connectionType;
     @Config(name = "audited", required = false, type = Boolean.class)
     private boolean audited = false;
-    @Config(name = "auditContextProvider", required = false)
-    private String auditContextProviderClass;
     @JsonIgnore
     private EConfigSource source;
     private EDataStoreType type;
