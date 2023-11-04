@@ -118,7 +118,7 @@ public class TaskAuditRecord implements IEntity<TaskAuditId> {
     }
 
     @Override
-    public TaskAuditId getKey() {
+    public TaskAuditId entityKey() {
         return taskId;
     }
 

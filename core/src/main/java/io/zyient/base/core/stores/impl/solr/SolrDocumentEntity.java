@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
 import lombok.Getter;
@@ -142,7 +143,18 @@ public class SolrDocumentEntity extends SolrEntity<StringKey> {
      * @return - Key
      */
     @Override
-    public StringKey getKey() {
+    public StringKey entityKey() {
         return key;
     }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    @Override
+    public void doValidate() throws ValidationExceptions {
+
+    }
+
 }

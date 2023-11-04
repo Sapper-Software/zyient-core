@@ -153,7 +153,7 @@ public class MapCache<K extends IKey, T extends IKeyed<K>> extends AbstractMapCa
             Collection<T> data = loader.read(null);
             if (data != null && !data.isEmpty()) {
                 for (T record : data) {
-                    backupCache.put(record.getKey(), record);
+                    backupCache.put(record.entityKey(), record);
                 }
                 Map<K, T> tcache = cache;
                 cache = backupCache;

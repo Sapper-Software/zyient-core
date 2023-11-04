@@ -192,7 +192,7 @@ public class FileItemRecord extends BaseEntity<IdKey> {
 
     @Override
     @JsonIgnore
-    public IdKey getKey() {
+    public IdKey entityKey() {
         return fileId;
     }
 }

@@ -66,7 +66,7 @@ public class MailTemplate implements IEntity<IdKey> {
     }
 
     @Override
-    public IdKey getKey() {
+    public IdKey entityKey() {
         return id;
     }
 

@@ -85,7 +85,7 @@ public class AuditRecord implements IEntity<AuditRecordId> {
      * @return - Entity Key.
      */
     @Override
-    public AuditRecordId getKey() {
+    public AuditRecordId entityKey() {
         return id;
     }
 

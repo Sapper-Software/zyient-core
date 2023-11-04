@@ -22,6 +22,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.BaseSearchResult;
@@ -41,6 +42,7 @@ import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
 import org.apache.tika.mime.MediaType;
+import software.amazon.awssdk.utils.StringInputStream;
 
 import java.io.File;
 import java.io.IOException;
@@ -50,6 +52,8 @@ import java.util.Map;
 public class SolrDataStore extends AbstractDataStore<SolrClient> {
     public static final String LITERALS_PREFIX = "literal.";
     public static final String MAP_PREFIX = "fmap.";
+    public static final String CONTEXT_KEY_JSON_MAP = "SOLR_JSON_FIELDS";
+    public static final String CONTEXT_KEY_JSON_SPLITS = "SOLR_JSON_SPLITS";
 
     @Override
     public void configure() throws ConfigurationException {
@@ -90,7 +94,6 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 ((SolrEntity<?>) entity).setCreatedTime(System.nanoTime());
                 ((SolrEntity<?>) entity).setUpdatedTime(System.nanoTime());
                 ContentStreamUpdateRequest ur = getContentUpdateRequest((SolrDocumentEntity) entity);
-                ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
                 NamedList<Object> request = client.request(ur);
                 if (DefaultLogger.isTraceEnabled()) {
                     for (Map.Entry<String, Object> entry : request) {
@@ -105,7 +108,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 UpdateResponse ur = client.addBean(entity);
                 if (ur.getStatus() != 0) {
                     throw new DataStoreException(String.format("Insert failed [status=%d]. [type=%s][id=%s]",
-                            ur.getStatus(), type.getCanonicalName(), entity.getKey().stringKey()));
+                            ur.getStatus(), type.getCanonicalName(), entity.entityKey().stringKey()));
                 }
                 client.commit();
                 ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
@@ -114,7 +117,14 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                     ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
                     ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
                 }
-
+                JSONUpdateRequest ur = getJsonUpdateRequest(entity, context);
+                NamedList<Object> request = client.request(ur);
+                if (DefaultLogger.isTraceEnabled()) {
+                    for (Map.Entry<String, Object> entry : request) {
+                        DefaultLogger.trace(String.format("Response [key=%s, value=%s]",
+                                entry.getKey(), entry.getValue()));
+                    }
+                }
                 if (entity instanceof BaseEntity<?>) {
                     ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
@@ -131,7 +141,57 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
-        return null;
+        checkState();
+        try {
+            SolrConnection connection = (SolrConnection) connection();
+            String cname = getCollection(type);
+            SolrClient client = connection.connect(cname);
+            entity.validate();
+            if (entity instanceof SolrDocumentEntity) {
+                ((SolrEntity<?>) entity).setCreatedTime(System.nanoTime());
+                ((SolrEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                ContentStreamUpdateRequest ur = getContentUpdateRequest((SolrDocumentEntity) entity);
+                NamedList<Object> request = client.request(ur);
+                if (DefaultLogger.isTraceEnabled()) {
+                    for (Map.Entry<String, Object> entry : request) {
+                        DefaultLogger.trace(String.format("Response [key=%s, value=%s]",
+                                entry.getKey(), entry.getValue()));
+                    }
+                }
+                ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
+            } else if (entity instanceof SolrEntity<?>) {
+                ((SolrEntity<?>) entity).setCreatedTime(System.nanoTime());
+                ((SolrEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                UpdateResponse ur = client.addBean(entity);
+                if (ur.getStatus() != 0) {
+                    throw new DataStoreException(String.format("Insert failed [status=%d]. [type=%s][id=%s]",
+                            ur.getStatus(), type.getCanonicalName(), entity.entityKey().stringKey()));
+                }
+                client.commit();
+                ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
+            } else {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
+                JSONUpdateRequest ur = getJsonUpdateRequest(entity, context);
+                NamedList<Object> request = client.request(ur);
+                if (DefaultLogger.isTraceEnabled()) {
+                    for (Map.Entry<String, Object> entry : request) {
+                        DefaultLogger.trace(String.format("Response [key=%s, value=%s]",
+                                entry.getKey(), entry.getValue()));
+                    }
+                }
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                }
+            }
+
+            return entity;
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new DataStoreException(ex);
+        }
     }
 
     @Override
@@ -141,12 +201,40 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         return false;
     }
 
+    @SuppressWarnings("unchecked")
+    private static <E extends IEntity<?>> JSONUpdateRequest getJsonUpdateRequest(E entity,
+                                                                                 Context context) throws Exception {
+        String json = JSONUtils.asString(entity, entity.getClass());
+        JSONUpdateRequest ur = new JSONUpdateRequest(new StringInputStream(json), "/update/json/docs");
+        if (context != null) {
+            if (context.containsKey(CONTEXT_KEY_JSON_MAP)) {
+                Object o = context.get(CONTEXT_KEY_JSON_MAP);
+                if (o instanceof Map<?, ?>) {
+                    Map<String, String> map = (Map<String, String>) o;
+                    for (String key : map.keySet()) {
+                        String value = map.get(key);
+                        ur.addFieldMapping(key, value);
+                    }
+                } else {
+                    throw new Exception(String.format("Invalid context object. [key=%s]", CONTEXT_KEY_JSON_MAP));
+                }
+            }
+            if (context.containsKey(CONTEXT_KEY_JSON_SPLITS)) {
+                String s = (String) context.get(CONTEXT_KEY_JSON_SPLITS);
+                ur.setSplit(s);
+            }
+        }
+        ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+        return ur;
+    }
+
     private static ContentStreamUpdateRequest getContentUpdateRequest(SolrDocumentEntity entity) throws IOException {
         ContentStreamUpdateRequest ur = new ContentStreamUpdateRequest("/update/extract");
         ur.addFile(entity.getContent(), entity.getMimeType());
         ur.setParam(LITERALS_PREFIX + "id", entity.get_id());
         ur.setParam(LITERALS_PREFIX + "location", entity.getSourceLocation());
         ur.setParam(MAP_PREFIX + "content", "attr_content");
+        ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
         return ur;
     }
 

@@ -93,7 +93,7 @@ public class DocumentEntity implements IEntity<StringKey> {
      * @return - Key
      */
     @Override
-    public StringKey getKey() {
+    public StringKey entityKey() {
         return id;
     }
 

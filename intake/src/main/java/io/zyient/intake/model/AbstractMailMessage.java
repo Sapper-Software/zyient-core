@@ -46,7 +46,7 @@ public abstract class AbstractMailMessage<T> implements IEntity<StringKey> {
     }
 
     @Override
-    public StringKey getKey() {
+    public StringKey entityKey() {
         return messageId;
     }
 

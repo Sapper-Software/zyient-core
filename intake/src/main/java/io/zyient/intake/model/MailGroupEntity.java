@@ -128,7 +128,7 @@ public class MailGroupEntity implements IEntity<IdKey> {
     }
 
     @Override
-    public IdKey getKey() {
+    public IdKey entityKey() {
         return id;
     }
 

@@ -65,7 +65,7 @@ public class MailMetaDataRecord implements IEntity<MailReceiptId> {
 
     @Override
     @JsonIgnore
-    public MailReceiptId getKey() {
+    public MailReceiptId entityKey() {
         return messageId;
     }
 }

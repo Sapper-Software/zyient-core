@@ -41,7 +41,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         private BaseEntity<?> entity;
 
         public static String generateKey(BaseEntity<?> entity) {
-            return String.format("%s[%s]", entity.getClass(), entity.getKey().stringKey());
+            return String.format("%s[%s]", entity.getClass(), entity.entityKey().stringKey());
         }
     }
 
@@ -136,18 +136,18 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
             if (!tx.equals(ce.tx)) {
                 throw new DataStoreException(
                         String.format("Invalid transaction cache: transaction handle is stale. [entity=%s]",
-                                entity.getKey().stringKey()));
+                                entity.entityKey().stringKey()));
             }
             if (entity.getState().getState() != EEntityState.Synced) {
                 throw new DataStoreException(
                         String.format("Invalid entity state. [entity=%s][state=%s]",
-                                entity.getKey().stringKey(), entity.getState().getState().name()));
+                                entity.entityKey().stringKey(), entity.getState().getState().name()));
             }
             return entity;
         } else
             throw new DataStoreException(
                     String.format("Invalid entity state: [state=%s][id=%s]",
-                            entity.getState().getState().name(), entity.getKey().stringKey()));
+                            entity.getState().getState().name(), entity.entityKey().stringKey()));
     }
 
     public BaseEntity<?> updateCache(@NonNull BaseEntity<?> entity, @NonNull  EEntityState state) throws DataStoreException {

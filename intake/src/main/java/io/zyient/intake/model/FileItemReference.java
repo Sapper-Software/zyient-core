@@ -67,7 +67,7 @@ public class FileItemReference implements IEntity<FileItemKey> {
     }
 
     @Override
-    public FileItemKey getKey() {
+    public FileItemKey entityKey() {
         return key;
     }
 }

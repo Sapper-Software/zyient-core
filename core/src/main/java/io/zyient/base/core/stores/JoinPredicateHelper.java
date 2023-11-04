@@ -56,7 +56,7 @@ public class JoinPredicateHelper {
                 String condition = getHibernateJoinConditions(reference.columns(), entity, reference.target());
                 if (Strings.isNullOrEmpty(condition)) {
                     throw new DataStoreException(String.format("Error generating condition. [type=%s][key=%s]",
-                            entity.getClass().getCanonicalName(), entity.getKey()));
+                            entity.getClass().getCanonicalName(), entity.entityKey()));
                 }
                 if (appendQuery && !Strings.isNullOrEmpty(reference.query())) {
                     condition = String.format("%s AND (%s)", condition, reference.query());

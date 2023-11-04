@@ -226,7 +226,7 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
                     user,
                     serializer);
             if (settings.isUseCache()) {
-                cache.put(record.getKey().stringKey(), record);
+                cache.put(record.entityKey().stringKey(), record);
                 if (cache.size() > settings.getMaxCacheSize()) {
                     flush();
                 }
@@ -331,7 +331,7 @@ public abstract class AbstractAuditLogger<C> implements Closeable {
             record.setAuditType(type);
             String data = serializer.serialize(entity, entityType);
             record.setEntityData(data);
-            record.setEntityId(entity.getKey().stringKey());
+            record.setEntityId(entity.entityKey().stringKey());
             if (!Strings.isNullOrEmpty(changeDelta)) {
                 record.setChangeDelta(changeDelta);
             }

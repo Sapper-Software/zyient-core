@@ -70,7 +70,7 @@ public class TaskAuditParam implements IEntity<TaskAuditParamId> {
     }
 
     @Override
-    public TaskAuditParamId getKey() {
+    public TaskAuditParamId entityKey() {
         return id;
     }
 

@@ -53,7 +53,7 @@ public abstract class StringKeyEntity extends BaseEntity<StringKey> {
      * @return - Key
      */
     @Override
-    public StringKey getKey() {
+    public StringKey entityKey() {
         return id;
     }
 }

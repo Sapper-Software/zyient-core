@@ -62,12 +62,25 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K> {
      */
     @Override
     public void validate() throws ValidationExceptions {
-        _id = getKey().stringKey();
-        if (Strings.isNullOrEmpty(_id)) {
-            throw new ValidationExceptions(List.of(new ValidationException("Key String is NULL/empty [field=_id]")));
+        try {
+            _id = entityKey().stringKey();
+            if (Strings.isNullOrEmpty(_id)) {
+                throw new ValidationExceptions(List.of(new ValidationException("Key String is NULL/empty [field=_id]")));
+            }
+            _type = getClass().getCanonicalName();
+            doValidate();
+        } catch (ValidationExceptions ex) {
+            state.error(ex);
+            throw ex;
         }
-        _type = getClass().getCanonicalName();
     }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    public abstract void doValidate() throws ValidationExceptions;
 
     /**
      * Copy the changes from the specified source entity

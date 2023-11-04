@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import dev.morphia.annotations.Id;
+import dev.morphia.annotations.Version;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationException;
@@ -46,6 +47,7 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K> {
     @Setter(AccessLevel.NONE)
     private final EntityState state = new EntityState();
     private long createdTime;
+    @Version
     private long updatedTime;
 
     /**
@@ -55,12 +57,25 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K> {
      */
     @Override
     public void validate() throws ValidationExceptions {
-        _id = getKey().stringKey();
-        if (Strings.isNullOrEmpty(_id)) {
-            throw new ValidationExceptions(List.of(new ValidationException("Key String is NULL/empty [field=_id]")));
+        try {
+            _id = entityKey().stringKey();
+            if (Strings.isNullOrEmpty(_id)) {
+                throw new ValidationExceptions(List.of(new ValidationException("Key String is NULL/empty [field=_id]")));
+            }
+            _type = getClass().getCanonicalName();
+            doValidate();
+        } catch (ValidationExceptions ex) {
+            state.error(ex);
+            throw ex;
         }
-        _type = getClass().getCanonicalName();
     }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    public abstract void doValidate() throws ValidationExceptions;
 
     /**
      * Copy the changes from the specified source entity

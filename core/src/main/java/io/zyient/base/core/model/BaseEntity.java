@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
@@ -27,6 +28,7 @@ import lombok.Setter;
 import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
+import javax.persistence.Version;
 
 @Getter
 @Setter
@@ -34,10 +36,12 @@ import javax.persistence.Transient;
 public abstract class BaseEntity<K extends IKey> implements IEntity<K> {
     @Setter(AccessLevel.NONE)
     @Transient
+    @JsonIgnore
     private final EntityState state = new EntityState();
     @Column(name = "time_created")
     private long createdTime;
     @Column(name = "time_updated")
+    @Version
     private long updatedTime;
 
     public BaseEntity() {
@@ -53,8 +57,9 @@ public abstract class BaseEntity<K extends IKey> implements IEntity<K> {
     public final void validate() throws ValidationExceptions {
         try {
             doValidate();
-        } catch (Exception ex) {
+        } catch (ValidationExceptions ex) {
             state.error(ex);
+            throw ex;
         }
     }
 

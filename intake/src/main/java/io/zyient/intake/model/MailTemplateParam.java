@@ -56,7 +56,7 @@ public class MailTemplateParam implements IEntity<MailTemplateParamId> {
     }
 
     @Override
-    public MailTemplateParamId getKey() {
+    public MailTemplateParamId entityKey() {
         return id;
     }
 

@@ -31,6 +31,5 @@ public interface IKeyed<K extends IKey> extends Serializable {
      *
      * @return - Key
      */
-    @JsonIgnore
-    K getKey();
+    K entityKey();
 }
