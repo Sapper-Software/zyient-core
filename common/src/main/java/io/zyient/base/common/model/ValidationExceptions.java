@@ -68,7 +68,6 @@ public class ValidationExceptions extends Exception
      */
     public static ValidationExceptions add(@Nonnull ValidationException error,
                                            ValidationExceptions errors) {
-        Preconditions.checkArgument(error != null);
         if (errors == null) {
             errors = new ValidationExceptions();
         }

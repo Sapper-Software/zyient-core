@@ -18,8 +18,10 @@ package io.zyient.base.core.stores.impl.solr;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
@@ -37,14 +39,13 @@ import java.util.UUID;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class SolrDocumentEntity extends SolrEntity<StringKey> {
-    @Field
     private StringKey key;
     private File content;
-    @Field
+    @Field("location")
     private String sourceLocation;
-    @Field
+    @Field("MIME-TYPE")
     private String mimeType;
-    @Field
+    @Field("size")
     private long size;
 
     public SolrDocumentEntity() {
@@ -153,8 +154,10 @@ public class SolrDocumentEntity extends SolrEntity<StringKey> {
      * @throws ValidationExceptions - On validation failure will throw exception.
      */
     @Override
-    public void doValidate() throws ValidationExceptions {
-
+    public ValidationExceptions doValidate(ValidationExceptions error) throws ValidationExceptions {
+        if (Strings.isNullOrEmpty(sourceLocation)) {
+            error = ValidationExceptions.add(new ValidationException("Source document location is NULL/empty."), error);
+        }
+        return error;
     }
-
 }

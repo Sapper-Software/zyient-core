@@ -35,7 +35,9 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public abstract class AbstractDataStore<T> implements Closeable {
-    public static final String KEY_ENGINE = "Intake";
+    public static final String KEY_ENGINE = "DataStore";
+    public static final String CONTEXT_KEY_CHECK_UPDATES = "checkUpdates";
+
     private final DataStoreState state = new DataStoreState();
     protected DataStoreMetrics metrics;
     private AbstractConnection<T> connection = null;
@@ -245,5 +247,18 @@ public abstract class AbstractDataStore<T> implements Closeable {
         return dataStoreManager().nextSequence(name(), name);
     }
 
+    protected boolean checkEntityVersion(Context context) {
+        if (context != null && context.containsKey(CONTEXT_KEY_CHECK_UPDATES)) {
+            return (boolean) context.get(CONTEXT_KEY_CHECK_UPDATES);
+        }
+        return true;
+    }
+
     public abstract DataStoreAuditContext context();
+
+    public static Context defaultContext(@NonNull Class<? extends Context> type) throws Exception {
+        Context ctx = type.getDeclaredConstructor().newInstance();
+        ctx.put(CONTEXT_KEY_CHECK_UPDATES, true);
+        return ctx;
+    }
 }

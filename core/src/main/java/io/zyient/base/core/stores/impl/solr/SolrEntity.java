@@ -24,11 +24,14 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.model.EntityState;
+import io.zyient.base.core.stores.VersionedEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.solr.client.solrj.beans.Field;
 
@@ -38,21 +41,26 @@ import java.util.List;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class SolrEntity<K extends IKey> implements IEntity<K> {
-    @Field
+public abstract class SolrEntity<K extends IKey> implements IEntity<K>, VersionedEntity {
+    public static final String FIELD_SOLR_ID = "id";
+    public static final String FIELD_SOLR_TYPE = "class";
+    public static final String FIELD_SOLR_TIME_CREATED = "time_created";
+    public static final String FIELD_SOLR_TIME_UPDATED = "time_updated";
+    @Field(FIELD_SOLR_ID)
     private String _id;
-    @Field
+    @Field(FIELD_SOLR_TYPE)
     private String _type;
     @Setter(AccessLevel.NONE)
     @JsonIgnore
     private final EntityState state = new EntityState();
-    @Field
+    @Field(FIELD_SOLR_TIME_CREATED)
     private long createdTime;
-    @Field
+    @Field(FIELD_SOLR_TIME_UPDATED)
     private long updatedTime;
 
     protected SolrEntity() {
-
+        createdTime = 0;
+        updatedTime = 0;
     }
 
     /**
@@ -63,12 +71,31 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K> {
     @Override
     public void validate() throws ValidationExceptions {
         try {
+            ValidationExceptions errors = null;
+            if (state.inState(new EEntityState[]{EEntityState.Unknown, EEntityState.Error})) {
+                errors = ValidationExceptions
+                        .add(new ValidationException(String.format("Invalid entity state. [state=%s]",
+                                        state.getState().name())),
+                                errors);
+            }
             _id = entityKey().stringKey();
             if (Strings.isNullOrEmpty(_id)) {
-                throw new ValidationExceptions(List.of(new ValidationException("Key String is NULL/empty [field=_id]")));
+                errors = ValidationExceptions
+                        .add(new ValidationException("Key String is NULL/empty [field=_id]"), errors);
             }
             _type = getClass().getCanonicalName();
-            doValidate();
+            if (createdTime <= 0) {
+                errors = ValidationExceptions
+                        .add(new ValidationException("Created time is not set."), errors);
+            }
+            if (updatedTime <= 0 || updatedTime < createdTime) {
+                errors = ValidationExceptions
+                        .add(new ValidationException("Updated time is not set."), errors);
+            }
+            errors = doValidate(errors);
+            if (errors != null) {
+                throw errors;
+            }
         } catch (ValidationExceptions ex) {
             state.error(ex);
             throw ex;
@@ -80,7 +107,7 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K> {
      *
      * @throws ValidationExceptions - On validation failure will throw exception.
      */
-    public abstract void doValidate() throws ValidationExceptions;
+    public abstract ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions;
 
     /**
      * Copy the changes from the specified source entity
@@ -108,5 +135,18 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K> {
         updatedTime = ((SolrEntity<K>) source).updatedTime;
         state.setState(((SolrEntity<K>) source).state.getState());
         return this;
+    }
+
+    @Override
+    public long version() {
+        return updatedTime;
+    }
+
+    protected void clone(@NonNull SolrEntity<K> entity) {
+        entity._id = _id;
+        entity._type = getClass().getCanonicalName();
+        entity.getState().setState(state.getState());
+        entity.createdTime = createdTime;
+        entity.updatedTime = updatedTime;
     }
 }

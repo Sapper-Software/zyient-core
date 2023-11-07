@@ -899,12 +899,14 @@ public class ReflectionUtils {
     }
 
     public static boolean isNumericType(@NonNull Class<?> type) {
-        return type.equals(Short.class) || type.equals(short.class)
-                || type.equals(Integer.class) || type.equals(int.class) ||
-                type.equals(Long.class) || type.equals(long.class)
-                || type.equals(Float.class) || type.equals(float.class) ||
-                type.equals(Double.class) || type.equals(double.class)
-                || type.equals(Character.class) || type.equals(char.class);
+        if (isShort(type) || isInt(type) || isLong(type) || isFloat(type) || isDouble(type)) {
+            return true;
+        }
+        return type.equals(Character.class) || type.equals(char.class);
+    }
+
+    public static boolean isDecimal(@NonNull Class<?> type) {
+        return (isFloat(type) || isDouble(type));
     }
 
     /**

@@ -34,6 +34,7 @@ public class JSONUpdateRequest extends AbstractUpdateRequest {
         super(METHOD.POST, requestPath);
         this.jsonInputStream = jsonInputStream;
         this.setParam("json.command", "false");
+        this.setSplit("/");
     }
 
     public void addFieldMapping(@NonNull String field,
