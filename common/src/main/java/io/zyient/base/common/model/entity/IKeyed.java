@@ -16,8 +16,6 @@
 
 package io.zyient.base.common.model.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.io.Serializable;
 
 /**

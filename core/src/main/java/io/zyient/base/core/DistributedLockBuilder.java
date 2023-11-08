@@ -32,6 +32,7 @@ import org.apache.curator.framework.CuratorFramework;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -216,8 +217,12 @@ public class DistributedLockBuilder implements Closeable {
     public void close() throws IOException {
         synchronized (this) {
             if (!locks.isEmpty()) {
+                List<DistributedLock> open = new ArrayList<>();
                 for (String name : locks.keySet()) {
-                    locks.get(name).close();
+                    open.add(locks.get(name));
+                }
+                for (DistributedLock lock : open) {
+                    lock.close();
                 }
             }
             locks.clear();

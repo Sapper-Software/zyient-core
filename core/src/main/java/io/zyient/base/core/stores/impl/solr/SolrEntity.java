@@ -35,8 +35,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.apache.solr.client.solrj.beans.Field;
 
-import java.util.List;
-
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,

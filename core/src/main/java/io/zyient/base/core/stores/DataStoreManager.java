@@ -32,8 +32,6 @@ import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.processing.ProcessorState;
-import io.zyient.base.core.stores.annotations.IShardProvider;
-import io.zyient.base.core.stores.annotations.SchemaSharded;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -58,7 +56,6 @@ public class DataStoreManager {
     private final Map<Class<? extends IEntity<?>>, Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings>> entityIndex = new HashMap<>();
     private final Map<String, AbstractDataStoreSettings> dataStoreConfigs = new HashMap<>();
     private final Map<String, ZkSequenceBlock> sequences = new HashMap<>();
-    private final Map<Class<? extends IShardedEntity<?, ?>>, ShardConfigSettings> shardConfigs = new HashMap<>();
     private final MapThreadCache<String, AbstractDataStore<?>> openedStores = new MapThreadCache<>();
     private final Map<String, AbstractDataStore<?>> safeStores = new HashMap<>();
 
@@ -199,71 +196,6 @@ public class DataStoreManager {
         }
     }
 
-    @SuppressWarnings("rawtypes")
-    public <T, E extends IShardedEntity> AbstractDataStore<T> getShard(@Nonnull Class<? extends AbstractDataStore<T>> storeType,
-                                                                       @Nonnull Class<? extends E> type,
-                                                                       Object shardKey) throws DataStoreException {
-        try {
-            if (type.isAnnotationPresent(SchemaSharded.class)) {
-                ShardConfigSettings config = shardConfigs.get(type);
-                if (config != null) {
-                    IShardProvider provider = null;
-                    if (config.getProvider() == null) {
-                        SchemaSharded ss = type.getAnnotation(SchemaSharded.class);
-                        Class<? extends IShardProvider> cls = ss.provider();
-                        provider = ReflectionUtils.createInstance(cls);
-                    } else {
-                        Class<? extends IShardProvider> cls = config.getProvider();
-                        provider = ReflectionUtils.createInstance(cls);
-                    }
-                    int shard = provider.withShardCount(config.getShards().size()).getShard(shardKey);
-                    String name = config.getShards().get(shard);
-                    if (Strings.isNullOrEmpty(name)) {
-                        throw new DataStoreException(
-                                String.format("Shard instance not found. [type=%s][index=%d]",
-                                        type.getCanonicalName(), shard));
-                    }
-                    return getDataStore(name, storeType);
-                } else {
-                    throw new DataStoreException(
-                            String.format("No Shard Config found. [type=%s]", type.getCanonicalName()));
-                }
-            }
-            return null;
-        } catch (Exception ex) {
-            throw new DataStoreException(ex);
-        }
-    }
-
-    public <T, E extends IShardedEntity> List<AbstractDataStore<T>> getShards(@Nonnull Class<? extends AbstractDataStore<T>> storeType,
-                                                                              @Nonnull Class<? extends E> type) throws DataStoreException {
-        try {
-            if (type.isAnnotationPresent(SchemaSharded.class)) {
-                List<AbstractDataStore<T>> stores = null;
-
-                ShardConfigSettings config = shardConfigs.get(type);
-                if (config != null) {
-                    stores = new ArrayList<>();
-                    for (int shard : config.getShards().keySet()) {
-                        String name = config.getShards().get(shard);
-                        if (Strings.isNullOrEmpty(name)) {
-                            throw new DataStoreException(
-                                    String.format("Shard instance not found. [type=%s][index=%d]",
-                                            type.getCanonicalName(), shard));
-                        }
-                        stores.add(getDataStore(name, storeType));
-                    }
-                    return stores;
-                } else {
-                    throw new DataStoreException(String.format("No Shard Config found. [type=%s]", type.getCanonicalName()));
-                }
-            }
-            return null;
-        } catch (Exception ex) {
-            throw new DataStoreException(ex);
-        }
-    }
-
     public void commit() throws DataStoreException {
         try {
             if (openedStores.containsThread()) {
@@ -386,25 +318,20 @@ public class DataStoreManager {
                     state.setState(ProcessorState.EProcessorState.Running);
                     return;
                 }
+                HierarchicalConfiguration<ImmutableNode> config
+                        = xmlConfig.configurationAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES);
+                ConfigReader reader = new ConfigReader(config, null, DataStoreManagerSettings.class);
+                reader.read();
+                settings = (DataStoreManagerSettings) reader.settings();
                 if (Strings.isNullOrEmpty(path)) {
                     ConfigPath cp = AbstractDataStoreSettings.class.getAnnotation(ConfigPath.class);
                     path = cp.path();
                 }
-                HierarchicalConfiguration<ImmutableNode> config
-                        = xmlConfig.configurationAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES);
-                ConfigReader reader = new ConfigReader(xmlConfig, path, DataStoreManagerSettings.class);
-                settings = (DataStoreManagerSettings) reader.settings();
-                List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
-                for (HierarchicalConfiguration<ImmutableNode> node : dsnodes) {
-                    readDataStoreConfig(node);
-                }
-
-                if (!ConfigReader.checkIfNodeExists(config, DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES))
-                    return;
-                List<HierarchicalConfiguration<ImmutableNode>> snodes
-                        = config.configurationsAt(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES);
-                for (HierarchicalConfiguration<ImmutableNode> node : snodes) {
-                    readShardConfig(node);
+                if (ConfigReader.checkIfNodeExists(config, path)) {
+                    List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
+                    for (HierarchicalConfiguration<ImmutableNode> node : dsnodes) {
+                        readDataStoreConfig(node);
+                    }
                 }
                 if (!Strings.isNullOrEmpty(settings.getZkConnection())) {
                     zkConnection = connectionManager
@@ -469,20 +396,6 @@ public class DataStoreManager {
                     }
                 }
             }
-            String shpath = new PathUtils.ZkPathBuilder(zkPath)
-                    .withPath(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES)
-                    .build();
-            if (client.checkExists().forPath(shpath) != null) {
-                List<String> names = client.getChildren().forPath(shpath);
-                if (names != null && !names.isEmpty()) {
-                    for (String name : names) {
-                        String cp = new PathUtils.ZkPathBuilder(shpath)
-                                .withPath(name)
-                                .build();
-                        readShardConfig(client, cp);
-                    }
-                }
-            }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
@@ -504,32 +417,12 @@ public class DataStoreManager {
                         save(config);
                     }
                 }
-                if (!shardConfigs.isEmpty()) {
-                    for (Class<?> type : shardConfigs.keySet()) {
-                        ShardConfigSettings sc = shardConfigs.get(type);
-                        if (sc.getSource() == EConfigSource.Database)
-                            continue;
-                        save(sc);
-                    }
-                }
             } finally {
                 updateLock.unlock();
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
-    }
-
-    private void save(ShardConfigSettings settings) throws Exception {
-        CuratorFramework client = zkConnection.client();
-        String shpath = new PathUtils.ZkPathBuilder(zkPath)
-                .withPath(DataStoreManagerSettings.CONFIG_NODE_SHARDED_ENTITIES)
-                .withPath(settings.getEntityType().getSimpleName())
-                .build();
-        if (client.checkExists().forPath(shpath) == null) {
-            client.create().creatingParentsIfNeeded().forPath(shpath);
-        }
-        JSONUtils.write(client, shpath, settings);
     }
 
     private void save(AbstractDataStoreSettings settings) throws Exception {
@@ -555,30 +448,6 @@ public class DataStoreManager {
         AbstractDataStoreSettings settings = JSONUtils.read(data, AbstractDataStoreSettings.class);
         settings.setSource(EConfigSource.Database);
         addDataStoreConfig(settings);
-    }
-
-    private void readShardConfig(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        try {
-            ConfigReader reader = new ConfigReader(xmlConfig, ShardConfigSettings.class);
-            ShardConfigSettings settings = ((ShardConfigSettings) reader.settings()).parse();
-            settings.setSource(EConfigSource.File);
-            shardConfigs.put(settings.getEntityType(), settings);
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
-    }
-
-    private void readShardConfig(CuratorFramework client, String path) throws ConfigurationException {
-        try {
-            ShardConfigSettings settings = JSONUtils.read(client, path, ShardConfigSettings.class);
-            if (settings == null) {
-                throw new Exception(String.format("Failed to read shard configuration. [path=%s]", path));
-            }
-            settings.setSource(EConfigSource.Database);
-            shardConfigs.put(settings.getEntityType(), settings);
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
     }
 
     @SuppressWarnings("unchecked")

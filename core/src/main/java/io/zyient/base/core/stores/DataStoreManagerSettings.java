@@ -28,7 +28,6 @@ import lombok.Setter;
         property = "@class")
 public class DataStoreManagerSettings extends Settings {
     public static final String CONFIG_NODE_DATA_STORES = "dataStores";
-    public static final String CONFIG_NODE_SHARDED_ENTITIES = "shardedEntities";
     public static final String ZK_NODE_SEQUENCE = "sequence";
 
     @Config(name = "zk.connection", required = false)

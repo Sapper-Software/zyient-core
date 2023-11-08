@@ -17,7 +17,6 @@
 package io.zyient.base.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.google.common.base.Strings;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
@@ -32,7 +31,6 @@ import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 import javax.persistence.Version;
-import java.util.List;
 
 @Getter
 @Setter

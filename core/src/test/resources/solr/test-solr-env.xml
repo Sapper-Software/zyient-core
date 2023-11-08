@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <env>
+        <name>DEV</name>
+        <module>TEST-SOLR-ENV</module>
+        <instance>test-solr</instance>
+        <source>demo</source>
+
+        <paths>
+            <connections>config</connections>
+            <registry>/test/registry</registry>
+            <root>/test</root>
+        </paths>
+        <managers>
+            <state>
+                <stateManagerClass>io.zyient.base.core.state.DemoStateManager</stateManagerClass>
+                <basePath>demo</basePath>
+                <connection>test-zk</connection>
+                <fileState>true</fileState>
+                <offsets>
+                    <offsetManager>
+                        <name>TestChronicleOffset</name>
+                        <type>io.zyient.base.core.messaging.chronicle.ChronicleStateManager</type>
+                        <connection>test-zk</connection>
+                        <basePath>chronicle</basePath>
+                    </offsetManager>
+                </offsets>
+            </state>
+        </managers>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/registry</path>
+        </locks>
+        <enableHeartbeat>false</enableHeartbeat>
+        <demo>
+            <dataStores>
+
+            </dataStores>
+        </demo>
+        <config>
+            <connections>
+                <connection>
+                    <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                    <zookeeper>
+                        <name>test-zk</name>
+                        <!--connectionString>192.168.0.5:2181,192.168.0.4:2181</connectionString -->
+                        <connectionString>192.168.2.16:2181,192.168.2.17:2181,192.168.2.18:2181</connectionString>
+                        <retry>
+                            <interval>1500</interval>
+                            <retries>5</retries>
+                        </retry>
+                        <connectionTimeout>10000</connectionTimeout>
+                    </zookeeper>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.stores.impl.solr.SolrConnection</class>
+                    <solr>
+                        <name>test-db</name>
+                        <client>Basic</client>
+                        <urls>http://192.168.2.31:8983/solr</urls>
+                    </solr>
+                </connection>
+            </connections>
+        </config>
+    </env>
+</configuration>

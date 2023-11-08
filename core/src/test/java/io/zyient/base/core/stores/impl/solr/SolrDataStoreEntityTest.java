@@ -19,18 +19,16 @@ package io.zyient.base.core.stores.impl.solr;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
-import io.zyient.base.core.utils.DemoEnv;
+import io.zyient.base.core.stores.DataStoreEnv;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class SolrDataStoreEntityTest {
-    private static final String __CONFIG_FILE = "src/test/resources/test-solr-env.xml";
+    private static final String __CONFIG_FILE = "src/test/resources/solr/test-solr-env.xml";
     private static XMLConfiguration xmlConfiguration = null;
-    private static DemoEnv env = new DemoEnv();
+    private static DataStoreEnv env = new DataStoreEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
