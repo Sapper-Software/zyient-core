@@ -49,6 +49,10 @@ public abstract class TransactionDataStore<C, T> extends AbstractDataStore<C> {
 
     public void beingTransaction() throws DataStoreException {
         checkState();
+        C session = sessionManager().session();
+        if (session == null) {
+            throw new DataStoreException("Failed to create session...");
+        }
         sessionManager().beingTransaction();
     }
 

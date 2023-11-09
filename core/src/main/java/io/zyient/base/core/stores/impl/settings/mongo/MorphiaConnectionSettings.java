@@ -32,7 +32,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "mongo")
+@ConfigPath(path = "morphia")
 public class MorphiaConnectionSettings extends AbstractConnectionSettings {
 
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_USER)
@@ -43,6 +43,8 @@ public class MorphiaConnectionSettings extends AbstractConnectionSettings {
     private int port = 27017;
     @Config(name = io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings.Constants.CONFIG_DB)
     private String db;
+    @Config(name = "authDb")
+    private String authDb;
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_PASS_KEY)
     private String password;
     @Config(name = JdbcConnectionSettings.Constants.CONFIG_POOL_SIZE, required = false, type = Integer.class)

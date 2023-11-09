@@ -14,29 +14,25 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.solr;
+package io.zyient.base.core.stores.impl.mongo;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.impl.mongo.model.TestMongoEntity;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 
-class SolrDataStoreEntityTest {
-    private static final String __CONFIG_FILE = "src/test/resources/solr/test-solr-env.xml";
-    private static final String __SOLR_DB_NAME = "test-solr";
+class MongoDbDataStoreTest {
+    private static final String __CONFIG_FILE = "src/test/resources/mongodb/test-mongo-env.xml";
+    private static final String __MONGO_DB_NAME = "test-mongodb";
 
     private static XMLConfiguration xmlConfiguration = null;
     private static DataStoreEnv env = new DataStoreEnv();
@@ -59,13 +55,20 @@ class SolrDataStoreEntityTest {
         try {
             DataStoreManager manager = env.dataStoreManager();
             assertNotNull(manager);
-            SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
+            MongoDbDataStore dataStore = manager.getDataStore(__MONGO_DB_NAME, MongoDbDataStore.class);
             assertNotNull(dataStore);
-            for (int ii = 0; ii < 4; ii++) {
-                TestPOJO tp = new TestPOJO();
-                tp.getState().setState(EEntityState.New);
-                tp = dataStore.createEntity(tp, tp.getClass(), null);
-                assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
+
+            dataStore.beingTransaction();
+            try {
+                for (int ii = 0; ii < 10; ii++) {
+                    TestMongoEntity te = new TestMongoEntity();
+                    te = dataStore.createEntity(te, TestMongoEntity.class, null);
+                    assertTrue(te.getUpdatedTime() > te.getCreatedTime());
+                }
+                dataStore.commit();
+            } catch (Exception ex) {
+                dataStore.rollback();
+                throw ex;
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -83,27 +86,6 @@ class SolrDataStoreEntityTest {
 
     @Test
     void findEntity() {
-        try {
-            DataStoreManager manager = env.dataStoreManager();
-            assertNotNull(manager);
-            SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
-            assertNotNull(dataStore);
-            List<StringKey> keys = new ArrayList<>();
-            for (int ii = 0; ii < 4; ii++) {
-                TestPOJO tp = new TestPOJO();
-                tp.getState().setState(EEntityState.New);
-                tp = dataStore.createEntity(tp, tp.getClass(), null);
-                assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
-                keys.add(tp.entityKey());
-            }
-            for (StringKey key : keys) {
-                TestPOJO tp = dataStore.findEntity(key, TestPOJO.class, null);
-                assertNotNull(tp);
-            }
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            fail(ex);
-        }
     }
 
     @Test

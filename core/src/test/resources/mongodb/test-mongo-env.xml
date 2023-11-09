@@ -40,6 +40,24 @@
             <path>/test/registry</path>
         </locks>
         <enableHeartbeat>false</enableHeartbeat>
+        <keystore>
+            <name>test-zk-keystore</name>
+            <class>io.zyient.base.core.keystore.ZkKeyStore</class>
+            <path>/io/zyient/test/keystore</path>
+            <iv>e68250d0-a406-40c6-8b23-cfbffcbd4502</iv>
+            <connection>
+                <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                <zookeeper>
+                    <name>test-zk</name>
+                    <connectionString>192.168.2.16:2181</connectionString>
+                    <retry>
+                        <interval>1500</interval>
+                        <retries>5</retries>
+                    </retry>
+                    <connectionTimeout>10000</connectionTimeout>
+                </zookeeper>
+            </connection>
+        </keystore>
         <demo>
             <dataStores>
                 <zk>
@@ -56,6 +74,18 @@
                         <class>io.zyient.base.core.stores.impl.solr.SolrConnection</class>
                     </connection>
                     <name>test-solr</name>
+                </store>
+                <store>
+                    <settings>
+                        <class>io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings</class>
+                    </settings>
+                    <class>io.zyient.base.core.stores.impl.mongo.MongoDbDataStore</class>
+                    <connection>
+                        <name>test-mongodb</name>
+                        <class>io.zyient.base.core.stores.impl.mongo.MorphiaConnection</class>
+                    </connection>
+                    <name>test-mongodb</name>
+                    <model>io.zyient.base.core.stores.impl.mongo.model</model>
                 </store>
             </dataStores>
         </demo>
@@ -85,6 +115,17 @@
                         <client>Basic</client>
                         <urls>http://192.168.2.31:8983/solr</urls>
                     </solr>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.stores.impl.mongo.MorphiaConnection</class>
+                    <morphia>
+                        <name>test-mongodb</name>
+                        <host>192.168.2.30</host>
+                        <user>test</user>
+                        <authDb>admin</authDb>
+                        <passwordKey>mongodb-password</passwordKey>
+                        <db>testdb</db>
+                    </morphia>
                 </connection>
             </connections>
         </config>

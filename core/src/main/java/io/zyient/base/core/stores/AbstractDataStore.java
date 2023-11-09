@@ -67,7 +67,6 @@ public abstract class AbstractDataStore<T> implements Closeable {
     public void configure(@NonNull DataStoreManager dataStoreManager,
                           @NonNull AbstractDataStoreSettings settings,
                           @NonNull BaseEnv<?> env) throws ConfigurationException {
-        Preconditions.checkNotNull(connection);
         try {
             this.dataStoreManager = dataStoreManager;
             this.settings = settings;

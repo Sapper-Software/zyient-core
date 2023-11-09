@@ -44,7 +44,7 @@ class JavaZkKeyStoreTest {
     @Test
     void read() {
         try {
-            String keyName = "oracle-demo-password";
+            String keyName = "mongodb-password";
             String keyValue = "test1234";
             String password = "test1234";
 

@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.model;
 
+import dev.morphia.annotations.Entity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.model.entity.NativeKey;
 import io.zyient.base.common.utils.ChecksumUtils;
@@ -29,6 +30,7 @@ import javax.persistence.Embeddable;
 @Getter
 @Setter
 @Embeddable
+@Entity
 public class StringKey extends NativeKey<String> {
     @Column(name = "key")
     private String key;

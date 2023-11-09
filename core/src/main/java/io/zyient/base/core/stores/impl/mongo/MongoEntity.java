@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import dev.morphia.annotations.Id;
+import dev.morphia.annotations.Transient;
 import dev.morphia.annotations.Version;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
@@ -44,11 +45,13 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
     private String _id;
     private String _type;
     @JsonIgnore
+    @Transient
     @Setter(AccessLevel.NONE)
     private final EntityState state = new EntityState();
     private long createdTime;
-    @Version
     private long updatedTime;
+    @Version
+    private long _version = 0;
 
     public MongoEntity() {
         createdTime = 0;
@@ -76,14 +79,6 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
                         .add(new ValidationException("Key String is NULL/empty [field=_id]"), errors);
             }
             _type = getClass().getCanonicalName();
-            if (createdTime <= 0) {
-                errors = ValidationExceptions
-                        .add(new ValidationException("Created time is not set."), errors);
-            }
-            if (updatedTime <= 0 || updatedTime < createdTime) {
-                errors = ValidationExceptions
-                        .add(new ValidationException("Updated time is not set."), errors);
-            }
             errors = doValidate(errors);
             if (errors != null) {
                 throw errors;

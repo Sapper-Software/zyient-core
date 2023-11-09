@@ -17,6 +17,9 @@
 package io.zyient.base.core.stores.impl.mongo;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.mongodb.MongoClientOptions;
+import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import dev.morphia.Datastore;
@@ -97,23 +100,26 @@ public class MorphiaConnection extends AbstractConnection<MorphiaSession> {
             String url = createConnectionUrl(keyStore);
             client = MongoClients.create(url);
         }
-        return Morphia.createDatastore(client);
+        return Morphia.createDatastore(client, settings.getDb());
     }
 
     protected String createConnectionUrl(KeyStore keyStore) throws Exception {
         String url = "mongodb://";
         StringBuilder builder = new StringBuilder(url);
         builder.append(settings.getUser());
-        String pk = settings.getPassword();
+        String passwd = keyStore.read(settings.getPassword());
+        if (Strings.isNullOrEmpty(passwd)) {
+            throw new Exception(String.format("Failed to get encrypted key. [key=%s]", settings.getPassword()));
+        }
         builder.append(":")
-                .append(keyStore.read(pk));
+                .append(passwd);
         builder.append("@")
                 .append(settings.getHost())
                 .append(":")
                 .append(settings.getPort());
         builder.append("/")
-                .append(settings.getDb());
-        builder.append("/?")
+                .append(settings.getAuthDb());
+        builder.append("?")
                 .append(DbConnection.Constants.DB_KEY_POOL_SIZE)
                 .append(settings.getPoolSize());
         if (settings.getParameters() != null && !settings.getParameters().isEmpty()) {

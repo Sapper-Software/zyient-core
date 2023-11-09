@@ -260,7 +260,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     private static ContentStreamUpdateRequest getContentUpdateRequest(SolrDocumentEntity entity) throws IOException {
         ContentStreamUpdateRequest ur = new ContentStreamUpdateRequest("/update/extract");
         ur.addFile(entity.getContent(), entity.getMimeType());
-        ur.setParam(LITERALS_PREFIX + "id", entity.get_id());
+        ur.setParam(LITERALS_PREFIX + "id", entity.getId());
         ur.setParam(LITERALS_PREFIX + "location", entity.getSourceLocation());
         ur.setParam(MAP_PREFIX + "content", "attr_content");
         ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);

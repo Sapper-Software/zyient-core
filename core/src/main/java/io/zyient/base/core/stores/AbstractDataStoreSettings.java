@@ -30,7 +30,7 @@ import lombok.Setter;
         property = "@class")
 @ConfigPath(path = "store")
 public class AbstractDataStoreSettings extends Settings {
-    public static final String CONFIG_SETTING_TYPE = "settingType";
+    public static final String CONFIG_SETTING_TYPE = "settings.class";
     public static final long SEQUENCE_BLOCK_SIZE = 8;
 
     private static final int DEFAULT_MAX_RESULTS = 500;

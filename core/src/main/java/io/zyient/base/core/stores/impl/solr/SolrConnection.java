@@ -48,7 +48,6 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @Accessors(fluent = true)
 public class SolrConnection extends AbstractConnection<SolrClient> {
-    private SolrConnectionSettings settings;
     private ISolrAuthHandler authHandler = null;
     private BaseEnv<?> env;
     private final Map<String, SolrClient> clients = new HashMap<>();
@@ -130,7 +129,7 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
     }
 
     public SolrClient connect(@NonNull String collection) throws ConnectionError {
-        Preconditions.checkNotNull(settings);
+        Preconditions.checkState(settings instanceof SolrConnectionSettings);
         Preconditions.checkState(state().isConnected());
         synchronized (state()) {
             try {
@@ -138,7 +137,7 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
                     return clients.get(collection);
                 }
                 SolrClient client = null;
-                switch (settings.getClientType()) {
+                switch (((SolrConnectionSettings) settings).getClientType()) {
                     case Basic -> {
                         client = buildBasicClient(collection);
                     }
@@ -152,11 +151,11 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
                         client = buildLBClient(collection);
                     }
                 }
-                if (settings.getAuthHandler() != null) {
-                    authHandler = settings.getAuthHandler()
+                if (((SolrConnectionSettings) settings).getAuthHandler() != null) {
+                    authHandler = ((SolrConnectionSettings) settings).getAuthHandler()
                             .getDeclaredConstructor()
                             .newInstance();
-                    authHandler.init(client, settings);
+                    authHandler.init(client, (SolrConnectionSettings) settings);
                 }
                 clients.put(collection, client);
                 return client;
@@ -167,18 +166,18 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
     }
 
     private SolrClient buildBasicClient(String collection) throws Exception {
+        SolrConnectionSettings settings = (SolrConnectionSettings) settings();
         String url = String.format("%s/%s", settings.getUrls().get(0), collection);
         return new Http2SolrClient.Builder(url)
-                .withResponseParser(new JsonMapResponseParser())
                 .withConnectionTimeout(settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRequestTimeout(settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 
     private SolrClient buildLBClient(String collection) throws Exception {
+        SolrConnectionSettings settings = (SolrConnectionSettings) settings();
         String url = String.format("%s/%s", settings.getUrls().get(0), collection);
         Http2SolrClient solr = new Http2SolrClient.Builder(url)
-                .withResponseParser(new JsonMapResponseParser())
                 .withConnectionTimeout(settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRequestTimeout(settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
@@ -201,21 +200,21 @@ public class SolrConnection extends AbstractConnection<SolrClient> {
     }
 
     private SolrClient buildCloudClient(String collection) throws Exception {
+        SolrConnectionSettings settings = (SolrConnectionSettings) settings();
         List<String> arr = new ArrayList<>(settings.getUrls().size());
         for (String url : settings.getUrls()) {
             arr.add(String.format("%s/%s", url, collection));
         }
         return new CloudHttp2SolrClient.Builder(arr)
-                .withResponseParser(new JsonMapResponseParser())
                 .withZkConnectTimeout((int) settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRetryExpiryTime((int) settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();
     }
 
     private SolrClient buildConcurrentClient(String collection) throws Exception {
+        SolrConnectionSettings settings = (SolrConnectionSettings) settings();
         String url = String.format("%s/%s", settings.getUrls().get(0), collection);
         Http2SolrClient solr = new Http2SolrClient.Builder(url)
-                .withResponseParser(new JsonMapResponseParser())
                 .withConnectionTimeout(settings.getConnectionTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .withRequestTimeout(settings.getRequestTimeout().normalized(TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
                 .build();

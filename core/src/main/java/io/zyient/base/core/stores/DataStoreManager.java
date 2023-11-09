@@ -114,14 +114,14 @@ public class DataStoreManager {
         }
     }
 
-    public <T> AbstractDataStore<T> getDataStore(@Nonnull String name,
-                                                 @Nonnull Class<? extends AbstractDataStore<T>> storeType) throws DataStoreException {
+    public <T extends AbstractDataStore<?>> T getDataStore(@Nonnull String name,
+                                                           @Nonnull Class<? extends T> storeType) throws DataStoreException {
         return getDataStore(name, storeType, true);
     }
 
-    public <T> AbstractDataStore<T> getDataStore(@Nonnull String name,
-                                                 @Nonnull Class<? extends AbstractDataStore<T>> storeType,
-                                                 boolean add) throws DataStoreException {
+    public <T extends AbstractDataStore<?>> T getDataStore(@Nonnull String name,
+                                                           @Nonnull Class<? extends T> storeType,
+                                                           boolean add) throws DataStoreException {
         try {
             AbstractDataStoreSettings config = dataStoreConfigs.get(name);
             if (config == null) {
@@ -145,9 +145,9 @@ public class DataStoreManager {
     }
 
     @SuppressWarnings({"rawtypes"})
-    public <T, E extends IEntity> AbstractDataStore<T> getDataStore(@Nonnull Class<? extends AbstractDataStore<T>> storeType,
-                                                                    Class<? extends E> type,
-                                                                    boolean add) throws DataStoreException {
+    public <T extends AbstractDataStore<?>, E extends IEntity> T getDataStore(@Nonnull Class<? extends T> storeType,
+                                                                              Class<? extends E> type,
+                                                                              boolean add) throws DataStoreException {
         Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings> configs = entityIndex.get(type);
         if (configs == null) {
             throw new DataStoreException(String.format("No data store found for entity type. [type=%s]", type.getCanonicalName()));
@@ -165,25 +165,25 @@ public class DataStoreManager {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> AbstractDataStore<T> getDataStore(AbstractDataStoreSettings config,
-                                                  Class<? extends AbstractDataStore<T>> storeType,
-                                                  boolean add) throws DataStoreException {
+    private <T extends AbstractDataStore<?>> T getDataStore(AbstractDataStoreSettings config,
+                                                            Class<? extends T> storeType,
+                                                            boolean add) throws DataStoreException {
         Preconditions.checkNotNull(env);
         if (safeStores.containsKey(config.getName())) {
-            return (AbstractDataStore<T>) safeStores.get(config.getName());
+            return (T) safeStores.get(config.getName());
         }
         Map<String, AbstractDataStore<?>> stores = null;
         if (openedStores.containsThread()) {
             stores = openedStores.get();
             if (stores.containsKey(config.getName())) {
-                return (AbstractDataStore<T>) stores.get(config.getName());
+                return (T) stores.get(config.getName());
             }
         } else if (!add) {
             return null;
         }
 
         try {
-            AbstractDataStore<T> store = ReflectionUtils.createInstance(storeType);
+            T store = ReflectionUtils.createInstance(storeType);
             store.configure(this, config, env);
             if (store.isThreadSafe()) {
                 safeStores.put(store.name(), store);
@@ -341,7 +341,13 @@ public class DataStoreManager {
                                 settings.getZkConnection()));
                     }
                     if (!zkConnection.isConnected()) zkConnection.connect();
-                    zkPath = path;
+                    String zp = settings.getZkPath();
+                    if (Strings.isNullOrEmpty(zp)) {
+                        zp = env.settings().getRegistryPath();
+                    }
+                    zkPath = new PathUtils.ZkPathBuilder(zp)
+                            .withPath(env.environment())
+                            .build();
                     readFromZk(false);
                 }
             } finally {
@@ -412,8 +418,6 @@ public class DataStoreManager {
                 if (!dataStoreConfigs.isEmpty()) {
                     for (String name : dataStoreConfigs.keySet()) {
                         AbstractDataStoreSettings config = dataStoreConfigs.get(name);
-                        if (config.getSource() == EConfigSource.Database)
-                            continue;
                         save(config);
                     }
                 }
@@ -488,6 +492,7 @@ public class DataStoreManager {
                         String.format("Invalid settings type. [type=%s]", type.getCanonicalName()));
             }
             ConfigReader reader = new ConfigReader(xmlConfig, null, (Class<? extends Settings>) type);
+            reader.read();
             AbstractDataStoreSettings settings = (AbstractDataStoreSettings) reader.settings();
             settings.setSource(EConfigSource.File);
             addDataStoreConfig(settings);

@@ -45,9 +45,9 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K>, Versione
     public static final String FIELD_SOLR_TIME_CREATED = "time_created";
     public static final String FIELD_SOLR_TIME_UPDATED = "time_updated";
     @Field(FIELD_SOLR_ID)
-    private String _id;
+    private String id;
     @Field(FIELD_SOLR_TYPE)
-    private String _type;
+    private String type;
     @Setter(AccessLevel.NONE)
     @JsonIgnore
     private final EntityState state = new EntityState();
@@ -76,20 +76,12 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K>, Versione
                                         state.getState().name())),
                                 errors);
             }
-            _id = entityKey().stringKey();
-            if (Strings.isNullOrEmpty(_id)) {
+            id = entityKey().stringKey();
+            if (Strings.isNullOrEmpty(id)) {
                 errors = ValidationExceptions
                         .add(new ValidationException("Key String is NULL/empty [field=_id]"), errors);
             }
-            _type = getClass().getCanonicalName();
-            if (createdTime <= 0) {
-                errors = ValidationExceptions
-                        .add(new ValidationException("Created time is not set."), errors);
-            }
-            if (updatedTime <= 0 || updatedTime < createdTime) {
-                errors = ValidationExceptions
-                        .add(new ValidationException("Updated time is not set."), errors);
-            }
+            type = getClass().getCanonicalName();
             errors = doValidate(errors);
             if (errors != null) {
                 throw errors;
@@ -127,8 +119,8 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K>, Versione
     @Override
     public IEntity<K> copyChanges(IEntity<K> source, Context context) throws CopyException {
         Preconditions.checkArgument(source instanceof SolrEntity<K>);
-        _id = ((SolrEntity<K>) source).get_id();
-        _type = getClass().getCanonicalName();
+        id = ((SolrEntity<K>) source).id;
+        type = getClass().getCanonicalName();
         createdTime = ((SolrEntity<K>) source).createdTime;
         updatedTime = ((SolrEntity<K>) source).updatedTime;
         state.setState(((SolrEntity<K>) source).state.getState());
@@ -141,8 +133,8 @@ public abstract class SolrEntity<K extends IKey> implements IEntity<K>, Versione
     }
 
     protected void clone(@NonNull SolrEntity<K> entity) {
-        entity._id = _id;
-        entity._type = getClass().getCanonicalName();
+        entity.id = id;
+        entity.type = getClass().getCanonicalName();
         entity.getState().setState(state.getState());
         entity.createdTime = createdTime;
         entity.updatedTime = updatedTime;

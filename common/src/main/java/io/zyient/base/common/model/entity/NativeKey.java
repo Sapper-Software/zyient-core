@@ -28,7 +28,7 @@ public abstract class NativeKey<T> implements IKey {
     private final Class<? extends T> type;
 
     public NativeKey(@NonNull Class<? extends T> type) {
-        Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrClass(type));
+        Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrString(type));
         this.type = type;
     }
 }
