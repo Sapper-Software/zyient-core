@@ -17,8 +17,8 @@
 package io.zyient.base.core.stores.impl.mongo.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import dev.morphia.annotations.Entity;
-import dev.morphia.annotations.Reference;
+import dev.morphia.annotations.*;
+import dev.morphia.utils.IndexType;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
@@ -39,15 +39,18 @@ import java.util.UUID;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@Entity("test-base")
+@Entity("TestBase")
 @ToString
+@Indexes({
+        @Index(fields = @Field(value = "timestamp", type = IndexType.DESC))
+})
 public class TestMongoEntity extends MongoEntity<StringKey> {
     private StringKey key;
     private String textValue;
     private long timestamp;
     private double doubleValue;
     @Reference
-    private List<TestMongoNested> nested;
+    private List<TestMongoNested> nested = new ArrayList<>();
 
     public TestMongoEntity() {
         key = new StringKey(UUID.randomUUID().toString());

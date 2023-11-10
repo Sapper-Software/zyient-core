@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.impl.mongo.model.TestMongoEntity;
@@ -27,6 +28,9 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -86,6 +90,44 @@ class MongoDbDataStoreTest {
 
     @Test
     void findEntity() {
+        try {
+            DataStoreManager manager = env.dataStoreManager();
+            assertNotNull(manager);
+            MongoDbDataStore dataStore = manager.getDataStore(__MONGO_DB_NAME, MongoDbDataStore.class);
+            assertNotNull(dataStore);
+
+            try {
+                dataStore.beingTransaction();
+                Map<StringKey, Integer> counts = new HashMap<>();
+                try {
+                    for (int ii = 0; ii < 10; ii++) {
+                        TestMongoEntity te = new TestMongoEntity();
+                        te = dataStore.createEntity(te, TestMongoEntity.class, null);
+                        assertTrue(te.getUpdatedTime() > te.getCreatedTime());
+                        if (te.getNested() != null)
+                            counts.put(te.entityKey(), te.getNested().size());
+                        else
+                            counts.put(te.entityKey(), 0);
+                    }
+                    dataStore.commit();
+                } catch (Exception ex) {
+                    dataStore.rollback();
+                    throw ex;
+                }
+                for (StringKey key : counts.keySet()) {
+                    TestMongoEntity te = dataStore.findEntity(key, TestMongoEntity.class, null);
+                    assertNotNull(te);
+                    int c = counts.get(key);
+                    if (c > 0)
+                        assertEquals(te.getNested().size(), c);
+                }
+            } catch (Exception ex) {
+                throw ex;
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
     }
 
     @Test

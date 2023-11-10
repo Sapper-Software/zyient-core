@@ -34,6 +34,7 @@ import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
 import dev.morphia.DeleteOptions;
 import dev.morphia.annotations.Entity;
+import dev.morphia.annotations.Reference;
 import dev.morphia.query.MorphiaCursor;
 import dev.morphia.query.Query;
 import dev.morphia.query.filters.Filters;
@@ -54,7 +55,9 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -95,6 +98,8 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             if (entity instanceof MongoEntity<?>) {
                 ((MongoEntity<?>) entity).setCreatedTime(System.nanoTime());
                 ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                ((MongoEntity<?>) entity).preSave();
+                checkReferences(entity, context);
                 entity = session.save(entity);
                 ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
             } else {
@@ -125,6 +130,56 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             return entity;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
+            throw new DataStoreException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E extends IEntity<?>> E checkReferences(E entity,
+                                                     Context context) throws DataStoreException {
+        try {
+            Field[] fields = ReflectionUtils.getAllFields(entity.getClass());
+            if (fields != null) {
+                for (Field field : fields) {
+                    if (field.isAnnotationPresent(Reference.class)) {
+                        Class<?> type = field.getType();
+                        if (type.isArray()) {
+                            Class<?> inner = type.getComponentType();
+                            if (!ReflectionUtils.isSuperType(MongoEntity.class, inner)) {
+                                throw new DataStoreException(String.format("Array type not supported. [type=%s]",
+                                        inner.getCanonicalName()));
+                            }
+                            Object value = ReflectionUtils.getFieldValue(entity, field);
+                            if (value != null) {
+                                Object[] array = ReflectionUtils.convertToObjectArray(value);
+                                for (Object av : array) {
+                                    createEntity((MongoEntity<?>) av,
+                                            (Class<? extends MongoEntity<?>>) av.getClass(),
+                                            context);
+                                }
+                            }
+                        } else if (ReflectionUtils.isCollection(type)) {
+                            Class<?> inner = ReflectionUtils.getGenericCollectionType(field);
+                            if (!ReflectionUtils.isSuperType(MongoEntity.class, inner)) {
+                                throw new DataStoreException(String.format("Collection type not supported. [type=%s]",
+                                        inner.getCanonicalName()));
+                            }
+                            Object value = ReflectionUtils.getFieldValue(entity, field);
+                            if (value != null) {
+                                Collection<?> collection = (Collection<?>) value;
+
+                                for (Object av : collection) {
+                                    createEntity((MongoEntity<?>) av,
+                                            (Class<? extends MongoEntity<?>>) av.getClass(),
+                                            context);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return entity;
+        } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
     }
@@ -266,7 +321,9 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                             throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
                                     type.getCanonicalName(), k));
                         }
-                        return found.get(0);
+                        MongoEntity<?> me = (MongoEntity<?>) found.get(0);
+                        me.postLoad();
+                        return (E) me;
                     }
                 }
             } else {
@@ -322,7 +379,11 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                 for (Document document : documents) {
                     String json = document.toJson();
                     E entity = JSONUtils.read(json, type);
-                    ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+                    if (entity instanceof MongoEntity<?>) {
+                        ((MongoEntity<?>) entity).postLoad();
+                    } else if (entity instanceof BaseEntity<?>) {
+                        ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                    }
                     entities.add(entity);
                 }
                 if (!entities.isEmpty()) {
@@ -378,7 +439,11 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                 for (Document document : documents) {
                     String json = document.toJson();
                     E entity = JSONUtils.read(json, type);
-                    ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+                    if (entity instanceof MongoEntity<?>) {
+                        ((MongoEntity<?>) entity).postLoad();
+                    } else if (entity instanceof BaseEntity<?>) {
+                        ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                    }
                     entities.add(entity);
                 }
                 if (!entities.isEmpty()) {

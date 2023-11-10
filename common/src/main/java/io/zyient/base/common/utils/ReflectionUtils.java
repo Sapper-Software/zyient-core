@@ -35,6 +35,20 @@ import java.util.*;
  * 11:10:30 AM
  */
 public class ReflectionUtils {
+    public static Object[] convertToObjectArray(Object array) {
+        Class<?> ofArray = array.getClass().getComponentType();
+        if (ofArray.isPrimitive()) {
+            List<Object> ar = new ArrayList<>();
+            int length = Array.getLength(array);
+            for (int i = 0; i < length; i++) {
+                ar.add(Array.get(array, i));
+            }
+            return ar.toArray();
+        }
+        else {
+            return (Object[]) array;
+        }
+    }
 
     /**
      * Get the nested Field for the dot notation name.
@@ -88,7 +102,7 @@ public class ReflectionUtils {
                 if (f == null) break;
                 ct = f.getType();
                 if (implementsInterface(List.class, ct)) {
-                    ct = getGenericListType(f);
+                    ct = getGenericCollectionType(f);
                 } else if (implementsInterface(Set.class, ct)) {
                     ct = getGenericSetType(f);
                 }
@@ -1026,7 +1040,7 @@ public class ReflectionUtils {
      * @param field - Field to extract the Parameterized type for.
      * @return - Parameterized type.
      */
-    public static Class<?> getGenericListType(@NonNull Field field) {
+    public static Class<?> getGenericCollectionType(@NonNull Field field) {
         Preconditions
                 .checkArgument(implementsInterface(List.class, field.getType()));
 

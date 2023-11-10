@@ -30,6 +30,8 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.ChecksumUtils;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.model.EntityState;
 import io.zyient.base.core.stores.VersionedEntity;
 import lombok.AccessLevel;
@@ -52,6 +54,7 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
     private long updatedTime;
     @Version
     private long _version = 0;
+    private String objectHash = null;
 
     public MongoEntity() {
         createdTime = 0;
@@ -126,6 +129,26 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
 
     @Override
     public long version() {
-        return updatedTime;
+        return _version;
+    }
+
+    public void postLoad() throws Exception {
+        String json = JSONUtils.asString(this, getClass());
+        objectHash = ChecksumUtils.generateHash(json);
+        state.setState(EEntityState.Synced);
+    }
+
+    public void preSave() throws Exception {
+        validate();
+        String json = JSONUtils.asString(this, getClass());
+        String hash = ChecksumUtils.generateHash(json);
+        if (state.getState() == EEntityState.New || Strings.isNullOrEmpty(objectHash)) {
+            objectHash = hash;
+        } else {
+            if (hash.compareTo(objectHash) != 0) {
+                state.setState(EEntityState.Updated);
+            }
+            objectHash = hash;
+        }
     }
 }

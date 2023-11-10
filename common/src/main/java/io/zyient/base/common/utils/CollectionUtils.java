@@ -66,7 +66,7 @@ public class CollectionUtils {
                             List.class.getCanonicalName(),
                             type.getCanonicalName()));
         }
-        Class<?> ptype = ReflectionUtils.getGenericListType(field);
+        Class<?> ptype = ReflectionUtils.getGenericCollectionType(field);
         Preconditions.checkNotNull(ptype);
         if (ptype.equals(String.class)) {
             ReflectionUtils.setObjectValue(source, field, values);

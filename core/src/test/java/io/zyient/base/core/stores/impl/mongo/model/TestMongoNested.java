@@ -17,8 +17,14 @@
 package io.zyient.base.core.stores.impl.mongo.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import dev.morphia.annotations.Entity;
-import dev.morphia.annotations.Id;
+import dev.morphia.annotations.*;
+import dev.morphia.utils.IndexType;
+import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.core.model.StringKey;
+import io.zyient.base.core.stores.impl.mongo.MongoEntity;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -31,22 +37,70 @@ import java.util.UUID;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@Entity("test-nested")
+@Entity("TestNested")
 @ToString
-public class TestMongoNested {
-    @Id
-    private long _id;
+@Indexes({
+        @Index(fields = @Field(value = "parentId", type = IndexType.DESC))
+})
+public class TestMongoNested extends MongoEntity<StringKey> {
+    private StringKey key;
+    private String parentId;
     private String name;
     private double value;
 
     public TestMongoNested() {
+        key = new StringKey(UUID.randomUUID().toString());
+    }
 
+    /**
+     * Validate this entity instance.
+     *
+     * @param errors
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    @Override
+    public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
+        return null;
     }
 
     public TestMongoNested(@NonNull TestMongoEntity entity) {
+        key = new StringKey(UUID.randomUUID().toString());
         Random rnd = new Random(System.nanoTime());
-        _id = rnd.nextLong();
+        parentId = entity.entityKey().stringKey();
         name = String.format("%s-%s", entity.getKey().stringKey(), UUID.randomUUID().toString());
         value = rnd.nextDouble();
+    }
+
+    /**
+     * Compare the entity key with the key specified.
+     *
+     * @param key - Target Key.
+     * @return - Comparision.
+     */
+    @Override
+    public int compare(StringKey key) {
+        return this.key.compareTo(key);
+    }
+
+    /**
+     * Clone this instance of Entity.
+     *
+     * @param context - Clone Context.
+     * @return - Cloned Instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<StringKey> clone(Context context) throws CopyException {
+        return null;
+    }
+
+    /**
+     * Get the object instance Key.
+     *
+     * @return - Key
+     */
+    @Override
+    public StringKey entityKey() {
+        return key;
     }
 }
