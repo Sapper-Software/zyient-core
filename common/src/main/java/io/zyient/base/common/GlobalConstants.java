@@ -16,6 +16,7 @@
 
 package io.zyient.base.common;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
@@ -127,6 +128,7 @@ public class GlobalConstants {
         mapper.registerModule(new JodaModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return mapper;
     }
 
@@ -145,9 +147,7 @@ public class GlobalConstants {
     }
 
     public static void defaultCharset(@Nonnull Charset value) {
-        if (value != null) {
-            charset = value;
-        }
+        charset = value;
     }
 
     static {
@@ -156,6 +156,6 @@ public class GlobalConstants {
         if (!Strings.isNullOrEmpty(cs)) {
             charset = Charset.forName(cs);
         }
-        System.out.println(String.format("Using default charset. [charset=%s]", charset.displayName()));
+        System.out.printf("Using default charset. [charset=%s]%n", charset.displayName());
     }
 }

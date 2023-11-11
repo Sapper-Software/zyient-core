@@ -66,14 +66,6 @@ public abstract class BaseEntity<K extends IKey> implements IEntity<K>, Versione
                                         state.getState().name())),
                                 errors);
             }
-            if (createdTime <= 0) {
-                errors = ValidationExceptions
-                        .add(new ValidationException("Created time is not set."), errors);
-            }
-            if (updatedTime <= 0 || updatedTime < createdTime) {
-                errors = ValidationExceptions
-                        .add(new ValidationException("Updated time is not set."), errors);
-            }
             errors = doValidate(errors);
             if (errors != null) {
                 throw errors;

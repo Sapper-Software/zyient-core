@@ -238,7 +238,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                 Bson filter = com.mongodb.client.model.Filters.eq(JsonFieldConstants.FIELD_DOC_ID,
                         entity.entityKey().stringKey());
                 UpdateResult ur = db.getCollection(cname)
-                        .updateOne(filter, doc);
+                        .replaceOne(filter, doc);
                 if (!ur.wasAcknowledged()) {
                     throw new DataStoreException(String.format("Insert not acknowledged. [type=%s][id=%s]",
                             type.getCanonicalName(), entity.entityKey().stringKey()));
@@ -367,6 +367,13 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         return name;
     }
 
+    private <E extends IEntity<?>> String buildQuery(String query,
+                                                     String collection,
+                                                     Class<? extends E> type) throws Exception {
+        return "SELECT * FROM " + collection + " WHERE " +
+                query;
+    }
+
     @Override
     public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
                                                                int offset,
@@ -376,9 +383,10 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         checkState();
         try {
             MorphiaSession session = sessionManager().session();
+            String cname = getCollection(type);
+            query = buildQuery(query, cname, type);
             QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
-            String cname = getCollection(type);
             if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
                 throw new DataStoreException(
                         String.format("Query does not match entity collection. [expected=%s][query=%s]",
@@ -424,9 +432,10 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         checkState();
         try {
             MorphiaSession session = sessionManager().session();
+            String cname = getCollection(type);
+            query = buildQuery(query, cname, type);
             QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
-            String cname = getCollection(type);
             if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
                 throw new DataStoreException(
                         String.format("Query does not match entity collection. [expected=%s][query=%s]",
