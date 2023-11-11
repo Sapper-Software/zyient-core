@@ -17,11 +17,15 @@
 package io.zyient.base.core.stores.impl.mongo.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import dev.morphia.annotations.*;
+import dev.morphia.annotations.Entity;
+import dev.morphia.annotations.Field;
+import dev.morphia.annotations.Index;
+import dev.morphia.annotations.Indexes;
 import dev.morphia.utils.IndexType;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.impl.mongo.MongoEntity;
@@ -50,6 +54,10 @@ public class TestMongoNested extends MongoEntity<StringKey> {
 
     public TestMongoNested() {
         key = new StringKey(UUID.randomUUID().toString());
+        parentId = UUID.randomUUID().toString();
+        name = "Test Nested entity";
+        value = System.nanoTime();
+        getState().setState(EEntityState.New);
     }
 
     /**
@@ -60,7 +68,7 @@ public class TestMongoNested extends MongoEntity<StringKey> {
      */
     @Override
     public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
-        return null;
+        return errors;
     }
 
     public TestMongoNested(@NonNull TestMongoEntity entity) {
@@ -69,6 +77,7 @@ public class TestMongoNested extends MongoEntity<StringKey> {
         parentId = entity.entityKey().stringKey();
         name = String.format("%s-%s", entity.getKey().stringKey(), UUID.randomUUID().toString());
         value = rnd.nextDouble();
+        getState().setState(EEntityState.New);
     }
 
     /**

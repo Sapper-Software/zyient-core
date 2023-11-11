@@ -18,8 +18,6 @@ package io.zyient.base.core.stores.impl.mongo;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.mongodb.MongoClientOptions;
-import com.mongodb.ServerAddress;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import dev.morphia.Datastore;

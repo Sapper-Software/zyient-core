@@ -96,8 +96,6 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             MorphiaSession session = sessionManager().session();
             entity.validate();
             if (entity instanceof MongoEntity<?>) {
-                ((MongoEntity<?>) entity).setCreatedTime(System.nanoTime());
-                ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
                 ((MongoEntity<?>) entity).preSave();
                 checkReferences(entity, context);
                 entity = session.save(entity);
@@ -134,7 +132,6 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         }
     }
 
-    @SuppressWarnings("unchecked")
     private <E extends IEntity<?>> E checkReferences(E entity,
                                                      Context context) throws DataStoreException {
         try {
@@ -153,9 +150,17 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                             if (value != null) {
                                 Object[] array = ReflectionUtils.convertToObjectArray(value);
                                 for (Object av : array) {
-                                    createEntity((MongoEntity<?>) av,
-                                            (Class<? extends MongoEntity<?>>) av.getClass(),
-                                            context);
+                                    MongoEntity<?> me = (MongoEntity<?>) av;
+                                    if (me.getState().getState() == EEntityState.New) {
+                                        createEntity(me, me.getClass(), context);
+                                    } else {
+                                        me.preSave();
+                                        if (me.getState().getState() == EEntityState.New) {
+                                            createEntity(me, me.getClass(), context);
+                                        } else if (me.getState().getState() == EEntityState.Updated) {
+                                            updateEntity(me, me.getClass(), context);
+                                        }
+                                    }
                                 }
                             }
                         } else if (ReflectionUtils.isCollection(type)) {
@@ -169,9 +174,17 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                 Collection<?> collection = (Collection<?>) value;
 
                                 for (Object av : collection) {
-                                    createEntity((MongoEntity<?>) av,
-                                            (Class<? extends MongoEntity<?>>) av.getClass(),
-                                            context);
+                                    MongoEntity<?> me = (MongoEntity<?>) av;
+                                    if (me.getState().getState() == EEntityState.New) {
+                                        createEntity(me, me.getClass(), context);
+                                    } else {
+                                        me.preSave();
+                                        if (me.getState().getState() == EEntityState.New) {
+                                            createEntity(me, me.getClass(), context);
+                                        } else if (me.getState().getState() == EEntityState.Updated) {
+                                            updateEntity(me, me.getClass(), context);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -195,7 +208,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             MorphiaSession session = sessionManager().session();
             entity.validate();
             if (entity instanceof MongoEntity<?>) {
-                ((MongoEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                ((MongoEntity<?>) entity).preSave();
                 Query<E> query = (Query<E>) session.find(type)
                         .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, entity.entityKey().stringKey()));
                 try (MorphiaCursor<E> cursor = query.iterator()) {

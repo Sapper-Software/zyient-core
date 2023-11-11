@@ -50,7 +50,7 @@ public class TestMongoEntity extends MongoEntity<StringKey> {
     private long timestamp;
     private double doubleValue;
     @Reference
-    private List<TestMongoNested> nested = new ArrayList<>();
+    private List<TestMongoNested> nested;
 
     public TestMongoEntity() {
         key = new StringKey(UUID.randomUUID().toString());

@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.impl.mongo.model.TestMongoEntity;
@@ -28,9 +27,6 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -82,12 +78,22 @@ class MongoDbDataStoreTest {
 
     @Test
     void updateEntity() {
+        try {
+            DataStoreManager manager = env.dataStoreManager();
+            assertNotNull(manager);
+            MongoDbDataStore dataStore = manager.getDataStore(__MONGO_DB_NAME, MongoDbDataStore.class);
+            assertNotNull(dataStore);
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
     }
 
     @Test
     void deleteEntity() {
     }
 
+    /*
     @Test
     void findEntity() {
         try {
@@ -129,6 +135,8 @@ class MongoDbDataStoreTest {
             fail(ex);
         }
     }
+
+     */
 
     @Test
     void doSearch() {

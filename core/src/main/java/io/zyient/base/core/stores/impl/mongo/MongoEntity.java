@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.stores.impl.mongo;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -43,18 +42,17 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class MongoEntity<K extends IKey> implements IEntity<K>, VersionedEntity {
-    @Id
-    private String _id;
-    private String _type;
-    @JsonIgnore
     @Transient
     @Setter(AccessLevel.NONE)
     private final EntityState state = new EntityState();
+    @Id
+    private String entityId;
+    private String entityClass;
     private long createdTime;
     private long updatedTime;
+    private String objectHash = null;
     @Version
     private long _version = 0;
-    private String objectHash = null;
 
     public MongoEntity() {
         createdTime = 0;
@@ -76,12 +74,21 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
                                         state.getState().name())),
                                 errors);
             }
-            _id = entityKey().stringKey();
-            if (Strings.isNullOrEmpty(_id)) {
+            K key = entityKey();
+            if (key == null) {
                 errors = ValidationExceptions
-                        .add(new ValidationException("Key String is NULL/empty [field=_id]"), errors);
+                        .add(new ValidationException("Entity key is NULL"),
+                                errors);
+            } else {
+                entityId = key.stringKey();
+                if (Strings.isNullOrEmpty(entityId)) {
+                    errors = ValidationExceptions
+                            .add(new ValidationException("Entity key is empty string."),
+                                    errors);
+
+                }
             }
-            _type = getClass().getCanonicalName();
+            entityClass = getClass().getCanonicalName();
             errors = doValidate(errors);
             if (errors != null) {
                 throw errors;
@@ -119,8 +126,7 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
     @Override
     public IEntity<K> copyChanges(IEntity<K> source, Context context) throws CopyException {
         Preconditions.checkArgument(source instanceof MongoEntity<K>);
-        _id = ((MongoEntity<K>) source)._id;
-        _type = getClass().getCanonicalName();
+        entityClass = getClass().getCanonicalName();
         createdTime = ((MongoEntity<K>) source).createdTime;
         updatedTime = ((MongoEntity<K>) source).updatedTime;
         state.setState(((MongoEntity<K>) source).state.getState());
@@ -144,11 +150,14 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
         String hash = ChecksumUtils.generateHash(json);
         if (state.getState() == EEntityState.New || Strings.isNullOrEmpty(objectHash)) {
             objectHash = hash;
+            setCreatedTime(System.nanoTime());
+            setUpdatedTime(System.nanoTime());
         } else {
             if (hash.compareTo(objectHash) != 0) {
                 state.setState(EEntityState.Updated);
+                objectHash = hash;
+                setUpdatedTime(System.nanoTime());
             }
-            objectHash = hash;
         }
     }
 }
