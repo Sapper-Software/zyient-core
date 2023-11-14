@@ -19,8 +19,12 @@ package io.zyient.base.core.stores.impl.mongo;
 import dev.morphia.transactions.MorphiaSession;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.StoreSessionManager;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 
+@Getter
+@Accessors(fluent = true)
 public class MongoSessionManager extends StoreSessionManager<MorphiaSession, MongoTransaction> {
     private final MorphiaConnection connection;
 

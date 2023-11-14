@@ -20,6 +20,8 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.DataStoreAuditContext;
@@ -32,7 +34,6 @@ import org.hibernate.query.Query;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     public void flush() throws DataStoreException {
@@ -147,67 +148,46 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                               int offset,
-                                                               int maxResults,
-                                                               @NonNull Class<? extends E> type,
-                                                               Context context)
+    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
+                                                                               int offset,
+                                                                               int maxResults,
+                                                                               @NonNull Class<? extends K> keyType,
+                                                                               @NonNull Class<? extends E> type,
+                                                                               Context context)
             throws DataStoreException {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-        Query qq = session.createQuery(query, type).setMaxResults(maxResults).setFirstResult(offset);
-        List<E> result = qq.getResultList();
-        if (result != null && !result.isEmpty()) {
-            for (E entity : result) {
-                if (entity instanceof BaseEntity) {
-                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
-                }
+        try {
+            SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
+            parser.parse(query);
+            Query qq = session.createQuery(query.generatedQuery(), type)
+                    .setMaxResults(maxResults)
+                    .setFirstResult(offset);
+            if (query.hasParameters()) {
+                for (String key : query.parameters().keySet())
+                    qq.setParameter(key, query.parameters().get(key));
             }
-            EntitySearchResult<E> er = new EntitySearchResult<>(type);
-            er.setQuery(query);
-            er.setOffset(offset);
-            er.setCount(result.size());
-            er.setEntities(result);
-            return er;
-        }
-        return null;
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                               int offset, int maxResults,
-                                                               Map<String, Object> parameters,
-                                                               @NonNull Class<? extends E> type,
-                                                               Context context)
-            throws DataStoreException {
-        checkState();
-        Preconditions.checkState(isInTransaction());
-        RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
-
-        Query qq = session.createQuery(query, type).setMaxResults(maxResults).setFirstResult(offset);
-        if (parameters != null && !parameters.isEmpty()) {
-            for (String key : parameters.keySet())
-                qq.setParameter(key, parameters.get(key));
-        }
-        List<E> result = qq.getResultList();
-        if (result != null && !result.isEmpty()) {
-            for (E entity : result) {
-                if (entity instanceof BaseEntity) {
-                    ((BaseEntity) entity).getState().setState(EEntityState.Synced);
+            List<E> result = qq.getResultList();
+            if (result != null && !result.isEmpty()) {
+                for (E entity : result) {
+                    if (entity instanceof BaseEntity) {
+                        ((BaseEntity) entity).getState().setState(EEntityState.Synced);
+                    }
                 }
+                EntitySearchResult<E> er = new EntitySearchResult<>(type);
+                er.setQuery(query.generatedQuery());
+                er.setOffset(offset);
+                er.setCount(result.size());
+                er.setEntities((Collection<E>) result);
+                return er;
             }
-            EntitySearchResult<E> er = new EntitySearchResult<>(type);
-            er.setQuery(query);
-            er.setOffset(offset);
-            er.setCount(result.size());
-            er.setEntities((Collection<E>) result);
-            return er;
+            return null;
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new DataStoreException(ex);
         }
-        return null;
     }
 
     @Override
@@ -223,5 +203,11 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     public boolean isThreadSafe() {
         return true;
+    }
+
+    @Override
+    protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
+                                                                                    @NonNull Class<? extends K> keyTpe) throws Exception {
+        return new SqlQueryParser<>(keyTpe, entityType);
     }
 }

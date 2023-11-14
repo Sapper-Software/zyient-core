@@ -21,11 +21,12 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.StringKey;
+import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.BaseSearchResult;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.impl.mongo.model.MongoSearchEntity;
 import io.zyient.base.core.stores.impl.mongo.model.MongoTestEntity;
-import io.zyient.base.core.stores.impl.mongo.model.TestMongoEntity;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -237,11 +238,11 @@ class MongoDbDataStoreJsonTest {
 
             try {
                 dataStore.beingTransaction();
-                Map<StringKey, MongoTestEntity> counts = new HashMap<>();
+                Map<StringKey, MongoSearchEntity> counts = new HashMap<>();
                 try {
                     for (int ii = 0; ii < 10; ii++) {
-                        MongoTestEntity te = new MongoTestEntity();
-                        te = dataStore.create(te, MongoTestEntity.class, null);
+                        MongoSearchEntity te = new MongoSearchEntity();
+                        te = dataStore.create(te, MongoSearchEntity.class, null);
                         assertTrue(te.getUpdatedTime() > te.getCreatedTime());
                         counts.put(te.entityKey(), te);
                     }
@@ -251,9 +252,15 @@ class MongoDbDataStoreJsonTest {
                     throw ex;
                 }
                 for (StringKey key : counts.keySet()) {
-                    MongoTestEntity te = counts.get(key);
-                    String query = String.format("textValue='%s' AND timestamp=%d", te.getTextValue(), te.getTimestamp());
-                    BaseSearchResult<MongoTestEntity> result = dataStore.search(query, MongoTestEntity.class, null);
+                    MongoSearchEntity te = counts.get(key);
+                    String query = String.format("textValue='%s' AND timestamp=%d AND nested.parentId = '%s'",
+                            te.getTextValue(), te.getTimestamp(), te.getNested().getParentId());
+                    AbstractDataStore.Q q = new AbstractDataStore.Q();
+                    q.where(query);
+                    BaseSearchResult<MongoSearchEntity> result = dataStore.search(q,
+                            StringKey.class,
+                            MongoSearchEntity.class,
+                            null);
                     assertNotNull(result);
                     assertEquals(result.getCount(), 1);
                 }

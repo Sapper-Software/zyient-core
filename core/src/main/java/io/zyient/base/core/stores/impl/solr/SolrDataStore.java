@@ -26,10 +26,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.model.BaseEntity;
-import io.zyient.base.core.stores.AbstractDataStore;
-import io.zyient.base.core.stores.BaseSearchResult;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.VersionedEntity;
+import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
 import lombok.NonNull;
@@ -62,6 +59,12 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     public static final String MAP_PREFIX = "fmap.";
     public static final String CONTEXT_KEY_JSON_MAP = "SOLR_JSON_FIELDS";
     public static final String CONTEXT_KEY_JSON_SPLITS = "SOLR_JSON_SPLITS";
+
+    @Override
+    protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
+                                                                                    @NonNull Class<? extends K> keyTpe) throws Exception {
+        return null;
+    }
 
     @Override
     public void configure() throws ConfigurationException {
@@ -297,9 +300,11 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                 String.format("Multiple entries found for key. [type=%s][key=%s]",
                                         type.getCanonicalName(), k));
                     }
-                    SolrEntity<?> entity = (SolrEntity<?>) entities.get(0);
-                    entity.getState().setState(EEntityState.Synced);
-                    return (E) entity;
+                    if (!entities.isEmpty()) {
+                        SolrEntity<?> entity = (SolrEntity<?>) entities.get(0);
+                        entity.getState().setState(EEntityState.Synced);
+                        return (E) entity;
+                    }
                 }
             } else {
                 SolrQuery q = new SolrQuery();
@@ -322,6 +327,16 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
+    @Override
+    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
+                                                                               int offset,
+                                                                               int maxResults,
+                                                                               @NonNull Class<? extends K> keyType,
+                                                                               @NonNull Class<? extends E> type,
+                                                                               Context context) throws DataStoreException {
+        return null;
+    }
+
     public static String getQueryString(@NonNull String field,
                                         @NonNull Object value,
                                         @NonNull Class<?> type) {
@@ -331,25 +346,6 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             return String.format("%s:%d", field, (long) value);
         }
         return String.format("%s:\"%s\"", field, value);
-    }
-
-    @Override
-    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                               int offset,
-                                                               int maxResults,
-                                                               @NonNull Class<? extends E> type,
-                                                               Context context) throws DataStoreException {
-        return null;
-    }
-
-    @Override
-    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                               int offset,
-                                                               int maxResults,
-                                                               Map<String, Object> parameters,
-                                                               @NonNull Class<? extends E> type,
-                                                               Context context) throws DataStoreException {
-        return null;
     }
 
     @Override

@@ -28,10 +28,12 @@ import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.client.result.UpdateResult;
+import dev.morphia.Datastore;
 import dev.morphia.DeleteOptions;
 import dev.morphia.annotations.Entity;
 import dev.morphia.annotations.Reference;
@@ -59,7 +61,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, MongoTransaction> {
 
@@ -367,25 +368,23 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         return name;
     }
 
-    private <E extends IEntity<?>> String buildQuery(String query,
-                                                     String collection,
-                                                     Class<? extends E> type) throws Exception {
-        return "SELECT * FROM " + collection + " WHERE " +
-                query;
-    }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                               int offset,
-                                                               int maxResults,
-                                                               @NonNull Class<? extends E> type,
-                                                               Context context) throws DataStoreException {
+    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
+                                                                               int offset,
+                                                                               int maxResults,
+                                                                               @NonNull Class<? extends K> keyType,
+                                                                               @NonNull Class<? extends E> type,
+                                                                               Context context) throws DataStoreException {
         checkState();
         try {
             MorphiaSession session = sessionManager().session();
             String cname = getCollection(type);
-            query = buildQuery(query, cname, type);
-            QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
+            MongoQueryParser<K, E> parser = (MongoQueryParser<K, E>) getParser(type, keyType);
+            parser.parse(query);
+            String sql = query.generatedQuery();
+            QueryConverter queryConverter = new QueryConverter.Builder().sqlString(sql).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
             if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
                 throw new DataStoreException(
@@ -394,88 +393,40 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             }
             mongoDBQueryHolder.setOffset(offset);
             mongoDBQueryHolder.setLimit(maxResults);
-            try (QueryResultIterator<Document> distinctIterable = queryConverter.run(session.getDatabase())) {
-                List<Document> documents = Lists.newArrayList(distinctIterable);
-                List<E> entities = new ArrayList<>();
-                for (Document document : documents) {
-                    String json = document.toJson();
-                    E entity = JSONUtils.read(json, type);
-                    if (entity instanceof MongoEntity<?>) {
-                        ((MongoEntity<?>) entity).postLoad();
-                    } else if (entity instanceof BaseEntity<?>) {
-                        ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
-                    }
-                    entities.add(entity);
-                }
-                if (!entities.isEmpty()) {
-                    EntitySearchResult<E> er = new EntitySearchResult<>(type);
-                    er.setQuery(query);
-                    er.setOffset(offset);
-                    er.setCount(entities.size());
-                    er.setEntities(entities);
-                    return er;
-                }
-            }
-            return null;
-        } catch (Exception ex) {
-            throw new DataStoreException(ex);
-        }
-    }
 
-    @Override
-    public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                               int offset,
-                                                               int maxResults,
-                                                               Map<String, Object> parameters,
-                                                               @NonNull Class<? extends E> type,
-                                                               Context context) throws DataStoreException {
-        checkState();
-        try {
-            MorphiaSession session = sessionManager().session();
-            String cname = getCollection(type);
-            query = buildQuery(query, cname, type);
-            QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
-            MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
-            if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
-                throw new DataStoreException(
-                        String.format("Query does not match entity collection. [expected=%s][query=%s]",
-                                cname, mongoDBQueryHolder.getCollection()));
-            }
-            if (cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
-                throw new DataStoreException(
-                        String.format("Query does not match entity collection. [expected=%s][query=%s]",
-                                cname, mongoDBQueryHolder.getCollection()));
-            }
-            mongoDBQueryHolder.setOffset(offset);
-            mongoDBQueryHolder.setLimit(maxResults);
-            if (parameters != null && !parameters.isEmpty()) {
-                Document qd = mongoDBQueryHolder.getQuery();
-                for (String key : parameters.keySet()) {
-                    Object v = parameters.get(key);
-                    qd.put(key, v);
-                }
-            }
-            try (QueryResultIterator<Document> distinctIterable = queryConverter.run(session.getDatabase())) {
-                List<Document> documents = Lists.newArrayList(distinctIterable);
-                List<E> entities = new ArrayList<>();
-                for (Document document : documents) {
-                    String json = document.toJson();
-                    E entity = JSONUtils.read(json, type);
-                    if (entity instanceof MongoEntity<?>) {
+            List<E> entities = new ArrayList<>();
+            if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
+                Document qdoc = mongoDBQueryHolder.getQuery();
+                Datastore ds = ((MongoSessionManager) sessionManager()).connection().datastore();
+                FindIterable<? extends E> result = ds.getCollection(type).find(qdoc);
+                try (MongoCursor<? extends E> cursor = result.iterator()) {
+                    int count = cursor.available();
+                    while(cursor.hasNext()) {
+                        E entity = cursor.next();
                         ((MongoEntity<?>) entity).postLoad();
-                    } else if (entity instanceof BaseEntity<?>) {
-                        ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                        entities.add(entity);
                     }
-                    entities.add(entity);
                 }
-                if (!entities.isEmpty()) {
-                    EntitySearchResult<E> er = new EntitySearchResult<>(type);
-                    er.setQuery(query);
-                    er.setOffset(offset);
-                    er.setCount(entities.size());
-                    er.setEntities(entities);
-                    return er;
+            } else {
+                try (QueryResultIterator<Document> distinctIterable = queryConverter.run(session.getDatabase())) {
+                    List<Document> documents = Lists.newArrayList(distinctIterable);
+                    for (Document document : documents) {
+                        String json = document.toJson();
+                        E entity = JSONUtils.read(json, type);
+                        if (entity instanceof BaseEntity<?>) {
+                            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+                        }
+                        entities.add(entity);
+                    }
                 }
+            }
+            if (!entities.isEmpty()) {
+                EntitySearchResult<E> er = new EntitySearchResult<>(type);
+                er.setQuery(query.where());
+                er.setOffset(offset);
+                er.setCount(entities.size());
+                er.setEntities(entities);
+                return er;
             }
             return null;
         } catch (Exception ex) {
@@ -497,5 +448,11 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     @Override
     public boolean isThreadSafe() {
         return true;
+    }
+
+    @Override
+    protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
+                                                                                    @NonNull Class<? extends K> keyTpe) throws Exception {
+        return new MongoQueryParser<>(keyTpe, entityType);
     }
 }

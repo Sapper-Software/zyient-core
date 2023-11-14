@@ -33,7 +33,7 @@ import java.util.UUID;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@SolrCollection("test-db")
+@SolrCollection("test-solr")
 public class TestPOJO extends SolrEntity<StringKey> {
     private StringKey key;
     @Field("text")

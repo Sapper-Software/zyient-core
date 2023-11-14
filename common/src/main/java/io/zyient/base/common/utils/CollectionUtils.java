@@ -226,7 +226,7 @@ public class CollectionUtils {
                             Set.class.getCanonicalName(),
                             type.getCanonicalName()));
         }
-        Class<?> ptype = ReflectionUtils.getGenericSetType(field);
+        Class<?> ptype = ReflectionUtils.getGenericCollectionType(field);
         Preconditions.checkNotNull(ptype);
         if (ptype.equals(String.class)) {
             Set<String> nvalues = new HashSet<>(values.size());

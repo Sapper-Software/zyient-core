@@ -19,22 +19,43 @@ package io.zyient.base.core.stores;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.auditing.AbstractAuditLogger;
 import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
 public abstract class AbstractDataStore<T> implements Closeable {
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    public static class Q {
+        private String where;
+        private String generatedQuery;
+        private final Map<String, Object> parameters = new HashMap<>();
+
+        public boolean hasParameters() {
+            return !parameters.isEmpty();
+        }
+
+        public Q add(@NonNull String name, @NonNull Object value) {
+            parameters.put(name, value);
+            return this;
+        }
+    }
+
     public static final String KEY_ENGINE = "DataStore";
     public static final String CONTEXT_KEY_CHECK_UPDATES = "checkUpdates";
 
@@ -45,6 +66,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
     private DataStoreManager dataStoreManager;
     protected AbstractDataStoreSettings settings;
     protected BaseEnv<?> env;
+    private final Map<String, QueryParser<?, ?>> parsers = new HashMap<>();
 
     public String name() {
         Preconditions.checkNotNull(settings);
@@ -86,6 +108,20 @@ public abstract class AbstractDataStore<T> implements Closeable {
             throw new ConfigurationException(ex);
         }
     }
+
+    @SuppressWarnings("unchecked")
+    protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> getParser(@NonNull Class<? extends E> entityType,
+                                                                                 @NonNull Class<? extends K> keyTpe) throws Exception {
+        if (!parsers.containsKey(entityType.getCanonicalName())) {
+            QueryParser<K, E> parser = createParser(entityType, keyTpe);
+            parsers.put(entityType.getCanonicalName(), parser);
+        }
+        return (QueryParser<K, E>) parsers.get(entityType.getCanonicalName());
+    }
+
+    protected abstract <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
+                                                                                             @NonNull Class<? extends K> keyTpe) throws Exception;
+
 
     public abstract void configure() throws ConfigurationException;
 
@@ -148,7 +184,9 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                                 Context context) throws
             DataStoreException;
 
-    public <E extends IEntity<?>> E find(@NonNull Object key, @NonNull Class<? extends E> type, Context context) throws
+    public <E extends IEntity<?>> E find(@NonNull Object key,
+                                         @NonNull Class<? extends E> type,
+                                         Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
@@ -167,17 +205,18 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                         Context context) throws
             DataStoreException;
 
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
-                                                             int offset,
-                                                             int maxResults,
-                                                             @NonNull Class<? extends E> type,
-                                                             Context context) throws
+    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> search(@NonNull Q query,
+                                                                             int offset,
+                                                                             int maxResults,
+                                                                             @NonNull Class<? extends K> keyType,
+                                                                             @NonNull Class<? extends E> type,
+                                                                             Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return doSearch(query, offset, maxResults, type, context);
+                return doSearch(query, offset, maxResults, keyType, type, context);
             }
         } catch (Throwable t) {
             metrics.searchCounterError().increment();
@@ -185,48 +224,23 @@ public abstract class AbstractDataStore<T> implements Closeable {
         }
     }
 
-    public abstract <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                                        int offset,
-                                                                        int maxResults,
-                                                                        @NonNull Class<? extends E> type, Context context) throws
+
+    public abstract <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
+                                                                                        int offset,
+                                                                                        int maxResults,
+                                                                                        @NonNull Class<? extends K> keyType,
+                                                                                        @NonNull Class<? extends E> type,
+                                                                                        Context context) throws
             DataStoreException;
 
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
-                                                             int offset,
-                                                             int maxResults,
-                                                             Map<String, Object> parameters,
-                                                             @NonNull Class<? extends E> type, Context context) throws
+    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> search(@NonNull Q query,
+                                                                             @NonNull Class<? extends K> keyType,
+                                                                             @NonNull Class<? extends E> type,
+                                                                             Context context) throws
             DataStoreException {
-        state.check(DataStoreState.EDataStoreState.Available);
-        try {
-            metrics.searchCounter().increment();
-            try (Timer t = new Timer(metrics.searchTimer())) {
-                return doSearch(query, offset, maxResults, parameters, type, context);
-            }
-        } catch (Throwable t) {
-            metrics.searchCounterError().increment();
-            throw new DataStoreException(t);
-        }
+        return search(query, 0, settings.getMaxResults(), keyType, type, context);
     }
 
-    public abstract <E extends IEntity<?>> BaseSearchResult<E> doSearch(@NonNull String query,
-                                                                        int offset,
-                                                                        int maxResults,
-                                                                        Map<String, Object> parameters,
-                                                                        @NonNull Class<? extends E> type, Context context) throws
-            DataStoreException;
-
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query, @NonNull Class<? extends E> type, Context context) throws
-            DataStoreException {
-        return search(query, 0, settings.getMaxResults(), type, context);
-    }
-
-    public <E extends IEntity<?>> BaseSearchResult<E> search(@NonNull String query,
-                                                             Map<String, Object> parameters,
-                                                             @NonNull Class<? extends E> type, Context context) throws
-            DataStoreException {
-        return search(query, 0, settings.getMaxResults(), parameters, type, context);
-    }
 
     @Override
     public void close() throws IOException {

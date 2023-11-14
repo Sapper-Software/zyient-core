@@ -44,8 +44,7 @@ public class ReflectionUtils {
                 ar.add(Array.get(array, i));
             }
             return ar.toArray();
-        }
-        else {
+        } else {
             return (Object[]) array;
         }
     }
@@ -104,18 +103,16 @@ public class ReflectionUtils {
                 if (implementsInterface(List.class, ct)) {
                     ct = getGenericCollectionType(f);
                 } else if (implementsInterface(Set.class, ct)) {
-                    ct = getGenericSetType(f);
+                    ct = getGenericCollectionType(f);
                 }
                 indx++;
             }
             return f;
         } else {
             Field[] fields = type.getDeclaredFields();
-            if (fields != null && fields.length > 0) {
-                for (Field field : fields) {
-                    if (field.getName().compareTo(name) == 0) {
-                        return field;
-                    }
+            for (Field field : fields) {
+                if (field.getName().compareTo(name) == 0) {
+                    return field;
                 }
             }
             Class<?> parent = type.getSuperclass();
@@ -1042,21 +1039,7 @@ public class ReflectionUtils {
      */
     public static Class<?> getGenericCollectionType(@NonNull Field field) {
         Preconditions
-                .checkArgument(implementsInterface(List.class, field.getType()));
-
-        ParameterizedType ptype = (ParameterizedType) field.getGenericType();
-        return (Class<?>) ptype.getActualTypeArguments()[0];
-    }
-
-    /**
-     * Get the Parameterized type of the Set field specified.
-     *
-     * @param field - Field to extract the Parameterized type for.
-     * @return - Parameterized type.
-     */
-    public static Class<?> getGenericSetType(@NonNull Field field) {
-        Preconditions
-                .checkArgument(implementsInterface(Set.class, field.getType()));
+                .checkArgument(implementsInterface(Collection.class, field.getType()));
 
         ParameterizedType ptype = (ParameterizedType) field.getGenericType();
         return (Class<?>) ptype.getActualTypeArguments()[0];

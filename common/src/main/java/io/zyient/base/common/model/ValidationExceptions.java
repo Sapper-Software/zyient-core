@@ -101,7 +101,6 @@ public class ValidationExceptions extends Exception
      */
     @Override
     public boolean add(@Nonnull ValidationException error) {
-        Preconditions.checkArgument(error != null);
         if (errors == null) {
             errors = new ArrayList<>();
         }

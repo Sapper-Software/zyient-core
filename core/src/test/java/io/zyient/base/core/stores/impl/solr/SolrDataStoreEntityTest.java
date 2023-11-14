@@ -64,7 +64,7 @@ class SolrDataStoreEntityTest {
             for (int ii = 0; ii < 4; ii++) {
                 TestPOJO tp = new TestPOJO();
                 tp.getState().setState(EEntityState.New);
-                tp = dataStore.createEntity(tp, tp.getClass(), null);
+                tp = dataStore.create(tp, tp.getClass(), null);
                 assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
             }
         } catch (Exception ex) {
@@ -79,6 +79,31 @@ class SolrDataStoreEntityTest {
 
     @Test
     void deleteEntity() {
+        try {
+            DataStoreManager manager = env.dataStoreManager();
+            assertNotNull(manager);
+            SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
+            assertNotNull(dataStore);
+            List<StringKey> keys = new ArrayList<>();
+            for (int ii = 0; ii < 4; ii++) {
+                TestPOJO tp = new TestPOJO();
+                tp.getState().setState(EEntityState.New);
+                tp = dataStore.create(tp, tp.getClass(), null);
+                assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
+                keys.add(tp.entityKey());
+            }
+            for (StringKey key : keys) {
+                boolean r = dataStore.delete(key.stringKey(), TestPOJO.class, null);
+                assertTrue(r);
+            }
+            for (StringKey key : keys) {
+                TestPOJO tp = dataStore.find(key, TestPOJO.class, null);
+                assertNull(tp);
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
     }
 
     @Test
@@ -92,12 +117,12 @@ class SolrDataStoreEntityTest {
             for (int ii = 0; ii < 4; ii++) {
                 TestPOJO tp = new TestPOJO();
                 tp.getState().setState(EEntityState.New);
-                tp = dataStore.createEntity(tp, tp.getClass(), null);
+                tp = dataStore.create(tp, tp.getClass(), null);
                 assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
                 keys.add(tp.entityKey());
             }
             for (StringKey key : keys) {
-                TestPOJO tp = dataStore.findEntity(key, TestPOJO.class, null);
+                TestPOJO tp = dataStore.find(key, TestPOJO.class, null);
                 assertNotNull(tp);
             }
         } catch (Exception ex) {

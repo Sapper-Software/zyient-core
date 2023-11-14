@@ -18,7 +18,6 @@ package io.zyient.base.core.stores.impl.mongo.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import dev.morphia.annotations.Entity;
-import dev.morphia.annotations.Reference;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;

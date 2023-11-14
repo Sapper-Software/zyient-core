@@ -18,6 +18,7 @@ package io.zyient.base.core.auditing;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.audit.AuditRecord;
+import io.zyient.base.common.audit.AuditRecordId;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.model.entity.IKeyed;
 import io.zyient.base.common.utils.DefaultLogger;
@@ -29,7 +30,9 @@ import lombok.NonNull;
 import org.hibernate.Session;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class DBAuditLogger extends AbstractAuditLogger<Session> {
     protected DBAuditLogger() {
@@ -54,11 +57,12 @@ public class DBAuditLogger extends AbstractAuditLogger<Session> {
             state().check(ProcessorState.EProcessorState.Running);
             AbstractDataStore<Session> dataStore = getDataStore(false);
 
-            String qstr = String.format("FROM %s WHERE id.recordType = :recordType AND (%s)",
-                    AuditRecord.class.getCanonicalName(), query);
-            Map<String, Object> params = new HashMap<>();
-            params.put("recordType", entityType.getCanonicalName());
-            BaseSearchResult<AuditRecord> result = dataStore.search(qstr, params, AuditRecord.class, null);
+            String qstr = String.format("WHERE id.recordType = :recordType AND (%s)",
+                    query);
+            AbstractDataStore.Q q = new AbstractDataStore.Q();
+            q.where(qstr);
+            q.parameters().put("recordType", entityType.getCanonicalName());
+            BaseSearchResult<AuditRecord> result = dataStore.search(q, AuditRecordId.class, AuditRecord.class, null);
             if (result instanceof EntitySearchResult<AuditRecord>) {
                 EntitySearchResult<AuditRecord> er = (EntitySearchResult<AuditRecord>) result;
                 Collection<AuditRecord> records = er.getEntities();
@@ -95,12 +99,12 @@ public class DBAuditLogger extends AbstractAuditLogger<Session> {
             state().check(ProcessorState.EProcessorState.Running);
             AbstractDataStore<Session> dataStore = getDataStore(false);
 
-            String qstr = String.format("FROM %s WHERE id.recordType = :recordType AND entityId = :entityId",
-                    AuditRecord.class.getCanonicalName());
-            Map<String, Object> params = new HashMap<>();
-            params.put("recordType", entityType.getCanonicalName());
-            params.put("entityId", key.toString());
-            BaseSearchResult<AuditRecord> result = dataStore.search(qstr, params, AuditRecord.class, null);
+            String qstr = "WHERE id.recordType = :recordType AND entityId = :entityId";
+            AbstractDataStore.Q q = new AbstractDataStore.Q();
+            q.where(qstr);
+            q.parameters().put("recordType", entityType.getCanonicalName());
+            q.parameters().put("entityId", key.toString());
+            BaseSearchResult<AuditRecord> result = dataStore.search(q, AuditRecordId.class, AuditRecord.class, null);
             if (result instanceof EntitySearchResult) {
                 EntitySearchResult<AuditRecord> er = (EntitySearchResult<AuditRecord>) result;
                 Collection<AuditRecord> records = er.getEntities();

@@ -17,19 +17,16 @@
 package io.zyient.base.core.stores.impl.mongo.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import dev.morphia.annotations.*;
-import dev.morphia.utils.IndexType;
+import dev.morphia.annotations.Entity;
+import dev.morphia.annotations.Property;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
-import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.impl.mongo.MongoEntity;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-import lombok.ToString;
 
 import java.util.Random;
 import java.util.UUID;
@@ -38,44 +35,25 @@ import java.util.UUID;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@Entity("TestNested")
-@ToString
-@Indexes({
-        @Index(fields = @Field(value = "parent", type = IndexType.DESC))
-})
-public class TestMongoNested extends MongoEntity<StringKey> {
+@Entity("JsonSearchTest")
+public class MongoSearchEntity extends MongoEntity<StringKey> {
     private StringKey key;
-    @Property("parent")
-    private String parentId;
-    private String name;
-    private double value;
+    @Property("text")
+    private String textValue;
+    private long timestamp;
+    @Property("dvalue")
+    private double doubleValue;
+    @Property("ref")
+    private TestMongoNested nested;
 
-    public TestMongoNested() {
+    public MongoSearchEntity() {
         key = new StringKey(UUID.randomUUID().toString());
-        parentId = UUID.randomUUID().toString();
-        name = "Test Nested entity";
-        value = System.nanoTime();
-        getState().setState(EEntityState.New);
-    }
-
-    /**
-     * Validate this entity instance.
-     *
-     * @param errors
-     * @throws ValidationExceptions - On validation failure will throw exception.
-     */
-    @Override
-    public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
-        return errors;
-    }
-
-    public TestMongoNested(@NonNull TestMongoEntity entity) {
-        key = new StringKey(UUID.randomUUID().toString());
+        textValue = String.format("[%s] Random text....", UUID.randomUUID().toString());
+        timestamp = System.nanoTime();
         Random rnd = new Random(System.nanoTime());
-        parentId = entity.entityKey().stringKey();
-        name = String.format("%s-%s", entity.getKey().stringKey(), UUID.randomUUID().toString());
-        value = rnd.nextDouble();
-        getState().setState(EEntityState.New);
+        doubleValue = rnd.nextDouble();
+        nested = new TestMongoNested();
+        nested.setParentId(key.stringKey());
     }
 
     /**
@@ -87,6 +65,28 @@ public class TestMongoNested extends MongoEntity<StringKey> {
     @Override
     public int compare(StringKey key) {
         return this.key.compareTo(key);
+    }
+
+    /**
+     * Copy the changes from the specified source entity
+     * to this instance.
+     * <p>
+     * All properties other than the Key will be copied.
+     * Copy Type:
+     * Primitive - Copy
+     * String - Copy
+     * Enum - Copy
+     * Nested Entity - Copy Recursive
+     * Other Objects - Copy Reference.
+     *
+     * @param source  - Source instance to Copy from.
+     * @param context - Execution context.
+     * @return - Copied Entity instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<StringKey> copyChanges(IEntity<StringKey> source, Context context) throws CopyException {
+        return null;
     }
 
     /**
@@ -109,5 +109,16 @@ public class TestMongoNested extends MongoEntity<StringKey> {
     @Override
     public StringKey entityKey() {
         return key;
+    }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @param errors
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    @Override
+    public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
+        return null;
     }
 }
