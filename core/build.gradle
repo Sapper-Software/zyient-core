@@ -86,7 +86,7 @@ dependencies {
     implementation 'com.github.jsqlparser:jsqlparser:4.3'
 
     implementation 'com.github.vincentrussell:sql-to-mongo-db-query-converter:1.21'
-    implementation 'dev.morphia.morphia:morphia-core:2.4.7'
+    implementation 'dev.morphia.morphia:morphia-core:2.4.8-SNAPSHOT'
 
     implementation 'org.apache.commons:commons-vfs2:2.9.0'
 }

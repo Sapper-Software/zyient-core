@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.impl.mongo.model.TestMongoEntity;
@@ -27,6 +28,9 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -93,7 +97,6 @@ class MongoDbDataStoreTest {
     void deleteEntity() {
     }
 
-    /*
     @Test
     void findEntity() {
         try {
@@ -121,7 +124,7 @@ class MongoDbDataStoreTest {
                     throw ex;
                 }
                 for (StringKey key : counts.keySet()) {
-                    TestMongoEntity te = dataStore.findEntity(key, TestMongoEntity.class, null);
+                    TestMongoEntity te = dataStore.find(key, TestMongoEntity.class, null);
                     assertNotNull(te);
                     int c = counts.get(key);
                     if (c > 0)
@@ -135,8 +138,6 @@ class MongoDbDataStoreTest {
             fail(ex);
         }
     }
-
-     */
 
     @Test
     void doSearch() {
