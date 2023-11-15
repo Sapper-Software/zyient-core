@@ -16,169 +16,83 @@
 
 package io.zyient.base.core.stores.impl.rdbms.model;
 
+import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.core.model.IntegerKey;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Random;
+import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
-@jakarta.persistence.Table(name = "customers", schema = "test", catalog = "")
-public class CustomersEntity {
+@Table(name = "customers", schema = "test", catalog = "")
+public class CustomersEntity implements IEntity<IntegerKey> {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Id
-    @jakarta.persistence.Column(name = "customerNumber")
-    private int customerNumber;
-
-    public int getCustomerNumber() {
-        return customerNumber;
-    }
-
-    public void setCustomerNumber(int customerNumber) {
-        this.customerNumber = customerNumber;
-    }
-
+    @EmbeddedId
+    private IntegerKey id;
     @Basic
     @Column(name = "customerName")
     private String customerName;
-
-    public String getCustomerName() {
-        return customerName;
-    }
-
-    public void setCustomerName(String customerName) {
-        this.customerName = customerName;
-    }
-
     @Basic
     @Column(name = "contactLastName")
     private String contactLastName;
-
-    public String getContactLastName() {
-        return contactLastName;
-    }
-
-    public void setContactLastName(String contactLastName) {
-        this.contactLastName = contactLastName;
-    }
-
     @Basic
     @Column(name = "contactFirstName")
     private String contactFirstName;
-
-    public String getContactFirstName() {
-        return contactFirstName;
-    }
-
-    public void setContactFirstName(String contactFirstName) {
-        this.contactFirstName = contactFirstName;
-    }
-
     @Basic
     @Column(name = "phone")
     private String phone;
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public void setPhone(String phone) {
-        this.phone = phone;
-    }
-
     @Basic
     @Column(name = "addressLine1")
     private String addressLine1;
-
-    public String getAddressLine1() {
-        return addressLine1;
-    }
-
-    public void setAddressLine1(String addressLine1) {
-        this.addressLine1 = addressLine1;
-    }
-
     @Basic
     @Column(name = "addressLine2")
     private String addressLine2;
-
-    public String getAddressLine2() {
-        return addressLine2;
-    }
-
-    public void setAddressLine2(String addressLine2) {
-        this.addressLine2 = addressLine2;
-    }
-
     @Basic
     @Column(name = "city")
     private String city;
-
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
     @Basic
     @Column(name = "state")
     private String state;
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
-    }
-
     @Basic
     @Column(name = "postalCode")
     private String postalCode;
-
-    public String getPostalCode() {
-        return postalCode;
-    }
-
-    public void setPostalCode(String postalCode) {
-        this.postalCode = postalCode;
-    }
-
     @Basic
     @Column(name = "country")
     private String country;
-
-    public String getCountry() {
-        return country;
-    }
-
-    public void setCountry(String country) {
-        this.country = country;
-    }
-
     @Basic
     @Column(name = "salesRepEmployeeNumber")
     private Integer salesRepEmployeeNumber;
-
-    public Integer getSalesRepEmployeeNumber() {
-        return salesRepEmployeeNumber;
-    }
-
-    public void setSalesRepEmployeeNumber(Integer salesRepEmployeeNumber) {
-        this.salesRepEmployeeNumber = salesRepEmployeeNumber;
-    }
-
     @Basic
     @Column(name = "creditLimit")
     private BigDecimal creditLimit;
 
-    public BigDecimal getCreditLimit() {
-        return creditLimit;
+    public CustomersEntity() {
     }
 
-    public void setCreditLimit(BigDecimal creditLimit) {
-        this.creditLimit = creditLimit;
+    public CustomersEntity(int id) {
+        this.id = new IntegerKey();
+        this.id.setKey(id);
+        contactFirstName = String.format("First [%d]", id);
+        contactLastName = UUID.randomUUID().toString();
+        Random rnd = new Random(System.nanoTime());
+        phone = String.format("+%d", rnd.nextInt(1000000000, Integer.MAX_VALUE));
+        addressLine1 = String.format("Address 1: %s", UUID.randomUUID().toString());
+        addressLine1 = String.format("Address 2: %s", UUID.randomUUID().toString());
+        city = "Bangalore";
+        state = "KA";
+        country = "India";
+        postalCode = String.valueOf(rnd.nextInt(999999));
+        salesRepEmployeeNumber = rnd.nextInt();
+        creditLimit = BigDecimal.valueOf(rnd.nextDouble());
     }
 
     @Override
@@ -186,11 +100,100 @@ public class CustomersEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CustomersEntity that = (CustomersEntity) o;
-        return customerNumber == that.customerNumber && Objects.equals(customerName, that.customerName) && Objects.equals(contactLastName, that.contactLastName) && Objects.equals(contactFirstName, that.contactFirstName) && Objects.equals(phone, that.phone) && Objects.equals(addressLine1, that.addressLine1) && Objects.equals(addressLine2, that.addressLine2) && Objects.equals(city, that.city) && Objects.equals(state, that.state) && Objects.equals(postalCode, that.postalCode) && Objects.equals(country, that.country) && Objects.equals(salesRepEmployeeNumber, that.salesRepEmployeeNumber) && Objects.equals(creditLimit, that.creditLimit);
+        return this.id.compareTo(((CustomersEntity) o).id) == 0 &&
+                Objects.equals(customerName, that.customerName) &&
+                Objects.equals(contactLastName, that.contactLastName) &&
+                Objects.equals(contactFirstName, that.contactFirstName) &&
+                Objects.equals(phone, that.phone) &&
+                Objects.equals(addressLine1, that.addressLine1) &&
+                Objects.equals(addressLine2, that.addressLine2) &&
+                Objects.equals(city, that.city) &&
+                Objects.equals(state, that.state) &&
+                Objects.equals(postalCode, that.postalCode) &&
+                Objects.equals(country, that.country) &&
+                Objects.equals(salesRepEmployeeNumber, that.salesRepEmployeeNumber) &&
+                Objects.equals(creditLimit, that.creditLimit);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(customerNumber, customerName, contactLastName, contactFirstName, phone, addressLine1, addressLine2, city, state, postalCode, country, salesRepEmployeeNumber, creditLimit);
+        return Objects.hash(id.stringKey(),
+                customerName,
+                contactLastName,
+                contactFirstName,
+                phone,
+                addressLine1,
+                addressLine2,
+                city,
+                state,
+                postalCode,
+                country,
+                salesRepEmployeeNumber,
+                creditLimit);
+    }
+
+    /**
+     * Compare the entity key with the key specified.
+     *
+     * @param key - Target Key.
+     * @return - Comparision.
+     */
+    @Override
+    public int compare(IntegerKey key) {
+        return id.compareTo(key);
+    }
+
+    /**
+     * Copy the changes from the specified source entity
+     * to this instance.
+     * <p>
+     * All properties other than the Key will be copied.
+     * Copy Type:
+     * Primitive - Copy
+     * String - Copy
+     * Enum - Copy
+     * Nested Entity - Copy Recursive
+     * Other Objects - Copy Reference.
+     *
+     * @param source  - Source instance to Copy from.
+     * @param context - Execution context.
+     * @return - Copied Entity instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<IntegerKey> copyChanges(IEntity<IntegerKey> source, Context context) throws CopyException {
+        return null;
+    }
+
+    /**
+     * Clone this instance of Entity.
+     *
+     * @param context - Clone Context.
+     * @return - Cloned Instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<IntegerKey> clone(Context context) throws CopyException {
+        return null;
+    }
+
+    /**
+     * Get the object instance Key.
+     *
+     * @return - Key
+     */
+    @Override
+    public IntegerKey entityKey() {
+        return id;
+    }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    @Override
+    public void validate() throws ValidationExceptions {
+
     }
 }

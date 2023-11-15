@@ -19,13 +19,16 @@ package io.zyient.base.common.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.reflect.ClassPath;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Utility functions to help with Getting/Setting Object/Field values using Reflection.
@@ -35,6 +38,16 @@ import java.util.*;
  * 11:10:30 AM
  */
 public class ReflectionUtils {
+    public static Set<Class<?>> findAllClasses(String packageName) throws IOException {
+        return ClassPath.from(ClassLoader.getSystemClassLoader())
+                .getAllClasses()
+                .stream()
+                .filter(clazz -> clazz.getPackageName()
+                        .equalsIgnoreCase(packageName))
+                .map(ClassPath.ClassInfo::load)
+                .collect(Collectors.toSet());
+    }
+
     public static Object[] convertToObjectArray(Object array) {
         Class<?> ofArray = array.getClass().getComponentType();
         if (ofArray.isPrimitive()) {

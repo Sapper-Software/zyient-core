@@ -16,19 +16,19 @@
 
 package io.zyient.base.core.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
-import javax.persistence.MappedSuperclass;
 import java.util.UUID;
 
 @Getter
 @Setter
 @MappedSuperclass
 public abstract class StringKeyEntity extends BaseEntity<StringKey> {
-    @Id
+    @EmbeddedId
     @Column(name = "id")
     protected StringKey id;
 

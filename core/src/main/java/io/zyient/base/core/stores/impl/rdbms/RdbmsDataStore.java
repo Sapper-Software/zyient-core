@@ -75,6 +75,9 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Preconditions.checkState(settings instanceof RdbmsStoreSettings);
         try {
             HibernateConnection hibernateConnection = (HibernateConnection) connection();
+            if (!hibernateConnection.isConnected()) {
+                hibernateConnection.connect();
+            }
             sessionManager(new RdbmsSessionManager(hibernateConnection,
                     ((RdbmsStoreSettings) settings).getSessionTimeout().normalized()));
         } catch (Exception ex) {

@@ -19,13 +19,17 @@ package io.zyient.base.common.model.entity;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.ReflectionUtils;
 import jakarta.persistence.Column;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
+@MappedSuperclass
 public abstract class NativeKey<T> implements IKey {
+    @Transient
     private final Class<? extends T> type;
     @Column(name = "key")
     private T key;

@@ -19,17 +19,28 @@ package io.zyient.base.core.stores.impl.rdbms;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.stores.DataStoreEnv;
+import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.impl.rdbms.model.CustomersEntity;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 class RdbmsDataStoreTest {
     private static final String __CONFIG_FILE = "src/test/resources/rdbms/test-mariadb-env.xml";
-
+    private static final String __DATASTORE = "test-rdbms";
     private static XMLConfiguration xmlConfiguration = null;
     private static DataStoreEnv env = new DataStoreEnv();
+    private static int SEED = 0;
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -46,6 +57,28 @@ class RdbmsDataStoreTest {
 
     @Test
     void createEntity() {
+        try {
+            List<CustomersEntity> customers = createCustomers(5, SEED);
+            SEED += customers.size();
+
+            DataStoreManager manager = env.dataStoreManager();
+            assertNotNull(manager);
+            RdbmsDataStore dataStore = manager.getDataStore(__DATASTORE, RdbmsDataStore.class);
+            assertNotNull(dataStore);
+            dataStore.beingTransaction();
+            try {
+                for(CustomersEntity ce : customers) {
+                    ce = dataStore.create(ce, CustomersEntity.class, null);
+                }
+                dataStore.commit();
+            } catch (Exception ex) {
+                dataStore.rollback();
+                throw ex;
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
     }
 
     @Test
@@ -62,5 +95,23 @@ class RdbmsDataStoreTest {
 
     @Test
     void doSearch() {
+    }
+
+    private List<CustomersEntity> createCustomers(int size, int seed) {
+        List<CustomersEntity> customers = new ArrayList<>(size);
+        Date dt = new Date(System.currentTimeMillis());
+        String s = String.format("%d%d%d%d%d",
+                dt.getYear() - 110,
+                dt.getMonth(),
+                dt.getDate(),
+                dt.getHours(),
+                dt.getMinutes());
+        int start = Integer.parseInt(s) + seed;
+        for (int ii = 0; ii < size; ii++) {
+            start += ii;
+            CustomersEntity ce = new CustomersEntity(start);
+            customers.add(ce);
+        }
+        return customers;
     }
 }

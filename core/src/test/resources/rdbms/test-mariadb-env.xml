@@ -106,6 +106,9 @@
                         <driver>com.mysql.jdbc.Driver</driver>
                         <dialect>MySQL</dialect>
                         <dbname>test</dbname>
+                        <model>
+                            <packages>io.zyient.base.core.stores.impl.rdbms.model</packages>
+                        </model>
                     </hibernate>
                 </connection>
             </connections>

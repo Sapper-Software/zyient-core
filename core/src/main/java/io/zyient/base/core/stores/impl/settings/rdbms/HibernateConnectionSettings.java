@@ -19,12 +19,14 @@ package io.zyient.base.core.stores.impl.settings.rdbms;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
+import io.zyient.base.common.config.StringListParser;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.stores.AbstractConnectionSettings;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Getter
@@ -73,4 +75,6 @@ public class HibernateConnectionSettings extends AbstractConnectionSettings {
     private boolean poolConnectionCheck = true;
     @Config(name = "config", required = false)
     private String hibernateConfigSource;
+    @Config(name = "model.packages", required = false, parser = StringListParser.class)
+    private List<String> modelPackages;
 }

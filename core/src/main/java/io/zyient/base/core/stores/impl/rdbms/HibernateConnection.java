@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.cache.ThreadCache;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
@@ -27,6 +28,7 @@ import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.stores.AbstractConnection;
 import io.zyient.base.core.stores.impl.settings.rdbms.HibernateConnectionSettings;
+import jakarta.persistence.Entity;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -44,6 +46,7 @@ import org.hibernate.service.ServiceRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.Set;
 
 @Getter
 @Accessors(fluent = true)
@@ -119,23 +122,22 @@ public class HibernateConnection extends AbstractConnection<Session> {
                 throw new ConfigurationException(
                         String.format("DataStore password not found. [key=%s]", settings.getDbPassword()));
             }
+            Properties properties = new Properties();
+            properties.setProperty(Environment.DRIVER, settings.getDriver());
+            properties.setProperty(Environment.URL, settings.getDbUrl());
+            properties.setProperty(Environment.USER, settings.getDbUser());
+            properties.setProperty(Environment.PASS, passwd);
+            properties.setProperty(Environment.DIALECT, settings.getDialect());
+            properties.setProperty(Environment.AUTO_CLOSE_SESSION, "false");
+
             if (!Strings.isNullOrEmpty(settings.getHibernateConfigSource())) {
                 File cfg = new File(settings.getHibernateConfigSource());
                 if (!cfg.exists()) {
                     throw new ConfigurationException(String.format("Hibernate configuration not found. [path=%s]", cfg.getAbsolutePath()));
                 }
-                Properties properties = new Properties();
-                properties.setProperty(Environment.PASS, passwd);
                 sessionFactory = new Configuration().configure(cfg).addProperties(properties).buildSessionFactory();
             } else {
                 Configuration configuration = new Configuration();
-
-                Properties properties = new Properties();
-                properties.setProperty(Environment.DRIVER, settings.getDriver());
-                properties.setProperty(Environment.URL, settings.getDbUrl());
-                properties.setProperty(Environment.USER, settings.getDbUser());
-                properties.setProperty(Environment.PASS, passwd);
-                properties.setProperty(Environment.DIALECT, settings.getDialect());
 
                 if (settings.isEnableConnectionPool()) {
                     if (settings.getPoolMinSize() < 0
@@ -177,19 +179,30 @@ public class HibernateConnection extends AbstractConnection<Session> {
                     }
                 }
                 configuration.setProperties(properties);
-
                 if (settings.getSupportedTypes() != null && !settings.getSupportedTypes().isEmpty()) {
                     for (Class<?> cls : settings.getSupportedTypes()) {
                         configuration.addAnnotatedClass(cls);
                     }
                 }
 
+                if (settings.getModelPackages() != null) {
+                    for (String name : settings.getModelPackages()) {
+                        Set<Class<?>> classes = ReflectionUtils.findAllClasses(name);
+                        if (classes != null) {
+                            for (Class<?> type : classes) {
+                                if (type.isAnnotationPresent(Entity.class)) {
+                                    configuration.addAnnotatedClass(type);
+                                }
+                            }
+                        }
+                    }
+                }
+
                 ServiceRegistry registry = new StandardServiceRegistryBuilder()
                         .applySettings(configuration.getProperties()).build();
                 sessionFactory = configuration.buildSessionFactory(registry);
-
-                state().setState(EConnectionState.Initialized);
             }
+            state().setState(EConnectionState.Initialized);
         } catch (Exception ex) {
             state().error(ex);
             throw new ConfigurationException(ex);
