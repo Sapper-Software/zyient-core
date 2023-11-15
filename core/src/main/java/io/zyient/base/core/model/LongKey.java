@@ -19,25 +19,17 @@ package io.zyient.base.core.model;
 import dev.morphia.annotations.Entity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.model.entity.NativeKey;
-import io.zyient.base.common.utils.ChecksumUtils;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Embeddable
 @Entity
-public class StringKey extends NativeKey<String> {
-
-    public StringKey() {
-        super(String.class);
-    }
-
-    public StringKey(@NonNull String key) {
-        super(String.class);
-        setKey(key);
+public class LongKey extends NativeKey<Long> {
+    public LongKey() {
+        super(Long.class);
     }
 
     /**
@@ -48,22 +40,9 @@ public class StringKey extends NativeKey<String> {
      */
     @Override
     public int compareTo(IKey key) {
-        if (key instanceof StringKey s) {
-            return this.getKey().compareTo(s.getKey());
+        if (key instanceof LongKey) {
+            return (int) (getKey() - ((LongKey) key).getKey());
         }
         return -1;
-    }
-
-    @Override
-    public int hashCode() {
-        return ChecksumUtils.getHashCode(stringKey());
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof StringKey) {
-            return compareTo((IKey) obj) == 0;
-        }
-        return super.equals(obj);
     }
 }

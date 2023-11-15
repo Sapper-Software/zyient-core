@@ -18,6 +18,7 @@ package io.zyient.base.common.model.entity;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.ReflectionUtils;
+import jakarta.persistence.Column;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -26,9 +27,21 @@ import lombok.Setter;
 @Setter
 public abstract class NativeKey<T> implements IKey {
     private final Class<? extends T> type;
+    @Column(name = "key")
+    private T key;
 
     public NativeKey(@NonNull Class<? extends T> type) {
         Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrString(type));
         this.type = type;
+    }
+
+    /**
+     * Get the String representation of the key.
+     *
+     * @return - Key String
+     */
+    @Override
+    public String stringKey() {
+        return String.valueOf(key);
     }
 }
