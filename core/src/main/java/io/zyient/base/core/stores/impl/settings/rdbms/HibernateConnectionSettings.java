@@ -51,8 +51,6 @@ public class HibernateConnectionSettings extends AbstractConnectionSettings {
     private String dbUser;
     @Config(name = "password")
     private String dbPassword;
-    @Config(name = "dbname", required = false)
-    private String dbName;
     @Config(name = "driver")
     private String driver;
     @Config(name = "dialect")

@@ -23,10 +23,11 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.QueryParser;
+import jakarta.persistence.*;
 import lombok.NonNull;
+import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
-import javax.persistence.*;
 import java.lang.reflect.Field;
 import java.sql.Date;
 import java.util.HashMap;
@@ -39,8 +40,12 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
     }
 
     @Override
-    protected void process(AbstractDataStore.@NonNull Q query, @NonNull Select select) throws Exception {
-        query.generatedQuery(select.toString());
+    protected void process(AbstractDataStore.@NonNull Q query,
+                           @NonNull Select select) throws Exception {
+        PlainSelect ps = select.getSelectBody(PlainSelect.class);
+        String hql = String.format("FROM %s WHERE %s",
+                ps.getFromItem().toString(), ps.getWhere().toString());
+        query.generatedQuery(hql);
     }
 
     @Override
@@ -95,7 +100,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
             throw new Exception(String.format("Invalid Key type specified. [expected=%s][key type=%s]",
                     idType.getCanonicalName(), type.getCanonicalName()));
         }
-        if (processField(idField)) {
+        if (processField(idField) || isNativeKey(idField)) {
             QueryField qf = new QueryField()
                     .path(idField.getName())
                     .alias(column(idField))

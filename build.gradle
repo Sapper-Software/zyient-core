@@ -27,12 +27,14 @@ configurations.all {
         if (details.requested.name == 'commons-codec') {
             details.useTarget 'commons-codec:commons-codec:1.16.0'
         }
+        /*
         if (details.requested.name == "antlr4-runtime") {
             details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
         }
         if (details.requested.name == "antlr-runtime") {
             details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
         }
+         */
     }
 }
 
@@ -143,13 +145,14 @@ subprojects {
             if (details.requested.name == 'curator-client') {
                 details.useTarget 'org.apache.curator:curator-client:5.4.0'
             }
-
+            /*
             if (details.requested.name == "antlr4-runtime") {
                 details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
             }
             if (details.requested.name == "antlr-runtime") {
                 details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
             }
+             */
         }
     }
 
@@ -183,8 +186,6 @@ subprojects {
         implementation 'org.apache.curator:curator-recipes:5.4.0'
         implementation 'org.apache.curator:curator-framework:5.4.0'
         implementation 'org.apache.curator:curator-client:5.4.0'
-
-        implementation 'org.antlr:antlr4-runtime:4.7.1'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

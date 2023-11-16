@@ -31,7 +31,7 @@ import lombok.Setter;
 public abstract class NativeKey<T> implements IKey {
     @Transient
     private final Class<? extends T> type;
-    @Column(name = "key")
+    @Column(name = "_id")
     private T key;
 
     public NativeKey(@NonNull Class<? extends T> type) {

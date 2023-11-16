@@ -129,7 +129,9 @@ public class HibernateConnection extends AbstractConnection<Session> {
             properties.setProperty(Environment.PASS, passwd);
             properties.setProperty(Environment.DIALECT, settings.getDialect());
             properties.setProperty(Environment.AUTO_CLOSE_SESSION, "false");
-
+            if (DefaultLogger.isTraceEnabled() || DefaultLogger.isDebugEnabled()) {
+                properties.setProperty(Environment.SHOW_SQL, "true");
+            }
             if (!Strings.isNullOrEmpty(settings.getHibernateConfigSource())) {
                 File cfg = new File(settings.getHibernateConfigSource());
                 if (!cfg.exists()) {

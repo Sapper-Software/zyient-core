@@ -21,10 +21,10 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.stores.annotations.EGeneratedType;
 import io.zyient.base.core.stores.annotations.GeneratedId;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Id;
 import lombok.NonNull;
 
-import javax.persistence.EmbeddedId;
-import javax.persistence.Id;
 import java.lang.reflect.Field;
 import java.util.UUID;
 

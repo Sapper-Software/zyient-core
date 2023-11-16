@@ -54,6 +54,11 @@ public abstract class AbstractDataStore<T> implements Closeable {
             parameters.put(name, value);
             return this;
         }
+
+        public Q addAll(@NonNull Map<String, Object> parameters) {
+            this.parameters.putAll(parameters);
+            return this;
+        }
     }
 
     public static final String KEY_ENGINE = "DataStore";

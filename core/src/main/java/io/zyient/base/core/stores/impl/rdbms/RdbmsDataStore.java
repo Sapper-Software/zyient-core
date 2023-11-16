@@ -138,7 +138,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                                Context context) throws
             DataStoreException {
         checkState();
-        Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
 
@@ -159,7 +158,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                                                                Context context)
             throws DataStoreException {
         checkState();
-        Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         try {

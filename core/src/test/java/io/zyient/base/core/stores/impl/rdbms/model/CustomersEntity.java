@@ -35,7 +35,6 @@ import java.util.UUID;
 @Entity
 @Table(name = "customers", schema = "test", catalog = "")
 public class CustomersEntity implements IEntity<IntegerKey> {
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @EmbeddedId
     private IntegerKey id;
     @Basic
@@ -64,7 +63,7 @@ public class CustomersEntity implements IEntity<IntegerKey> {
     private String state;
     @Basic
     @Column(name = "postalCode")
-    private String postalCode;
+    private String zipCode;
     @Basic
     @Column(name = "country")
     private String country;
@@ -83,14 +82,15 @@ public class CustomersEntity implements IEntity<IntegerKey> {
         this.id.setKey(id);
         contactFirstName = String.format("First [%d]", id);
         contactLastName = UUID.randomUUID().toString();
+        customerName = String.format("%s, %s", contactLastName, contactFirstName);
         Random rnd = new Random(System.nanoTime());
         phone = String.format("+%d", rnd.nextInt(1000000000, Integer.MAX_VALUE));
         addressLine1 = String.format("Address 1: %s", UUID.randomUUID().toString());
-        addressLine1 = String.format("Address 2: %s", UUID.randomUUID().toString());
+        addressLine2 = String.format("Address 2: %s", UUID.randomUUID().toString());
         city = "Bangalore";
         state = "KA";
         country = "India";
-        postalCode = String.valueOf(rnd.nextInt(999999));
+        zipCode = String.valueOf(rnd.nextInt(999999));
         salesRepEmployeeNumber = rnd.nextInt();
         creditLimit = BigDecimal.valueOf(rnd.nextDouble());
     }
@@ -109,7 +109,7 @@ public class CustomersEntity implements IEntity<IntegerKey> {
                 Objects.equals(addressLine2, that.addressLine2) &&
                 Objects.equals(city, that.city) &&
                 Objects.equals(state, that.state) &&
-                Objects.equals(postalCode, that.postalCode) &&
+                Objects.equals(zipCode, that.zipCode) &&
                 Objects.equals(country, that.country) &&
                 Objects.equals(salesRepEmployeeNumber, that.salesRepEmployeeNumber) &&
                 Objects.equals(creditLimit, that.creditLimit);
@@ -126,7 +126,7 @@ public class CustomersEntity implements IEntity<IntegerKey> {
                 addressLine2,
                 city,
                 state,
-                postalCode,
+                zipCode,
                 country,
                 salesRepEmployeeNumber,
                 creditLimit);

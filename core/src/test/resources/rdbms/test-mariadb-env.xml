@@ -100,12 +100,11 @@
                     <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
                     <hibernate>
                         <name>test-hibernate</name>
-                        <url>jdbc:mysql://192.168.2.19:3306</url>
+                        <url>jdbc:mariadb://192.168.2.19:3306/test</url>
                         <username>debezium</username>
                         <password>mongodb-password</password>
-                        <driver>com.mysql.jdbc.Driver</driver>
+                        <driver>org.mariadb.jdbc.Driver</driver>
                         <dialect>MySQL</dialect>
-                        <dbname>test</dbname>
                         <model>
                             <packages>io.zyient.base.core.stores.impl.rdbms.model</packages>
                         </model>

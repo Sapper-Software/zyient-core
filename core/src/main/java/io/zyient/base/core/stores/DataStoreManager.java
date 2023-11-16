@@ -505,7 +505,7 @@ public class DataStoreManager {
         synchronized (sequences) {
             String key = String.format("%s::%s", name, sequenceName);
             if (sequences.containsKey(key)) {
-                ZkSequenceBlock sq = sequences.get(name);
+                ZkSequenceBlock sq = sequences.get(key);
                 if (sq.next < sq.endSequence) {
                     return sq.next++;
                 }

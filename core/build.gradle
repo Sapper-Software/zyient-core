@@ -47,6 +47,7 @@ dependencies {
     implementation 'com.mchange:c3p0:0.9.5.5'
     implementation 'org.mongodb:mongodb-driver-sync:4.9.0'
     implementation 'mysql:mysql-connector-java:8.0.32'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.3.0'
     implementation 'com.oracle.database.jdbc:ojdbc8:21.9.0.0'
     implementation 'com.ibm.db2:jcc:11.5.8.0'
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
