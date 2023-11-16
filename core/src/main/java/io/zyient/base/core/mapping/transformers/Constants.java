@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.core.mapping.transformers;
 
-import java.lang.annotation.*;
+public class Constants {
+    public static final String DECIMAL_WITH_DOT = ".";
+    public static final String DECIMAL_WITH_COMMA = ",";
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface Config {
-    String name();
-
-    boolean required() default true;
-
-    Class<?> type() default String.class;
-
-    boolean autoUpdate() default false;
-
-    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
+    public static final String REGEX_DECIMAL_DOT = "[^a-zA-Z0-9\\-\\+.]";
+    public static final String REGEX_DECIMAL_COMMA = "[^a-zA-Z0-9\\-\\+,]";
 }

@@ -14,21 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.core.mapping;
 
-import java.lang.annotation.*;
+public class DataException extends Exception {
+    private static final String __PREFIX = "Data Mapping Error : %s";
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface Config {
-    String name();
+    public DataException(String message) {
+        super(String.format(__PREFIX, message));
+    }
 
-    boolean required() default true;
+    public DataException(String message, Throwable cause) {
+        super(String.format(__PREFIX, message), cause);
+    }
 
-    Class<?> type() default String.class;
-
-    boolean autoUpdate() default false;
-
-    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
+    public DataException(Throwable cause) {
+        super(String.format(__PREFIX, cause.getLocalizedMessage()), cause);
+    }
 }

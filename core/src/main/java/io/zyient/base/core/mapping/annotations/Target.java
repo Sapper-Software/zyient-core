@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.core.mapping.annotations;
 
-import java.lang.annotation.*;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
+@java.lang.annotation.Target(ElementType.FIELD)
 @Inherited
-public @interface Config {
+public @interface Target {
     String name();
-
-    boolean required() default true;
-
-    Class<?> type() default String.class;
-
-    boolean autoUpdate() default false;
-
-    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
 }

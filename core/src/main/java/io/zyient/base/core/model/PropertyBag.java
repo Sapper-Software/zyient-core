@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.core.model;
 
-import java.lang.annotation.*;
+import lombok.NonNull;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface Config {
-    String name();
+public interface PropertyBag {
+    boolean hasProperty(@NonNull String name);
 
-    boolean required() default true;
+    Object getProperty(@NonNull String name);
 
-    Class<?> type() default String.class;
-
-    boolean autoUpdate() default false;
-
-    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
+    PropertyBag add(@NonNull String name, @NonNull Object value);
 }

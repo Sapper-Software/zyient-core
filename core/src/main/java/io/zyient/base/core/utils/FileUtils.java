@@ -25,6 +25,12 @@ import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.apache.tika.Tika;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.detect.Detector;
+import org.apache.tika.io.TikaInputStream;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
+import org.apache.tika.mime.MediaType;
 
 import javax.annotation.Nonnull;
 import java.io.*;
@@ -91,9 +97,17 @@ public class FileUtils {
         return mimeType;
     }
 
-    public static String detectMimeType(final File file) throws IOException {
-        Tika tika = new Tika();
-        return tika.detect(file);
+    public static String detectMimeType(@NonNull File path) throws Exception {
+        TikaConfig config = TikaConfig.getDefaultConfig();
+        Detector detector = config.getDetector();
+
+        TikaInputStream stream = TikaInputStream.get(path);
+
+        Metadata metadata = new Metadata();
+        metadata.add(TikaCoreProperties.RESOURCE_NAME_KEY, path.getName());
+        MediaType mediaType = detector.detect(stream, metadata);
+
+        return mediaType.toString();
     }
 
     public static String getFileMimeType(@Nonnull String filename) throws FileUtilsException {
@@ -104,7 +118,7 @@ public class FileUtils {
                         fi.getAbsolutePath()));
             }
             return detectMimeType(fi);
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             return "MIME/ERROR";
         }
     }

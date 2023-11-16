@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.core.mapping;
 
-import java.lang.annotation.*;
+import io.zyient.base.core.processing.ProcessorState;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.experimental.Accessors;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface Config {
-    String name();
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
 
-    boolean required() default true;
+@Getter
+@Accessors(fluent = true)
+public class MappingProcessor {
+    private final ProcessorState state = new ProcessorState();
+    private final Map<String, Pattern> registeredRegex = new HashMap<>();
 
-    Class<?> type() default String.class;
-
-    boolean autoUpdate() default false;
-
-    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
+    public Pattern getRegex(@NonNull String name) {
+        return registeredRegex.get(name);
+    }
 }

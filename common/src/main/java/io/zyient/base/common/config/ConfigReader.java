@@ -84,7 +84,14 @@ public class ConfigReader {
         if (!Strings.isNullOrEmpty(path))
             this.config = config.configurationAt(path);
         else {
-            this.config = config;
+            if (type.isAnnotationPresent(ConfigPath.class)) {
+                ConfigPath cp = type.getAnnotation(ConfigPath.class);
+                if (!Strings.isNullOrEmpty(cp.path())) {
+                    this.config = config.configurationAt(cp.path());
+                } else
+                    this.config = config;
+            } else
+                this.config = config;
         }
         this.type = type;
     }

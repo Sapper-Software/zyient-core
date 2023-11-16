@@ -14,21 +14,10 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.core.mapping;
 
-import java.lang.annotation.*;
+import lombok.NonNull;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface Config {
-    String name();
-
-    boolean required() default true;
-
-    Class<?> type() default String.class;
-
-    boolean autoUpdate() default false;
-
-    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
+public interface Transformer<T> {
+    T transform(@NonNull Object source) throws DataException;
 }
