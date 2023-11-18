@@ -27,30 +27,26 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import java.text.NumberFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class NumericTransformer<T> implements Transformer<T> {
-    public static final String LOCALE_OVERRIDE = "formatter.numeric.locale";
-
-    private final Class<? extends T> type;
+public class DateTransformer implements Transformer<Date> {
+    public static final String LOCALE_OVERRIDE = "formatter.date.locale";
+    public static final String FORMAT_OVERRIDE = "formatter.date.format";
+    private String format;
     private Locale locale;
-    protected NumberFormat format;
-
-    protected NumericTransformer(@NonNull Class<? extends T> type) {
-        this.type = type;
-    }
 
     @Override
     public String name() {
-        return type.getCanonicalName();
+        return Date.class.getCanonicalName();
     }
 
     @Override
-    public Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public Transformer<Date> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         String l = settings.getParameter(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {
@@ -63,15 +59,35 @@ public abstract class NumericTransformer<T> implements Transformer<T> {
                 throw new ConfigurationException("Locale not specified...");
             }
         }
-        format = NumberFormat.getInstance(locale);
-        return this;
+        String f = settings.getParameter(FORMAT_OVERRIDE);
+        if (!Strings.isNullOrEmpty(f)) {
+            format = f;
+        } else {
+            if (Strings.isNullOrEmpty(format)) {
+                throw new ConfigurationException("Date format not specified...");
+            }
+        }
+        return null;
     }
 
-    protected Number parse(@NonNull String value) throws DataException {
+    @Override
+    public Date transform(@NonNull Object source) throws DataException {
         try {
-            return format.parse(value);
+            if (source instanceof Date) {
+                return (Date) source;
+            } else if (source instanceof String value) {
+                SimpleDateFormat df = new SimpleDateFormat(format, locale);
+                return df.parse(value);
+            }
+            throw new DataException(String.format("Cannot transform to Date. [source=%s]", source.getClass()));
         } catch (Exception ex) {
             throw new DataException(ex);
         }
+    }
+
+    @Override
+    public String write(@NonNull Date source) throws DataException {
+        SimpleDateFormat df = new SimpleDateFormat(format, locale);
+        return df.format(source);
     }
 }

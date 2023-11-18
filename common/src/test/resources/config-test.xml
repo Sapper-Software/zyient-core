@@ -21,7 +21,7 @@
         <created>1683359770</created>
         <version>2.11</version>
         <type>File</type>
-        <authors>
+        <authors type="authors">
             <values>
                 <value>Jack Kerouac</value>
                 <value>Samuel Beckett</value>
@@ -43,7 +43,7 @@
             </values>
         </int-list>
         <test>
-            <class>config.ai.zyientj.common.ConfigReaderTest</class>
+            <class>io.zyient.base.common.config.ConfigReaderTest</class>
         </test>
     </test>
 </configuration>

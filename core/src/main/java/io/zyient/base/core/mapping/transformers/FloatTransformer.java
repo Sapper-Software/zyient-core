@@ -22,6 +22,11 @@ import io.zyient.base.core.mapping.DataException;
 import lombok.NonNull;
 
 public class FloatTransformer extends NumericTransformer<Float> {
+
+    public FloatTransformer() {
+        super(Float.class);
+    }
+
     @Override
     public Float transform(@NonNull Object source) throws DataException {
         if (ReflectionUtils.isNumericType(source.getClass())) {
@@ -30,17 +35,16 @@ public class FloatTransformer extends NumericTransformer<Float> {
             if (Strings.isNullOrEmpty(value)) {
                 return null;
             }
-            try {
-                return Float.parseFloat(value);
-            } catch (NumberFormatException ex) {
-                try {
-                    value = clean(value);
-                    return Float.parseFloat(value);
-                } catch (Exception exx) {
-                   throw new DataException(exx);
-                }
+            Number number = parse(value);
+            if (number != null) {
+                return number.floatValue();
             }
         }
         throw new DataException(String.format("Cannot transform to Float. [source=%s]", source.getClass()));
+    }
+
+    @Override
+    public String write(@NonNull Float source) throws DataException {
+        return format.format(source);
     }
 }

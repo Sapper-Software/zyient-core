@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.transformers;
+package io.zyient.base.core.mapping.model;
 
-public class Constants {
-    public static final String DECIMAL_WITH_DOT = ".";
-    public static final String DECIMAL_WITH_COMMA = ",";
 
-    public static final String REGEX_DECIMAL_DOT = "[^a-zA-Z0-9\\-\\+.]";
-    public static final String REGEX_DECIMAL_COMMA = "[^a-zA-Z0-9\\-\\+,]";
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.ConfigPath;
+import io.zyient.base.core.mapping.Transformer;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@ConfigPath(path = "mapping")
+public class CustomMappedElement extends MappedElement {
+    @Config(name = "transformer.class", required = true, type = Class.class)
+    private Class<? extends Transformer<?>> transformer;
+    @Config(name = "transformer.class", required = true)
+    private String transformerName;
 }

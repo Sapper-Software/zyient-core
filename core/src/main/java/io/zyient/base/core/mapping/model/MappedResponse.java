@@ -14,32 +14,40 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.model;
 
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
-@Getter
-@Accessors(fluent = true)
-public abstract class InputReader {
-    private final SourceTypes[] supportedTypes;
-    private final Class<? extends ReaderSettings> settingsType;
-    private ReaderSettings settings;
+import java.util.HashMap;
+import java.util.Map;
 
-    public InputReader(SourceTypes @NonNull[] supportedTypes,
-                       @NonNull Class<? extends ReaderSettings> settingsType) {
-        this.supportedTypes = supportedTypes;
-        this.settingsType = settingsType;
+@Getter
+@Setter
+@Accessors(fluent = true)
+public class MappedResponse<T> {
+    private T entity;
+    private final Map<String, Object> source;
+    private Map<String, Object> cached;
+
+    public MappedResponse(Map<String, Object> source) {
+        this.source = source;
     }
 
-
-    public boolean supports(@NonNull SourceTypes fileType) {
-        for (SourceTypes t : supportedTypes) {
-            if (t == fileType) {
-                return true;
-            }
+    public MappedResponse<T> add(@NonNull String name, @NonNull Object data) {
+        if (cached == null) {
+            cached = new HashMap<>();
         }
-        return false;
+        cached.put(name, data);
+        return this;
+    }
+
+    public Object getCached(@NonNull String name) {
+        if (cached != null) {
+            return cached.get(name);
+        }
+        return null;
     }
 }

@@ -14,17 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.model;
 
-import lombok.NonNull;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-
-public interface Transformer<T> {
-    String name();
-
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
-
-    T transform(@NonNull Object source) throws DataException;
-
-    String write(@NonNull T source) throws DataException;
+public enum MappingType {
+    Field, Custom, Temporary
 }

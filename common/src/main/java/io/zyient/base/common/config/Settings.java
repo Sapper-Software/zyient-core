@@ -49,6 +49,19 @@ public abstract class Settings {
         this.parameters = source.parameters;
     }
 
+    private boolean hasParameter(@NonNull String key) {
+        if (parameters != null) {
+            return parameters.containsKey(key);
+        }
+        return false;
+    }
+
+    public String getParameter(@NonNull String key) {
+        if (hasParameter(key)) {
+            return parameters.get(key);
+        }
+        return null;
+    }
 
     public Map<String, String> serialize() throws Exception {
         Map<String, String> values = new HashMap<>();

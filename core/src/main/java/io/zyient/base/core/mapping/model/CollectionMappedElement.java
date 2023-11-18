@@ -14,17 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.model;
 
-import lombok.NonNull;
-import org.apache.commons.configuration2.ex.ConfigurationException;
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.ConfigPath;
+import lombok.Getter;
+import lombok.Setter;
 
-public interface Transformer<T> {
-    String name();
-
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
-
-    T transform(@NonNull Object source) throws DataException;
-
-    String write(@NonNull T source) throws DataException;
+@Getter
+@Setter
+@ConfigPath(path = "mapping")
+public class CollectionMappedElement extends MappedElement{
+    @Config(name = "separator", required = false)
+    private String separator = ",";
+    @Config(name = "collectionType", required = false, type = CollectionType.class)
+    private CollectionType collectionType = CollectionType.Array;
 }

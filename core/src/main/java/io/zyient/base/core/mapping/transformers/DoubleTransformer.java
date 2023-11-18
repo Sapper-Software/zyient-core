@@ -22,6 +22,11 @@ import io.zyient.base.core.mapping.DataException;
 import lombok.NonNull;
 
 public class DoubleTransformer extends NumericTransformer<Double> {
+
+    public DoubleTransformer() {
+        super(Double.class);
+    }
+
     @Override
     public Double transform(@NonNull Object source) throws DataException {
         if (ReflectionUtils.isNumericType(source.getClass())) {
@@ -30,17 +35,16 @@ public class DoubleTransformer extends NumericTransformer<Double> {
             if (Strings.isNullOrEmpty(value)) {
                 return null;
             }
-            try {
-                return Double.parseDouble(value);
-            } catch (NumberFormatException ex) {
-                try {
-                    value = clean(value);
-                    return Double.parseDouble(value);
-                } catch (Exception exx) {
-                   throw new DataException(exx);
-                }
+            Number number = parse(value);
+            if (number != null) {
+                return number.doubleValue();
             }
         }
         throw new DataException(String.format("Cannot transform to Double. [source=%s]", source.getClass()));
+    }
+
+    @Override
+    public String write(@NonNull Double source) throws DataException {
+        return format.format(source);
     }
 }

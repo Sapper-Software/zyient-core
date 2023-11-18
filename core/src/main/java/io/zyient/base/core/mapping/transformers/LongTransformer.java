@@ -22,6 +22,11 @@ import io.zyient.base.core.mapping.DataException;
 import lombok.NonNull;
 
 public class LongTransformer extends NumericTransformer<Long> {
+
+    public LongTransformer() {
+        super(Long.class);
+    }
+
     @Override
     public Long transform(@NonNull Object source) throws DataException {
         if (ReflectionUtils.isNumericType(source.getClass())) {
@@ -30,17 +35,16 @@ public class LongTransformer extends NumericTransformer<Long> {
             if (Strings.isNullOrEmpty(value)) {
                 return null;
             }
-            try {
-                return Long.parseLong(value);
-            } catch (NumberFormatException ex) {
-                try {
-                    value = clean(value);
-                    return Long.parseLong(value);
-                } catch (Exception exx) {
-                   throw new DataException(exx);
-                }
+            Number number = parse(value);
+            if (number != null) {
+                return number.longValue();
             }
         }
         throw new DataException(String.format("Cannot transform to Long. [source=%s]", source.getClass()));
+    }
+
+    @Override
+    public String write(@NonNull Long source) throws DataException {
+        return format.format(source);
     }
 }

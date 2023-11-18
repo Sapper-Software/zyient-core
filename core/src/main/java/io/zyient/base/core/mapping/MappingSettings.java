@@ -17,10 +17,10 @@
 package io.zyient.base.core.mapping;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.Settings;
-import io.zyient.base.core.mapping.transformers.Constants;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -35,15 +35,29 @@ import java.util.Locale;
 public class MappingSettings extends Settings {
     @Config(name = "currency", required = false)
     private String currency = null;
-    @Config(name = "separator.decimal", required = false)
-    private String decimalSeparator = Constants.DECIMAL_WITH_DOT;
     @Config(name = "format.date", required = false)
     private String dateFormat = null;
     @Config(name = "locale", required = false)
-    private String local = Locale.getDefault().toString();
+    private String localeStr = null;
+    private Locale locale = Locale.getDefault();
 
     public MappingSettings() {
-        DateFormat fmt = DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.getDefault());
+        DateFormat fmt = DateFormat.getDateInstance(DateFormat.DEFAULT, locale);
         dateFormat = fmt.toString();
+    }
+
+    public void postLoad() throws Exception {
+        if (!Strings.isNullOrEmpty(localeStr)) {
+            String[] parts = localeStr.split(",");
+            String language = parts[0].trim();
+            String country = parts[1].trim();
+            if (Strings.isNullOrEmpty(country) || Strings.isNullOrEmpty(language)) {
+                throw new Exception(String.format("Invalid locale specified. [format=<country>,<language>][value=%s]",
+                        localeStr));
+            }
+            locale = new Locale(language, country);
+            DateFormat fmt = DateFormat.getDateInstance(DateFormat.DEFAULT, locale);
+            dateFormat = fmt.toString();
+        }
     }
 }

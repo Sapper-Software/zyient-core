@@ -21,7 +21,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class FileUtilsTest {
     private static final String CSV = "src/test/resources/data/business-financial-data-june-2023-quarter-csv.csv";

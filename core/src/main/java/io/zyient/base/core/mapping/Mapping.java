@@ -23,7 +23,10 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
+import io.zyient.base.core.mapping.model.CustomMappedElement;
 import io.zyient.base.core.mapping.model.MappedElement;
+import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.model.MappingType;
 import io.zyient.base.core.mapping.transformers.*;
 import io.zyient.base.core.model.PropertyBag;
 import lombok.Getter;
@@ -43,12 +46,15 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class Mapping<T> {
     public static final String __CONFIG_PATH = "mappings";
+    public static final String __CONFIG_ATTR_TYPE = "[@type]";
+
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
     private final Class<? extends T> type;
     private final Map<String, Field> fieldTree = new HashMap<>();
     private final MappingProcessor processor;
     private MappingSettings settings;
+    private final Map<String, Transformer<?>> transformers = new HashMap<>();
 
     public Mapping(@NonNull Class<? extends T> type,
                    @NonNull MappingProcessor processor) {
@@ -67,6 +73,7 @@ public class Mapping<T> {
             } else {
                 settings = new MappingSettings();
             }
+            settings.postLoad();
             readMappings(config);
             buildFieldTree(type, null);
             return this;
@@ -132,6 +139,7 @@ public class Mapping<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void readMappings(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         ConfigPath cp = MappedElement.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
@@ -139,7 +147,12 @@ public class Mapping<T> {
         List<HierarchicalConfiguration<ImmutableNode>> maps = xmlConfig.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
-                MappedElement me = MappedElement.read(node);
+                Class<? extends MappedElement> type = MappedElement.class;
+                String et = node.getString(__CONFIG_ATTR_TYPE);
+                if (!Strings.isNullOrEmpty(et)) {
+                    type = (Class<? extends MappedElement>) Class.forName(et);
+                }
+                MappedElement me = MappedElement.read(node, type);
                 sourceIndex.put(me.getSourcePath(), me);
                 targetIndex.put(me.getTargetPath(), me);
             }
@@ -148,8 +161,10 @@ public class Mapping<T> {
         }
     }
 
-    public T read(@NonNull Map<String, Object> source) throws Exception {
+    public MappedResponse<T> read(@NonNull Map<String, Object> source) throws Exception {
+        MappedResponse<T> response = new MappedResponse<>(source);
         T data = type.getDeclaredConstructor().newInstance();
+        response.entity(data);
         for (String path : sourceIndex.keySet()) {
             String[] parts = path.split("\\.");
             Object value = findSourceValue(source, parts, 0);
@@ -161,13 +176,16 @@ public class Mapping<T> {
                 }
                 continue;
             }
-            setFieldValue(me, value, data);
+            setFieldValue(me, value, response);
         }
-        return data;
+        return response;
     }
 
-    private void setFieldValue(MappedElement element, Object value, T data) throws Exception {
-        if (element.isCustom()) {
+    private void setFieldValue(MappedElement element,
+                               Object value,
+                               MappedResponse<T> response) throws Exception {
+        T data = response.entity();
+        if (element.getMappingType() == MappingType.Custom) {
             if (!(data instanceof PropertyBag)) {
                 throw new Exception(String.format("Custom mapping not supported for type. [type=%s]",
                         data.getClass().getCanonicalName()));
@@ -179,7 +197,17 @@ public class Mapping<T> {
                             element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
-               ((PropertyBag) data).add(element.getTargetPath(), tv);
+                ((PropertyBag) data).add(element.getTargetPath(), tv);
+            }
+        } else if (element.getMappingType() == MappingType.Temporary) {
+            Object tv = transform(value, element, element.getType());
+            if (tv == null) {
+                if (element.isMandatory()) {
+                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                            element.getSourcePath(), element.getTargetPath()));
+                }
+            } else {
+                response.add(element.getTargetPath(), tv);
             }
         } else {
             Field field = fieldTree.get(element.getTargetPath());
@@ -208,12 +236,10 @@ public class Mapping<T> {
             type = String.class;
         }
         Transformer<?> transformer = null;
-        if (element.getTransformer() != null) {
-            transformer = element.getTransformer()
-                    .getDeclaredConstructor()
-                    .newInstance();
+        if (element instanceof CustomMappedElement) {
+            transformer = getTransformer(null, element);
         } else {
-            transformer = getDefaultTransformer(type, element);
+            transformer = getTransformer(type, element);
         }
         if (transformer == null) {
             throw new Exception(String.format("Transformer not found for type. [type=%s]", type.getCanonicalName()));
@@ -221,24 +247,47 @@ public class Mapping<T> {
         return transformer.transform(value);
     }
 
-    private Transformer<?> getDefaultTransformer(Class<?> type,
-                                                 MappedElement element) {
-        if (ReflectionUtils.isBoolean(type)) {
-            return new BooleanTransformer();
-        } else if (ReflectionUtils.isInt(type)) {
-            return new IntegerTransformer()
-                    .decimalSeparator(settings().getDecimalSeparator());
-        } else if (ReflectionUtils.isFloat(type)) {
-            return new FloatTransformer()
-                    .decimalSeparator(settings().getDecimalSeparator());
-        } else if (ReflectionUtils.isLong(type)) {
-            return new LongTransformer()
-                    .decimalSeparator(settings().getDecimalSeparator());
-        } else if (ReflectionUtils.isDouble(type)) {
-            return new DoubleTransformer()
-                    .decimalSeparator(settings().getDecimalSeparator());
+    private Transformer<?> getTransformer(Class<?> type,
+                                          MappedElement element) throws Exception {
+        if (type != null && transformers.containsKey(type.getCanonicalName())) {
+            return transformers.get(type.getCanonicalName());
+        } else if (element instanceof CustomMappedElement) {
+            if (!Strings.isNullOrEmpty(((CustomMappedElement) element).getTransformerName())) {
+                if (transformers.containsKey(((CustomMappedElement) element).getTransformerName())) {
+                    return transformers.get(((CustomMappedElement) element).getTransformerName());
+                }
+            }
         }
-        return null;
+        Transformer<?> transformer = null;
+        if (type == null && element instanceof CustomMappedElement) {
+            transformer = ((CustomMappedElement) element).getTransformer()
+                    .getDeclaredConstructor()
+                    .newInstance()
+                    .configure(settings);
+        } else if (ReflectionUtils.isBoolean(type)) {
+            transformer = new BooleanTransformer();
+        } else if (ReflectionUtils.isInt(type)) {
+            transformer = new IntegerTransformer()
+                    .configure(settings);
+        } else if (ReflectionUtils.isFloat(type)) {
+            transformer = new FloatTransformer()
+                    .configure(settings);
+        } else if (ReflectionUtils.isLong(type)) {
+            transformer = new LongTransformer()
+                    .configure(settings);
+        } else if (ReflectionUtils.isDouble(type)) {
+            transformer = new DoubleTransformer()
+                    .configure(settings);
+        } else if (type.equals(Date.class)) {
+            transformer = new DateTransformer()
+                    .locale(settings.getLocale())
+                    .format(settings.getDateFormat())
+                    .configure(settings);
+        }
+        if (transformer != null) {
+            transformers.put(transformer.name(), transformer);
+        }
+        return transformer;
     }
 
     @SuppressWarnings("unchecked")

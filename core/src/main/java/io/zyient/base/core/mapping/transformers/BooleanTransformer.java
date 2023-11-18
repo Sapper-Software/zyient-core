@@ -19,10 +19,22 @@ package io.zyient.base.core.mapping.transformers;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.DataException;
+import io.zyient.base.core.mapping.MappingSettings;
 import io.zyient.base.core.mapping.Transformer;
 import lombok.NonNull;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
 public class BooleanTransformer implements Transformer<Boolean> {
+    @Override
+    public String name() {
+        return Boolean.class.getCanonicalName();
+    }
+
+    @Override
+    public Transformer<Boolean> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+        return this;
+    }
+
     @Override
     public Boolean transform(@NonNull Object source) throws DataException {
         if (ReflectionUtils.isBoolean(source.getClass())) {
@@ -36,6 +48,11 @@ public class BooleanTransformer implements Transformer<Boolean> {
             }
             return Boolean.parseBoolean(value);
         }
-        throw new DataException(String.format("Cannot transform to Double. [source=%s]", source.getClass()));
+        throw new DataException(String.format("Cannot transform to Boolean. [source=%s]", source.getClass()));
+    }
+
+    @Override
+    public String write(@NonNull Boolean source) throws DataException {
+        return source.toString();
     }
 }

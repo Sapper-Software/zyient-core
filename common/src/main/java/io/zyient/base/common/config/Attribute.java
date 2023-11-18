@@ -14,17 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.common.config;
 
-import lombok.NonNull;
-import org.apache.commons.configuration2.ex.ConfigurationException;
+import java.lang.annotation.*;
 
-public interface Transformer<T> {
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.FIELD)
+@Inherited
+public @interface Attribute {
     String name();
 
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
+    boolean required() default true;
 
-    T transform(@NonNull Object source) throws DataException;
+    Class<?> type() default String.class;
 
-    String write(@NonNull T source) throws DataException;
+    boolean autoUpdate() default false;
+
+    Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
 }

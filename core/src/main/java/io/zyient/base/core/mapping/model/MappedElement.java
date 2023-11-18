@@ -22,7 +22,6 @@ import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigValueParser;
 import io.zyient.base.common.utils.ReflectionUtils;
-import io.zyient.base.core.mapping.Transformer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -44,15 +43,12 @@ public class MappedElement {
     private Class<?> type;
     @Config(name = "regex")
     private String regex;
-    @Config(name = "customField", required = false, type = Boolean.class)
-    private boolean custom = false;
-    @Config(name = "splitter", required = false)
-    private String splitter = ",";
-    @Config(name = "transformer", required = false, type = Class.class)
-    private Class<? extends Transformer<?>> transformer;
+    @Config(name = "type", required = false, type = MappingType.class)
+    private MappingType mappingType = MappingType.Field;
 
-    public static MappedElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
-        MappedElement me = new MappedElement();
+    public static MappedElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                     @NonNull Class<? extends MappedElement> type) throws Exception {
+        MappedElement me = type.getDeclaredConstructor().newInstance();
         Field[] fields = ReflectionUtils.getAllFields(MappedElement.class);
         Preconditions.checkNotNull(fields);
         for (Field field : fields) {

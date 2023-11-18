@@ -17,9 +17,12 @@
 package io.zyient.base.common.config;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -77,6 +80,11 @@ class ConfigReaderTest {
             assertFalse(settings.domains.isEmpty());
             assertNotNull(settings.intValues);
             assertFalse(settings.intValues.isEmpty());
+            String path = "test.authors";
+            HierarchicalConfiguration<ImmutableNode> node = xmlConfiguration.configurationAt(path);
+            assertNotNull(node);
+            String type = node.getString("[@type]");
+            assertFalse(Strings.isNullOrEmpty(type));
         } catch (Exception ex) {
             ex.printStackTrace();
             fail(ex);

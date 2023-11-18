@@ -22,11 +22,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.tika.mime.MimeType;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 @Getter
 @Accessors(fluent = true)
@@ -39,7 +37,7 @@ public class Mapper<T> {
 
     public MappingResult<T> read(@NonNull File source,
                                  @NonNull SourceTypes sourceType,
-                                 @NonNull Mapping mapping) throws Exception {
+                                 @NonNull Mapping<T> mapping) throws Exception {
         if (!source.exists() || !source.canRead()) {
             throw new IOException(String.format("Invalid source, file not found or not readable. [path=%s]",
                     source.getAbsolutePath()));
@@ -52,10 +50,6 @@ public class Mapper<T> {
                     throw new IOException(String.format("Failed to detect source type. [path=%s]",
                             source.getAbsolutePath()));
             }
-        }
-        if (!mapping.supports(sourceType)) {
-            throw new Exception(String.format("Specified mapping does not support source type. [source type=%s]",
-                    sourceType.name()));
         }
         return null;
     }
