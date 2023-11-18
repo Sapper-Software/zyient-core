@@ -23,10 +23,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
-import io.zyient.base.core.mapping.model.CustomMappedElement;
-import io.zyient.base.core.mapping.model.MappedElement;
-import io.zyient.base.core.mapping.model.MappedResponse;
-import io.zyient.base.core.mapping.model.MappingType;
+import io.zyient.base.core.mapping.model.*;
 import io.zyient.base.core.mapping.transformers.*;
 import io.zyient.base.core.model.PropertyBag;
 import lombok.Getter;
@@ -199,7 +196,7 @@ public class Mapping<T> {
             } else {
                 ((PropertyBag) data).add(element.getTargetPath(), tv);
             }
-        } else if (element.getMappingType() == MappingType.Temporary) {
+        } else if (element.getMappingType() == MappingType.Cached) {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (element.isMandatory()) {
@@ -282,6 +279,21 @@ public class Mapping<T> {
             transformer = new DateTransformer()
                     .locale(settings.getLocale())
                     .format(settings.getDateFormat())
+                    .configure(settings);
+        } else if (ReflectionUtils.isSuperType(CurrencyValue.class, type)) {
+            transformer = new CurrencyValueTransformer()
+                    .locale(settings.getLocale())
+                    .configure(settings);
+        } else if (element instanceof RegexMappedElement re) {
+            if (transformers.containsKey(re.getName())) {
+                return transformers.get(re.getName());
+            }
+            transformer = new RegexTransformer()
+                    .regex(re.getRegex())
+                    .name(re.getName())
+                    .format(re.getFormat())
+                    .groups(re.getGroups())
+                    .replace(re.getReplace())
                     .configure(settings);
         }
         if (transformer != null) {

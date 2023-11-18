@@ -34,6 +34,7 @@ public class IntegerListParser implements ConfigValueParser<List<Integer>> {
                 }
                 array.add(Integer.parseInt(part));
             }
+            return array;
         }
         return null;
     }
@@ -41,7 +42,7 @@ public class IntegerListParser implements ConfigValueParser<List<Integer>> {
     @Override
     public String serialize(@NonNull List<Integer> value) throws Exception {
         StringBuilder builder = new StringBuilder();
-        for (String v : value) {
+        for (int v : value) {
             if (!builder.isEmpty()) {
                 builder.append(",");
             }

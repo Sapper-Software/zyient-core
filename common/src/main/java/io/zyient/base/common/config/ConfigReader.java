@@ -221,6 +221,45 @@ public class ConfigReader {
         }
     }
 
+    public static <T> T read(@NonNull HierarchicalConfiguration<ImmutableNode> node,
+                             Class<? extends T> type) throws Exception {
+        T pojo = type.getDeclaredConstructor().newInstance();
+
+        Field[] fields = ReflectionUtils.getAllFields(type);
+        Preconditions.checkNotNull(fields);
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(Config.class)) {
+                Config cfg = field.getAnnotation(Config.class);
+                String value = node.getString(cfg.name());
+                if (Strings.isNullOrEmpty(value)) {
+                    if (cfg.required()) {
+                        throw new Exception(String.format("Required value not found. [name=%s]", cfg.name()));
+                    } else {
+                        continue;
+                    }
+                }
+                if (!cfg.parser().equals(ConfigValueParser.DummyValueParser.class)) {
+                    ConfigValueParser<?> parser = cfg.parser()
+                            .getDeclaredConstructor()
+                            .newInstance();
+                    Object v = parser.parse(value);
+                    if (v == null) {
+                        if (cfg.required()) {
+                            throw new Exception(String.format("Required value not found. [name=%s][parser=%s]",
+                                    cfg.name(), cfg.parser().getCanonicalName()));
+                        } else {
+                            continue;
+                        }
+                    }
+                    ReflectionUtils.setValue(v, pojo, field);
+                } else {
+                    ReflectionUtils.setValueFromString(value, pojo, field);
+                }
+            }
+        }
+        return pojo;
+    }
+
     public boolean checkIfNodeExists(String path, @NonNull String name) {
         String key = name;
         if (!Strings.isNullOrEmpty(path)) {

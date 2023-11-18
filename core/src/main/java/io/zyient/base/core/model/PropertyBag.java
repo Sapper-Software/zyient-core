@@ -18,7 +18,13 @@ package io.zyient.base.core.model;
 
 import lombok.NonNull;
 
+import java.util.Map;
+
 public interface PropertyBag {
+    Map<String, Object> getProperties();
+
+    void setProperties(Map<String, Object> properties);
+
     boolean hasProperty(@NonNull String name);
 
     Object getProperty(@NonNull String name);

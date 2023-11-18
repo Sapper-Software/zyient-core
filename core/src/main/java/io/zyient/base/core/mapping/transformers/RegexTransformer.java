@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 public class RegexTransformer implements Transformer<String> {
     private String name;
     private String regex;
+    private String replace;
     private List<Integer> groups;
     private String format;
     @Setter(AccessLevel.NONE)
@@ -59,6 +60,9 @@ public class RegexTransformer implements Transformer<String> {
     @Override
     public String transform(@NonNull Object source) throws DataException {
         if (source instanceof String value) {
+            if (!Strings.isNullOrEmpty(replace)) {
+                return ((String) source).replaceAll(regex, replace);
+            }
             Matcher m = pattern.matcher(value);
             if (m.matches()) {
                 if (Strings.isNullOrEmpty(format)) {
@@ -82,6 +86,6 @@ public class RegexTransformer implements Transformer<String> {
 
     @Override
     public String write(@NonNull String source) throws DataException {
-        return null;
+        return source;
     }
 }

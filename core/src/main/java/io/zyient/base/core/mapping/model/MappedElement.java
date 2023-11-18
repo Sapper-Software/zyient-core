@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.config.ConfigValueParser;
 import io.zyient.base.common.utils.ReflectionUtils;
 import lombok.Getter;
@@ -48,39 +49,6 @@ public class MappedElement {
 
     public static MappedElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                      @NonNull Class<? extends MappedElement> type) throws Exception {
-        MappedElement me = type.getDeclaredConstructor().newInstance();
-        Field[] fields = ReflectionUtils.getAllFields(MappedElement.class);
-        Preconditions.checkNotNull(fields);
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(Config.class)) {
-                Config cfg = field.getAnnotation(Config.class);
-                String value = xmlConfig.getString(cfg.name());
-                if (Strings.isNullOrEmpty(value)) {
-                    if (cfg.required()) {
-                        throw new Exception(String.format("Required value not found. [name=%s]", cfg.name()));
-                    } else {
-                        continue;
-                    }
-                }
-                if (!cfg.parser().equals(ConfigValueParser.DummyValueParser.class)) {
-                    ConfigValueParser<?> parser = cfg.parser()
-                            .getDeclaredConstructor()
-                            .newInstance();
-                    Object v = parser.parse(value);
-                    if (v == null) {
-                        if (cfg.required()) {
-                            throw new Exception(String.format("Required value not found. [name=%s][parser=%s]",
-                                    cfg.name(), cfg.parser().getCanonicalName()));
-                        } else {
-                            continue;
-                        }
-                    }
-                    ReflectionUtils.setValue(v, me, field);
-                } else {
-                    ReflectionUtils.setValueFromString(value, me, field);
-                }
-            }
-        }
-        return me;
+        return ConfigReader.read(xmlConfig, type);
     }
 }

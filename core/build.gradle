@@ -91,6 +91,9 @@ dependencies {
     implementation 'dev.morphia.morphia:morphia-core:2.4.8-SNAPSHOT'
 
     implementation 'org.apache.commons:commons-vfs2:2.9.0'
+    // https://mvnrepository.com/artifact/org.springframework/spring-expression
+    implementation 'org.springframework:spring-expression:6.1.0'
+
 }
 
 test {

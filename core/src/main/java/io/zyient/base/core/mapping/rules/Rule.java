@@ -14,8 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.model;
+package io.zyient.base.core.mapping.rules;
 
-public enum MappingType {
-    Field, Custom, Cached
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import org.springframework.expression.Expression;
+
+import java.lang.reflect.Field;
+
+@Getter
+@Setter
+@Accessors(fluent = true)
+public class Rule {
+    private String rule;
+    private Field target;
+    private Expression expression;
+    private boolean validation;
 }

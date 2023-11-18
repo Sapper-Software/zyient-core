@@ -16,27 +16,28 @@
 
 package io.zyient.base.core.mapping.model;
 
-
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.common.config.IntegerListParser;
+import io.zyient.base.common.config.ConfigReader;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.util.List;
 
 @Getter
 @Setter
-@ConfigPath(path = "mapping")
-public class RegexMappedElement extends MappedElement {
-    @Config(name = "name")
-    private String name;
-    @Config(name = "regex", required = true)
-    private String regex;
-    @Config(name = "replaceWith", required = false)
-    private String replace;
-    @Config(name = "groups", required = false, parser = IntegerListParser.class)
-    private List<Integer> groups;
-    @Config(name = "format", required = false)
-    private String format;
+@ConfigPath(path = "rule")
+public class RuleElement {
+    @Config(name = "target")
+    private String target;
+    @Config(name = "rule")
+    private String rule;
+    @Config(name = "validation", required = false, type = Boolean.class)
+    private boolean validation = false;
+
+    public static RuleElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        return ConfigReader.read(xmlConfig, RuleElement.class);
+    }
 }
