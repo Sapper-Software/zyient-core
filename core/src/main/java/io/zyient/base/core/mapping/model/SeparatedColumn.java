@@ -17,27 +17,18 @@
 package io.zyient.base.core.mapping.model;
 
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.common.config.ConfigReader;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.tree.ImmutableNode;
-
 
 @Getter
 @Setter
-@ConfigPath(path = "rule")
-public class RuleElement {
-    @Config(name = "target")
-    private String target;
-    @Config(name = "rule")
-    private String rule;
-    @Config(name = "validation", required = false, type = Boolean.class)
-    private boolean validation = false;
-
-    public static RuleElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
-        return ConfigReader.read(xmlConfig, RuleElement.class);
-    }
+public class SeparatedColumn extends Column {
+    @Config(name = "embedded", required = false, type = Boolean.class)
+    private boolean embedded = false;
+    @Config(name = "separator", required = false)
+    private String separator = ",";
+    @Config(name = "quote", required = false)
+    private String quote = "\"";
+    @Config(name = "escape", required = false)
+    private String escape = "\\";
 }

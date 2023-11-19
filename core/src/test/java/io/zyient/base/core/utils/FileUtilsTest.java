@@ -17,25 +17,40 @@
 package io.zyient.base.core.utils;
 
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.mapping.SourceTypes;
+import io.zyient.base.core.mapping.readers.settings.FileTypeDetector;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class FileUtilsTest {
     private static final String CSV = "src/test/resources/data/business-financial-data-june-2023-quarter-csv.csv";
     private static final String EXCEL = "src/test/resources/data/Financial Sample.xlsx";
-    private static final String PSV = "src/test/resources/data/psv-sample.psv";
-    private static final String JSON = "src/test/resources/data/test-json.json";
+    private static final String PSV = "src/test/resources/data/psv-sample.pdv";
+    private static final String JSON = "src/test/resources/data/test-json.j";
+    private static final String XML = "src/test/resources/data/sample.xmm";
 
     @Test
     void detectMimeType() {
         try {
-            String mime = FileUtils.detectMimeType(new File(CSV));
-            mime = FileUtils.detectMimeType(new File(EXCEL));
-            mime = FileUtils.detectMimeType(new File(PSV));
-            mime = FileUtils.detectMimeType(new File(JSON));
+            FileTypeDetector detector = new FileTypeDetector(new File(CSV));
+            detector.detect();
+            assertEquals(SourceTypes.CSV, detector.type());
+            detector = new FileTypeDetector(new File(EXCEL));
+            detector.detect();
+            assertEquals(SourceTypes.EXCEL, detector.type());
+            detector = new FileTypeDetector(new File(PSV));
+            detector.detect();
+            assertEquals(SourceTypes.PSV, detector.type());
+            detector = new FileTypeDetector(new File(JSON));
+            detector.detect();
+            assertEquals(SourceTypes.JSON, detector.type());
+            detector = new FileTypeDetector(new File(XML));
+            detector.detect();
+            assertEquals(SourceTypes.XML, detector.type());
             System.out.println("Done...");
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

@@ -16,18 +16,33 @@
 
 package io.zyient.base.core.mapping;
 
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.mapping.model.Column;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
 public abstract class InputReader {
+    public static final String __CONFIG_PATH = "reader";
+    public static final String __CONFIG_PATH_COLUMNS = "columns";
+    public static final String __CONFIG_PATH_COLUMN = "column";
+
     private final SourceTypes[] supportedTypes;
     private final Class<? extends ReaderSettings> settingsType;
     private ReaderSettings settings;
+    private final Map<String, Column> columns = new HashMap<>();
 
-    public InputReader(SourceTypes @NonNull[] supportedTypes,
+    public InputReader(SourceTypes @NonNull [] supportedTypes,
                        @NonNull Class<? extends ReaderSettings> settingsType) {
         this.supportedTypes = supportedTypes;
         this.settingsType = settingsType;
@@ -42,4 +57,36 @@ public abstract class InputReader {
         }
         return false;
     }
+
+    @SuppressWarnings("unchecked")
+    private void readColumns(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_COLUMNS);
+        List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_PATH_COLUMN);
+        for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+            Class<? extends Column> type = (Class<? extends Column>) ConfigReader.readType(node);
+            if (type == null) {
+                type = Column.class;
+            }
+            Column column = ConfigReader.read(node, type);
+            column.validate();
+            columns.put(column.getName(), column);
+        }
+    }
+
+    public InputReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        try {
+            ConfigReader reader = new ConfigReader(xmlConfig, __CONFIG_PATH, settingsType);
+            reader.read();
+            settings = (ReaderSettings) reader.settings();
+            readColumns(reader.config());
+            configureReader(reader.config());
+
+            return this;
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new ConfigurationException(ex);
+        }
+    }
+
+    protected abstract void configureReader(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception;
 }

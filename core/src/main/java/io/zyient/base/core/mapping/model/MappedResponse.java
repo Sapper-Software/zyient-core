@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.mapping.model;
 
+import io.zyient.base.common.model.Context;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -31,6 +32,7 @@ public class MappedResponse<T> {
     private T entity;
     private final Map<String, Object> source;
     private Map<String, Object> cached;
+    private Context context;
 
     public MappedResponse(Map<String, Object> source) {
         this.source = source;

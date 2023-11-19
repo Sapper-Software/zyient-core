@@ -16,13 +16,9 @@
 
 package io.zyient.base.core.mapping.rules;
 
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.model.MappedResponse;
-import io.zyient.base.core.mapping.model.RuleElement;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -30,88 +26,55 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.springframework.expression.Expression;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.SpelParserConfiguration;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
 public class RulesExecutor<T> {
     public static final String __CONFIG_PATH = "rules";
-    public static final String FIELD_REGEX = "(\\{\\$.*?\\})";
-    public static final String FIELD_ENTITY = "entity";
-    public static final String FIELD_CUSTOM = "entity.properties";
-    public static final String FIELD_SOURCE = "source";
-    public static final String FIELD_CACHED = "cached";
+    public static final String __CONFIG_PATH_RULE = "rule";
 
     private final Class<? extends T> type;
-    private final List<Rule> rules = new ArrayList<>();
-    private ExpressionParser parser;
-    private Pattern fieldFinder = Pattern.compile(FIELD_REGEX);
+    private final List<Rule<T>> rules = new ArrayList<>();
 
     public RulesExecutor(@NonNull Class<? extends T> type) {
         this.type = type;
     }
 
-    public RulesExecutor<T> add(@NonNull RuleElement element) throws Exception {
-        String r = element.getRule();
-        Matcher m = fieldFinder.matcher(r);
-        if (m.matches()) {
-            for (int ii = 0; ii < m.groupCount(); ii++) {
-                String f = m.group(ii);
-                String mf = f.replaceAll("[\\$\\{\\}]", "");
-                if (mf.startsWith("custom.")) {
-                    mf = mf.replace("custom\\.", FIELD_CUSTOM);
-                } if (!mf.startsWith(FIELD_SOURCE) &&
-                        !mf.startsWith(FIELD_ENTITY) &&
-                        !mf.startsWith(FIELD_CACHED)) {
-                    mf = FIELD_ENTITY + "." + mf;
-                }
-                mf = "#root." + mf;
-                r = r.replace(f, mf);
-            }
-        }
-        Expression exp = parser.parseExpression(r);
-        Field field = null;
-        if (!element.isValidation()) {
-            field = ReflectionUtils.findField(type, element.getTarget());
-            if (field == null) {
-                throw new ConfigurationException(String.format("Field not found. [type=%s][field=%s]",
-                        type.getCanonicalName(), element.getTarget()));
-            }
-        }
-        Rule rule = new Rule()
-                .rule(r)
-                .target(field)
-                .expression(exp)
-                .validation(element.isValidation());
-
-        rules.add(rule);
-        return this;
-    }
-
+    @SuppressWarnings("unchecked")
     public RulesExecutor<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            SpelParserConfiguration config = new SpelParserConfiguration(true, true);
-            parser = new SpelExpressionParser(config);
 
-            ConfigPath cp = RuleElement.class.getAnnotation(ConfigPath.class);
-            List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(cp.path());
+            List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(__CONFIG_PATH_RULE);
             if (nodes == null || nodes.isEmpty()) {
                 throw new ConfigurationException("No rules defined in configuration...");
             }
             for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                RuleElement re = RuleElement.read(node);
-                add(re);
+                Rule<T> rule = null;
+                Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
+                if (type == null) {
+                    rule = createDefaultInstance();
+                } else {
+                    rule = type.getDeclaredConstructor().newInstance();
+                }
+                rule = ConfigReader.read(node, rule);
+                Field field = null;
+                if (!rule.isValidation()) {
+                    field = ReflectionUtils.findField(this.type, rule.getTarget());
+                    if (field == null) {
+                        throw new ConfigurationException(String.format("Field not found. [type=%s][field=%s]",
+                                this.type.getCanonicalName(), rule.getTarget()));
+                    }
+                }
+                rule.withType(this.type)
+                        .withTargetField(field)
+                        .configure(node);
+                rules.add(rule);
             }
 
             return this;
@@ -120,27 +83,14 @@ public class RulesExecutor<T> {
         }
     }
 
-    private void evaluate(@NonNull MappedResponse<T> input) throws Exception {
+    private Rule<T> createDefaultInstance() {
+        return new SpELRule<T>();
+    }
+
+    public void evaluate(@NonNull MappedResponse<T> input) throws Exception {
         StandardEvaluationContext ctx = new StandardEvaluationContext(input);
-        for (Rule rule : rules) {
-            if (rule.validation()) {
-                boolean r = (boolean) rule.expression().getValue(ctx);
-                if (!r) {
-                    if (DefaultLogger.isTraceEnabled()) {
-                        String json = JSONUtils.asString(input, input.getClass());
-                        throw new ValidationException(String.format("[rule=%s][data=%s]", rule.rule(), json));
-                    } else
-                        throw new ValidationException(String.format("[rule=%s]", rule.rule()));
-                }
-            } else {
-                Object value = rule.expression().getValue(ctx);
-                if (value != null) {
-                    ReflectionUtils.setValue(value, input, rule.target());
-                } else if (DefaultLogger.isTraceEnabled()) {
-                    String json = JSONUtils.asString(input, input.getClass());
-                    DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rule.rule(), json));
-                }
-            }
+        for (Rule<T> rule : rules) {
+            rule.evaluate(input);
         }
     }
 }

@@ -70,6 +70,7 @@ public class FileUtils {
     public static final String MIME_TYPE_PDF = "application/pdf";
     public static final String MIME_TYPE_TEXT = "text/plain";
     public static final String MIME_TYPE_HTML = "text/html";
+    public static final String MIME_TYPE_CSV = "text/csv";
     public static final String MIME_TYPE_XML = "application/xml";
     public static final String[] XML_MIME_TYPES = {
             "application/xhtml+xml",
@@ -100,13 +101,12 @@ public class FileUtils {
         TikaConfig config = TikaConfig.getDefaultConfig();
         Detector detector = config.getDetector();
 
-        TikaInputStream stream = TikaInputStream.get(path);
-
-        Metadata metadata = new Metadata();
-        metadata.add(TikaCoreProperties.RESOURCE_NAME_KEY, path.getName());
-        MediaType mediaType = detector.detect(stream, metadata);
-
-        return mediaType.toString();
+        try (TikaInputStream stream = TikaInputStream.get(path.toPath())) {
+            Metadata metadata = new Metadata();
+            metadata.add(TikaCoreProperties.RESOURCE_NAME_KEY, path.getName());
+            MediaType mediaType = detector.detect(stream, metadata);
+            return mediaType.toString();
+        }
     }
 
     public static String getFileMimeType(@Nonnull String filename) throws FileUtilsException {
@@ -120,6 +120,24 @@ public class FileUtils {
         } catch (Exception ex) {
             return "MIME/ERROR";
         }
+    }
+
+    public static boolean isExcelType(@NonNull String mimeType) {
+        for (String mt : MIME_TYPE_MS_EXCEL) {
+            if (mt.compareToIgnoreCase(mimeType) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isXmlType(@NonNull String mimeType) {
+        for (String mt : XML_MIME_TYPES) {
+            if (mt.compareToIgnoreCase(mimeType) == 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static boolean isArchiveFile(@Nonnull String filename) throws FileUtilsException {

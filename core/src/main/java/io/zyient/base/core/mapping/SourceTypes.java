@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.mapping;
 
+import io.zyient.base.core.utils.FileUtils;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -23,13 +24,15 @@ import lombok.NonNull;
 public enum SourceTypes {
     UNKNOWN("unknown", null),
     CSV("text/csv", new String[]{"csv"}),
-    TSV("text/tsv", new String[]{"tsv"}),
-    TDF("text/tsv", new String[]{"tdf"}),
+    TSV("text/tsv", new String[]{"tsv", "tdf"}),
     RFC4180("text/rfc4180", null),
     PSV("text/psv", new String[]{"psv"}),
     EXCEL_CSV("excel/csv", null),
-    XML("application/xml", new String[]{"xml"}),
-    JSON("application/json", new String[]{"json"});
+    XML(FileUtils.MIME_TYPE_XML, new String[]{"xml"}),
+    JSON(FileUtils.MIME_TYPE_JSON, new String[]{"json"}),
+    POSITIONAL("text/pos", new String[]{"pos"}),
+    EXCEL("application/ms-excel", new String[]{"xls", "xlsx"}),
+    HTML(FileUtils.MIME_TYPE_HTML, new String[]{"html", "dhtml"});
 
     private final String mimeType;
     private final String[] extensions;

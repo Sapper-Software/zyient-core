@@ -20,10 +20,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
 import io.zyient.base.core.mapping.model.*;
+import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.transformers.*;
 import io.zyient.base.core.model.PropertyBag;
 import lombok.Getter;
@@ -52,6 +54,7 @@ public class Mapping<T> {
     private final MappingProcessor processor;
     private MappingSettings settings;
     private final Map<String, Transformer<?>> transformers = new HashMap<>();
+    private RulesExecutor<T> rulesExecutor;
 
     public Mapping(@NonNull Class<? extends T> type,
                    @NonNull MappingProcessor processor) {
@@ -73,9 +76,18 @@ public class Mapping<T> {
             settings.postLoad();
             readMappings(config);
             buildFieldTree(type, null);
+            checkAndLoadRules(config);
             return this;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, RulesExecutor.__CONFIG_PATH)) {
+            rulesExecutor = (RulesExecutor<T>) new RulesExecutor<>(type)
+                    .configure(xmlConfig);
         }
     }
 
@@ -144,10 +156,9 @@ public class Mapping<T> {
         List<HierarchicalConfiguration<ImmutableNode>> maps = xmlConfig.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
-                Class<? extends MappedElement> type = MappedElement.class;
-                String et = node.getString(__CONFIG_ATTR_TYPE);
-                if (!Strings.isNullOrEmpty(et)) {
-                    type = (Class<? extends MappedElement>) Class.forName(et);
+                Class<? extends MappedElement> type = (Class<? extends MappedElement>) ConfigReader.readType(node);
+                if (type == null) {
+                    type = MappedElement.class;
                 }
                 MappedElement me = MappedElement.read(node, type);
                 sourceIndex.put(me.getSourcePath(), me);
@@ -158,10 +169,10 @@ public class Mapping<T> {
         }
     }
 
-    public MappedResponse<T> read(@NonNull Map<String, Object> source) throws Exception {
-        MappedResponse<T> response = new MappedResponse<>(source);
-        T data = type.getDeclaredConstructor().newInstance();
-        response.entity(data);
+    public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
+        MappedResponse<T> response = new MappedResponse<T>(source)
+                .context(context);
+        response.entity(type.getDeclaredConstructor().newInstance());
         for (String path : sourceIndex.keySet()) {
             String[] parts = path.split("\\.");
             Object value = findSourceValue(source, parts, 0);
@@ -174,6 +185,9 @@ public class Mapping<T> {
                 continue;
             }
             setFieldValue(me, value, response);
+        }
+        if (rulesExecutor != null) {
+            rulesExecutor.evaluate(response);
         }
         return response;
     }
@@ -315,6 +329,10 @@ public class Mapping<T> {
                 }
             }
         }
+        return null;
+    }
+
+    public Map<String, Object> write(@NonNull T data) throws Exception {
         return null;
     }
 }

@@ -224,8 +224,12 @@ public class ConfigReader {
     public static <T> T read(@NonNull HierarchicalConfiguration<ImmutableNode> node,
                              Class<? extends T> type) throws Exception {
         T pojo = type.getDeclaredConstructor().newInstance();
+        return read(node, pojo);
+    }
 
-        Field[] fields = ReflectionUtils.getAllFields(type);
+    public static <T> T read(@NonNull HierarchicalConfiguration<ImmutableNode> node,
+                             @NonNull T pojo) throws Exception {
+        Field[] fields = ReflectionUtils.getAllFields(pojo.getClass());
         Preconditions.checkNotNull(fields);
         for (Field field : fields) {
             if (field.isAnnotationPresent(Config.class)) {
@@ -511,6 +515,19 @@ public class ConfigReader {
     }
 
     public static final String CONFIG_KEY_CLASS = "class";
+    public static final String CONFIG_ATTR_TYPE = "[@type]";
+
+    public static Class<?> readType(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        return readType(config, CONFIG_ATTR_TYPE);
+    }
+
+    public static Class<?> readType(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                                    @NonNull String key) throws Exception {
+        String cls = config.getString(key);
+        if (!Strings.isNullOrEmpty(cls))
+            return Class.forName(cls);
+        return null;
+    }
 
     public static Class<?> readAsClass(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                        @NonNull String key) throws Exception {

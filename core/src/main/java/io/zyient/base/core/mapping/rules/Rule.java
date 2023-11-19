@@ -16,19 +16,26 @@
 
 package io.zyient.base.core.mapping.rules;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import org.springframework.expression.Expression;
+import io.zyient.base.core.mapping.model.MappedResponse;
+import lombok.NonNull;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.lang.reflect.Field;
 
-@Getter
-@Setter
-@Accessors(fluent = true)
-public class Rule {
-    private String rule;
-    private Field target;
-    private Expression expression;
-    private boolean validation;
+
+public interface Rule<T> {
+
+    boolean isValidation();
+
+    String getTarget();
+
+    Rule<T> withTargetField(Field targetField) throws Exception;
+
+    Rule<T> withType(@NonNull Class<? extends T> type);
+
+    Rule<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+
+    Object evaluate(@NonNull MappedResponse<T> data) throws Exception;
 }
