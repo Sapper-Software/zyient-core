@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.model;
 
 import lombok.Getter;
 import lombok.NonNull;

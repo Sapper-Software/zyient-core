@@ -14,21 +14,26 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.model;
+package io.zyient.base.core.mapping.readers.settings;
 
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.core.mapping.transformers.Transformer;
+import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.config.StringMapParser;
+import io.zyient.base.core.mapping.readers.ReaderContextParser;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
+
 @Getter
 @Setter
-@ConfigPath(path = "mapping")
-public class CustomMappedElement extends MappedElement {
-    @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends Transformer<?>> transformer;
-    @Config(name = "transformer.class", required = true)
-    private String transformerName;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class ReaderFactorySettings extends Settings {
+    @Config(name = "contextParser", required = false, type = Class.class)
+    private Class<? extends ReaderContextParser> contextParser = null;
+    @Config(name = "defaults", required = false, parser = StringMapParser.class)
+    private Map<String, String> defaults;
 }

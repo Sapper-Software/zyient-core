@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.readers;
 
+import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.mapping.SourceTypes;
 import io.zyient.base.core.mapping.model.Column;
 import lombok.Getter;
 import lombok.NonNull;
@@ -32,7 +34,7 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class InputReader {
+public abstract class InputReaderConfig {
     public static final String __CONFIG_PATH = "reader";
     public static final String __CONFIG_PATH_COLUMNS = "columns";
     public static final String __CONFIG_PATH_COLUMN = "column";
@@ -42,8 +44,8 @@ public abstract class InputReader {
     private ReaderSettings settings;
     private final Map<String, Column> columns = new HashMap<>();
 
-    public InputReader(SourceTypes @NonNull [] supportedTypes,
-                       @NonNull Class<? extends ReaderSettings> settingsType) {
+    public InputReaderConfig(SourceTypes @NonNull [] supportedTypes,
+                             @NonNull Class<? extends ReaderSettings> settingsType) {
         this.supportedTypes = supportedTypes;
         this.settingsType = settingsType;
     }
@@ -56,6 +58,11 @@ public abstract class InputReader {
             }
         }
         return false;
+    }
+
+    public String name() {
+        Preconditions.checkNotNull(settings);
+        return settings.getName();
     }
 
     @SuppressWarnings("unchecked")
@@ -73,9 +80,9 @@ public abstract class InputReader {
         }
     }
 
-    public InputReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public InputReaderConfig configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            ConfigReader reader = new ConfigReader(xmlConfig, __CONFIG_PATH, settingsType);
+            ConfigReader reader = new ConfigReader(xmlConfig, null, settingsType);
             reader.read();
             settings = (ReaderSettings) reader.settings();
             readColumns(reader.config());
@@ -89,4 +96,6 @@ public abstract class InputReader {
     }
 
     protected abstract void configureReader(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception;
+
+    public abstract InputReader createInstance() throws Exception;
 }

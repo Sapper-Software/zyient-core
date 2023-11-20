@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.readers.settings;
+package io.zyient.base.core.mapping.readers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;

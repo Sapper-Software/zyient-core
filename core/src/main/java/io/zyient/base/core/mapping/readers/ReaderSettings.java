@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.model;
+package io.zyient.base.core.mapping.readers;
 
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.core.mapping.transformers.Transformer;
+import io.zyient.base.common.config.Settings;
+import io.zyient.base.core.mapping.SourceTypes;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@ConfigPath(path = "mapping")
-public class CustomMappedElement extends MappedElement {
-    @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends Transformer<?>> transformer;
-    @Config(name = "transformer.class", required = true)
-    private String transformerName;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class ReaderSettings extends Settings {
+    @Config(name = "name")
+    private String name;
+    @Config(name = "assumeFileType", required = false, type = SourceTypes.class)
+    private SourceTypes assumeType;
+    @Config(name = "readBatchSize", required = false, type = Integer.class)
+    private int readBatchSize = 512;
 }

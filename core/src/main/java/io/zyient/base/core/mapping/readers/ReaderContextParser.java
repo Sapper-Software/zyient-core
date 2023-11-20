@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.readers;
 
+import io.zyient.base.core.mapping.model.ContentInfo;
 import lombok.NonNull;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public interface Transformer<T> {
-    String name();
+public interface ReaderContextParser {
+    ReaderContextParser configure(HierarchicalConfiguration<ImmutableNode> config) throws ConfigurationException;
 
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
-
-    T transform(@NonNull Object source) throws DataException;
-
-    String write(@NonNull T source) throws DataException;
+    ContentInfo parse(@NonNull ContentInfo contentInfo) throws Exception;
 }

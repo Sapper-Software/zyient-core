@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.mapper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -22,6 +22,8 @@ import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.core.mapping.DataException;
+import io.zyient.base.core.mapping.MappingProcessor;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
 import io.zyient.base.core.mapping.model.*;
@@ -44,8 +46,8 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public class Mapping<T> {
-    public static final String __CONFIG_PATH = "mappings";
-    public static final String __CONFIG_ATTR_TYPE = "[@type]";
+    public static final String __CONFIG_PATH = "mapping";
+    public static final String __CONFIG_PATH_TRANSFORMERS = "transformers";
 
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
@@ -62,9 +64,14 @@ public class Mapping<T> {
         this.processor = processor;
     }
 
+    public String name() {
+        Preconditions.checkNotNull(settings);
+        return settings.getName();
+    }
+
     public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_TRANSFORMERS);
             String cp = MappingSettings.class.getAnnotation(ConfigPath.class).path();
             if (ConfigReader.checkIfNodeExists(xmlConfig, cp)) {
                 ConfigReader reader = new ConfigReader(xmlConfig, cp, MappingSettings.class);

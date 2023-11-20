@@ -18,7 +18,7 @@ package io.zyient.base.core.utils;
 
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.SourceTypes;
-import io.zyient.base.core.mapping.readers.settings.FileTypeDetector;
+import io.zyient.base.core.mapping.readers.FileTypeDetector;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;

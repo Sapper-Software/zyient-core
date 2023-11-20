@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.mapper;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Map;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "settings")
-public class ReaderSettings extends Settings {
-    @Config(name = "class", type = Class.class)
-    private Class<? extends Mapping> type;
-    @Config(name = "assumeFileType", required = false, type = SourceTypes.class)
-    private SourceTypes assumeType;
-
+public class MapperFactorySettings extends Settings {
+    @Config(name = "configDir")
+    private String configDir;
+    @Config(name = "mappings", type = Map.class)
+    private Map<String, String> mappingConfigs;
 }

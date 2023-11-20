@@ -17,6 +17,8 @@
 package io.zyient.base.core.mapping;
 
 import com.google.common.base.Strings;
+import io.zyient.base.core.mapping.mapper.Mapping;
+import io.zyient.base.core.mapping.model.MappingResult;
 import io.zyient.base.core.utils.FileUtils;
 import lombok.Getter;
 import lombok.NonNull;

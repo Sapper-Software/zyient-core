@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.model;
+package io.zyient.base.core.model;
 
+import lombok.NonNull;
 
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.core.mapping.transformers.Transformer;
-import lombok.Getter;
-import lombok.Setter;
+import java.security.Principal;
 
-@Getter
-@Setter
-@ConfigPath(path = "mapping")
-public class CustomMappedElement extends MappedElement {
-    @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends Transformer<?>> transformer;
-    @Config(name = "transformer.class", required = true)
-    private String transformerName;
+public interface UserContext {
+    UserContext user(@NonNull Principal user);
+
+    Principal user();
 }

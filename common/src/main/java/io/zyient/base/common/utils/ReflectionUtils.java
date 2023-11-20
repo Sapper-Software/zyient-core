@@ -38,6 +38,30 @@ import java.util.stream.Collectors;
  * 11:10:30 AM
  */
 public class ReflectionUtils {
+
+    public static Map<String, String> mapFromString(@NonNull String value) throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
+        String[] values = value.split(";");
+        Map<String, String> map = null;
+        if (values.length >= 1) {
+            map = new HashMap<>();
+            for (String v : values) {
+                if (Strings.isNullOrEmpty(v)) continue;
+                String[] kv = v.split("=");
+                if (kv.length != 2) {
+                    throw new Exception(String.format("Invalid map entry. [entry=%s]", v));
+                }
+                String key = kv[0];
+                String val = kv[1];
+                if (Strings.isNullOrEmpty(key) || Strings.isNullOrEmpty(val)) {
+                    throw new Exception(String.format("Invalid map entry. [entry=%s]", v));
+                }
+                map.put(key.trim(), val.trim());
+            }
+        }
+        return map;
+    }
+
     public static Set<Class<?>> findAllClasses(String packageName) throws IOException {
         return ClassPath.from(ClassLoader.getSystemClassLoader())
                 .getAllClasses()

@@ -19,8 +19,7 @@ package io.zyient.base.core.mapping.transformers;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.DataException;
-import io.zyient.base.core.mapping.MappingSettings;
-import io.zyient.base.core.mapping.Transformer;
+import io.zyient.base.core.mapping.mapper.MappingSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 

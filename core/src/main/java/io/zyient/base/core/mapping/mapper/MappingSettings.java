@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.mapper;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Strings;
@@ -33,6 +33,8 @@ import java.util.Locale;
         property = "@class")
 @ConfigPath(path = "settings")
 public class MappingSettings extends Settings {
+    @Config(name = "name")
+    private String name;
     @Config(name = "currency", required = false)
     private String currency = null;
     @Config(name = "format.date", required = false)

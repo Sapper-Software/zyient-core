@@ -14,21 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.model;
+package io.zyient.base.core.mapping.transformers;
 
+import io.zyient.base.core.mapping.DataException;
+import io.zyient.base.core.mapping.mapper.MappingSettings;
+import lombok.NonNull;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.core.mapping.transformers.Transformer;
-import lombok.Getter;
-import lombok.Setter;
+public interface Transformer<T> {
+    String name();
 
-@Getter
-@Setter
-@ConfigPath(path = "mapping")
-public class CustomMappedElement extends MappedElement {
-    @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends Transformer<?>> transformer;
-    @Config(name = "transformer.class", required = true)
-    private String transformerName;
+    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
+
+    T transform(@NonNull Object source) throws DataException;
+
+    String write(@NonNull T source) throws DataException;
 }

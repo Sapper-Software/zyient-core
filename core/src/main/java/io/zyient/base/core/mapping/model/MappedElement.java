@@ -27,7 +27,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Setter
-@ConfigPath(path = "mapping")
+@ConfigPath(path = "transformation")
 public class MappedElement {
     @Config(name = "source")
     private String sourcePath;
