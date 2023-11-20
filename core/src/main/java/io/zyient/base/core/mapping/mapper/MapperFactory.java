@@ -91,13 +91,18 @@ public class MapperFactory {
     }
 
     public Mapping<?> findMapping(@NonNull ContentInfo contentInfo) throws Exception {
-        if (Strings.isNullOrEmpty(contentInfo.mapper())) {
+        if (Strings.isNullOrEmpty(contentInfo.mapping())) {
             throw new Exception(String.format("Mapper name not specified. [content id=%s]", contentInfo.documentId()));
         }
-        if (mappings.containsKey(contentInfo.mapper())) {
-            return mappings.get(contentInfo.mapper());
+        if (mappings.containsKey(contentInfo.mapping())) {
+            return mappings.get(contentInfo.mapping());
         }
         throw new Exception(String.format("Mapper not found. [name=%s][content id=%s]",
-                contentInfo.mapper(), contentInfo.documentId()));
+                contentInfo.mapping(), contentInfo.documentId()));
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> Mapping<T> getMapping(@NonNull String name) {
+        return (Mapping<T>) mappings.get(name);
     }
 }

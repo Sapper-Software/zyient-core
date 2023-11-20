@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.mapping.rules;
 
-import io.zyient.base.common.config.Config;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
@@ -35,69 +34,35 @@ import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import java.lang.reflect.Field;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Getter
 @Setter
-public class SpELRule<T> implements Rule<T> {
+public class SpELRule<T> extends BaseRule<T> {
     public static final String FIELD_REGEX = "(\\{\\$.*?\\})";
     public static final String FIELD_ENTITY = "entity";
     public static final String FIELD_CUSTOM = "entity.properties";
     public static final String FIELD_SOURCE = "source";
     public static final String FIELD_CACHED = "cached";
-    @Config(name = "rule")
-    private String rule;
-    @Config(name = "target", required = false)
-    private String target = null;
     @Setter(AccessLevel.NONE)
     private Expression expression;
-    @Config(name = "validation", required = false)
-    private boolean validation = false;
-    private Field targetField;
-    private Class<? extends T> type;
+
 
     @Override
-    public Rule<T> withTargetField(Field targetField) throws Exception {
-        if (!validation) {
-            if (targetField == null) {
-                throw new Exception(String.format("Target field required for rule. [rule=%s]", rule));
-            }
-        }
-        this.targetField = targetField;
-        return this;
-    }
-
-    @Override
-    public Rule<T> withType(@NonNull Class<? extends T> type) {
-        this.type = type;
-        return this;
-    }
-
-    @Override
-    public Rule<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        if (type == null) {
-            throw new ConfigurationException("Entity type not specified...");
-        }
-        if (!validation) {
-            if (targetField == null) {
-                throw new ConfigurationException(String.format("Target field not set. [target=%s]", target));
-            }
-        }
+    public void setup(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
             normalizeRule();
             SpelParserConfiguration config = new SpelParserConfiguration(true, true);
             ExpressionParser parser = new SpelExpressionParser(config);
-            expression = parser.parseExpression(rule);
-            return this;
+            expression = parser.parseExpression(getRule());
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
     }
 
     private void normalizeRule() throws Exception {
-        String r = rule;
+        String r = getRule();
         Pattern fieldFinder = Pattern.compile(FIELD_REGEX);
         Matcher m = fieldFinder.matcher(r);
         if (m.matches()) {
@@ -106,7 +71,8 @@ public class SpELRule<T> implements Rule<T> {
                 String mf = f.replaceAll("[\\$\\{\\}]", "");
                 if (mf.startsWith("custom.")) {
                     mf = mf.replace("custom\\.", FIELD_CUSTOM);
-                } if (!mf.startsWith(FIELD_SOURCE) &&
+                }
+                if (!mf.startsWith(FIELD_SOURCE) &&
                         !mf.startsWith(FIELD_ENTITY) &&
                         !mf.startsWith(FIELD_CACHED)) {
                     mf = FIELD_ENTITY + "." + mf;
@@ -115,31 +81,39 @@ public class SpELRule<T> implements Rule<T> {
                 r = r.replace(f, mf);
             }
         }
-        DefaultLogger.debug(String.format("[original=%s][normalized=%s]", rule, r));
-        rule = r;
+        DefaultLogger.debug(String.format("[original=%s][normalized=%s]", getRule(), r));
+        setRule(r);
     }
 
     @Override
-    public Object evaluate(@NonNull MappedResponse<T> data) throws Exception {
+    public Object doEvaluate(@NonNull MappedResponse<T> data) throws Exception {
         StandardEvaluationContext ctx = new StandardEvaluationContext(data);
         Object response = expression.getValue(ctx);
-        if (validation) {
+        if (getRuleType() == RuleType.Validation || getRuleType() == RuleType.Condition) {
             if (!(response instanceof Boolean)) {
-                throw new Exception(String.format("Failed to execute rule. [rule=%s]", rule));
+                throw new Exception(String.format("Failed to execute rule. [rule=%s]", getRule()));
             }
             boolean r = (boolean) response;
             if (!r) {
-                if (DefaultLogger.isTraceEnabled()) {
-                    String json = JSONUtils.asString(data, data.getClass());
-                    throw new ValidationException(String.format("[rule=%s][data=%s]", rule, json));
-                } else
-                    throw new ValidationException(String.format("[rule=%s]", rule));
+                if (getRuleType() == RuleType.Validation) {
+                    if (DefaultLogger.isTraceEnabled()) {
+                        String json = JSONUtils.asString(data, data.getClass());
+                        throw new ValidationException(String.format("[rule=%s][data=%s]", getRule(), json));
+                    } else
+                        throw new ValidationException(String.format("[rule=%s]", getRule()));
+                } else {
+                    if (DefaultLogger.isTraceEnabled()) {
+                        String json = JSONUtils.asString(data, data.getClass());
+                        throw new RuleConditionFailed(getRule(), json);
+                    } else
+                        throw new RuleConditionFailed(getRule());
+                }
             }
         } else if (response != null) {
-            ReflectionUtils.setValue(response, data, targetField);
+            ReflectionUtils.setValue(response, data, getTargetField());
         } else if (DefaultLogger.isTraceEnabled()) {
             String json = JSONUtils.asString(data, data.getClass());
-            DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rule, json));
+            DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", getRule(), json));
         }
         return response;
     }

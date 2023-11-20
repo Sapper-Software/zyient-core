@@ -114,13 +114,13 @@ public class DataStoreManager {
         }
     }
 
-    public <T extends AbstractDataStore<?>> T getDataStore(@Nonnull String name,
-                                                           @Nonnull Class<? extends T> storeType) throws DataStoreException {
+    public <S extends AbstractDataStore<?>> S getDataStore(@Nonnull String name,
+                                                           @Nonnull Class<? extends S> storeType) throws DataStoreException {
         return getDataStore(name, storeType, true);
     }
 
-    public <T extends AbstractDataStore<?>> T getDataStore(@Nonnull String name,
-                                                           @Nonnull Class<? extends T> storeType,
+    public <S extends AbstractDataStore<?>> S getDataStore(@Nonnull String name,
+                                                           @Nonnull Class<? extends S> storeType,
                                                            boolean add) throws DataStoreException {
         try {
             AbstractDataStoreSettings config = dataStoreConfigs.get(name);
@@ -145,7 +145,7 @@ public class DataStoreManager {
     }
 
     @SuppressWarnings({"rawtypes"})
-    public <T extends AbstractDataStore<?>, E extends IEntity> T getDataStore(@Nonnull Class<? extends T> storeType,
+    public <S extends AbstractDataStore<?>, E extends IEntity> S getDataStore(@Nonnull Class<? extends S> storeType,
                                                                               Class<? extends E> type,
                                                                               boolean add) throws DataStoreException {
         Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings> configs = entityIndex.get(type);
@@ -165,25 +165,25 @@ public class DataStoreManager {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends AbstractDataStore<?>> T getDataStore(AbstractDataStoreSettings config,
-                                                            Class<? extends T> storeType,
+    private <S extends AbstractDataStore<?>> S getDataStore(AbstractDataStoreSettings config,
+                                                            Class<? extends S> storeType,
                                                             boolean add) throws DataStoreException {
         Preconditions.checkNotNull(env);
         if (safeStores.containsKey(config.getName())) {
-            return (T) safeStores.get(config.getName());
+            return (S) safeStores.get(config.getName());
         }
         Map<String, AbstractDataStore<?>> stores = null;
         if (openedStores.containsThread()) {
             stores = openedStores.get();
             if (stores.containsKey(config.getName())) {
-                return (T) stores.get(config.getName());
+                return (S) stores.get(config.getName());
             }
         } else if (!add) {
             return null;
         }
 
         try {
-            T store = ReflectionUtils.createInstance(storeType);
+            S store = ReflectionUtils.createInstance(storeType);
             store.configure(this, config, env);
             if (store.isThreadSafe()) {
                 safeStores.put(store.name(), store);

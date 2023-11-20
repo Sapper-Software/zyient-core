@@ -26,8 +26,8 @@ import java.lang.reflect.Field;
 
 
 public interface Rule<T> {
-
-    boolean isValidation();
+    public static final String __CONFIG_PATH = "rules";
+    public static final String __CONFIG_PATH_RULE = "rule";
 
     String getTarget();
 
@@ -38,4 +38,6 @@ public interface Rule<T> {
     Rule<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     Object evaluate(@NonNull MappedResponse<T> data) throws Exception;
+
+    RuleType getRuleType();
 }

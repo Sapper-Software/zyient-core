@@ -16,8 +16,6 @@
 
 package io.zyient.base.core.mapping.rules;
 
-import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.Getter;
 import lombok.NonNull;
@@ -26,9 +24,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,9 +32,6 @@ import java.util.List;
 @Setter
 @Accessors(fluent = true)
 public class RulesExecutor<T> {
-    public static final String __CONFIG_PATH = "rules";
-    public static final String __CONFIG_PATH_RULE = "rule";
-
     private final Class<? extends T> type;
     private final List<Rule<T>> rules = new ArrayList<>();
 
@@ -49,31 +42,12 @@ public class RulesExecutor<T> {
     @SuppressWarnings("unchecked")
     public RulesExecutor<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-
-            List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(__CONFIG_PATH_RULE);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(Rule.__CONFIG_PATH_RULE);
             if (nodes == null || nodes.isEmpty()) {
                 throw new ConfigurationException("No rules defined in configuration...");
             }
             for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                Rule<T> rule = null;
-                Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
-                if (type == null) {
-                    rule = createDefaultInstance();
-                } else {
-                    rule = type.getDeclaredConstructor().newInstance();
-                }
-                rule = ConfigReader.read(node, rule);
-                Field field = null;
-                if (!rule.isValidation()) {
-                    field = ReflectionUtils.findField(this.type, rule.getTarget());
-                    if (field == null) {
-                        throw new ConfigurationException(String.format("Field not found. [type=%s][field=%s]",
-                                this.type.getCanonicalName(), rule.getTarget()));
-                    }
-                }
-                rule.withType(this.type)
-                        .withTargetField(field)
-                        .configure(node);
+                Rule<T> rule = BaseRule.read(node, type);
                 rules.add(rule);
             }
 
@@ -82,13 +56,7 @@ public class RulesExecutor<T> {
             throw new ConfigurationException(ex);
         }
     }
-
-    private Rule<T> createDefaultInstance() {
-        return new SpELRule<T>();
-    }
-
     public void evaluate(@NonNull MappedResponse<T> input) throws Exception {
-        StandardEvaluationContext ctx = new StandardEvaluationContext(input);
         for (Rule<T> rule : rules) {
             rule.evaluate(input);
         }

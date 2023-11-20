@@ -30,7 +30,7 @@ public class ContentInfo extends Context implements UserContext {
     public static final String KEY_SOURCE_DOC_ID = "source.document.id";
     public static final String KEY_SOURCE_URI = "source.URI";
     public static final String KEY_SOURCE_LOCAL_PATH = "source.path";
-    public static final String KEY_MAPPER_NAME = "mapper.name";
+    public static final String KEY_MAPPER_NAME = "mapping.name";
     public static final String KEY_FILE_TYPE = "reader.content.type";
     public static final String KEY_READER_NAME = "reader.name";
     public static final String KEY_USER = "user.principle";
@@ -54,12 +54,12 @@ public class ContentInfo extends Context implements UserContext {
         return (File) get(KEY_SOURCE_LOCAL_PATH);
     }
 
-    public ContentInfo mapper(@NonNull String name) {
+    public ContentInfo mapping(@NonNull String name) {
         put(KEY_MAPPER_NAME, name);
         return this;
     }
 
-    public String mapper() {
+    public String mapping() {
         return (String) get(KEY_MAPPER_NAME);
     }
 

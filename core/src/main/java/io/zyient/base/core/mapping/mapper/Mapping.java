@@ -27,6 +27,7 @@ import io.zyient.base.core.mapping.MappingProcessor;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
 import io.zyient.base.core.mapping.model.*;
+import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.transformers.*;
 import io.zyient.base.core.model.PropertyBag;
@@ -92,7 +93,7 @@ public class Mapping<T> {
 
     @SuppressWarnings("unchecked")
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
-        if (ConfigReader.checkIfNodeExists(xmlConfig, RulesExecutor.__CONFIG_PATH)) {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, Rule.__CONFIG_PATH)) {
             rulesExecutor = (RulesExecutor<T>) new RulesExecutor<>(type)
                     .configure(xmlConfig);
         }
