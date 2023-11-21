@@ -19,7 +19,6 @@ package io.zyient.base.core.mapping.readers.settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.StringListParser;
-import io.zyient.base.core.mapping.readers.ReaderSettings;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.csv.DuplicateHeaderMode;

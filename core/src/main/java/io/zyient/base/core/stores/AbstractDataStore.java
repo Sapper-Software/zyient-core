@@ -21,8 +21,6 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.auditing.AbstractAuditLogger;
-import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;
@@ -67,7 +65,6 @@ public abstract class AbstractDataStore<T> implements Closeable {
     private final DataStoreState state = new DataStoreState();
     protected DataStoreMetrics metrics;
     private AbstractConnection<T> connection = null;
-    private AbstractAuditLogger<?> auditLogger;
     private DataStoreManager dataStoreManager;
     protected AbstractDataStoreSettings settings;
     protected BaseEnv<?> env;
@@ -210,18 +207,17 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                         Context context) throws
             DataStoreException;
 
-    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> search(@NonNull Q query,
-                                                                             int offset,
-                                                                             int maxResults,
-                                                                             @NonNull Class<? extends K> keyType,
-                                                                             @NonNull Class<? extends E> type,
-                                                                             Context context) throws
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> search(@NonNull Q query,
+                                                                      int maxResults,
+                                                                      @NonNull Class<? extends K> keyType,
+                                                                      @NonNull Class<? extends E> type,
+                                                                      Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return doSearch(query, offset, maxResults, keyType, type, context);
+                return doSearch(query, maxResults, keyType, type, context);
             }
         } catch (Throwable t) {
             metrics.searchCounterError().increment();
@@ -230,20 +226,19 @@ public abstract class AbstractDataStore<T> implements Closeable {
     }
 
 
-    public abstract <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
-                                                                                        int offset,
-                                                                                        int maxResults,
-                                                                                        @NonNull Class<? extends K> keyType,
-                                                                                        @NonNull Class<? extends E> type,
-                                                                                        Context context) throws
+    public abstract <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                                 int maxResults,
+                                                                                 @NonNull Class<? extends K> keyType,
+                                                                                 @NonNull Class<? extends E> type,
+                                                                                 Context context) throws
             DataStoreException;
 
-    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> search(@NonNull Q query,
-                                                                             @NonNull Class<? extends K> keyType,
-                                                                             @NonNull Class<? extends E> type,
-                                                                             Context context) throws
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> search(@NonNull Q query,
+                                                                      @NonNull Class<? extends K> keyType,
+                                                                      @NonNull Class<? extends E> type,
+                                                                      Context context) throws
             DataStoreException {
-        return search(query, 0, settings.getMaxResults(), keyType, type, context);
+        return search(query, settings.getMaxResults(), keyType, type, context);
     }
 
 
@@ -272,7 +267,6 @@ public abstract class AbstractDataStore<T> implements Closeable {
         return true;
     }
 
-    public abstract DataStoreAuditContext context();
 
     public static Context defaultContext(@NonNull Class<? extends Context> type) throws Exception {
         Context ctx = type.getDeclaredConstructor().newInstance();

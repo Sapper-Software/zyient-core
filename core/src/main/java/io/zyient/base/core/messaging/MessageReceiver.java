@@ -18,7 +18,6 @@ package io.zyient.base.core.messaging;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
-import io.zyient.base.core.auditing.AbstractAuditLogger;
 import io.zyient.base.core.connections.MessageConnection;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
@@ -38,7 +37,6 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
 
     private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
-    private AbstractAuditLogger<?> auditLogger;
     private OffsetStateManager<?> offsetStateManager;
     private boolean stateful = false;
     private long defaultReceiveTimeout = DEFAULT_RECEIVE_TIMEOUT;
@@ -73,11 +71,6 @@ public abstract class MessageReceiver<I, M> implements Closeable, AckDelegate<I>
         Preconditions.checkArgument(connection.canReceive());
 
         this.connection = connection;
-        return this;
-    }
-
-    public MessageReceiver<I, M> withAuditLogger(AbstractAuditLogger<?> auditLogger) {
-        this.auditLogger = auditLogger;
         return this;
     }
 

@@ -202,7 +202,8 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
         return field.getType().equals(ObjectId.class) ||
                 ReflectionUtils.isPrimitiveTypeOrString(field) ||
                 field.getType().isEnum() ||
-                field.getType().equals(Date.class);
+                field.getType().equals(Date.class) ||
+                field.getType().equals(Object.class);
     }
 
     private boolean ignore(Field field) {

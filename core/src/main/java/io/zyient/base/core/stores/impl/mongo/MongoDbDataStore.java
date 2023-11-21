@@ -50,7 +50,6 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
-import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -356,6 +355,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         }
     }
 
+
     private String getCollection(Class<?> type) {
         String name = null;
         if (type.isAnnotationPresent(Entity.class)) {
@@ -368,23 +368,38 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         return name;
     }
 
-
     @SuppressWarnings("unchecked")
     @Override
-    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
-                                                                               int offset,
-                                                                               int maxResults,
-                                                                               @NonNull Class<? extends K> keyType,
-                                                                               @NonNull Class<? extends E> type,
-                                                                               Context context) throws DataStoreException {
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int maxResults,
+                                                                        @NonNull Class<? extends K> keyType,
+                                                                        @NonNull Class<? extends E> type,
+                                                                        Context context) throws DataStoreException {
         checkState();
         try {
-            MorphiaSession session = sessionManager().session();
             String cname = getCollection(type);
             MongoQueryParser<K, E> parser = (MongoQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
             String sql = query.generatedQuery();
-            QueryConverter queryConverter = new QueryConverter.Builder().sqlString(sql).build();
+            return new MongoDbCursor<K, E>(keyType, type, this, sql)
+                    .pageSize(maxResults);
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public <K extends IKey, E extends IEntity<K>> List<E> doSearch(@NonNull String query,
+                                                                   int offset,
+                                                                   int maxResults,
+                                                                   @NonNull Class<? extends K> keyType,
+                                                                   @NonNull Class<? extends E> type,
+                                                                   Context context) throws DataStoreException {
+        checkState();
+        try {
+            MorphiaSession session = sessionManager().session();
+            String cname = getCollection(type);
+            QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();
             if (Strings.isNullOrEmpty(cname) || cname.compareTo(mongoDBQueryHolder.getCollection()) != 0) {
                 throw new DataStoreException(
@@ -397,11 +412,25 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             List<E> entities = new ArrayList<>();
             if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
                 Document qdoc = mongoDBQueryHolder.getQuery();
+                Document qsort = mongoDBQueryHolder.getSort();
+
                 Datastore ds = ((MongoSessionManager) sessionManager()).connection().datastore();
-                FindIterable<? extends E> result = ds.getCollection(type).find(qdoc);
+                FindIterable<? extends E> result = null;
+                if (qsort == null) {
+                    result = ds.getCollection(type)
+                            .find(qdoc)
+                            .skip(offset)
+                            .limit(maxResults);
+                } else {
+                    result = ds.getCollection(type)
+                            .find(qdoc)
+                            .sort(qsort)
+                            .skip(offset)
+                            .limit(maxResults);
+                }
                 try (MongoCursor<? extends E> cursor = result.iterator()) {
                     int count = cursor.available();
-                    while(cursor.hasNext()) {
+                    while (cursor.hasNext()) {
                         E entity = cursor.next();
                         ((MongoEntity<?>) entity).postLoad();
                         entities.add(entity);
@@ -421,29 +450,13 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                 }
             }
             if (!entities.isEmpty()) {
-                EntitySearchResult<E> er = new EntitySearchResult<>(type);
-                er.setQuery(query.where());
-                er.setOffset(offset);
-                er.setCount(entities.size());
-                er.setEntities(entities);
-                return er;
+                return entities;
             }
             return null;
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
     }
-
-    @Override
-    public DataStoreAuditContext context() {
-        DataStoreAuditContext ctx = new DataStoreAuditContext();
-        ctx.setType(getClass().getCanonicalName());
-        ctx.setName(name());
-        ctx.setConnectionType(connection().getClass().getCanonicalName());
-        ctx.setConnectionName(connection().name());
-        return ctx;
-    }
-
 
     @Override
     public boolean isThreadSafe() {

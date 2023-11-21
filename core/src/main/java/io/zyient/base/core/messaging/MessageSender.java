@@ -17,7 +17,6 @@
 package io.zyient.base.core.messaging;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.core.auditing.AbstractAuditLogger;
 import io.zyient.base.core.connections.MessageConnection;
 import io.zyient.base.core.processing.ProcessorState;
 import lombok.Getter;
@@ -32,7 +31,6 @@ import java.util.List;
 public abstract class MessageSender<K, M> implements Closeable {
     private final ProcessorState state = new ProcessorState();
     private MessageConnection connection;
-    private AbstractAuditLogger<?> auditLogger;
 
     public MessageSender<K, M> withConnection(@NonNull MessageConnection connection) {
         Preconditions.checkArgument(connection.isConnected());
@@ -40,11 +38,6 @@ public abstract class MessageSender<K, M> implements Closeable {
 
         this.connection = connection;
 
-        return this;
-    }
-
-    public MessageSender<K, M> withAuditLogger(AbstractAuditLogger<?> auditLogger) {
-        this.auditLogger = auditLogger;
         return this;
     }
 

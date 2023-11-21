@@ -19,7 +19,6 @@ package io.zyient.base.core.stores;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,7 +27,6 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "store")
 public class AbstractDataStoreSettings extends Settings {
     public static final String CONFIG_SETTING_TYPE = "settings.class";
     public static final long SEQUENCE_BLOCK_SIZE = 8;

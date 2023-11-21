@@ -21,7 +21,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
-import io.zyient.base.core.mapping.model.ContentInfo;
+import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.settings.ReaderFactorySettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -90,15 +90,15 @@ public class MapperFactory {
         }
     }
 
-    public Mapping<?> findMapping(@NonNull ContentInfo contentInfo) throws Exception {
-        if (Strings.isNullOrEmpty(contentInfo.mapping())) {
-            throw new Exception(String.format("Mapper name not specified. [content id=%s]", contentInfo.documentId()));
+    public Mapping<?> findMapping(@NonNull InputContentInfo inputContentInfo) throws Exception {
+        if (Strings.isNullOrEmpty(inputContentInfo.mapping())) {
+            throw new Exception(String.format("Mapper name not specified. [content id=%s]", inputContentInfo.documentId()));
         }
-        if (mappings.containsKey(contentInfo.mapping())) {
-            return mappings.get(contentInfo.mapping());
+        if (mappings.containsKey(inputContentInfo.mapping())) {
+            return mappings.get(inputContentInfo.mapping());
         }
         throw new Exception(String.format("Mapper not found. [name=%s][content id=%s]",
-                contentInfo.mapping(), contentInfo.documentId()));
+                inputContentInfo.mapping(), inputContentInfo.documentId()));
     }
 
     @SuppressWarnings("unchecked")

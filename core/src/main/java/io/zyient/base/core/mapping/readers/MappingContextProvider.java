@@ -17,13 +17,21 @@
 package io.zyient.base.core.mapping.readers;
 
 import io.zyient.base.core.mapping.model.ContentInfo;
+import io.zyient.base.core.mapping.model.InputContentInfo;
+import io.zyient.base.core.mapping.model.OutputContentInfo;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public interface ReaderContextParser {
-    ReaderContextParser configure(HierarchicalConfiguration<ImmutableNode> config) throws ConfigurationException;
+public interface MappingContextProvider {
+    String __CONFIG_PATH = "contextProvider";
 
-    ContentInfo parse(@NonNull ContentInfo contentInfo) throws Exception;
+    MappingContextProvider configure(HierarchicalConfiguration<ImmutableNode> config) throws ConfigurationException;
+
+    InputContentInfo inputContext(@NonNull ContentInfo contentInfo) throws Exception;
+
+    OutputContentInfo outputContext(@NonNull ContentInfo contentInfo) throws Exception;
+
+    <E> E createInstance(Class<? extends E> entityType) throws Exception;
 }

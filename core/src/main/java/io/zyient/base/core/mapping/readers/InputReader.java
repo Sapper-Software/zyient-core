@@ -16,9 +16,10 @@
 
 package io.zyient.base.core.mapping.readers;
 
-import io.zyient.base.core.io.model.PathInfo;
+import io.zyient.base.core.mapping.model.InputContentInfo;
+import io.zyient.base.core.mapping.readers.settings.ReaderSettings;
 import lombok.Getter;
-import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.Closeable;
@@ -28,19 +29,12 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
+@Setter
 @Accessors(fluent = true)
 public abstract class InputReader implements Closeable {
-    private final ReaderSettings settings;
-    private final PathInfo source;
-    private final File file;
-
-    public InputReader(@NonNull ReaderSettings settings,
-                       @NonNull PathInfo source,
-                       @NonNull File file) {
-        this.settings = settings;
-        this.source = source;
-        this.file = file;
-    }
+    private ReaderSettings settings;
+    private File input;
+    private InputContentInfo contentInfo;
 
     public abstract ReadCursor open() throws IOException;
 

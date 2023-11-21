@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.readers;
+package io.zyient.base.core.mapping.readers.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;

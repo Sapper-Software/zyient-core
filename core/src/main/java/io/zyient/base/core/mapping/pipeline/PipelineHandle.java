@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing;
+package io.zyient.base.core.mapping.pipeline;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.mapping.readers.InputReader;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
-/**
- * Abstract base class to define Audit Context
- * which will be appended to audit entries.
- */
-public abstract class AbstractAuditContext {
-    /**
-     * Get the context as a JSON string.
-     *
-     * @return - JSON String
-     * @throws JsonGenerationException
-     */
-    public abstract String json() throws JsonGenerationException;
+@Getter
+@Setter
+@Accessors(fluent = true)
+public class PipelineHandle <K extends IKey, E extends IEntity<K>> {
+    private TransformerPipeline<K, E> pipeline;
+    private InputReader reader;
 }

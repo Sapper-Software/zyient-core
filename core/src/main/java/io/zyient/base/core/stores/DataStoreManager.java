@@ -202,12 +202,6 @@ public class DataStoreManager {
                 Map<String, AbstractDataStore<?>> stores = openedStores.get();
                 for (String name : stores.keySet()) {
                     AbstractDataStore<?> store = stores.get(name);
-                    if (store.auditLogger() != null) {
-                        store.auditLogger().flush();
-                    }
-                }
-                for (String name : stores.keySet()) {
-                    AbstractDataStore<?> store = stores.get(name);
                     if (store instanceof TransactionDataStore) {
                         if (((TransactionDataStore) store).isInTransaction()) {
                             ((TransactionDataStore) store).commit();
@@ -224,12 +218,6 @@ public class DataStoreManager {
         try {
             if (openedStores.containsThread()) {
                 Map<String, AbstractDataStore<?>> stores = openedStores.get();
-                for (String name : stores.keySet()) {
-                    AbstractDataStore<?> store = stores.get(name);
-                    if (store.auditLogger() != null) {
-                        store.auditLogger().discard();
-                    }
-                }
                 for (String name : stores.keySet()) {
                     AbstractDataStore<?> store = stores.get(name);
                     if (store instanceof TransactionDataStore) {
@@ -251,7 +239,6 @@ public class DataStoreManager {
                 List<AbstractDataStore> storeList = new ArrayList<>();
                 for (String name : stores.keySet()) {
                     AbstractDataStore<?> store = stores.get(name);
-                    if (store.auditLogger() != null) store.auditLogger().discard();
                     if (store instanceof TransactionDataStore) {
                         if (((TransactionDataStore) store).isInTransaction()) {
                             DefaultLogger.error(
@@ -282,11 +269,7 @@ public class DataStoreManager {
             if (openedStores.containsThread()) {
                 Map<String, AbstractDataStore<?>> stores = openedStores.get();
                 if (stores.containsKey(dataStore.name())) {
-                    if (dataStore.auditLogger() != null) {
-                        dataStore.auditLogger().discard();
-                    }
-                    if (dataStore instanceof TransactionDataStore) {
-                        TransactionDataStore ts = (TransactionDataStore) dataStore;
+                    if (dataStore instanceof TransactionDataStore ts) {
                         if (ts.isInTransaction()) {
                             DefaultLogger.error(
                                     String.format("Data Store has un-committed transaction. [name=%s][thread=%d]",
@@ -314,18 +297,17 @@ public class DataStoreManager {
             updateLock = env.createLock(lp);
             updateLock.lock();
             try {
-                if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)) {
+                if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.__CONFIG_PATH)) {
                     state.setState(ProcessorState.EProcessorState.Running);
                     return;
                 }
                 HierarchicalConfiguration<ImmutableNode> config
-                        = xmlConfig.configurationAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES);
+                        = xmlConfig.configurationAt(DataStoreManagerSettings.__CONFIG_PATH);
                 ConfigReader reader = new ConfigReader(config, null, DataStoreManagerSettings.class);
                 reader.read();
                 settings = (DataStoreManagerSettings) reader.settings();
                 if (Strings.isNullOrEmpty(path)) {
-                    ConfigPath cp = AbstractDataStoreSettings.class.getAnnotation(ConfigPath.class);
-                    path = cp.path();
+                    path = DataStoreManagerSettings.CONFIG_NODE_DATA_STORE;
                 }
                 if (ConfigReader.checkIfNodeExists(config, path)) {
                     List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
@@ -378,7 +360,7 @@ public class DataStoreManager {
         try {
             CuratorFramework client = zkConnection.client();
             String dspath = new PathUtils.ZkPathBuilder(zkPath)
-                    .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                    .withPath(DataStoreManagerSettings.__CONFIG_PATH)
                     .build();
             if (client.checkExists().forPath(dspath) != null) {
                 List<String> types = client.getChildren().forPath(dspath);
@@ -432,7 +414,7 @@ public class DataStoreManager {
     private void save(AbstractDataStoreSettings settings) throws Exception {
         CuratorFramework client = zkConnection.client();
         String dspath = new PathUtils.ZkPathBuilder(zkPath)
-                .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                .withPath(DataStoreManagerSettings.__CONFIG_PATH)
                 .withPath(settings.getType().name())
                 .withPath(settings.getName())
                 .build();
@@ -521,7 +503,7 @@ public class DataStoreManager {
 
                     CuratorFramework client = zkConnection.client();
                     String dspath = new PathUtils.ZkPathBuilder(zkPath)
-                            .withPath(DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)
+                            .withPath(DataStoreManagerSettings.__CONFIG_PATH)
                             .withPath(settings.getType().name())
                             .withPath(settings.getName())
                             .withPath(cp.path())

@@ -18,7 +18,6 @@ package io.zyient.base.core.stores.impl.settings.rdbms;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.stores.AbstractDataStoreSettings;
@@ -32,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "db")
 public class RdbmsStoreSettings extends AbstractDataStoreSettings {
     @Config(name = "sessionTimeout", required = false, parser = TimeValueParser.class)
     private TimeUnitValue sessionTimeout = new TimeUnitValue(30 * 60 * 1000, TimeUnit.MILLISECONDS);

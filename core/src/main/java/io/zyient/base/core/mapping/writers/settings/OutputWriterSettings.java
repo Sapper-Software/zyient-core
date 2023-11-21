@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.settings.solr;
+package io.zyient.base.core.mapping.writers.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.core.stores.AbstractDataStoreSettings;
-import io.zyient.base.core.stores.EDataStoreType;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,8 +25,5 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class SolrDbSettings extends AbstractDataStoreSettings {
-    public SolrDbSettings() {
-        setType(EDataStoreType.kvstore);
-    }
+public class OutputWriterSettings extends Settings {
 }

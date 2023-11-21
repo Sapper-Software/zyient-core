@@ -17,26 +17,36 @@
 package io.zyient.base.core.stores;
 
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.Closeable;
+import java.util.List;
 
 @Getter
 @Setter
-public class EntitySearchResult<T extends IEntity<?>> extends BaseSearchResult<T> {
-    private Collection<T> entities;
+@Accessors(fluent = true)
+public abstract class Cursor<K extends IKey, E extends IEntity<K>> implements Closeable {
+    private int pageSize = 256;
+    @Setter(AccessLevel.NONE)
+    private int currentPage = 0;
+    private boolean EOF = false;
 
-    public EntitySearchResult(@Nonnull Class<? extends IEntity<?>> type) {
-        super(type);
-    }
-
-    public void add(@Nonnull T entity) {
-        if (entities == null) {
-            entities = new ArrayList<>();
+    public List<E> nextPage() throws DataStoreException {
+        if (!EOF) {
+            List<E> result = next(currentPage);
+            if (result != null) {
+                currentPage++;
+            } else {
+                EOF = true;
+            }
+            return result;
         }
-        entities.add(entity);
+        return null;
     }
+
+    protected abstract List<E> next(int page) throws DataStoreException;
 }

@@ -21,7 +21,10 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.IntegerKey;
-import io.zyient.base.core.stores.*;
+import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.base.core.stores.Cursor;
+import io.zyient.base.core.stores.DataStoreEnv;
+import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.impl.rdbms.model.CustomersEntity;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -30,6 +33,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -181,24 +185,35 @@ class RdbmsDataStoreTest {
                 dataStore.rollback();
                 throw ex;
             }
-            String condition = "zipCode = :zipcode AND customerName = :name";
-            for (CustomersEntity ce : customers) {
-                Map<String, Object> params = Map.of("zipcode", ce.getZipCode(), "name", ce.getCustomerName());
-                AbstractDataStore.Q query = new AbstractDataStore.Q()
-                        .where(condition)
-                        .addAll(params);
-                BaseSearchResult<CustomersEntity> r = dataStore
-                        .search(query, IntegerKey.class, CustomersEntity.class, null);
-                assertTrue(r instanceof EntitySearchResult<CustomersEntity>);
-                boolean found = false;
-                for (CustomersEntity re : ((EntitySearchResult<CustomersEntity>) r).getEntities()) {
-                    if (re.getId().compareTo(ce.getId()) == 0) {
-                        found = true;
-                        break;
-                    }
+            String condition = "city = :city AND state = :state";
+            Map<String, Object> params = Map.of("city", "Bangalore", "state", "KA");
+            AbstractDataStore.Q query = new AbstractDataStore.Q()
+                    .where(condition)
+                    .addAll(params);
+            Cursor<IntegerKey, CustomersEntity> cursor = dataStore.search(query,
+                    3,
+                    IntegerKey.class,
+                    CustomersEntity.class,
+                    null);
+            int pages = 0;
+            int count = 0;
+            Map<String, IntegerKey> keys = new HashMap<>();
+            while (true) {
+                List<CustomersEntity> r = cursor.nextPage();
+                if (r == null || r.isEmpty()) {
+                    break;
                 }
-                assertTrue(found);
+                for (CustomersEntity c : r) {
+                    String k = c.getId().stringKey();
+                    if (keys.containsKey(k)) {
+                        throw new Exception(String.format("Key already exists. [page=%d][count=%d]", pages, count));
+                    }
+                    keys.put(k, c.entityKey());
+                }
+                count += r.size();
+                pages++;
             }
+            assertTrue(pages > 1);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

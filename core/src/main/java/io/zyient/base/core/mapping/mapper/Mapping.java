@@ -23,10 +23,10 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.DataException;
-import io.zyient.base.core.mapping.MappingProcessor;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
 import io.zyient.base.core.mapping.model.*;
+import io.zyient.base.core.mapping.readers.MappingContextProvider;
 import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.transformers.*;
@@ -48,21 +48,19 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
-    public static final String __CONFIG_PATH_TRANSFORMERS = "transformers";
 
+    private Class<? extends T> type;
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
-    private final Class<? extends T> type;
     private final Map<String, Field> fieldTree = new HashMap<>();
-    private final MappingProcessor processor;
     private MappingSettings settings;
     private final Map<String, Transformer<?>> transformers = new HashMap<>();
     private RulesExecutor<T> rulesExecutor;
+    private MappingContextProvider contextProvider;
 
-    public Mapping(@NonNull Class<? extends T> type,
-                   @NonNull MappingProcessor processor) {
-        this.type = type;
-        this.processor = processor;
+    public Mapping<T> withContextProvider(MappingContextProvider contextProvider) {
+        this.contextProvider = contextProvider;
+        return this;
     }
 
     public String name() {
@@ -70,18 +68,19 @@ public class Mapping<T> {
         return settings.getName();
     }
 
+    @SuppressWarnings("unchecked")
     public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_TRANSFORMERS);
-            String cp = MappingSettings.class.getAnnotation(ConfigPath.class).path();
-            if (ConfigReader.checkIfNodeExists(xmlConfig, cp)) {
-                ConfigReader reader = new ConfigReader(xmlConfig, cp, MappingSettings.class);
-                reader.read();
-                settings = (MappingSettings) reader.settings();
-            } else {
-                settings = new MappingSettings();
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
+            if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
+                config = xmlConfig.configurationAt(__CONFIG_PATH);
             }
+            String cp = MappingSettings.class.getAnnotation(ConfigPath.class).path();
+            ConfigReader reader = new ConfigReader(xmlConfig, cp, MappingSettings.class);
+            reader.read();
+            settings = (MappingSettings) reader.settings();
             settings.postLoad();
+            type = (Class<? extends T>) settings.getEntityType();
             readMappings(config);
             buildFieldTree(type, null);
             checkAndLoadRules(config);
@@ -178,9 +177,15 @@ public class Mapping<T> {
     }
 
     public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
+        T entity = null;
+        if (contextProvider != null) {
+            entity = contextProvider.createInstance(type);
+        } else {
+            entity = type.getDeclaredConstructor().newInstance();
+        }
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
-        response.entity(type.getDeclaredConstructor().newInstance());
+        response.entity(entity);
         for (String path : sourceIndex.keySet()) {
             String[] parts = path.split("\\.");
             Object value = findSourceValue(source, parts, 0);
@@ -341,6 +346,44 @@ public class Mapping<T> {
     }
 
     public Map<String, Object> write(@NonNull T data) throws Exception {
-        return null;
+        Map<String, Object> response = new HashMap<>();
+        for (String key : targetIndex.keySet()) {
+            MappedElement me = targetIndex.get(key);
+            if (me.getMappingType() == MappingType.Field) {
+                Field field = fieldTree.get(me.getTargetPath());
+                if (field == null) {
+                    throw new Exception(String.format("Field not registered. [field=%s]", me.getTargetPath()));
+                }
+                Object value = ReflectionUtils.getFieldValue(data, field);
+                setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
+            } else if (me.getMappingType() == MappingType.Custom) {
+                if (!(data instanceof PropertyBag bag)) {
+                    throw new Exception(String.format("Type does not support custom fields. [type=%s]",
+                            data.getClass().getCanonicalName()));
+                }
+                Object value = bag.getProperty(me.getTargetPath());
+                setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
+            }
+        }
+        return response;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void setFieldValue(Map<String, Object> map, Object value, String[] path, int index) throws Exception {
+        String key = path[index];
+        if (index == path.length - 1) {
+            map.put(key, value);
+        } else if (map.containsKey(key)) {
+            Object node = map.get(key);
+            if (!(node instanceof Map<?, ?>)) {
+                throw new Exception(String.format("Node already populated. [node=%s]", (Object) path));
+            }
+            Map<String, Object> nmap = (Map<String, Object>) node;
+            setFieldValue(nmap, value, path, index + 1);
+        } else {
+            Map<String, Object> nmap = new HashMap<>();
+            map.put(key, nmap);
+            setFieldValue(nmap, value, path, index + 1);
+        }
     }
 }

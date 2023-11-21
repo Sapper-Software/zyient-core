@@ -27,7 +27,8 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class DataStoreManagerSettings extends Settings {
-    public static final String CONFIG_NODE_DATA_STORES = "dataStores";
+    public static final String __CONFIG_PATH = "dataStores";
+    public static final String CONFIG_NODE_DATA_STORE = "store";
     public static final String ZK_NODE_SEQUENCE = "sequence";
 
     @Config(name = "zk.connection", required = false)

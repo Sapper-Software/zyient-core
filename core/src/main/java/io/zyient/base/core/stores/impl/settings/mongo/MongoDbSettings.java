@@ -18,7 +18,6 @@ package io.zyient.base.core.stores.impl.settings.mongo;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.stores.AbstractDataStoreSettings;
@@ -32,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "mongodb")
 public class MongoDbSettings extends AbstractDataStoreSettings {
     @Config(name = "model")
     private String modelPackage;

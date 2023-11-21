@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.config.StringMapParser;
-import io.zyient.base.core.mapping.readers.ReaderContextParser;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,8 +31,6 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class ReaderFactorySettings extends Settings {
-    @Config(name = "contextParser", required = false, type = Class.class)
-    private Class<? extends ReaderContextParser> contextParser = null;
     @Config(name = "defaults", required = false, parser = StringMapParser.class)
     private Map<String, String> defaults;
 }

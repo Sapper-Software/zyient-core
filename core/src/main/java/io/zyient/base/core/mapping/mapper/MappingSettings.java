@@ -35,6 +35,8 @@ import java.util.Locale;
 public class MappingSettings extends Settings {
     @Config(name = "name")
     private String name;
+    @Config(name = "entityType", type = Class.class)
+    private Class<?> entityType;
     @Config(name = "currency", required = false)
     private String currency = null;
     @Config(name = "format.date", required = false)

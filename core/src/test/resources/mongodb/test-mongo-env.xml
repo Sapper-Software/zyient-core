@@ -66,17 +66,6 @@
                 </zk>
                 <store>
                     <settings>
-                        <class>io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings</class>
-                    </settings>
-                    <class>io.zyient.base.core.stores.impl.solr.SolrDataStore</class>
-                    <connection>
-                        <name>test-db</name>
-                        <class>io.zyient.base.core.stores.impl.solr.SolrConnection</class>
-                    </connection>
-                    <name>test-solr</name>
-                </store>
-                <store>
-                    <settings>
                         <class>io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings</class>
                     </settings>
                     <class>io.zyient.base.core.stores.impl.mongo.MongoDbDataStore</class>
@@ -107,14 +96,6 @@
                         </retry>
                         <connectionTimeout>10000</connectionTimeout>
                     </zookeeper>
-                </connection>
-                <connection>
-                    <class>io.zyient.base.core.stores.impl.solr.SolrConnection</class>
-                    <solr>
-                        <name>test-db</name>
-                        <client>Basic</client>
-                        <urls>http://192.168.2.31:8983/solr</urls>
-                    </solr>
                 </connection>
                 <connection>
                     <class>io.zyient.base.core.stores.impl.mongo.MorphiaConnection</class>

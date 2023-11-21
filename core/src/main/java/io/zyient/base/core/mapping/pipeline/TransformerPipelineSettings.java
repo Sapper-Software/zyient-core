@@ -19,6 +19,8 @@ package io.zyient.base.core.mapping.pipeline;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,8 +30,10 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class TransformerPipelineSettings extends Settings {
-    @Config(name = "name")
-    private String name;
+    @Config(name = "key", type = Class.class)
+    private Class<? extends IKey> keyType;
+    @Config(name = "entity", type = Class.class)
+    private Class<? extends IEntity<?>> entityType;
     @Config(name = "terminateOnValidationError", required = false, type = Boolean.class)
     private boolean terminateOnValidationError = true;
     @Config(name = "mapper")

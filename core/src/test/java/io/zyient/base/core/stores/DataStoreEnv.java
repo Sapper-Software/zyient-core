@@ -81,7 +81,7 @@ public class DataStoreEnv extends BaseEnv<DataStoreEnv.EDemoState> {
         super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
 
         configNode = baseConfig().configurationAt(__CONFIG_PATH);
-        if (ConfigReader.checkIfNodeExists(configNode, DataStoreManagerSettings.CONFIG_NODE_DATA_STORES)) {
+        if (ConfigReader.checkIfNodeExists(configNode, DataStoreManagerSettings.__CONFIG_PATH)) {
             dataStoreManager = new DataStoreManager();
             dataStoreManager.init(configNode, this, null);
         }

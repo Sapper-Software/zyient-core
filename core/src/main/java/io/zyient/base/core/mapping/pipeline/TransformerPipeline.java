@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.mapping.pipeline;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.ValidationException;
@@ -25,14 +26,18 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.mapping.mapper.MapperFactory;
 import io.zyient.base.core.mapping.mapper.Mapping;
-import io.zyient.base.core.mapping.model.ContentInfo;
+import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.model.OutputContentInfo;
 import io.zyient.base.core.mapping.readers.InputReader;
+import io.zyient.base.core.mapping.readers.MappingContextProvider;
 import io.zyient.base.core.mapping.readers.ReadCursor;
 import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RuleConditionFailed;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
+import io.zyient.base.core.mapping.writers.OutputWriter;
 import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
@@ -49,15 +54,19 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     private Class<? extends E> entityType;
+    private Class<? extends K> keyType;
     private Mapping<E> mapping;
     private AbstractDataStore<?> dataStore;
     private RulesExecutor<E> postProcessor;
     private TransformerPipelineSettings settings;
+    private MappingContextProvider contextProvider;
 
     public String name() {
-        return settings.getName();
+        Preconditions.checkNotNull(mapping);
+        return mapping.name();
     }
 
+    @SuppressWarnings("unchecked")
     public TransformerPipeline<K, E> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                                @NonNull MapperFactory mapperFactory,
                                                @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
@@ -65,10 +74,15 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
             ConfigReader reader = new ConfigReader(xmlConfig, null, TransformerPipelineSettings.class);
             reader.read();
             settings = (TransformerPipelineSettings) reader.settings();
+            entityType = (Class<? extends E>) settings.getEntityType();
+            keyType = (Class<? extends K>) settings.getKeyType();
             mapping = mapperFactory.getMapping(settings.getMapper());
             if (mapping == null) {
                 throw new Exception(String.format("Specified mapping not found. [mapping=%s]",
                         settings.getMapper()));
+            }
+            if (contextProvider != null) {
+                mapping.withContextProvider(contextProvider);
             }
             dataStore = dataStoreManager.getDataStore(settings.getDataStore(), settings().getDataStoreType());
             if (dataStore == null) {
@@ -92,7 +106,23 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         }
     }
 
-    public void run(@NonNull InputReader reader, ContentInfo context) throws Exception {
+    public void write(@NonNull OutputWriter writer, @NonNull OutputContentInfo context) throws Exception {
+        if (!Strings.isNullOrEmpty(context.mapping())) {
+            if (mapping.name().compareTo(context.mapping()) != 0) {
+                throw new Exception(String.format("Mapper mis-match: [expected=%s][specified=%s]",
+                        mapping.name(), context.mapping()));
+            }
+        }
+        AbstractDataStore.Q query = context.query();
+        if (query == null) {
+            throw new Exception("No query specified...");
+        }
+        DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType.getCanonicalName()));
+        Cursor<K, E> result = dataStore.search(query, keyType, entityType, context);
+        // TODO: Finish writing
+    }
+
+    public void read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
         if (!Strings.isNullOrEmpty(context.mapping())) {
             if (mapping.name().compareTo(context.mapping()) != 0) {
                 throw new Exception(String.format("Mapper mis-match: [expected=%s][specified=%s]",
@@ -120,7 +150,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                 // Do nothing...
             } catch (ValidationException ex) {
                 String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
-                        reader.file().getAbsolutePath(), count, ex.getLocalizedMessage());
+                        reader.input().getAbsolutePath(), count, ex.getLocalizedMessage());
                 if (settings().isTerminateOnValidationError()) {
                     DefaultLogger.stacktrace(ex);
                     throw new ValidationException(mesg);

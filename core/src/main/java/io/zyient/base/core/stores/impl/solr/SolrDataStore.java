@@ -27,7 +27,6 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
-import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -328,14 +327,14 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     }
 
     @Override
-    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
-                                                                               int offset,
-                                                                               int maxResults,
-                                                                               @NonNull Class<? extends K> keyType,
-                                                                               @NonNull Class<? extends E> type,
-                                                                               Context context) throws DataStoreException {
-        return null;
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int maxResults,
+                                                                        @NonNull Class<? extends K> keyType,
+                                                                        @NonNull Class<? extends E> type,
+                                                                        Context context) throws DataStoreException {
+        throw new DataStoreException("Not implemented...");
     }
+
 
     public static String getQueryString(@NonNull String field,
                                         @NonNull Object value,
@@ -346,16 +345,6 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             return String.format("%s:%d", field, (long) value);
         }
         return String.format("%s:\"%s\"", field, value);
-    }
-
-    @Override
-    public DataStoreAuditContext context() {
-        DataStoreAuditContext ctx = new DataStoreAuditContext();
-        ctx.setType(getClass().getCanonicalName());
-        ctx.setName(name());
-        ctx.setConnectionType(connection().getClass().getCanonicalName());
-        ctx.setConnectionName(connection().name());
-        return ctx;
     }
 
     public static String getDocumentType(@NonNull File path) throws Exception {

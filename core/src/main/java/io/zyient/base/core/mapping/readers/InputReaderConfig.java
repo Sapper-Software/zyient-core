@@ -21,6 +21,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.SourceTypes;
 import io.zyient.base.core.mapping.model.Column;
+import io.zyient.base.core.mapping.readers.settings.ReaderSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

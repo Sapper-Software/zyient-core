@@ -24,16 +24,14 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
-import io.zyient.base.core.stores.impl.DataStoreAuditContext;
 import io.zyient.base.core.stores.impl.settings.rdbms.RdbmsStoreSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.hibernate.ScrollMode;
+import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
-
-import java.util.Collection;
-import java.util.List;
 
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     public void flush() throws DataStoreException {
@@ -150,12 +148,11 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public <K extends IKey, E extends IEntity<K>> BaseSearchResult<E> doSearch(@NonNull Q query,
-                                                                               int offset,
-                                                                               int maxResults,
-                                                                               @NonNull Class<? extends K> keyType,
-                                                                               @NonNull Class<? extends E> type,
-                                                                               Context context)
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int maxResults,
+                                                                        @NonNull Class<? extends K> keyType,
+                                                                        @NonNull Class<? extends E> type,
+                                                                        Context context)
             throws DataStoreException {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
@@ -163,42 +160,18 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
-            Query qq = session.createQuery(query.generatedQuery(), type)
-                    .setMaxResults(maxResults)
-                    .setFirstResult(offset);
+            Query qq = session.createQuery(query.generatedQuery(), type);
             if (query.hasParameters()) {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));
             }
-            List<E> result = qq.getResultList();
-            if (result != null && !result.isEmpty()) {
-                for (E entity : result) {
-                    if (entity instanceof BaseEntity) {
-                        ((BaseEntity) entity).getState().setState(EEntityState.Synced);
-                    }
-                }
-                EntitySearchResult<E> er = new EntitySearchResult<>(type);
-                er.setQuery(query.generatedQuery());
-                er.setOffset(offset);
-                er.setCount(result.size());
-                er.setEntities((Collection<E>) result);
-                return er;
-            }
-            return null;
+            ScrollableResults<E> results = qq.scroll(ScrollMode.FORWARD_ONLY);
+            HibernateCursor<K, E> cursor = new HibernateCursor<>(results);
+            return cursor.pageSize(maxResults);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
         }
-    }
-
-    @Override
-    public DataStoreAuditContext context() {
-        DataStoreAuditContext ctx = new DataStoreAuditContext();
-        ctx.setType(getClass().getCanonicalName());
-        ctx.setName(name());
-        ctx.setConnectionType(connection().getClass().getCanonicalName());
-        ctx.setConnectionName(connection().name());
-        return ctx;
     }
 
     @Override

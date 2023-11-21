@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores;
+package io.zyient.base.core.mapping;
 
-import io.zyient.base.common.model.entity.IEntity;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.annotation.Nonnull;
 
 @Getter
 @Setter
-public class BaseSearchResult<T extends IEntity<?>> {
-    private Class<? extends IEntity<?>> type;
-    private String query;
-    private int count;
-    private long totalRecords;
-    private int offset;
-    private String scrollId;
-
-    public BaseSearchResult(@Nonnull Class<? extends IEntity<?>> type) {
-        this.type = type;
-    }
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class MappingExecutorSettings extends Settings {
+    @Config(name = "numThread", required = false, type = Integer.class)
+    private int numThreads = 8;
+    @Config(name = "taskQueueSize", required = false, type = Integer.class)
+    private int taskQueueSize = 128;
 }

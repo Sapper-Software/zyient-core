@@ -14,24 +14,32 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping;
+package io.zyient.base.core.mapping.writers;
 
-import io.zyient.base.core.processing.ProcessorState;
+import io.zyient.base.core.mapping.model.OutputContentInfo;
+import io.zyient.base.core.mapping.writers.settings.OutputWriterSettings;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.util.HashMap;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 @Getter
+@Setter
 @Accessors(fluent = true)
-public class MappingProcessor {
-    private final ProcessorState state = new ProcessorState();
-    private final Map<String, Pattern> registeredRegex = new HashMap<>();
+public abstract class OutputWriter implements Closeable {
+    private File output;
+    private OutputWriterSettings settings;
+    private OutputContentInfo contentInfo;
 
-    public Pattern getRegex(@NonNull String name) {
-        return registeredRegex.get(name);
-    }
+    public abstract OutputWriter open() throws IOException;
+
+    public abstract int write(@NonNull List<Map<String, Object>> batch) throws IOException;
+
+    public abstract void flush() throws IOException;
 }
