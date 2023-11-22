@@ -17,6 +17,7 @@
 package io.zyient.base.core.mapping.rules;
 
 import io.zyient.base.core.mapping.model.MappedResponse;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -25,7 +26,6 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -33,29 +33,22 @@ import java.util.List;
 @Accessors(fluent = true)
 public class RulesExecutor<T> {
     private final Class<? extends T> type;
-    private final List<Rule<T>> rules = new ArrayList<>();
+    @Setter(AccessLevel.NONE)
+    private List<Rule<T>> rules;
+    private RulesCache<T> cache;
 
     public RulesExecutor(@NonNull Class<? extends T> type) {
         this.type = type;
     }
 
-    @SuppressWarnings("unchecked")
     public RulesExecutor<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        try {
-            List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(Rule.__CONFIG_PATH_RULE);
-            if (nodes == null || nodes.isEmpty()) {
-                throw new ConfigurationException("No rules defined in configuration...");
-            }
-            for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                Rule<T> rule = BaseRule.read(node, type);
-                rules.add(rule);
-            }
-
-            return this;
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
+        RuleConfigReader<T> reader = new RuleConfigReader<T>()
+                .cache(cache)
+                .entityType(type);
+        rules = reader.read(xmlConfig);
+        return this;
     }
+
     public void evaluate(@NonNull MappedResponse<T> input) throws Exception {
         for (Rule<T> rule : rules) {
             rule.evaluate(input);

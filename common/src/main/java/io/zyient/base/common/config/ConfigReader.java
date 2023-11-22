@@ -515,7 +515,7 @@ public class ConfigReader {
     }
 
     public static final String CONFIG_KEY_CLASS = "class";
-    public static final String CONFIG_ATTR_TYPE = "[@type]";
+    public static final String CONFIG_ATTR_TYPE = "type";
 
     public static Class<?> readType(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         return readType(config, CONFIG_ATTR_TYPE);
@@ -523,6 +523,7 @@ public class ConfigReader {
 
     public static Class<?> readType(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                     @NonNull String key) throws Exception {
+        key = String.format("[@%s]", key);
         String cls = config.getString(key);
         if (!Strings.isNullOrEmpty(cls))
             return Class.forName(cls);

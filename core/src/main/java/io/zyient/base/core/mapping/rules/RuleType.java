@@ -17,5 +17,8 @@
 package io.zyient.base.core.mapping.rules;
 
 public enum RuleType {
-    Condition, Validation, Transformation
+    Condition,
+    Validation,
+    Transformation,
+    External
 }

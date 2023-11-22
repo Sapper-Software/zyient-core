@@ -32,8 +32,8 @@ import io.zyient.base.core.mapping.model.OutputContentInfo;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.MappingContextProvider;
 import io.zyient.base.core.mapping.readers.ReadCursor;
-import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RuleConditionFailed;
+import io.zyient.base.core.mapping.rules.RuleConfigReader;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.writers.OutputWriter;
 import io.zyient.base.core.stores.AbstractDataStore;
@@ -100,7 +100,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
 
     @SuppressWarnings("unchecked")
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
-        if (ConfigReader.checkIfNodeExists(xmlConfig, Rule.__CONFIG_PATH)) {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
             postProcessor = (RulesExecutor<E>) new RulesExecutor<>(entityType)
                     .configure(xmlConfig);
         }

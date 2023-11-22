@@ -16,38 +16,28 @@
 
 package io.zyient.base.core.mapping.rules;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
+@Accessors(fluent = true)
 public abstract class BaseRule<T> implements Rule<T> {
-    @Config(name = "rule")
+    private String name;
     private String rule;
-    @Config(name = "target", required = false)
     private String target = null;
-    @Config(name = "ruleType", required = false, type = RuleType.class)
     private RuleType ruleType = RuleType.Transformation;
     private Field targetField;
-    private Class<? extends T> type;
+    private Class<? extends T> entityType;
     private List<Rule<T>> rules;
-
 
     @Override
     public Rule<T> withTargetField(Field targetField) throws Exception {
@@ -61,35 +51,43 @@ public abstract class BaseRule<T> implements Rule<T> {
     }
 
     @Override
-    public Rule<T> withType(@NonNull Class<? extends T> type) {
-        this.type = type;
+    public Rule<T> withEntityType(@NonNull Class<? extends T> type) {
+        this.entityType = type;
         return this;
     }
 
+    @Override
+    public void addSubRules(@NonNull List<Rule<T>> rules) {
+        this.rules = rules;
+    }
 
     @Override
-    public Rule<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        if (getType() == null) {
+    public String getTarget() {
+        return target;
+    }
+
+    @Override
+    public RuleType getRuleType() {
+        return ruleType;
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
+        if (entityType == null) {
             throw new ConfigurationException("Entity type not specified...");
         }
         if (getRuleType() == RuleType.Transformation) {
-            if (getTargetField() == null) {
+            if (targetField == null) {
                 throw new ConfigurationException(String.format("Target field not set. [target=%s]", getTarget()));
             }
         }
         try {
-            setup(xmlConfig);
-            if (ConfigReader.checkIfNodeExists(xmlConfig, Rule.__CONFIG_PATH)) {
-                rules = new ArrayList<>();
-                List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(Rule.__CONFIG_PATH_RULE);
-                if (nodes == null || nodes.isEmpty()) {
-                    throw new ConfigurationException("No rules defined in configuration...");
-                }
-                for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                    Rule<T> rule = BaseRule.read(node, type);
-                    rules.add(rule);
-                }
-            }
+            name = config.getName();
+            rule = config.getRule();
+            target = config.getTarget();
+            ruleType = config.getType();
+
+            setup(config);
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -114,34 +112,9 @@ public abstract class BaseRule<T> implements Rule<T> {
 
     protected abstract Object doEvaluate(@NonNull MappedResponse<T> data) throws Exception;
 
-    protected abstract void setup(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+    protected abstract void setup(@NonNull RuleConfig config) throws ConfigurationException;
 
-    @SuppressWarnings("unchecked")
-    public static <T> Rule<T> read(@NonNull HierarchicalConfiguration<ImmutableNode> node,
-                                   @NonNull Class<? extends T> entityType) throws Exception {
-        Rule<T> rule = null;
-        Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
-        if (type == null) {
-            rule = createDefaultInstance();
-        } else {
-            rule = type.getDeclaredConstructor().newInstance();
-        }
-        rule = ConfigReader.read(node, rule);
-        Field field = null;
-        if (rule.getRuleType() == RuleType.Transformation) {
-            field = ReflectionUtils.findField(entityType, rule.getTarget());
-            if (field == null) {
-                throw new ConfigurationException(String.format("Field not found. [type=%s][field=%s]",
-                        entityType.getCanonicalName(), rule.getTarget()));
-            }
-        }
-        rule.withType(entityType)
-                .withTargetField(field)
-                .configure(node);
-        return rule;
-    }
-
-    private static <T> Rule<T> createDefaultInstance() {
+    public static <T> Rule<T> createDefaultInstance() {
         return new SpELRule<T>();
     }
 }

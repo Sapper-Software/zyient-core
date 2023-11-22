@@ -27,7 +27,8 @@ import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
 import io.zyient.base.core.mapping.model.*;
 import io.zyient.base.core.mapping.readers.MappingContextProvider;
-import io.zyient.base.core.mapping.rules.Rule;
+import io.zyient.base.core.mapping.rules.RuleConfigReader;
+import io.zyient.base.core.mapping.rules.RulesCache;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.transformers.*;
 import io.zyient.base.core.model.PropertyBag;
@@ -57,6 +58,13 @@ public class Mapping<T> {
     private final Map<String, Transformer<?>> transformers = new HashMap<>();
     private RulesExecutor<T> rulesExecutor;
     private MappingContextProvider contextProvider;
+    private RulesCache<T> rulesCache;
+
+    @SuppressWarnings("unchecked")
+    public Mapping<T> withRulesCache(RulesCache<?> rulesCache) {
+        this.rulesCache = (RulesCache<T>) rulesCache;
+        return this;
+    }
 
     public Mapping<T> withContextProvider(MappingContextProvider contextProvider) {
         this.contextProvider = contextProvider;
@@ -92,8 +100,9 @@ public class Mapping<T> {
 
     @SuppressWarnings("unchecked")
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
-        if (ConfigReader.checkIfNodeExists(xmlConfig, Rule.__CONFIG_PATH)) {
-            rulesExecutor = (RulesExecutor<T>) new RulesExecutor<>(type)
+        if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
+            rulesExecutor = new RulesExecutor<T>(type)
+                    .cache(rulesCache)
                     .configure(xmlConfig);
         }
     }
@@ -271,6 +280,7 @@ public class Mapping<T> {
         return transformer.transform(value);
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     private Transformer<?> getTransformer(Class<?> type,
                                           MappedElement element) throws Exception {
         if (type != null && transformers.containsKey(type.getCanonicalName())) {
@@ -307,6 +317,20 @@ public class Mapping<T> {
                     .locale(settings.getLocale())
                     .format(settings.getDateFormat())
                     .configure(settings);
+        } else if (type.isEnum()) {
+            if (transformers.containsKey(type.getSimpleName())) {
+                return transformers.get(type.getSimpleName());
+            }
+            if (element instanceof EnumMappedElement) {
+                transformer = new EnumTransformer()
+                        .type((Class<? extends Enum>) type)
+                        .enumValues(((EnumMappedElement) element).getEnumMappings())
+                        .configure(settings);
+            } else {
+                transformer = new EnumTransformer()
+                        .type((Class<? extends Enum>) type)
+                        .configure(settings);
+            }
         } else if (ReflectionUtils.isSuperType(CurrencyValue.class, type)) {
             transformer = new CurrencyValueTransformer()
                     .locale(settings.getLocale())

@@ -23,6 +23,7 @@ import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.settings.ReaderFactorySettings;
+import io.zyient.base.core.mapping.rules.RulesCache;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -31,6 +32,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class MapperFactory {
@@ -41,6 +43,8 @@ public class MapperFactory {
 
     private MapperFactorySettings settings;
     private final Map<String, Mapping<?>> mappings = new HashMap<>();
+    private final Map<Class<?>, RulesCache<?>> rulesCaches = new HashMap<>();
+
 
     public MapperFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
@@ -49,12 +53,43 @@ public class MapperFactory {
             ConfigReader reader = new ConfigReader(factoryConfig, null, ReaderFactorySettings.class);
             reader.read();
             settings = (MapperFactorySettings) reader.settings();
+            readGlobalRules(xmlConfig);
             readMappingConfigs(config);
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
+    }
+
+    private void readGlobalRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        if (!ConfigReader.checkIfNodeExists(xmlConfig, RulesCacheSettings.__CONFIG_PATH)) {
+            return;
+        }
+        HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(RulesCacheSettings.__CONFIG_PATH);
+        List<HierarchicalConfiguration<ImmutableNode>> nodes =
+                config.configurationsAt(RulesCacheSettings.__CONFIG_PATH_CACHE);
+        for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+            ConfigReader reader = new ConfigReader(node, null, RulesCacheSettings.class);
+            reader.read();
+            RulesCacheSettings cacheSettings = (RulesCacheSettings) reader.settings();
+            File cf = new File(PathUtils.formatPath(String.format("%s/%s",
+                    settings.getConfigDir(), cacheSettings.getFilename())));
+            if (!cf.exists()) {
+                throw new ConfigurationException(String.format("Mapping configuration file not found. [path=%s]",
+                        cf.getAbsolutePath()));
+            }
+            XMLConfiguration rConfig = ConfigReader.readFromFile(cf.getAbsolutePath());
+            HierarchicalConfiguration<ImmutableNode> rNode =
+                    rConfig.configurationAt(RulesCacheSettings.__CONFIG_PATH_GLOBAL);
+            RulesCache<?> cache = createCache(cacheSettings.getEntityType())
+                    .configure(rNode, cacheSettings.getEntityType());
+            rulesCaches.put(cacheSettings.getEntityType(), cache);
+        }
+    }
+
+    private <E> RulesCache<E> createCache(Class<? extends E> type) {
+        return new RulesCache<E>();
     }
 
     @SuppressWarnings("unchecked")
@@ -83,11 +118,19 @@ public class MapperFactory {
             }
             XMLConfiguration xmlConfig = ConfigReader.readFromFile(cf.getAbsolutePath());
             HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
-            Mapping<?> mapping = mCls.getDeclaredConstructor()
-                    .newInstance()
+            Class<?> entityType = ConfigReader.readType(mConfig, "entity");
+            RulesCache<?> cache = rulesCaches.get(entityType);
+            Mapping<?> mapping = createInstance(entityType, mCls)
+                    .withRulesCache(cache)
                     .configure(mConfig);
             mappings.put(mapping.name(), mapping);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <E> Mapping<E> createInstance(Class<? extends E> entityType,
+                                          Class<? extends Mapping<?>> cls) throws Exception {
+        return (Mapping<E>) cls.getDeclaredConstructor().newInstance();
     }
 
     public Mapping<?> findMapping(@NonNull InputContentInfo inputContentInfo) throws Exception {

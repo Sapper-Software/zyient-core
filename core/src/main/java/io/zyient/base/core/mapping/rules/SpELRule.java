@@ -25,9 +25,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.SpelParserConfiguration;
@@ -48,21 +46,8 @@ public class SpELRule<T> extends BaseRule<T> {
     @Setter(AccessLevel.NONE)
     private Expression expression;
 
-
-    @Override
-    public void setup(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        try {
-            normalizeRule();
-            SpelParserConfiguration config = new SpelParserConfiguration(true, true);
-            ExpressionParser parser = new SpelExpressionParser(config);
-            expression = parser.parseExpression(getRule());
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
-    }
-
     private void normalizeRule() throws Exception {
-        String r = getRule();
+        String r = rule();
         Pattern fieldFinder = Pattern.compile(FIELD_REGEX);
         Matcher m = fieldFinder.matcher(r);
         if (m.matches()) {
@@ -81,8 +66,8 @@ public class SpELRule<T> extends BaseRule<T> {
                 r = r.replace(f, mf);
             }
         }
-        DefaultLogger.debug(String.format("[original=%s][normalized=%s]", getRule(), r));
-        setRule(r);
+        DefaultLogger.debug(String.format("[original=%s][normalized=%s]", rule(), r));
+        rule(r);
     }
 
     @Override
@@ -91,30 +76,42 @@ public class SpELRule<T> extends BaseRule<T> {
         Object response = expression.getValue(ctx);
         if (getRuleType() == RuleType.Validation || getRuleType() == RuleType.Condition) {
             if (!(response instanceof Boolean)) {
-                throw new Exception(String.format("Failed to execute rule. [rule=%s]", getRule()));
+                throw new Exception(String.format("Failed to execute rule. [rule=%s]", rule()));
             }
             boolean r = (boolean) response;
             if (!r) {
                 if (getRuleType() == RuleType.Validation) {
                     if (DefaultLogger.isTraceEnabled()) {
                         String json = JSONUtils.asString(data, data.getClass());
-                        throw new ValidationException(String.format("[rule=%s][data=%s]", getRule(), json));
+                        throw new ValidationException(String.format("[rule=%s][data=%s]", rule(), json));
                     } else
-                        throw new ValidationException(String.format("[rule=%s]", getRule()));
+                        throw new ValidationException(String.format("[rule=%s]", rule()));
                 } else {
                     if (DefaultLogger.isTraceEnabled()) {
                         String json = JSONUtils.asString(data, data.getClass());
-                        throw new RuleConditionFailed(getRule(), json);
+                        throw new RuleConditionFailed(rule(), json);
                     } else
-                        throw new RuleConditionFailed(getRule());
+                        throw new RuleConditionFailed(rule());
                 }
             }
         } else if (response != null) {
-            ReflectionUtils.setValue(response, data, getTargetField());
+            ReflectionUtils.setValue(response, data, targetField());
         } else if (DefaultLogger.isTraceEnabled()) {
             String json = JSONUtils.asString(data, data.getClass());
-            DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", getRule(), json));
+            DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
         }
         return response;
+    }
+
+    @Override
+    protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
+        try {
+            normalizeRule();
+            SpelParserConfiguration cfg = new SpelParserConfiguration(true, true);
+            ExpressionParser parser = new SpelExpressionParser(cfg);
+            expression = parser.parseExpression(rule());
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
     }
 }

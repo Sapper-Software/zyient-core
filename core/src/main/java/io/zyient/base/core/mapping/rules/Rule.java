@@ -18,26 +18,26 @@ package io.zyient.base.core.mapping.rules;
 
 import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.NonNull;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 
 public interface Rule<T> {
-    public static final String __CONFIG_PATH = "rules";
-    public static final String __CONFIG_PATH_RULE = "rule";
+    String name();
 
     String getTarget();
 
     Rule<T> withTargetField(Field targetField) throws Exception;
 
-    Rule<T> withType(@NonNull Class<? extends T> type);
+    Rule<T> withEntityType(@NonNull Class<? extends T> type);
 
-    Rule<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+    Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException;
 
     Object evaluate(@NonNull MappedResponse<T> data) throws Exception;
 
     RuleType getRuleType();
+
+    void addSubRules(@NonNull List<Rule<T>> rules);
 }

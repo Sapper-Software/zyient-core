@@ -14,27 +14,26 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.model;
+package io.zyient.base.core.mapping.mapper;
 
-
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.IntegerListParser;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
 
 @Getter
 @Setter
-public class RegexMappedElement extends MappedElement {
-    @Config(name = "name")
-    private String name;
-    @Config(name = "regex", required = true)
-    private String regex;
-    @Config(name = "replaceWith", required = false)
-    private String replace;
-    @Config(name = "groups", required = false, parser = IntegerListParser.class)
-    private List<Integer> groups;
-    @Config(name = "format", required = false)
-    private String format;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class RulesCacheSettings extends Settings {
+    public static final String __CONFIG_PATH = "caches";
+    public static final String __CONFIG_PATH_CACHE = "cache";
+    public static final String __CONFIG_PATH_GLOBAL = "global";
+
+    @Config(name = "entity", type = Class.class)
+    private Class<?> entityType;
+    @Config(name = "path")
+    private String filename;
 }
