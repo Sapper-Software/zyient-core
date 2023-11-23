@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.readers.impl.json;
+package io.zyient.base.core.mapping.readers.impl.xml;
 
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.ReadCursor;
-import io.zyient.base.core.mapping.readers.settings.JsonReaderSettings;
+import io.zyient.base.core.mapping.readers.settings.XmlReaderSettings;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -28,51 +28,19 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class JsonInputReaderTest {
-    private static final String FILE_JSON_OBJECT = "src/test/resources/data/customers_202311231644.json";
-    private static final String FILE_JSON_ARRAY = "src/test/resources/data/employees_202311232000.json";
+class XmlInputReaderTest {
+    private static final String FILE_XML_OBJECT = "src/test/resources/data/customers_202311231645.xml";
 
     @Test
-    void nextBatchArray() {
+    void nextBatch() {
         try {
-            File file = new File(FILE_JSON_ARRAY);
+            File file = new File(FILE_XML_OBJECT);
             InputContentInfo ci = new InputContentInfo()
                     .path(file)
                     .sourceURI(file.toURI());
-            JsonReaderSettings settings = new JsonReaderSettings();
-            settings.setArray(true);
-            settings.setBasePath("customers");
-            JsonInputReader reader = (JsonInputReader) new JsonInputReader()
-                    .contentInfo(ci)
-                    .settings(settings);
-            try (ReadCursor cursor = reader.open()) {
-                int count = 0;
-                while (true) {
-                    Map<String, Object> data = cursor.next();
-                    if (data == null) {
-                        break;
-                    }
-                    count++;
-                }
-                assertEquals(300024, count);
-            }
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            fail(ex);
-        }
-    }
-
-    @Test
-    void nextBatchRoot() {
-        try {
-            File file = new File(FILE_JSON_OBJECT);
-            InputContentInfo ci = new InputContentInfo()
-                    .path(file)
-                    .sourceURI(file.toURI());
-            JsonReaderSettings settings = new JsonReaderSettings();
-            settings.setArray(false);
-            settings.setBasePath("customers");
-            JsonInputReader reader = (JsonInputReader) new JsonInputReader()
+            XmlReaderSettings settings = new XmlReaderSettings();
+            settings.setBasePath("DATA_RECORD");
+            XmlInputReader reader = (XmlInputReader) new XmlInputReader()
                     .contentInfo(ci)
                     .settings(settings);
             try (ReadCursor cursor = reader.open()) {
