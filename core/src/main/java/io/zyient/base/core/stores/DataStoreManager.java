@@ -32,7 +32,9 @@ import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.processing.ProcessorState;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -45,6 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Accessors(fluent = true)
 @SuppressWarnings("rawtypes")
 public class DataStoreManager {
     private static class ZkSequenceBlock {

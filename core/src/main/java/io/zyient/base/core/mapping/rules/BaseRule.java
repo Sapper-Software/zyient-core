@@ -16,6 +16,9 @@
 
 package io.zyient.base.core.mapping.rules;
 
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.Getter;
@@ -26,6 +29,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -33,20 +37,15 @@ import java.util.List;
 public abstract class BaseRule<T> implements Rule<T> {
     private String name;
     private String rule;
-    private String target = null;
+    private List<String> targets = null;
     private RuleType ruleType = RuleType.Transformation;
-    private Field targetField;
+    private Map<String, Field> targetFields;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
 
     @Override
-    public Rule<T> withTargetField(Field targetField) throws Exception {
-        if (ruleType == RuleType.Transformation) {
-            if (targetField == null) {
-                throw new Exception(String.format("Target field required for rule. [rule=%s]", rule));
-            }
-        }
-        this.targetField = targetField;
+    public Rule<T> withTargetField(@NonNull Field targetField) throws Exception {
+        targetFields.put(targetField.getName(), targetField);
         return this;
     }
 
@@ -62,8 +61,8 @@ public abstract class BaseRule<T> implements Rule<T> {
     }
 
     @Override
-    public String getTarget() {
-        return target;
+    public List<String> getTargets() {
+        return targets;
     }
 
     @Override
@@ -77,14 +76,14 @@ public abstract class BaseRule<T> implements Rule<T> {
             throw new ConfigurationException("Entity type not specified...");
         }
         if (getRuleType() == RuleType.Transformation) {
-            if (targetField == null) {
-                throw new ConfigurationException(String.format("Target field not set. [target=%s]", getTarget()));
+            if (targetFields == null || targetFields.isEmpty()) {
+                throw new ConfigurationException(String.format("Target field not set. [target=%s]", getTargets()));
             }
         }
         try {
             name = config.getName();
             rule = config.getRule();
-            target = config.getTarget();
+            targets = config.getTargets();
             ruleType = config.getType();
 
             setup(config);
@@ -97,16 +96,36 @@ public abstract class BaseRule<T> implements Rule<T> {
 
     @Override
     public Object evaluate(@NonNull MappedResponse<T> data) throws Exception {
+        ValidationExceptions errors = null;
         try {
             Object response = doEvaluate(data);
             if (rules != null && !rules.isEmpty()) {
                 for (Rule<T> rule : rules) {
-                    response = rule.evaluate(data);
+                    try {
+                        response = rule.evaluate(data);
+                        if (rule.getRuleType() == RuleType.Condition) {
+                            Preconditions.checkNotNull(response);
+                            if (!(response instanceof Boolean)) {
+                                throw new Exception(String
+                                        .format("Rule returned invalid response. [rule=%s][response=%s]",
+                                                rule.name(), response.getClass().getCanonicalName()));
+                            }
+                            if (!((Boolean) response)) {
+                                break;
+                            }
+                        }
+                    } catch (ValidationException ve) {
+                        errors = ValidationExceptions.add(ve, errors);
+                    }
                 }
             }
+            if (errors != null) {
+                throw errors;
+            }
             return response;
-        } catch (RuleConditionFailed cf) {
-            return false;
+        } catch (ValidationException ve) {
+            errors = ValidationExceptions.add(ve, errors);
+            throw errors;
         }
     }
 

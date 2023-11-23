@@ -20,6 +20,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
 @Accessors(fluent = true)
-public class ReadCursor {
+public class ReadCursor implements Closeable {
     private final InputReader reader;
     private final LinkedBlockingQueue<Map<String, Object>> cached;
     private boolean EOF = false;
@@ -48,5 +49,10 @@ public class ReadCursor {
             cached.addAll(batch);
         }
         return cached.poll();
+    }
+
+    @Override
+    public void close() throws IOException {
+        reader.close();
     }
 }

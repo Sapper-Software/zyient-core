@@ -79,6 +79,17 @@ public class DefaultLogger {
         }
     }
 
+    public static String traceInfo(@NonNull String mesg, @NonNull Object data) {
+        try {
+            String json = JSONUtils.asString(data, data.getClass());
+            String m = String.format("[ERROR=%s][DATA=%s]", mesg, json);
+            return m;
+        } catch (Exception ex) {
+            LOGGER.warn(ex.getLocalizedMessage());
+        }
+        return null;
+    }
+
     public static void trace(@NonNull String mesg, @NonNull Object data) {
         if (LOGGER.isTraceEnabled()) {
             trace(LOGGER, mesg, data);
@@ -88,9 +99,8 @@ public class DefaultLogger {
     public static void trace(Logger logger, @NonNull String mesg, @NonNull Object data) {
         if (logger.isTraceEnabled()) {
             try {
-                String json = JSONUtils.asString(data, data.getClass());
-                String m = String.format("[ERROR=%s][DATA=%s]", mesg, json);
-                trace(mesg);
+                String m = traceInfo(mesg, data);
+                logger.trace(m);
             } catch (Exception ex) {
                 logger.warn(ex.getLocalizedMessage());
             }

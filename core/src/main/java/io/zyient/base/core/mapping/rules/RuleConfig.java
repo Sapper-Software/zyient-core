@@ -19,8 +19,11 @@ package io.zyient.base.core.mapping.rules;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.config.StringListParser;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -35,6 +38,6 @@ public class RuleConfig extends Settings {
     private boolean reference = false;
     @Config(name = "ruleType", required = false, type = RuleType.class)
     private RuleType type = RuleType.Transformation;
-    @Config(name = "field", required = false)
-    private String target;
+    @Config(name = "fields", required = false, parser = StringListParser.class)
+    private List<String> targets;
 }

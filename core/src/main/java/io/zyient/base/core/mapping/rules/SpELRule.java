@@ -32,6 +32,7 @@ import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.lang.reflect.Field;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -74,7 +75,8 @@ public class SpELRule<T> extends BaseRule<T> {
     public Object doEvaluate(@NonNull MappedResponse<T> data) throws Exception {
         StandardEvaluationContext ctx = new StandardEvaluationContext(data);
         Object response = expression.getValue(ctx);
-        if (getRuleType() == RuleType.Validation || getRuleType() == RuleType.Condition) {
+        if (getRuleType() == RuleType.Validation ||
+                getRuleType() == RuleType.Condition) {
             if (!(response instanceof Boolean)) {
                 throw new Exception(String.format("Failed to execute rule. [rule=%s]", rule()));
             }
@@ -88,14 +90,15 @@ public class SpELRule<T> extends BaseRule<T> {
                         throw new ValidationException(String.format("[rule=%s]", rule()));
                 } else {
                     if (DefaultLogger.isTraceEnabled()) {
-                        String json = JSONUtils.asString(data, data.getClass());
-                        throw new RuleConditionFailed(rule(), json);
-                    } else
-                        throw new RuleConditionFailed(rule());
+                        DefaultLogger.trace(rule(), data);
+                    }
+                    return false;
                 }
             }
         } else if (response != null) {
-            ReflectionUtils.setValue(response, data, targetField());
+            for (Field field : targetFields().values()) {
+                ReflectionUtils.setValue(response, data, field);
+            }
         } else if (DefaultLogger.isTraceEnabled()) {
             String json = JSONUtils.asString(data, data.getClass());
             DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
@@ -106,6 +109,12 @@ public class SpELRule<T> extends BaseRule<T> {
     @Override
     protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
         try {
+            if (targetFields() != null) {
+                if (targetFields().size() > 1) {
+                    throw new ConfigurationException(
+                            String.format("[rule=%s] Multiple targets not supported...", name()));
+                }
+            }
             normalizeRule();
             SpelParserConfiguration cfg = new SpelParserConfiguration(true, true);
             ExpressionParser parser = new SpelExpressionParser(cfg);

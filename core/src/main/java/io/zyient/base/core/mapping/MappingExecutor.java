@@ -16,14 +16,19 @@
 
 package io.zyient.base.core.mapping;
 
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.StateException;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.pipeline.PipelineBuilder;
+import io.zyient.base.core.mapping.pipeline.PipelineHandle;
 import io.zyient.base.core.mapping.pipeline.TransformerPipeline;
 import io.zyient.base.core.mapping.readers.InputReader;
+import io.zyient.base.core.mapping.readers.ReadResponse;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.DataStoreManager;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -41,15 +46,17 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @Accessors(fluent = true)
 public class MappingExecutor implements Closeable {
-    public static final String __CONFIG_PATH = "pipeline-executor";
+    public static final String __CONFIG_PATH = "pipeline.executor";
 
     private final ProcessorState state = new ProcessorState();
     private PipelineBuilder builder;
     private MappingExecutorSettings settings;
     private ExecutorService executorService;
+    private DataStoreManager dataStoreManager;
 
     public MappingExecutor init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
+        this.dataStoreManager = dataStoreManager;
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -65,6 +72,9 @@ public class MappingExecutor implements Closeable {
                     0L, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(settings.getTaskQueueSize()));
             state.setState(ProcessorState.EProcessorState.Running);
+
+            __instance = this;
+
             return this;
         } catch (Exception ex) {
             state.error(ex);
@@ -73,6 +83,23 @@ public class MappingExecutor implements Closeable {
         }
     }
 
+    private void checkState() throws StateException {
+        if (!state.isRunning()) {
+            throw new StateException(String.format("Executor not available. [state=%s]", state.getState().name()));
+        }
+    }
+
+    public void read(@NonNull InputContentInfo contentInfo) throws Exception {
+        checkState();
+        PipelineHandle<?, ?> handle = builder.buildInputPipeline(contentInfo);
+        if (handle == null) {
+            throw new Exception(DefaultLogger.traceInfo("Failed to get pipeline.", contentInfo));
+        }
+        Reader reader = new Reader(handle.pipeline(),
+                handle.reader(),
+                contentInfo);
+        executorService.submit(reader);
+    }
 
     @Override
     public void close() throws IOException {
@@ -90,6 +117,16 @@ public class MappingExecutor implements Closeable {
             }
             executorService = null;
         }
+        __instance = null;
+    }
+
+    @Getter(AccessLevel.NONE)
+    private static MappingExecutor __instance;
+
+    public static MappingExecutor defaultInstance() throws Exception {
+        Preconditions.checkNotNull(__instance);
+        __instance.checkState();
+        return __instance;
     }
 
     private static class Reader implements Runnable {
@@ -110,13 +147,19 @@ public class MappingExecutor implements Closeable {
             try {
                 DefaultLogger.info(String.format("Starting pipeline. [name=%s]", pipeline.name()));
                 DefaultLogger.trace(pipeline.name(), contentInfo);
-                pipeline.read(reader, contentInfo);
+                ReadResponse response = pipeline.read(reader, contentInfo);
+                if (contentInfo.callback() != null) {
+                    contentInfo.callback().onSuccess(contentInfo, response);
+                }
                 DefaultLogger.info(String.format("Finished pipeline. [name=%s]", pipeline.name()));
             } catch (Throwable ex) {
                 String mesg = String.format("Pipeline failed: [error=%s][pipeline=%s]",
                         ex.getLocalizedMessage(), pipeline.name());
                 DefaultLogger.stacktrace(ex);
                 DefaultLogger.error(mesg);
+                if (contentInfo.callback() != null) {
+                    contentInfo.callback().onError(contentInfo, ex);
+                }
             }
         }
     }

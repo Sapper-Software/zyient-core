@@ -21,5 +21,11 @@ import lombok.experimental.Accessors;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class ExternalRule<T> implements Rule<T>{
+public abstract class ExternalRule<T> extends BaseRule<T> {
+
+    @Override
+    public RuleType getRuleType() {
+        return RuleType.External;
+    }
+
 }

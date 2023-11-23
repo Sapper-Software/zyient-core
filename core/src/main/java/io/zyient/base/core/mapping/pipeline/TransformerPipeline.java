@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
@@ -32,7 +33,7 @@ import io.zyient.base.core.mapping.model.OutputContentInfo;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.MappingContextProvider;
 import io.zyient.base.core.mapping.readers.ReadCursor;
-import io.zyient.base.core.mapping.rules.RuleConditionFailed;
+import io.zyient.base.core.mapping.readers.ReadResponse;
 import io.zyient.base.core.mapping.rules.RuleConfigReader;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.writers.OutputWriter;
@@ -122,7 +123,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         // TODO: Finish writing
     }
 
-    public void read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
+    public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
         if (!Strings.isNullOrEmpty(context.mapping())) {
             if (mapping.name().compareTo(context.mapping()) != 0) {
                 throw new Exception(String.format("Mapper mis-match: [expected=%s][specified=%s]",
@@ -130,32 +131,43 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
             }
         }
         DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType.getCanonicalName()));
+        ReadResponse response = new ReadResponse();
         ReadCursor cursor = reader.open();
         int count = 0;
+        int errorCount = 0;
         while (true) {
             try {
                 Map<String, Object> data = cursor.next();
                 if (data == null) break;
-                MappedResponse<E> response = mapping.read(data, context);
+                MappedResponse<E> r = mapping.read(data, context);
                 if (postProcessor != null) {
-                    postProcessor.evaluate(response);
+                    postProcessor.evaluate(r);
                 }
-                E entity = dataStore.create(response.entity(), entityType, context);
+                E entity = dataStore.create(r.entity(), entityType, context);
                 if (DefaultLogger.isTraceEnabled()) {
                     String json = JSONUtils.asString(entity, entityType);
                     DefaultLogger.trace(json);
                 }
                 count++;
-            } catch (RuleConditionFailed rf) {
-                // Do nothing...
             } catch (ValidationException ex) {
                 String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
                         reader.input().getAbsolutePath(), count, ex.getLocalizedMessage());
+                ValidationExceptions ve = ValidationExceptions.add(new ValidationException(mesg), null);
                 if (settings().isTerminateOnValidationError()) {
                     DefaultLogger.stacktrace(ex);
-                    throw new ValidationException(mesg);
+                    throw ve;
                 } else {
+                    errorCount++;
                     DefaultLogger.warn(mesg);
+                    response.add(ve);
+                }
+            } catch (ValidationExceptions vex) {
+                if (settings().isTerminateOnValidationError()) {
+                    throw vex;
+                } else {
+                    errorCount++;
+                    DefaultLogger.stacktrace(vex);
+                    response.add(vex);
                 }
             } catch (Exception e) {
                 DefaultLogger.stacktrace(e);
@@ -165,5 +177,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         }
         DefaultLogger.info(String.format("Processed [%d] records for entity. [type=%s]",
                 count, entityType.getCanonicalName()));
+        return response.recordCount(count)
+                .errorCount(errorCount);
     }
 }

@@ -17,11 +17,18 @@
 package io.zyient.base.core.mapping.model;
 
 import io.zyient.base.core.mapping.SourceTypes;
+import io.zyient.base.core.mapping.readers.ReadCompleteCallback;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import java.io.File;
 import java.net.URI;
 
+@Getter
+@Setter
+@Accessors(fluent = true)
 public class InputContentInfo extends ContentInfo {
     public static final String KEY_SOURCE_TYPE = "source.type";
     public static final String KEY_SOURCE_DOC_ID = "source.document.id";
@@ -29,6 +36,8 @@ public class InputContentInfo extends ContentInfo {
     public static final String KEY_SOURCE_LOCAL_PATH = "source.path";
     public static final String KEY_FILE_TYPE = "reader.content.type";
     public static final String KEY_READER_NAME = "reader.name";
+
+    private ReadCompleteCallback callback;
 
     public InputContentInfo sourceURI(@NonNull URI source) {
         put(KEY_SOURCE_URI, source);

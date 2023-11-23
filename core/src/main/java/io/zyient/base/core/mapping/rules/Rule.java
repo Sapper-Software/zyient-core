@@ -27,7 +27,7 @@ import java.util.List;
 public interface Rule<T> {
     String name();
 
-    String getTarget();
+    List<String> getTargets();
 
     Rule<T> withTargetField(Field targetField) throws Exception;
 
