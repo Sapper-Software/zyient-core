@@ -19,7 +19,7 @@ package io.zyient.base.common.config;
 import com.google.common.base.Strings;
 import lombok.NonNull;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class StringListParser implements ConfigValueParser<List<String>> {
@@ -27,7 +27,11 @@ public class StringListParser implements ConfigValueParser<List<String>> {
     public List<String> parse(@NonNull String value) throws Exception {
         if (!Strings.isNullOrEmpty(value)) {
             String[] parts = value.split(",");
-            return Arrays.stream(parts).toList();
+            List<String> values = new ArrayList<>(parts.length);
+            for (String part : parts) {
+                values.add(part.trim());
+            }
+            return values;
         }
         return null;
     }
@@ -35,11 +39,11 @@ public class StringListParser implements ConfigValueParser<List<String>> {
     @Override
     public String serialize(@NonNull List<String> value) throws Exception {
         StringBuilder builder = new StringBuilder();
-        for(String v : value) {
+        for (String v : value) {
             if (!builder.isEmpty()) {
                 builder.append(",");
             }
-            builder.append(v);
+            builder.append(v.trim());
         }
         return builder.toString();
     }

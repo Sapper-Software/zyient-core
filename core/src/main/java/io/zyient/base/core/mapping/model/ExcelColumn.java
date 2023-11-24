@@ -22,13 +22,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class SeparatedColumn extends Column {
-    @Config(name = "embedded", required = false, type = Boolean.class)
-    private boolean embedded = false;
-    @Config(name = "separator", required = false)
-    private String separator = ",";
-    @Config(name = "quote", required = false)
-    private String quote = "\"";
-    @Config(name = "escape", required = false)
-    private String escape = "\\";
+public class ExcelColumn extends Column {
+    @Config(name = "cellIndex", type = Integer.class)
+    private int cellIndex;
 }

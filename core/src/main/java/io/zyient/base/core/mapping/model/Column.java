@@ -17,43 +17,54 @@
 package io.zyient.base.core.mapping.model;
 
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.config.ConfigReader;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 public class Column {
+    public static final String __CONFIG_PATH = "columns";
+    public static final String __CONFIG_PATH_COLUMN = "column";
+
     @Config(name = "name")
     private String name;
     @Config(name = "index", type = Integer.class)
     private Integer index;
-    @Config(name = "positional.start", required = false, type = Integer.class)
-    private Integer posStart;
-    @Config(name = "positional.end", required = false, type = Integer.class)
-    private Integer posEnd;
-    @Config(name = "positional.length", required = false, type = Integer.class)
-    private Integer length;
 
-    public Column() {}
-
-    public Column(String name,
-                  Integer index,
-                  Integer posStart,
-                  Integer posEnd,
-                  Integer length) {
-        this.name = name;
-        this.index = index;
-        this.posStart = posStart;
-        this.posEnd = posEnd;
-        this.length = length;
+    public Column() {
     }
 
-    public void validate() throws ValidationException {
-        if (posStart != null) {
-            if (posEnd == null && length == null) {
-                throw new ValidationException("End Position or Length must be specified for positional columns.");
+    public Column(String name, Integer index) {
+        this.name = name;
+        this.index = index;
+    }
+
+    public static Map<Integer, Column> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                            @NonNull Class<? extends Column> type) throws Exception {
+        return read(xmlConfig, __CONFIG_PATH, type);
+    }
+
+    public static Map<Integer, Column> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                            @NonNull String path,
+                                            @NonNull Class<? extends Column> type) throws Exception {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, path)) {
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(path);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_PATH_COLUMN);
+            Map<Integer, Column> columns = new HashMap<>(nodes.size());
+            for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                Column column = ConfigReader.read(node, type);
+                columns.put(column.index, column);
             }
+            return columns;
         }
+        return null;
     }
 }

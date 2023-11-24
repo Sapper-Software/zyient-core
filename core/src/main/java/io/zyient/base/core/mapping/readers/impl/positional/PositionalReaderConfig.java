@@ -17,10 +17,10 @@
 package io.zyient.base.core.mapping.readers.impl.positional;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.mapping.SourceTypes;
 import io.zyient.base.core.mapping.model.Column;
 import io.zyient.base.core.mapping.model.InputContentInfo;
+import io.zyient.base.core.mapping.model.PositionalColumn;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.InputReaderConfig;
 import io.zyient.base.core.mapping.readers.settings.PositionalReaderSettings;
@@ -28,8 +28,6 @@ import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class PositionalReaderConfig extends InputReaderConfig {
@@ -41,17 +39,9 @@ public class PositionalReaderConfig extends InputReaderConfig {
     @SuppressWarnings("unchecked")
     protected void configureReader(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         Preconditions.checkState(settings() instanceof PositionalReaderSettings);
-        Map<Integer, Column> columns = new HashMap<>();
-        HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_COLUMNS);
-        List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_PATH_COLUMN);
-        for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-            Class<? extends Column> type = (Class<? extends Column>) ConfigReader.readType(node);
-            if (type == null) {
-                type = Column.class;
-            }
-            Column column = ConfigReader.read(node, type);
-            column.validate();
-            columns.put(column.getIndex(), column);
+        Map<Integer, Column> columns = Column.read(xmlConfig, PositionalColumn.class);
+        if (columns == null || columns.isEmpty()) {
+            throw new Exception("Positional Columns not specified...");
         }
         for (int ii = 0; ii < columns.size(); ii++) {
             if (!columns.containsKey(ii)) {

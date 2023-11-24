@@ -33,8 +33,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Accessors(fluent = true)
 public abstract class InputReaderConfig {
     public static final String __CONFIG_PATH = "reader";
-    public static final String __CONFIG_PATH_COLUMNS = "columns";
-    public static final String __CONFIG_PATH_COLUMN = "column";
 
     private final SourceTypes[] supportedTypes;
     private final Class<? extends ReaderSettings> settingsType;

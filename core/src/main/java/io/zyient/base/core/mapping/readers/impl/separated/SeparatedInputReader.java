@@ -104,7 +104,9 @@ public class SeparatedInputReader extends InputReader {
                         String key = String.format("%s%d", settings.getColumnPrefix(), ii);
                         if (settings.getHeaders() != null) {
                             if (ii < settings.getHeaders().size()) {
-                                key = settings.getHeaders().get(ii);
+                                key = settings.getHeaders()
+                                        .get(ii)
+                                        .getName();
                             }
                         }
                         String value = record.get(ii);

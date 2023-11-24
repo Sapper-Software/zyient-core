@@ -18,7 +18,7 @@ package io.zyient.base.core.mapping.readers.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.StringListParser;
+import io.zyient.base.core.mapping.model.Column;
 import io.zyient.base.core.mapping.readers.impl.separated.SeparatedReaderTypes;
 import lombok.Getter;
 import lombok.NonNull;
@@ -27,19 +27,20 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.DuplicateHeaderMode;
 import org.apache.commons.csv.QuoteMode;
 
-import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class SeparatedReaderSettings extends ReaderSettings {
+    public static final String __CONFIG_PATH_COLUMNS = "header.columns";
+
     @Config(name = "type", required = false, type = SeparatedReaderTypes.class)
     private SeparatedReaderTypes type = SeparatedReaderTypes.DEFAULT;
     @Config(name = "header.use", required = false, type = Boolean.class)
     private Boolean hasHeader = null;
-    @Config(name = "header.columns", required = false, parser = StringListParser.class)
-    private List<String> headers = null;
+    private Map<Integer, Column> headers = null;
     @Config(name = "override.delimiter", required = false)
     private String delimiter = null;
     @Config(name = "override.escapeChar", required = false)
@@ -59,14 +60,21 @@ public class SeparatedReaderSettings extends ReaderSettings {
     @Config(name = "columnPrefix", required = false)
     private String columnPrefix = "COLUMN_";
 
-    public CSVFormat setup(@NonNull CSVFormat format) {
+    public CSVFormat setup(@NonNull CSVFormat format) throws Exception {
         CSVFormat.Builder builder = format.builder();
         if (checkNotNull(hasHeader) && hasHeader) {
             if (headers == null || headers.isEmpty()) {
                 builder.setHeader();
             } else {
                 String[] array = new String[headers.size()];
-                builder.setHeader(headers.toArray(array));
+                for (int ii = 0; ii < headers.size(); ii++) {
+                    Column column = headers.get(ii);
+                    if (column == null) {
+                        throw new Exception(String.format("Missing column. [sequence=%s]", ii));
+                    }
+                    array[ii] = column.getName();
+                }
+                builder.setHeader(array);
             }
             builder.setSkipHeaderRecord(true);
         } else {

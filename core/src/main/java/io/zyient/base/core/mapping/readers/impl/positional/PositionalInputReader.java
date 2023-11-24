@@ -19,7 +19,7 @@ package io.zyient.base.core.mapping.readers.impl.positional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.mapping.model.Column;
+import io.zyient.base.core.mapping.model.PositionalColumn;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.ReadCursor;
 import io.zyient.base.core.mapping.readers.settings.PositionalReaderSettings;
@@ -53,7 +53,9 @@ public class PositionalInputReader extends InputReader {
                             if (index >= ((PositionalReaderSettings) settings()).getColumns().size()) {
                                 break;
                             }
-                            Column c = ((PositionalReaderSettings) settings()).getColumns().get(index);
+                            PositionalColumn c = (PositionalColumn) ((PositionalReaderSettings) settings())
+                                    .getColumns()
+                                    .get(index);
                             if (c.getName().compareToIgnoreCase(key) != 0) {
                                 throw new Exception(String
                                         .format("Invalid Column in data: [position=%d][expected=%s][reported=%s]",
@@ -66,7 +68,9 @@ public class PositionalInputReader extends InputReader {
                         StringBuilder builder = new StringBuilder();
                         int index = 0;
                         for (String key : header) {
-                            Column c = ((PositionalReaderSettings) settings()).getColumns().get(index);
+                            PositionalColumn c = (PositionalColumn) ((PositionalReaderSettings) settings())
+                                    .getColumns()
+                                    .get(index);
                             builder.append(String.format("[COLUMN=%s, REPORTED=%s]", c.getName(), key));
                             index++;
                         }
@@ -74,7 +78,7 @@ public class PositionalInputReader extends InputReader {
                     }
                 }
             }
-            return new PositionalReaderCursor(this, settings().getReadBatchSize());
+            return new PositionalReadCursor(this, settings().getReadBatchSize());
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new IOException(ex);
@@ -114,7 +118,7 @@ public class PositionalInputReader extends InputReader {
         PositionalReaderSettings settings = (PositionalReaderSettings) settings();
         Map<String, Object> map = new HashMap<>();
         for (int ii = 0; ii < settings.getColumns().size(); ii++) {
-            Column column = settings.getColumns().get(ii);
+            PositionalColumn column = (PositionalColumn) settings.getColumns().get(ii);
             int end = -1;
             if (column.getLength() != null) {
                 end = column.getPosStart() + column.getLength();
@@ -131,7 +135,7 @@ public class PositionalInputReader extends InputReader {
         PositionalReaderSettings settings = (PositionalReaderSettings) settings();
         List<String> header = new ArrayList<>();
         for (int ii = 0; ii < settings.getColumns().size(); ii++) {
-            Column column = settings.getColumns().get(ii);
+            PositionalColumn column = (PositionalColumn) settings.getColumns().get(ii);
             int end = -1;
             if (column.getLength() != null) {
                 end = column.getPosStart() + column.getLength();

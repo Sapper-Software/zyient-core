@@ -18,12 +18,12 @@ package io.zyient.base.core.mapping.readers.impl.separated;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.mapping.model.Column;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.settings.SeparatedReaderSettings;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,8 +35,14 @@ class SeparatedInputReaderTest {
     @Test
     void nextBatchWitCustomHeader() {
         try {
-            List<String> headers = List.of("ID", "DOB", "FirstName", "LastName", "Gender", "HireDate");
-
+            Map<Integer, Column> headers = Map.of(
+                    0, new Column("ID", 0),
+                    1, new Column("DOB", 1),
+                    2, new Column("FirstName", 2),
+                    3, new Column("LastName", 3),
+                    4, new Column("Gender", 4),
+                    5, new Column("HireDate", 5)
+            );
             File file = new File(FILE_WITHOUT_HEADER);
             InputContentInfo ci = new InputContentInfo()
                     .path(file)
@@ -55,7 +61,7 @@ class SeparatedInputReaderTest {
                     if (data == null) {
                         break;
                     }
-                    String v = (String) data.get(headers.get(4));
+                    String v = (String) data.get(headers.get(4).getName());
                     assertFalse(Strings.isNullOrEmpty(v));
                     count++;
                 }

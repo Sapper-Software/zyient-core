@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.readers.impl.positional;
+package io.zyient.base.core.mapping.readers.impl.excel;
 
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.ReadCursor;
 import lombok.NonNull;
 
-public class PositionalReaderCursor extends ReadCursor {
-    public PositionalReaderCursor(@NonNull InputReader reader, int batchSize) {
+public class ExcelReadCursor extends ReadCursor {
+    public ExcelReadCursor(@NonNull InputReader reader, int batchSize) {
         super(reader, batchSize);
     }
 }
