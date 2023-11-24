@@ -109,7 +109,7 @@ public class InputReaderFactory {
             throw new IOException(String.format("Input Reader not found. [name=%s][type=%s]",
                     inputContentInfo.reader(), inputContentInfo.contentType().name()));
         }
-        return config.createInstance();
+        return config.createInstance(inputContentInfo);
     }
 
     private InputReaderConfig findConfig(InputContentInfo inputContentInfo) {

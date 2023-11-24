@@ -26,10 +26,34 @@ import lombok.Setter;
 public class Column {
     @Config(name = "name")
     private String name;
-    @Config(name = "position", type = Integer.class)
-    private int position;
+    @Config(name = "index", type = Integer.class)
+    private Integer index;
+    @Config(name = "positional.start", required = false, type = Integer.class)
+    private Integer posStart;
+    @Config(name = "positional.end", required = false, type = Integer.class)
+    private Integer posEnd;
+    @Config(name = "positional.length", required = false, type = Integer.class)
+    private Integer length;
+
+    public Column() {}
+
+    public Column(String name,
+                  Integer index,
+                  Integer posStart,
+                  Integer posEnd,
+                  Integer length) {
+        this.name = name;
+        this.index = index;
+        this.posStart = posStart;
+        this.posEnd = posEnd;
+        this.length = length;
+    }
 
     public void validate() throws ValidationException {
-
+        if (posStart != null) {
+            if (posEnd == null && length == null) {
+                throw new ValidationException("End Position or Length must be specified for positional columns.");
+            }
+        }
     }
 }
