@@ -19,6 +19,7 @@ package io.zyient.base.core.mapping.readers.impl.excel;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.mapping.model.Column;
 import io.zyient.base.core.mapping.model.ExcelColumn;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.ReadCursor;
@@ -118,28 +119,62 @@ public class ExcelInputReader extends InputReader {
                     ExcelColumn column = (ExcelColumn) settings.getHeaders().get(ii);
                     Cell cell = row.getCell(column.getCellIndex(), Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
                     if (cell != null) {
-                        String value = cell.getStringCellValue();
-                        record.put(column.getName(), value);
+                        Object value = getCellValue(cell);
+                        if (value != null) {
+                            record.put(column.getName(), value);
+                        }
                     }
                 }
             } else {
                 int ii = 0;
                 for (Cell cell : row) {
                     String column = String.format("%s%d", settings.getColumnPrefix(), ii);
-                    String value = cell.getStringCellValue();
-                    if (!Strings.isNullOrEmpty(value)) {
+                    Object value = getCellValue(cell);
+                    if (value != null) {
                         record.put(column, value);
                     }
                     ii++;
                 }
             }
             if (!record.isEmpty()) {
-                data.add(record);
+                boolean add = true;
+                if (rowIndex == 0 &&
+                        settings.getHeaders() != null &&
+                        settings.isSkipHeader()) {
+                    if (checkHeaderRow(record, settings)) {
+                        add = false;
+                    }
+                }
+                if (add) {
+                    data.add(record);
+                    count--;
+                }
             }
             rowIndex++;
-            count--;
         }
         return data;
+    }
+
+    private Object getCellValue(Cell cell) {
+        return switch (cell.getCellType()) {
+            case STRING -> cell.getStringCellValue();
+            case BOOLEAN -> cell.getBooleanCellValue();
+            case NUMERIC -> cell.getNumericCellValue();
+            default -> null;
+        };
+    }
+
+    private boolean checkHeaderRow(Map<String, Object> record, ExcelReaderSettings settings) {
+        for (String key : record.keySet()) {
+            Object v = record.get(key);
+            if (!(v instanceof String value)) {
+                return false;
+            }
+            if (key.compareToIgnoreCase(value.trim()) != 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

@@ -19,6 +19,7 @@ package io.zyient.base.core.mapping.readers.settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.core.mapping.model.Column;
+import io.zyient.base.core.mapping.readers.impl.excel.ExcelHeader;
 import io.zyient.base.core.mapping.readers.impl.excel.ExcelSheet;
 import lombok.Getter;
 import lombok.Setter;
@@ -35,4 +36,8 @@ public class ExcelReaderSettings extends ReaderSettings {
     private List<ExcelSheet> sheets;
     @Config(name = "columnPrefix", required = false)
     private String columnPrefix = "COLUMN_";
+    @Config(name = "header.type", required = false, type = ExcelHeader.class)
+    private ExcelHeader header = ExcelHeader.None;
+    @Config(name = "header.skip", required = false, type = Boolean.class)
+    private boolean skipHeader = true;
 }
