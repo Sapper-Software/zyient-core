@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.StateException;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.pipeline.PipelineBuilder;
 import io.zyient.base.core.mapping.pipeline.PipelineHandle;
@@ -53,10 +54,12 @@ public class MappingExecutor implements Closeable {
     private MappingExecutorSettings settings;
     private ExecutorService executorService;
     private DataStoreManager dataStoreManager;
+    private ConnectionManager connectionManager;
 
     public MappingExecutor init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
         this.dataStoreManager = dataStoreManager;
+        this.connectionManager = dataStoreManager.connectionManager();
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -129,18 +132,15 @@ public class MappingExecutor implements Closeable {
         return __instance;
     }
 
-    private static class Reader implements Runnable {
-        private final TransformerPipeline<?, ?> pipeline;
-        private final InputReader reader;
-        private final InputContentInfo contentInfo;
+    public static MappingExecutor create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                         @NonNull DataStoreManager dataStoreManager) throws Exception {
+        __instance = new MappingExecutor();
+        return __instance.init(xmlConfig, dataStoreManager);
+    }
 
-        private Reader(TransformerPipeline<?, ?> pipeline,
-                       InputReader reader,
-                       InputContentInfo contentInfo) {
-            this.pipeline = pipeline;
-            this.reader = reader;
-            this.contentInfo = contentInfo;
-        }
+    private record Reader(TransformerPipeline<?, ?> pipeline,
+                          InputReader reader,
+                          InputContentInfo contentInfo) implements Runnable {
 
         @Override
         public void run() {

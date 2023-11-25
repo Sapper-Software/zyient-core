@@ -33,8 +33,8 @@ public class MappedElement {
     private String sourcePath;
     @Config(name = "target")
     private String targetPath;
-    @Config(name = "required", required = false, type = Boolean.class)
-    private boolean mandatory = false;
+    @Config(name = "nullable", required = false, type = Boolean.class)
+    private boolean nullable = true;
     private Class<?> type;
     @Config(name = "regex")
     private String regex;

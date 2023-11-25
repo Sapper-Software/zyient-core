@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.common.errors.settings;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
-import lombok.experimental.Accessors;
+import lombok.Setter;
 
 @Getter
-@Accessors(fluent = true)
-public abstract class ExternalRule<T> extends BaseRule<T> {
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class FileErrorsReaderSettings extends Settings {
+    @Config(name = "baseDir")
+    private String baseDir;
+    @Config(name = "filename", required = false)
+    private String filename = "errors.xml";
 }

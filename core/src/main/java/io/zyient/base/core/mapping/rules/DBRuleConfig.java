@@ -16,10 +16,24 @@
 
 package io.zyient.base.core.mapping.rules;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
 import lombok.Getter;
-import lombok.experimental.Accessors;
+import lombok.Setter;
+
+import java.util.Map;
 
 @Getter
-@Accessors(fluent = true)
-public abstract class ExternalRule<T> extends BaseRule<T> {
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class DBRuleConfig extends RuleConfig {
+    @Config(name = "dataStore")
+    private String dataStore;
+    @Config(name = "keyType", type = Class.class)
+    private Class<?> keyType;
+    @Config(name = "entityType", type = Class.class)
+    private Class<?> entityType;
+    @Config(name = "fieldMapping", required = false, type = Map.class)
+    private Map<String, String> fieldMapping;
 }

@@ -98,7 +98,6 @@ public class Mapping<T> {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
             rulesExecutor = new RulesExecutor<T>(type)
@@ -200,7 +199,7 @@ public class Mapping<T> {
             Object value = findSourceValue(source, parts, 0);
             MappedElement me = sourceIndex.get(path);
             if (value == null) {
-                if (me.isMandatory()) {
+                if (!me.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
                             me.getSourcePath(), me.getTargetPath()));
                 }
@@ -225,17 +224,17 @@ public class Mapping<T> {
             }
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
-                if (element.isMandatory()) {
+                if (!element.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
                             element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
-                ((PropertyBag) data).add(element.getTargetPath(), tv);
+                ((PropertyBag) data).setProperty(element.getTargetPath(), tv);
             }
         } else if (element.getMappingType() == MappingType.Cached) {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
-                if (element.isMandatory()) {
+                if (!element.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
                             element.getSourcePath(), element.getTargetPath()));
                 }
@@ -249,7 +248,7 @@ public class Mapping<T> {
             }
             Object tv = transform(value, element, field.getType());
             if (tv == null) {
-                if (element.isMandatory()) {
+                if (!element.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
                             element.getSourcePath(), element.getTargetPath()));
                 }

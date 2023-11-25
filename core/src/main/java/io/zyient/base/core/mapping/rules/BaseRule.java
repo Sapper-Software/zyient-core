@@ -42,6 +42,9 @@ public abstract class BaseRule<T> implements Rule<T> {
     private Map<String, Field> targetFields;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
+    private int errorCode;
+    private int validationErrorCode = -1;
+    private RuleConfig config;
 
     @Override
     public Rule<T> withTargetField(@NonNull Field targetField) throws Exception {
@@ -85,8 +88,15 @@ public abstract class BaseRule<T> implements Rule<T> {
             rule = config.getRule();
             targets = config.getTargets();
             ruleType = config.getType();
-
+            errorCode = config.getErrorCode();
+            if (getRuleType() == RuleType.Validation) {
+                if (config.getValidationErrorCode() == null) {
+                    throw new Exception(String.format("Validation error code required for rule. [rule=%s]", name));
+                }
+                validationErrorCode = config.getValidationErrorCode();
+            }
             setup(config);
+            this.config = config;
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -114,7 +124,7 @@ public abstract class BaseRule<T> implements Rule<T> {
                                 break;
                             }
                         }
-                    } catch (ValidationException ve) {
+                    } catch (RuleValidationError ve) {
                         errors = ValidationExceptions.add(ve, errors);
                     }
                 }
@@ -129,7 +139,22 @@ public abstract class BaseRule<T> implements Rule<T> {
         }
     }
 
-    protected abstract Object doEvaluate(@NonNull MappedResponse<T> data) throws Exception;
+    protected String targetFieldString() {
+        if (targets == null || targets.isEmpty()) {
+            return "Not Applicable.";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (String field : targets()) {
+            if (!builder.isEmpty()) {
+                builder.append(",");
+            }
+            builder.append(field);
+        }
+        return builder.toString();
+    }
+
+    protected abstract Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError,
+            RuleEvaluationError;
 
     protected abstract void setup(@NonNull RuleConfig config) throws ConfigurationException;
 

@@ -29,5 +29,5 @@ public interface PropertyBag {
 
     Object getProperty(@NonNull String name);
 
-    PropertyBag add(@NonNull String name, @NonNull Object value);
+    PropertyBag setProperty(@NonNull String name, @NonNull Object value);
 }

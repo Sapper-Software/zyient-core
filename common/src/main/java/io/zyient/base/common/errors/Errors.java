@@ -1,0 +1,92 @@
+/*
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package io.zyient.base.common.errors;
+
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.utils.DefaultLogger;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+@Getter
+@Accessors(fluent = true)
+public class Errors {
+    public static final String __CONFIG_PATH = "errors";
+
+    private final Map<String, Map<Integer, Error>> errors = new HashMap<>();
+    private ErrorsLoaderConfig config;
+
+    public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        try {
+            ConfigReader reader = new ConfigReader(xmlConfig,
+                    ErrorsLoaderConfig.__CONFIG_PATH,
+                    ErrorsLoaderConfig.class);
+            reader.read();
+            config = (ErrorsLoaderConfig) reader.settings();
+            ErrorsReader r = config.getReader().getDeclaredConstructor()
+                    .newInstance()
+                    .withLoader(this)
+                    .configure(reader.config());
+            List<Error> result = r.read();
+            if (result != null && !result.isEmpty()) {
+                for (Error error : result) {
+                    Map<Integer, Error> node = errors.computeIfAbsent(error.getType(), k -> new HashMap<>());
+                    node.put(error.getErrorCode(), error);
+                }
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new ConfigurationException(ex);
+        }
+    }
+
+    public Error get(@NonNull String type, @NonNull Integer code) {
+        if (errors.containsKey(type)) {
+            return errors.get(type)
+                    .get(code);
+        }
+        return null;
+    }
+
+    private static Errors __instance;
+
+    public static Errors getDefault() {
+        Preconditions.checkNotNull(__instance);
+        return __instance;
+    }
+
+    public static Errors create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        if (__instance == null) {
+            try {
+                __instance = new Errors();
+                __instance.configure(xmlConfig);
+            } catch (ConfigurationException ex) {
+                __instance = null;
+                throw ex;
+            }
+        }
+        return __instance;
+    }
+}

@@ -40,4 +40,8 @@ public class RuleConfig extends Settings {
     private RuleType type = RuleType.Transformation;
     @Config(name = "fields", required = false, parser = StringListParser.class)
     private List<String> targets;
+    @Config(name = "errorCode", type = Integer.class)
+    private Integer errorCode;
+    @Config(name = "validationErrorCode", required = false, type = Integer.class)
+    private Integer validationErrorCode;
 }

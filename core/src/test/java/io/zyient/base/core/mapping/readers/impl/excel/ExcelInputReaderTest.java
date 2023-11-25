@@ -29,7 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ExcelInputReaderTest {
     private static final String FILE_EXCEL_MULTI_SHEET = "src/test/resources/data/Financial Sample.xlsx";

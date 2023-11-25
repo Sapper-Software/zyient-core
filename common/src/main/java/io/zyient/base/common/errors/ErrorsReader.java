@@ -14,12 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.common.errors;
 
-import lombok.Getter;
-import lombok.experimental.Accessors;
+import lombok.NonNull;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
-@Getter
-@Accessors(fluent = true)
-public abstract class ExternalRule<T> extends BaseRule<T> {
+import java.util.List;
+
+public interface ErrorsReader {
+    String __CONFIG_PATH = "reader";
+
+    ErrorsReader withLoader(@NonNull Errors loader);
+
+    ErrorsReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+
+    List<Error> read() throws Exception;
 }

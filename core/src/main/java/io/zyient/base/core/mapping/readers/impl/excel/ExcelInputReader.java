@@ -19,7 +19,6 @@ package io.zyient.base.core.mapping.readers.impl.excel;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.mapping.model.Column;
 import io.zyient.base.core.mapping.model.ExcelColumn;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.ReadCursor;

@@ -25,6 +25,8 @@ import java.util.List;
 
 
 public interface Rule<T> {
+    String __RULE_TYPE = "rules";
+
     String name();
 
     List<String> getTargets();

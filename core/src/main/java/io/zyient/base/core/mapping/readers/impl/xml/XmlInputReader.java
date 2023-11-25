@@ -57,7 +57,7 @@ public class XmlInputReader extends JacksonInputReader {
                     Object node = findNode((Map<String, Object>) obj, path.split("\\."), 0);
                     if (node != null) {
                         Class<?> type = node.getClass();
-                        if (node.getClass().isArray()) {
+                        if (type.isArray()) {
                             Object[] array = (Object[]) node;
                             data = new ArrayList<>(array.length);
                             for (Object a : array) {

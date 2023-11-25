@@ -98,7 +98,9 @@ public class HibernateConnection extends AbstractConnection<Session> {
         try {
             if (threadCache.contains()) {
                 Session session = threadCache.get();
-                if (session.isOpen()) return session;
+                if (session.isOpen()) {
+                    return session;
+                }
             }
             synchronized (threadCache) {
                 Session session = sessionFactory.openSession();

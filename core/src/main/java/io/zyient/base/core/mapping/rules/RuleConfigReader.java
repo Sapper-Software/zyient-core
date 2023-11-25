@@ -47,7 +47,10 @@ public class RuleConfigReader<T> {
                 List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(__CONFIG_PATH_RULE);
                 List<Rule<T>> rules = new ArrayList<>(nodes.size());
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                    ConfigReader reader = new ConfigReader(node, null, RuleConfig.class);
+                    Class<? extends RuleConfig> rType = (Class<? extends RuleConfig>) ConfigReader.readType(node);
+                    if (rType == null)
+                        rType = RuleConfig.class;
+                    ConfigReader reader = new ConfigReader(node, null, rType);
                     reader.read();
                     RuleConfig config = (RuleConfig) reader.settings();
                     if (config.isReference()) {
