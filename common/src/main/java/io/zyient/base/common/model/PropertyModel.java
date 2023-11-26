@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.common.model;
 
-import io.zyient.base.core.mapping.model.MappedResponse;
-import lombok.NonNull;
-import org.apache.commons.configuration2.ex.ConfigurationException;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import java.lang.reflect.Field;
-import java.util.List;
+import java.lang.reflect.Method;
 
-
-public interface Rule<T> {
-    String __RULE_TYPE = "rules";
-
-    String name();
-
-    Rule<T> withEntityType(@NonNull Class<? extends T> type);
-
-    Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException;
-
-    Object evaluate(@NonNull MappedResponse<T> data) throws Exception;
-
-    RuleType getRuleType();
-
-    void addSubRules(@NonNull List<Rule<T>> rules);
+@Getter
+@Setter
+@Accessors(fluent = true)
+public class PropertyModel {
+    private String property;
+    private Field field;
+    private Method setter;
+    private Method getter;
 }

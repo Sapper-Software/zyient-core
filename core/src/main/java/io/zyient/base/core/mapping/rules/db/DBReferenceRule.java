@@ -14,16 +14,18 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.core.mapping.rules.db;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.errors.Errors;
+import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.MappingExecutor;
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.rules.*;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore;
@@ -32,7 +34,6 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +43,12 @@ import java.util.Map;
 public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends ExternalRule<T> {
     private RdbmsDataStore dataStore;
     private String query;
-    private Map<String, Field> whereFields = null;
+    private Map<String, PropertyModel> whereFields = null;
     private Class<? extends K> keyType;
     private Class<? extends E> refEntityType;
+    private DBRuleHandler<T, K, E> handler;
+    private Map<String, PropertyModel> sourceFields = null;
+    private Map<String, PropertyModel> targetMappings = null;
 
     @Override
     protected Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
@@ -55,8 +59,8 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             if (whereFields != null && !whereFields.isEmpty()) {
                 Map<String, Object> params = new HashMap<>();
                 for (String key : whereFields.keySet()) {
-                    Field field = whereFields.get(key);
-                    Object value = ReflectionUtils.getFieldValue(data, field);
+                    PropertyModel field = whereFields.get(key);
+                    Object value = MappingReflectionHelper.getProperty(field, data);
                     params.put(key, value);
                 }
                 q.addAll(params);
@@ -82,25 +86,27 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         }
     }
 
-    protected Object process(@NonNull MappedResponse<T> response,
-                             @NonNull Cursor<K, E> cursor) throws RuleEvaluationError, RuleEvaluationError {
+    private Object process(@NonNull MappedResponse<T> response,
+                           @NonNull Cursor<K, E> cursor) throws RuleValidationError, RuleEvaluationError {
+        if (handler != null) {
+            return handler.handle(response, cursor);
+        }
         try {
             List<E> entities = cursor.nextPage();
             if (entities != null && !entities.isEmpty()) {
-                if (targetFields() != null && !targetFields().isEmpty()) {
-                    Map<String, String> mapping = ((DBRuleConfig) config()).getFieldMapping();
-                    E entity = entities.get(0);
-                    for (String e : mapping.keySet()) {
-                        Field ef = ReflectionUtils.findField(refEntityType, e);
-                        Preconditions.checkNotNull(ef);
-                        Object v = ReflectionUtils.getFieldValue(entity, ef, true);
-                        if (v != null) {
-                            Field tf = targetFields().get(mapping.get(e));
-                            Preconditions.checkNotNull(tf);
-                            ReflectionUtils.setValue(v, response.entity(), tf);
+                E entity = entities.get(0);
+                if (targetMappings != null && !targetMappings.isEmpty()) {
+                    for (String key : targetMappings.keySet()) {
+                        PropertyModel target = targetMappings.get(key);
+                        PropertyModel source = sourceFields.get(key);
+                        Preconditions.checkNotNull(source);
+                        Object value = source.getter().invoke(entity);
+                        if (value != null) {
+                            MappingReflectionHelper.setProperty(target, response, value);
                         }
                     }
                 }
+                return entity;
             }
             return null;
         } catch (Throwable t) {
@@ -132,7 +138,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 int index = 0;
                 for (String key : fs.keySet()) {
                     String f = fs.get(key);
-                    Field field = MappingReflectionHelper.findField(f, entityType());
+                    PropertyModel field = MappingReflectionHelper.findField(f, entityType());
                     if (field == null) {
                         throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
                                 entityType().getCanonicalName(), f));
@@ -145,31 +151,36 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             }
             keyType = (Class<? extends K>) ((DBRuleConfig) config).getKeyType();
             refEntityType = (Class<? extends E>) ((DBRuleConfig) config).getEntityType();
-            if (targetFields() != null && !targetFields().isEmpty()) {
-                Map<String, String> mapping = ((DBRuleConfig) config).getFieldMapping();
-                if (mapping == null || mapping.size() != targetFields().size()) {
-                    throw new Exception(String.format("Missing/Invalid fetched field mapping. [fields=%s]",
-                            targetFieldString()));
-                }
-                for (String name : targetFields().keySet()) {
-                    boolean found = false;
-                    for (String target : mapping.values()) {
-                        if (target.compareTo(name) == 0) {
-                            found = true;
-                            break;
-                        }
+            if (((DBRuleConfig) config).getFieldMappings() != null) {
+                sourceFields = new HashMap<>();
+                targetMappings = new HashMap<>();
+                for (String key : ((DBRuleConfig) config).getFieldMappings().keySet()) {
+                    PropertyModel source = ReflectionUtils.findProperty(refEntityType, key);
+                    if (source == null) {
+                        throw new Exception(String.format("[source] Property not found. [entity=%s][field=%s]",
+                                refEntityType.getCanonicalName(), key));
                     }
-                    if (!found) {
-                        throw new Exception(String.format("Fetch mapping not defined for field. [field=%s]", name));
+                    String tf = ((DBRuleConfig) config).getFieldMappings().get(key);
+                    PropertyModel target = MappingReflectionHelper.findField(tf, entityType());
+                    if (target == null) {
+                        throw new Exception(String.format("[target] Property not found. [entity=%s][field=%s]",
+                                entityType().getCanonicalName(), tf));
                     }
+                    sourceFields.put(key, source);
+                    targetMappings.put(key, target);
                 }
-                for (String name : mapping.keySet()) {
-                    Field f = ReflectionUtils.findField(refEntityType, name);
-                    if (f == null) {
-                        throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
-                                refEntityType.getCanonicalName(), name));
-                    }
+            }
+            if (getRuleType() == RuleType.Transformation) {
+                if (targetMappings == null || targetMappings.isEmpty()) {
+                    throw new ConfigurationException(String
+                            .format("Target mappings required for transformation. [rule=%s]", name()));
                 }
+            }
+            if (((DBRuleConfig) config).getHandler() != null) {
+                handler = (DBRuleHandler<T, K, E>) ((DBRuleConfig) config).getHandler()
+                        .getDeclaredConstructor()
+                        .newInstance();
+                handler.configure((DBRuleConfig) config, this);
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

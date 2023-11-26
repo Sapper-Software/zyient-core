@@ -16,12 +16,17 @@
 
 package io.zyient.base.core.mapping.rules;
 
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.core.mapping.model.ExtendedPropertyModel;
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.model.PropertyBag;
 import lombok.NonNull;
 
-import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +37,8 @@ public class MappingReflectionHelper {
     public static final String FIELD_SOURCE = "source";
     public static final String FIELD_CACHED = "cached";
     public static final String FIELD_REGEX = "(\\$\\{(.*?)\\})";
+    public static final String METHOD_SET_PROPERTY = "setProperty";
+    public static final String METHOD_GET_PROPERTY = "getProperty";
 
     public static Map<String, String> extractFields(@NonNull String query) {
         Pattern fieldFinder = Pattern.compile(FIELD_REGEX);
@@ -50,19 +57,94 @@ public class MappingReflectionHelper {
         return fields;
     }
 
-    public static Field findField(@NonNull String name, @NonNull Class<?> entityType) {
-        if (name.startsWith(FIELD_ENTITY)) {
-            name = removePrefix(name, FIELD_ENTITY);
-            return ReflectionUtils.findField(entityType, name);
+    public static PropertyModel findField(@NonNull String name,
+                                          @NonNull Class<?> entityType) throws Exception {
+        if (name.startsWith(prefixed(FIELD_CACHED))) {
+            return ReflectionUtils.findProperty(MappedResponse.class, name);
+        } else if (name.startsWith(prefixed(FIELD_SOURCE))) {
+            return ReflectionUtils.findProperty(MappedResponse.class, name);
+        } else if (name.startsWith(prefixed(FIELD_CUSTOM))) {
+            if (!ReflectionUtils.implementsInterface(PropertyBag.class, entityType)) {
+                throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
+                        entityType.getCanonicalName()));
+            }
+            ExtendedPropertyModel pm = new ExtendedPropertyModel();
+            pm.property(name);
+            String key = removePrefix(name, FIELD_CUSTOM);
+            pm.key(key);
+            List<Method> setters = ReflectionUtils.findMethod(entityType,
+                    METHOD_SET_PROPERTY,
+                    false);
+            if (setters != null) {
+                for (Method m : setters) {
+                    Class<?>[] params = m.getParameterTypes();
+                    if (params.length == 2) {
+                        if (params[0].equals(String.class)) {
+                            if (params[1].equals(Object.class)) {
+                                pm.setter(m);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            List<Method> getters = ReflectionUtils.findMethod(entityType,
+                    METHOD_GET_PROPERTY,
+                    false);
+            if (getters != null) {
+                for (Method m : getters) {
+                    Class<?>[] params = m.getParameterTypes();
+                    if (params.length == 1) {
+                        if (params[0].equals(String.class)) {
+                            pm.getter(m);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (pm.getter() == null || pm.setter() == null) {
+                throw new Exception(String.format("Property Getter/Setter method not found. [type=%s]",
+                        entityType.getCanonicalName()));
+            }
+            return pm;
+        } else {
+            return ReflectionUtils.findProperty(entityType, name);
         }
-        return ReflectionUtils.findField(MappedResponse.class, name);
+    }
+
+    public static void setProperty(@NonNull PropertyModel property,
+                                   @NonNull Object entity,
+                                   Object value) throws Exception {
+        Preconditions.checkNotNull(property.setter());
+        if (property instanceof ExtendedPropertyModel) {
+            property.setter().invoke(entity, ((ExtendedPropertyModel) property).key(), value);
+        } else {
+            property.setter().invoke(entity, value);
+        }
+    }
+
+    public static Object getProperty(@NonNull PropertyModel property,
+                                     @NonNull Object entity) throws Exception {
+        Preconditions.checkNotNull(property.getter());
+        if (property instanceof ExtendedPropertyModel) {
+            return property.getter().invoke(entity, ((ExtendedPropertyModel) property).key());
+        } else {
+            return property.getter().invoke(entity);
+        }
+    }
+
+    private static String prefixed(String name) {
+        if (!name.endsWith(".")) {
+            name = name + ".";
+        }
+        return name;
     }
 
     private static String removePrefix(String name, String prefix) {
-        if (!prefix.endsWith(".")) {
-            prefix = prefix + ".";
-        }
-        return name.replaceFirst(prefix, "");
+        prefix = prefixed(prefix);
+        if (name.startsWith(prefix))
+            return name.replaceFirst(prefix, "");
+        return name;
     }
 
     private static boolean prefixEntityField(String field) {

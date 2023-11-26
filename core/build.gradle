@@ -95,7 +95,8 @@ dependencies {
     implementation 'org.apache.commons:commons-vfs2:2.9.0'
     // https://mvnrepository.com/artifact/org.springframework/spring-expression
     implementation 'org.springframework:spring-expression:6.1.0'
-
+    implementation 'org.kie:kie-ci:9.44.0.Final'
+    implementation 'org.drools:drools-decisiontables:9.44.0.Final'
 }
 
 test {

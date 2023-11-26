@@ -21,6 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.annotations.Ignore;

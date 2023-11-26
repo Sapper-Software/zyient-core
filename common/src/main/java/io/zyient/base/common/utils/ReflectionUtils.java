@@ -17,9 +17,11 @@
 package io.zyient.base.common.utils;
 
 
+import com.expediagroup.transformer.utils.ClassUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
+import io.zyient.base.common.model.PropertyModel;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
  * 11:10:30 AM
  */
 public class ReflectionUtils {
+    private static final ClassUtils CLASS_UTILS = new ClassUtils();
 
     public static Map<String, String> mapFromString(@NonNull String value) throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
@@ -117,6 +120,98 @@ public class ReflectionUtils {
         return kv;
     }
 
+    public static PropertyModel findProperty(@NonNull Class<?> type,
+                                             @NonNull String property) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
+        if (property.indexOf('.') > 0) {
+            String[] parts = property.split("\\.");
+            int index = 0;
+            Class<?> current = type;
+            PropertyModel pm = null;
+            while (index < parts.length) {
+                Field field = findField(current, parts[index]);
+                if (index < parts.length - 1) {
+                    if (field == null) {
+                        Method getter = getGetterMethod(current, parts[index]);
+                        if (getter != null) {
+                            current = getter.getReturnType();
+                        } else {
+                            break;
+                        }
+                    }
+                } else if (index == parts.length - 1) {
+                    pm = new PropertyModel()
+                            .property(property)
+                            .field(field)
+                            .getter(getGetterMethod(current, parts[index]))
+                            .setter(getSetterMethod(current, parts[index]));
+
+                }
+                index++;
+            }
+            return pm;
+        }
+        return null;
+    }
+
+    public static Method getSetterMethod(@NonNull Class<?> clazz, @NonNull String property) {
+        List<Method> getters = CLASS_UTILS.getSetterMethods(clazz);
+        if (getters != null && !getters.isEmpty()) {
+            for (Method getter : getters) {
+                String name = getter.getName().toLowerCase();
+                if (name.endsWith(property)) {
+                    return getter;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static Method getGetterMethod(@NonNull Class<?> clazz, @NonNull String property) {
+        List<Method> getters = CLASS_UTILS.getGetterMethods(clazz);
+        if (getters != null && !getters.isEmpty()) {
+            for (Method getter : getters) {
+                String name = getter.getName().toLowerCase();
+                if (name.endsWith(property)) {
+                    return getter;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static List<Method> findMethod(@NonNull Class<?> type,
+                                          @NonNull String name,
+                                          boolean includeStatic) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
+        List<Method> methods = new ArrayList<>();
+        getAllMethods(type, methods);
+        if (!methods.isEmpty()) {
+            List<Method> result = new ArrayList<>();
+            for (Method method : methods) {
+                if (method.getName().equals(name)) {
+                    if (includeStatic) {
+                        result.add(method);
+                    } else if (!Modifier.isStatic(method.getModifiers())) {
+                        result.add(method);
+                    }
+                }
+            }
+            if (!result.isEmpty()) {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private static void getAllMethods(@NonNull Class<?> type, @NonNull List<Method> methods) {
+        methods.addAll(Arrays.asList(type.getDeclaredMethods()));
+        Class<?> parent = type.getSuperclass();
+        if (parent != null && !parent.equals(Object.class)) {
+            getAllMethods(parent, methods);
+        }
+    }
+
     /**
      * Find the field with the specified name in this type or a parent type.
      *
@@ -130,73 +225,27 @@ public class ReflectionUtils {
 
         if (name.indexOf('.') > 0) {
             String[] parts = name.split("\\.");
-            int indx = 0;
-            Class<?> ct = type;
+            int index = 0;
+            Class<?> current = type;
             Field f = null;
-            while (indx < parts.length) {
-                f = findField(ct, parts[indx]);
+            while (index < parts.length) {
+                f = findField(current, parts[index]);
                 if (f == null) break;
-                ct = f.getType();
-                if (implementsInterface(List.class, ct)) {
-                    ct = getGenericCollectionType(f);
-                } else if (implementsInterface(Set.class, ct)) {
-                    ct = getGenericCollectionType(f);
-                }
-                indx++;
+                current = f.getType();
+                index++;
             }
             return f;
         } else {
-            Field[] fields = type.getDeclaredFields();
-            for (Field field : fields) {
-                if (field.getName().compareTo(name) == 0) {
-                    return field;
+            Field[] fields = getAllFields(type);
+            if (fields != null) {
+                for (Field field : fields) {
+                    if (field.getName().compareTo(name) == 0) {
+                        return field;
+                    }
                 }
             }
-            Class<?> parent = type.getSuperclass();
-            if (parent != null && !parent.equals(Object.class)) {
-                return findField(parent, name);
-            }
         }
         return null;
-    }
-
-    /**
-     * Recursively get all the public methods declared for a type.
-     *
-     * @param type - Type to fetch fields for.
-     * @return - Array of all defined methods.
-     */
-    public static Method[] getAllMethods(@NonNull Class<?> type) {
-        List<Method> methods = new ArrayList<>();
-        getMethods(type, methods);
-        if (!methods.isEmpty()) {
-            Method[] ma = new Method[methods.size()];
-            for (int ii = 0; ii < methods.size(); ii++) {
-                ma[ii] = methods.get(ii);
-            }
-            return ma;
-        }
-        return null;
-    }
-
-    /**
-     * Get all public methods declared for this type and add them to the list passed.
-     *
-     * @param type    - Type to get methods for.
-     * @param methods - List of methods.
-     */
-    private static void getMethods(Class<?> type, List<Method> methods) {
-        Method[] ms = type.getDeclaredMethods();
-        if (ms.length > 0) {
-            for (Method m : ms) {
-                if (m != null && Modifier.isPublic(m.getModifiers()))
-                    methods.add(m);
-            }
-        }
-        Class<?> st = type.getSuperclass();
-        if (st != null && !st.equals(Object.class)) {
-            getMethods(st, methods);
-        }
     }
 
     /**
@@ -206,8 +255,7 @@ public class ReflectionUtils {
      * @return - Array of all defined fields.
      */
     public static Field[] getAllFields(@NonNull Class<?> type) {
-        List<Field> fields = new ArrayList<>();
-        getFields(type, fields);
+        List<Field> fields = CLASS_UTILS.getDeclaredFields(type, true);
         if (!fields.isEmpty()) {
             Field[] fa = new Field[fields.size()];
             for (int ii = 0; ii < fields.size(); ii++) {
@@ -231,26 +279,6 @@ public class ReflectionUtils {
     }
 
     /**
-     * Get fields declared for this type and add them to the list passed.
-     *
-     * @param type   - Type to get fields for.
-     * @param fields - List of fields.
-     */
-    private static void getFields(Class<?> type, List<Field> fields) {
-        Field[] fs = type.getDeclaredFields();
-        if (fs.length > 0) {
-            for (Field f : fs) {
-                if (f != null)
-                    fields.add(f);
-            }
-        }
-        Class<?> st = type.getSuperclass();
-        if (st != null && !st.equals(Object.class)) {
-            getFields(st, fields);
-        }
-    }
-
-    /**
      * Get the String value of the field in the object passed.
      *
      * @param o     - Object to extract field value from.
@@ -260,9 +288,6 @@ public class ReflectionUtils {
      */
     public static String strinfigy(@NonNull Object o, @NonNull Field field)
             throws Exception {
-        Preconditions.checkArgument(o != null);
-        Preconditions.checkArgument(field != null);
-
         Object v = getFieldValue(o, field);
         if (v != null) {
             return String.valueOf(v);

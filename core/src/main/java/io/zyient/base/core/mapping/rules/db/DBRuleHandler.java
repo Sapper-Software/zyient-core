@@ -14,28 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.core.mapping.rules.db;
 
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.rules.RuleEvaluationError;
+import io.zyient.base.core.mapping.rules.RuleValidationError;
+import io.zyient.base.core.stores.Cursor;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import java.lang.reflect.Field;
-import java.util.List;
+public interface DBRuleHandler<T, K extends IKey, E extends IEntity<K>> {
+    DBRuleHandler<T, K, E> configure(@NonNull DBRuleConfig config,
+                                     @NonNull DBReferenceRule<T, K, E> parent) throws ConfigurationException;
 
-
-public interface Rule<T> {
-    String __RULE_TYPE = "rules";
-
-    String name();
-
-    Rule<T> withEntityType(@NonNull Class<? extends T> type);
-
-    Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException;
-
-    Object evaluate(@NonNull MappedResponse<T> data) throws Exception;
-
-    RuleType getRuleType();
-
-    void addSubRules(@NonNull List<Rule<T>> rules);
+    Object handle(@NonNull MappedResponse<T> response,
+                  @NonNull Cursor<K, E> cursor) throws RuleEvaluationError, RuleValidationError;
 }

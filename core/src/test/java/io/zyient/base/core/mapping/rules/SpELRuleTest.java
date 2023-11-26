@@ -17,6 +17,7 @@
 package io.zyient.base.core.mapping.rules;
 
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.rules.spel.SpELRule;
 import io.zyient.base.core.stores.impl.rdbms.model.CustomersEntity;
 import org.junit.jupiter.api.Test;
 

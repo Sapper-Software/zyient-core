@@ -14,14 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.core.mapping.rules.spel;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.errors.Error;
 import io.zyient.base.common.errors.Errors;
+import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.rules.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -33,7 +36,6 @@ import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 @Getter
@@ -43,7 +45,7 @@ public class SpELRule<T> extends BaseRule<T> {
 
     @Setter(AccessLevel.NONE)
     private Expression expression;
-    private Field targetField;
+    private PropertyModel property;
 
     private void normalizeRule() throws Exception {
         String r = rule();
@@ -113,7 +115,7 @@ public class SpELRule<T> extends BaseRule<T> {
                     }
                 }
             } else if (response != null) {
-                ReflectionUtils.setValue(response, data, targetField);
+                MappingReflectionHelper.setProperty(property, data, response);
             } else if (DefaultLogger.isTraceEnabled()) {
                 String json = JSONUtils.asString(data, data.getClass());
                 DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
@@ -140,15 +142,17 @@ public class SpELRule<T> extends BaseRule<T> {
 
     @Override
     protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
+        Preconditions.checkArgument(config instanceof SpELRuleConfig);
         try {
-            if (targetFields() != null) {
-                if (targetFields().size() > 1) {
-                    throw new ConfigurationException(
-                            String.format("[rule=%s] Multiple targets not supported...", name()));
+            if (getRuleType() == RuleType.Transformation) {
+                if (Strings.isNullOrEmpty(((SpELRuleConfig) config).getTarget())) {
+                    throw new ConfigurationException(String.format("[rule=%s] Target not specified.", name()));
                 }
-                for (Field field : targetFields().values()) {
-                    targetField = field;
-                }
+            }
+            property = MappingReflectionHelper.findField(((SpELRuleConfig) config).getTarget(), entityType());
+            if (property == null) {
+                throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
+                        entityType().getCanonicalName(), ((SpELRuleConfig) config).getTarget()));
             }
             Error error = Errors.getDefault().get(__RULE_TYPE, errorCode());
             if (error == null) {

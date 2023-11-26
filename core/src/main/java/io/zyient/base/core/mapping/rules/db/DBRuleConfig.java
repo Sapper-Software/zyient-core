@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.core.mapping.rules.db;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -34,6 +35,8 @@ public class DBRuleConfig extends RuleConfig {
     private Class<?> keyType;
     @Config(name = "entityType", type = Class.class)
     private Class<?> entityType;
-    @Config(name = "fieldMapping", required = false, type = Map.class)
-    private Map<String, String> fieldMapping;
+    @Config(name = "fieldMappings", required = false, type = Map.class)
+    private Map<String, String> fieldMappings;
+    @Config(name = "handler", required = false, type = Class.class)
+    private Class<? extends DBRuleHandler<?, ?, ?>> handler;
 }

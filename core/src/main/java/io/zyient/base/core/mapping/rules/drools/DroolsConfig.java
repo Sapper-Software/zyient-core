@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.mapping.rules;
+package io.zyient.base.core.mapping.rules.drools;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import io.zyient.base.common.config.StringListParser;
+import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,17 +28,7 @@ import java.util.List;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class RuleConfig extends Settings {
-    @Config(name = "name")
-    private String name;
-    @Config(name = "rule")
-    private String rule;
-    @Config(name = "reference", required = false, type = Boolean.class)
-    private boolean reference = false;
-    @Config(name = "ruleType", required = false, type = RuleType.class)
-    private RuleType type = RuleType.Transformation;
-    @Config(name = "errorCode", type = Integer.class)
-    private Integer errorCode;
-    @Config(name = "validationErrorCode", required = false, type = Integer.class)
-    private Integer validationErrorCode;
+public class DroolsConfig extends RuleConfig {
+    @Config(name = "drl")
+    private String drl;
 }

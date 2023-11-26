@@ -66,12 +66,6 @@ public class RuleConfigReader<T> {
                         }
                         rules.add(rule);
                     } else {
-                        if (config.getType() == RuleType.Transformation) {
-                            if (config.getTargets() == null || config.getTargets().isEmpty()) {
-                                throw new Exception(String.format("[rule=%s] Target fields not specified.",
-                                        config.getName()));
-                            }
-                        }
                         Rule<T> rule = null;
                         Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
                         if (type == null) {
@@ -79,16 +73,6 @@ public class RuleConfigReader<T> {
                         } else {
                             rule = type.getDeclaredConstructor()
                                     .newInstance();
-                        }
-                        if (config.getTargets() != null && !config.getTargets().isEmpty()) {
-                            for (String target : config.getTargets()) {
-                                Field field = ReflectionUtils.findField(entityType, target);
-                                if (field == null) {
-                                    throw new Exception(String.format("Target field not found. [type=%s][field=%s]",
-                                            entityType.getCanonicalName(), target));
-                                }
-                                rule.withTargetField(field);
-                            }
                         }
                         rule.withEntityType(entityType)
                                 .configure(config);

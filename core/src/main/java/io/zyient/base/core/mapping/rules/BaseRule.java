@@ -21,6 +21,7 @@ import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.rules.spel.SpELRule;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -39,18 +40,11 @@ public abstract class BaseRule<T> implements Rule<T> {
     private String rule;
     private List<String> targets = null;
     private RuleType ruleType = RuleType.Transformation;
-    private Map<String, Field> targetFields;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
     private int errorCode;
     private int validationErrorCode = -1;
     private RuleConfig config;
-
-    @Override
-    public Rule<T> withTargetField(@NonNull Field targetField) throws Exception {
-        targetFields.put(targetField.getName(), targetField);
-        return this;
-    }
 
     @Override
     public Rule<T> withEntityType(@NonNull Class<? extends T> type) {
@@ -78,15 +72,9 @@ public abstract class BaseRule<T> implements Rule<T> {
         if (entityType == null) {
             throw new ConfigurationException("Entity type not specified...");
         }
-        if (getRuleType() == RuleType.Transformation) {
-            if (targetFields == null || targetFields.isEmpty()) {
-                throw new ConfigurationException(String.format("Target field not set. [target=%s]", getTargets()));
-            }
-        }
         try {
             name = config.getName();
             rule = config.getRule();
-            targets = config.getTargets();
             ruleType = config.getType();
             errorCode = config.getErrorCode();
             if (getRuleType() == RuleType.Validation) {
