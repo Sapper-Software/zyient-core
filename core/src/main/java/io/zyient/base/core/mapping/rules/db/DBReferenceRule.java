@@ -72,14 +72,14 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         } catch (RuntimeException re) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    targetFieldString(),
+                    rule(),
                     errorCode(),
                     Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
                     re);
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    targetFieldString(),
+                    rule(),
                     errorCode(),
                     Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
                     t);
@@ -112,7 +112,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    targetFieldString(),
+                    rule(),
                     errorCode(),
                     Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
                     t);

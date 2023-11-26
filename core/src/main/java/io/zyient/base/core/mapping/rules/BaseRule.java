@@ -38,7 +38,6 @@ import java.util.Map;
 public abstract class BaseRule<T> implements Rule<T> {
     private String name;
     private String rule;
-    private List<String> targets = null;
     private RuleType ruleType = RuleType.Transformation;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
@@ -55,11 +54,6 @@ public abstract class BaseRule<T> implements Rule<T> {
     @Override
     public void addSubRules(@NonNull List<Rule<T>> rules) {
         this.rules = rules;
-    }
-
-    @Override
-    public List<String> getTargets() {
-        return targets;
     }
 
     @Override
@@ -125,20 +119,6 @@ public abstract class BaseRule<T> implements Rule<T> {
             errors = ValidationExceptions.add(ve, errors);
             throw errors;
         }
-    }
-
-    protected String targetFieldString() {
-        if (targets == null || targets.isEmpty()) {
-            return "Not Applicable.";
-        }
-        StringBuilder builder = new StringBuilder();
-        for (String field : targets()) {
-            if (!builder.isEmpty()) {
-                builder.append(",");
-            }
-            builder.append(field);
-        }
-        return builder.toString();
     }
 
     protected abstract Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError,

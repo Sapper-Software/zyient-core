@@ -64,6 +64,7 @@ public class SpELRule<T> extends BaseRule<T> {
 
     @Override
     public Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
+        SpELRuleConfig config = (SpELRuleConfig) config();
         StandardEvaluationContext ctx = new StandardEvaluationContext(data);
         try {
             Object response = expression.getValue(ctx);
@@ -73,7 +74,7 @@ public class SpELRule<T> extends BaseRule<T> {
                     if (response == null) {
                         throw new RuleEvaluationError(name(),
                                 entityType(),
-                                targetFieldString(),
+                                "validation",
                                 errorCode(),
                                 "NULL response from rule."
                         );
@@ -81,7 +82,7 @@ public class SpELRule<T> extends BaseRule<T> {
                     } else {
                         throw new RuleEvaluationError(name(),
                                 entityType(),
-                                targetFieldString(),
+                                "validation",
                                 errorCode(),
                                 String.format("Expected boolean response. [response=%s]",
                                         response.getClass().getCanonicalName())
@@ -95,7 +96,7 @@ public class SpELRule<T> extends BaseRule<T> {
                             String json = JSONUtils.asString(data, data.getClass());
                             throw new RuleValidationError(name(),
                                     entityType(),
-                                    targetFieldString(),
+                                    config.getTarget(),
                                     errorCode(),
                                     Errors.getDefault().get(__RULE_TYPE, validationErrorCode()).getMessage(),
                                     new Exception(json)
@@ -103,7 +104,7 @@ public class SpELRule<T> extends BaseRule<T> {
                         } else
                             throw new RuleValidationError(name(),
                                     entityType(),
-                                    targetFieldString(),
+                                    config.getTarget(),
                                     errorCode(),
                                     Errors.getDefault().get(__RULE_TYPE, validationErrorCode()).getMessage()
                             );
@@ -126,14 +127,14 @@ public class SpELRule<T> extends BaseRule<T> {
         } catch (RuntimeException re) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    targetFieldString(),
+                    rule(),
                     errorCode(),
                     Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
                     re);
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    targetFieldString(),
+                    rule(),
                     errorCode(),
                     Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
                     t);
