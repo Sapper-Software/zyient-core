@@ -16,12 +16,12 @@
 
 package io.zyient.cdc.entity.utils;
 
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.NonNull;
 
 public class ConversionUtils {
     public static Integer getInt(@NonNull Object data) throws Exception {
-        if (ReflectionUtils.isNumericType(data.getClass())) {
+        if (ReflectionHelper.isNumericType(data.getClass())) {
             if (data instanceof Integer) {
                 return (Integer) data;
             } else if (data instanceof Short) {
@@ -38,7 +38,7 @@ public class ConversionUtils {
     }
 
     public static Short getShort(@NonNull Object data) throws Exception {
-        if (ReflectionUtils.isNumericType(data.getClass())) {
+        if (ReflectionHelper.isNumericType(data.getClass())) {
             if (data instanceof Short) {
                 return (Short) data;
             } else if (data instanceof Integer) {
@@ -55,7 +55,7 @@ public class ConversionUtils {
     }
 
     public static Long getLong(@NonNull Object data) throws Exception {
-        if (ReflectionUtils.isNumericType(data.getClass())) {
+        if (ReflectionHelper.isNumericType(data.getClass())) {
             if (data instanceof Long) {
                 return (Long) data;
             } else if (data instanceof Integer) {
@@ -72,7 +72,7 @@ public class ConversionUtils {
     }
 
     public static Float getFloat(@NonNull Object data) throws Exception {
-        if (ReflectionUtils.isNumericType(data.getClass())) {
+        if (ReflectionHelper.isNumericType(data.getClass())) {
             if (data instanceof Float) {
                 return (Float) data;
             } else if (data instanceof Integer) {
@@ -89,7 +89,7 @@ public class ConversionUtils {
     }
 
     public static Double getDouble(@NonNull Object data) throws Exception {
-        if (ReflectionUtils.isNumericType(data.getClass())) {
+        if (ReflectionHelper.isNumericType(data.getClass())) {
             if (data instanceof Double) {
                 return (Double) data;
             } else if (data instanceof Integer) {

@@ -17,7 +17,7 @@
 package io.zyient.base.core.mapping.transformers;
 
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
 import lombok.NonNull;
@@ -36,9 +36,9 @@ public class BooleanTransformer implements Transformer<Boolean> {
 
     @Override
     public Boolean transform(@NonNull Object source) throws DataException {
-        if (ReflectionUtils.isBoolean(source.getClass())) {
+        if (ReflectionHelper.isBoolean(source.getClass())) {
             return (boolean) source;
-        } else if (ReflectionUtils.isNumericType(source.getClass())) {
+        } else if (ReflectionHelper.isNumericType(source.getClass())) {
             int v = (int) source;
             return (v > 0);
         } else if (source instanceof String value) {

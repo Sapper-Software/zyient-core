@@ -16,7 +16,7 @@
 
 package io.zyient.base.core.stores.impl.solr.schema;
 
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.NonNull;
 
 import java.lang.reflect.Field;
@@ -50,8 +50,8 @@ public enum SolrFieldTypes {
 
     public static SolrFieldTypes getType(@NonNull Field field) throws Exception {
         Class<?> t = field.getType();
-        if (ReflectionUtils.isCollection(t)) {
-            Class<?> inner = ReflectionUtils.getGenericCollectionType(field);
+        if (ReflectionHelper.isCollection(t)) {
+            Class<?> inner = ReflectionHelper.getGenericCollectionType(field);
             return getArrayType(getType(inner));
         } else if (t.isArray()) {
             Class<?> inner = t.getComponentType();
@@ -85,16 +85,16 @@ public enum SolrFieldTypes {
     }
 
     public static SolrFieldTypes getType(@NonNull Class<?> t) throws Exception {
-        if (ReflectionUtils.isPrimitiveTypeOrString(t)) {
-            if (ReflectionUtils.isShort(t) || ReflectionUtils.isInt(t)) {
+        if (ReflectionHelper.isPrimitiveTypeOrString(t)) {
+            if (ReflectionHelper.isShort(t) || ReflectionHelper.isInt(t)) {
                 return Int;
-            } else if (ReflectionUtils.isLong(t)) {
+            } else if (ReflectionHelper.isLong(t)) {
                 return Long;
-            } else if (ReflectionUtils.isFloat(t)) {
+            } else if (ReflectionHelper.isFloat(t)) {
                 return Float;
-            } else if (ReflectionUtils.isDouble(t)) {
+            } else if (ReflectionHelper.isDouble(t)) {
                 return Double;
-            } else if (ReflectionUtils.isBoolean(t)) {
+            } else if (ReflectionHelper.isBoolean(t)) {
                 return Boolean;
             } else if (t.equals(java.lang.String.class)) {
                 return String;

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.model.ESettingsSource;
 import lombok.Getter;
@@ -79,13 +79,13 @@ public abstract class ConnectionSettings extends Settings {
     }
 
     public void validate() throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(getClass());
+        Field[] fields = ReflectionHelper.getAllFields(getClass());
         if (fields != null) {
             for (Field field : fields) {
                 if (field.isAnnotationPresent(Config.class)) {
                     Config c = field.getAnnotation(Config.class);
                     if (c.required()) {
-                        Object v = ReflectionUtils.getFieldValue(this, field);
+                        Object v = ReflectionHelper.getFieldValue(this, field);
                         if (v == null) {
                             throw new Exception(String.format("[%s] Missing required field. [field=%s]",
                                     getClass().getCanonicalName(), c.name()));

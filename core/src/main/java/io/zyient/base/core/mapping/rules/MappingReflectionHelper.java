@@ -18,7 +18,7 @@ package io.zyient.base.core.mapping.rules;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.PropertyModel;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.model.ExtendedPropertyModel;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.model.PropertyBag;
@@ -60,11 +60,11 @@ public class MappingReflectionHelper {
     public static PropertyModel findField(@NonNull String name,
                                           @NonNull Class<?> entityType) throws Exception {
         if (name.startsWith(prefixed(FIELD_CACHED))) {
-            return ReflectionUtils.findProperty(MappedResponse.class, name);
+            return ReflectionHelper.findProperty(MappedResponse.class, name);
         } else if (name.startsWith(prefixed(FIELD_SOURCE))) {
-            return ReflectionUtils.findProperty(MappedResponse.class, name);
+            return ReflectionHelper.findProperty(MappedResponse.class, name);
         } else if (name.startsWith(prefixed(FIELD_CUSTOM))) {
-            if (!ReflectionUtils.implementsInterface(PropertyBag.class, entityType)) {
+            if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
                 throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
                         entityType.getCanonicalName()));
             }
@@ -72,7 +72,7 @@ public class MappingReflectionHelper {
             pm.property(name);
             String key = removePrefix(name, FIELD_CUSTOM);
             pm.key(key);
-            List<Method> setters = ReflectionUtils.findMethod(entityType,
+            List<Method> setters = ReflectionHelper.findMethod(entityType,
                     METHOD_SET_PROPERTY,
                     false);
             if (setters != null) {
@@ -88,7 +88,7 @@ public class MappingReflectionHelper {
                     }
                 }
             }
-            List<Method> getters = ReflectionUtils.findMethod(entityType,
+            List<Method> getters = ReflectionHelper.findMethod(entityType,
                     METHOD_GET_PROPERTY,
                     false);
             if (getters != null) {
@@ -108,7 +108,7 @@ public class MappingReflectionHelper {
             }
             return pm;
         } else {
-            return ReflectionUtils.findProperty(entityType, name);
+            return ReflectionHelper.findProperty(entityType, name);
         }
     }
 

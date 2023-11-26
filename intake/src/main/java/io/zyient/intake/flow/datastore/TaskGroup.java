@@ -24,7 +24,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.stores.AbstractDataStore;
@@ -242,7 +242,7 @@ public abstract class TaskGroup<K, T, C> {
         reader.read();
         TaskFlowErrorHandlerSettings errorSettings = (TaskFlowErrorHandlerSettings) reader.settings();
         try {
-            errorHandler = (TaskFlowErrorHandler<T>) ReflectionUtils.createInstance(errorSettings.getType());
+            errorHandler = (TaskFlowErrorHandler<T>) ReflectionHelper.createInstance(errorSettings.getType());
             errorHandler.configure(reader.config(), env);
         } catch (Exception e) {
             DefaultLogger.error(getClass().getCanonicalName(), e);
@@ -278,7 +278,7 @@ public abstract class TaskGroup<K, T, C> {
         try {
             Class<? extends AbstractFlowTask<K, T>> tc
                     = (Class<? extends AbstractFlowTask<K, T>>) taskSettings.getType();
-            AbstractFlowTask<K, T> task = ReflectionUtils.createInstance(tc);
+            AbstractFlowTask<K, T> task = ReflectionHelper.createInstance(tc);
             task.withTaskGroup(this).withSettings(taskSettings).configure(node, env);
             tasks.add(task);
 

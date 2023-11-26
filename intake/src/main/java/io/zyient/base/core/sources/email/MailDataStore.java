@@ -22,7 +22,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.CollectionUtils;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.mail.IMAPConnection;
 import io.zyient.base.core.connections.mail.SMTPConnection;
 import io.zyient.base.core.model.StringKey;
@@ -241,7 +241,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
                                                  Context context) throws DataStoreException {
         Preconditions.checkState(smtpConnection != null);
         Preconditions.checkArgument(entity instanceof MessageWrapper);
-        Preconditions.checkArgument(ReflectionUtils.isSuperType(MessageWrapper.class, entityClass));
+        Preconditions.checkArgument(ReflectionHelper.isSuperType(MessageWrapper.class, entityClass));
         try {
             MessageWrapper message = (MessageWrapper) entity;
             DefaultLogger.trace(String.format("Before Sending email... %s", smtpConnection));
@@ -285,7 +285,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
                                                @NonNull Class<? extends E> entityClass,
                                                Context context) throws DataStoreException {
         Preconditions.checkArgument(key instanceof String || key instanceof StringKey);
-        Preconditions.checkArgument(ReflectionUtils.isSuperType(MessageWrapper.class, entityClass));
+        Preconditions.checkArgument(ReflectionHelper.isSuperType(MessageWrapper.class, entityClass));
         try {
             Folder folder = folder(mailbox, false);
             String id = null;

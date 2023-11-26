@@ -21,7 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.Setter;
 import org.w3c.dom.Document;
@@ -93,7 +93,7 @@ public class SolrSchemaGenerator {
                         __TEMPLATE_PATH));
             }
             Node schema = toDelete.getParentNode();
-            Field[] fields = ReflectionUtils.getAllFields(cls);
+            Field[] fields = ReflectionHelper.getAllFields(cls);
             if (fields != null) {
                 for (Field field : fields) {
                     process(field, doc, schema, null);

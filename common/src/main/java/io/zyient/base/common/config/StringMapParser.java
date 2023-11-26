@@ -16,7 +16,7 @@
 
 package io.zyient.base.common.config;
 
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.NonNull;
 
 import java.util.Map;
@@ -24,7 +24,7 @@ import java.util.Map;
 public class StringMapParser implements ConfigValueParser<Map<String, String>> {
     @Override
     public Map<String, String> parse(@NonNull String value) throws Exception {
-        return ReflectionUtils.mapFromString(value);
+        return ReflectionHelper.mapFromString(value);
     }
 
     @Override

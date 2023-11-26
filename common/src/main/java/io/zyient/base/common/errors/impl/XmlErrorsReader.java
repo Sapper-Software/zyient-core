@@ -24,7 +24,7 @@ import io.zyient.base.common.errors.Errors;
 import io.zyient.base.common.errors.ErrorsReader;
 import io.zyient.base.common.errors.settings.XmlErrorsReaderSettings;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -92,7 +92,7 @@ public class XmlErrorsReader implements ErrorsReader {
                     Error error = mapper.convertValue(elem, Error.class);
                     errors.add(error);
                 }
-            } else if (ReflectionUtils.isCollection(type)) {
+            } else if (ReflectionHelper.isCollection(type)) {
                 Collection<?> array = (Collection<?>) data;
                 for (Object elem : array) {
                     Error error = mapper.convertValue(elem, Error.class);

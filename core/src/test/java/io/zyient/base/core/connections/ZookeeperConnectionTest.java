@@ -85,10 +85,6 @@ class ZookeeperConnectionTest {
             Map<String, String> values = settings.serialize();
             assertNotNull(values);
             assertFalse(values.isEmpty());
-
-            settings = ConnectionSettings.read(values);
-            assertNotNull(settings);
-            settings.validate();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             fail(t);

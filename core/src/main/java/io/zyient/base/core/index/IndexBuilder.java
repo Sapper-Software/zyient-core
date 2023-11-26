@@ -17,7 +17,7 @@
 package io.zyient.base.core.index;
 
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.NonNull;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleField;
@@ -34,12 +34,12 @@ public class IndexBuilder {
     public Document build(@NonNull Object source) throws Exception {
         synchronized (indexers) {
             Document doc = new Document();
-            Field[] fields = ReflectionUtils.getAllFields(source.getClass());
+            Field[] fields = ReflectionHelper.getAllFields(source.getClass());
             if (fields == null) {
                 throw new Exception(String.format("No fields found. [type=%s]", source.getClass().getCanonicalName()));
             }
             for (Field field : fields) {
-                Object value = ReflectionUtils.getFieldValue(source, field, true);
+                Object value = ReflectionHelper.getFieldValue(source, field, true);
                 if (value != null)
                     build(null, doc, field, value);
             }
@@ -68,16 +68,16 @@ public class IndexBuilder {
                 doc.add(new TextField(key, v, indexed.stored()));
             }
         } else {
-            if (ReflectionUtils.isPrimitiveTypeOrString(field)) {
-                if (ReflectionUtils.isNumericType(field.getType())) {
-                    if (ReflectionUtils.isLong(field.getType())
-                            || ReflectionUtils.isInt(field.getType())
-                            || ReflectionUtils.isShort(field.getType())) {
+            if (ReflectionHelper.isPrimitiveTypeOrString(field)) {
+                if (ReflectionHelper.isNumericType(field.getType())) {
+                    if (ReflectionHelper.isLong(field.getType())
+                            || ReflectionHelper.isInt(field.getType())
+                            || ReflectionHelper.isShort(field.getType())) {
                         doc.add(new LongField(key, (long) value, indexed.stored()));
-                    } else if (ReflectionUtils.isFloat(field.getType())
-                            || ReflectionUtils.isDouble(field.getType())) {
+                    } else if (ReflectionHelper.isFloat(field.getType())
+                            || ReflectionHelper.isDouble(field.getType())) {
                         doc.add(new DoubleField(key, (double) value, indexed.stored()));
-                    } else if (ReflectionUtils.isBoolean(field.getType())) {
+                    } else if (ReflectionHelper.isBoolean(field.getType())) {
                         Boolean b = (Boolean) value;
                         doc.add(new TextField(key, (b ? "true" : "false"), indexed.stored()));
                     } else if (field.getType().equals(Class.class)) {
@@ -91,10 +91,10 @@ public class IndexBuilder {
                 String v = ((Enum<?>) value).name();
                 doc.add(new TextField(key, v, indexed.stored()));
             } else if (indexed.deep()) {
-                Field[] fields = ReflectionUtils.getAllFields(value.getClass());
+                Field[] fields = ReflectionHelper.getAllFields(value.getClass());
                 if (fields == null) return;
                 for (Field f : fields) {
-                    Object v = ReflectionUtils.getFieldValue(value, field, true);
+                    Object v = ReflectionHelper.getFieldValue(value, field, true);
                     if (v != null)
                         build(path, doc, f, v);
                 }

@@ -22,7 +22,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.utils.FileUtils;
@@ -158,7 +158,7 @@ public class FileItemRecord extends BaseEntity<IdKey> {
                 this.fileLocation = source.fileLocation;
                 this.recordReference = source.recordReference;
                 this.updateParams = source.updateParams;
-                ReflectionUtils.copyNatives(source, this);
+                ReflectionHelper.copyNatives(source, this);
             } else {
                 throw new CopyException(String.format("Invalid entity: [type=%s]", iEntity.getClass().getCanonicalName()));
             }

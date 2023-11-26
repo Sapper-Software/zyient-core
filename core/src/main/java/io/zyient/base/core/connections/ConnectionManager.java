@@ -22,7 +22,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
@@ -233,7 +233,7 @@ public class ConnectionManager implements Closeable {
                                                   @NonNull Class<? extends Connection> type) {
         Connection connection = getConnection(name);
         if (connection != null
-                && (connection.getClass().equals(type) || ReflectionUtils.isSuperType(type, connection.getClass()))) {
+                && (connection.getClass().equals(type) || ReflectionHelper.isSuperType(type, connection.getClass()))) {
             return (T) connection;
         }
         return null;

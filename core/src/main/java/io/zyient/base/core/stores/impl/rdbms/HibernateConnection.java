@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.cache.ThreadCache;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
@@ -191,7 +191,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
 
                 if (settings.getModelPackages() != null) {
                     for (String name : settings.getModelPackages()) {
-                        Set<Class<?>> classes = ReflectionUtils.findAllClasses(name);
+                        Set<Class<?>> classes = ReflectionHelper.findAllClasses(name);
                         if (classes != null) {
                             for (Class<?> type : classes) {
                                 if (type.isAnnotationPresent(Entity.class)) {

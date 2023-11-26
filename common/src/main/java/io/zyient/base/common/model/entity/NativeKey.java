@@ -17,7 +17,7 @@
 package io.zyient.base.common.model.entity;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
@@ -35,7 +35,7 @@ public abstract class NativeKey<T> implements IKey {
     private T key;
 
     public NativeKey(@NonNull Class<? extends T> type) {
-        Preconditions.checkArgument(ReflectionUtils.isPrimitiveTypeOrString(type));
+        Preconditions.checkArgument(ReflectionHelper.isPrimitiveTypeOrString(type));
         this.type = type;
     }
 

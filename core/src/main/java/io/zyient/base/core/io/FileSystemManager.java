@@ -22,7 +22,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
@@ -122,7 +122,7 @@ public class FileSystemManager implements Closeable {
     @SuppressWarnings("unchecked")
     private void readSyncConfig(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         Class<?> type = ConfigReader.readAsClass(config);
-        if (!ReflectionUtils.isSuperType(FileSystemSync.class, type)) {
+        if (!ReflectionHelper.isSuperType(FileSystemSync.class, type)) {
             throw new Exception(String.format("Invalid File Sync implementation. [type=%s]", type.getCanonicalName()));
         }
         Class<? extends FileSystemSync> syncClass = (Class<? extends FileSystemSync>) type;

@@ -26,7 +26,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.ConnectionManager;
@@ -71,7 +71,7 @@ public class DataStoreManager {
     private String zkPath;
 
     public boolean isTypeSupported(@Nonnull Class<?> type) {
-        if (ReflectionUtils.implementsInterface(IEntity.class, type)) {
+        if (ReflectionHelper.implementsInterface(IEntity.class, type)) {
             return entityIndex.containsKey(type);
         }
         return false;
@@ -103,7 +103,7 @@ public class DataStoreManager {
                 }
                 if (checkSuperTypes) {
                     Class<?> t = ct.getSuperclass();
-                    if (ReflectionUtils.implementsInterface(IEntity.class, t)) {
+                    if (ReflectionHelper.implementsInterface(IEntity.class, t)) {
                         ct = (Class<? extends IEntity<?>>) t;
                     } else {
                         break;
@@ -187,7 +187,7 @@ public class DataStoreManager {
         }
 
         try {
-            S store = ReflectionUtils.createInstance(storeType);
+            S store = ReflectionHelper.createInstance(storeType);
             store.configure(this, config, env);
             if (store.isThreadSafe()) {
                 safeStores.put(store.name(), store);
@@ -454,7 +454,7 @@ public class DataStoreManager {
             }
             if (connection.getSupportedTypes() != null) {
                 for (Class<?> t : connection.getSupportedTypes()) {
-                    if (ReflectionUtils.implementsInterface(IEntity.class, t)) {
+                    if (ReflectionHelper.implementsInterface(IEntity.class, t)) {
                         Map<Class<? extends AbstractDataStore<?>>, AbstractDataStoreSettings> ec = entityIndex.get(t);
                         if (ec == null) {
                             ec = new HashMap<>();
@@ -473,7 +473,7 @@ public class DataStoreManager {
     private void readDataStoreConfig(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
             Class<?> type = ConfigReader.readAsClass(xmlConfig, AbstractDataStoreSettings.CONFIG_SETTING_TYPE);
-            if (!ReflectionUtils.isSuperType(AbstractDataStoreSettings.class, type)) {
+            if (!ReflectionHelper.isSuperType(AbstractDataStoreSettings.class, type)) {
                 throw new ConfigurationException(
                         String.format("Invalid settings type. [type=%s]", type.getCanonicalName()));
             }

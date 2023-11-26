@@ -47,7 +47,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.settings.mongo.MongoDbSettings;
@@ -135,20 +135,20 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     private <E extends IEntity<?>> E checkReferences(E entity,
                                                      Context context) throws DataStoreException {
         try {
-            Field[] fields = ReflectionUtils.getAllFields(entity.getClass());
+            Field[] fields = ReflectionHelper.getAllFields(entity.getClass());
             if (fields != null) {
                 for (Field field : fields) {
                     if (field.isAnnotationPresent(Reference.class)) {
                         Class<?> type = field.getType();
                         if (type.isArray()) {
                             Class<?> inner = type.getComponentType();
-                            if (!ReflectionUtils.isSuperType(MongoEntity.class, inner)) {
+                            if (!ReflectionHelper.isSuperType(MongoEntity.class, inner)) {
                                 throw new DataStoreException(String.format("Array type not supported. [type=%s]",
                                         inner.getCanonicalName()));
                             }
-                            Object value = ReflectionUtils.getFieldValue(entity, field);
+                            Object value = ReflectionHelper.getFieldValue(entity, field);
                             if (value != null) {
-                                Object[] array = ReflectionUtils.convertToObjectArray(value);
+                                Object[] array = ReflectionHelper.convertToObjectArray(value);
                                 for (Object av : array) {
                                     MongoEntity<?> me = (MongoEntity<?>) av;
                                     if (me.getState().getState() == EEntityState.New) {
@@ -163,13 +163,13 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                     }
                                 }
                             }
-                        } else if (ReflectionUtils.isCollection(type)) {
-                            Class<?> inner = ReflectionUtils.getGenericCollectionType(field);
-                            if (!ReflectionUtils.isSuperType(MongoEntity.class, inner)) {
+                        } else if (ReflectionHelper.isCollection(type)) {
+                            Class<?> inner = ReflectionHelper.getGenericCollectionType(field);
+                            if (!ReflectionHelper.isSuperType(MongoEntity.class, inner)) {
                                 throw new DataStoreException(String.format("Collection type not supported. [type=%s]",
                                         inner.getCanonicalName()));
                             }
-                            Object value = ReflectionUtils.getFieldValue(entity, field);
+                            Object value = ReflectionHelper.getFieldValue(entity, field);
                             if (value != null) {
                                 Collection<?> collection = (Collection<?>) value;
 
@@ -280,7 +280,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                 k = ((IKey) key).stringKey();
             }
             MorphiaSession session = sessionManager().session();
-            if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
+            if (ReflectionHelper.isSuperType(MongoEntity.class, type)) {
                 Query<E> query = (Query<E>) session.find(type)
                         .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
                 try (MorphiaCursor<E> cursor = query.iterator()) {
@@ -324,7 +324,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             } else {
                 k = ((IKey) key).stringKey();
             }
-            if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
+            if (ReflectionHelper.isSuperType(MongoEntity.class, type)) {
                 Query<E> query = (Query<E>) session.find(type)
                         .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
                 try (MorphiaCursor<E> cursor = query.iterator()) {
@@ -410,7 +410,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             mongoDBQueryHolder.setLimit(maxResults);
 
             List<E> entities = new ArrayList<>();
-            if (ReflectionUtils.isSuperType(MongoEntity.class, type)) {
+            if (ReflectionHelper.isSuperType(MongoEntity.class, type)) {
                 Document qdoc = mongoDBQueryHolder.getQuery();
                 Document qsort = mongoDBQueryHolder.getSort();
 

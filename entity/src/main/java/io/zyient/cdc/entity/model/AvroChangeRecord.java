@@ -18,7 +18,7 @@ package io.zyient.cdc.entity.model;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.cdc.entity.schema.SchemaEntity;
 import lombok.Getter;
 import lombok.NonNull;
@@ -83,7 +83,7 @@ public class AvroChangeRecord {
         }
         Object g = record.get(AVRO_FIELD_TARGET_GROUP);
         if (g != null) {
-            if (ReflectionUtils.isNumericType(g.getClass())) {
+            if (ReflectionHelper.isNumericType(g.getClass())) {
                 targetEntity.setGroup((int) g);
             } else {
                 throw new IOException(

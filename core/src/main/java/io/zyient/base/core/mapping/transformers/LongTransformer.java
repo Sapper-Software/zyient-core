@@ -17,7 +17,7 @@
 package io.zyient.base.core.mapping.transformers;
 
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import lombok.NonNull;
 
@@ -29,7 +29,7 @@ public class LongTransformer extends NumericTransformer<Long> {
 
     @Override
     public Long transform(@NonNull Object source) throws DataException {
-        if (ReflectionUtils.isNumericType(source.getClass())) {
+        if (ReflectionHelper.isNumericType(source.getClass())) {
             return (long) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {

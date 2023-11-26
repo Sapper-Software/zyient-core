@@ -18,7 +18,7 @@ package io.zyient.cdc.entity.types;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -39,14 +39,14 @@ public class NumericType<T> extends DataType<T> {
                        @NonNull Class<? extends T> javaType,
                        int jdbcType) {
         super(name, javaType, jdbcType);
-        Preconditions.checkArgument(ReflectionUtils.isNumericType(javaType)
+        Preconditions.checkArgument(ReflectionHelper.isNumericType(javaType)
                 || javaType.equals(BigInteger.class)
                 || javaType.equals(BigDecimal.class));
     }
 
     public NumericType(@NonNull DataType<T> source) {
         super(source);
-        Preconditions.checkArgument(ReflectionUtils.isNumericType(getJavaType())
+        Preconditions.checkArgument(ReflectionHelper.isNumericType(getJavaType())
                 || getJavaType().equals(BigInteger.class)
                 || getJavaType().equals(BigDecimal.class));
     }

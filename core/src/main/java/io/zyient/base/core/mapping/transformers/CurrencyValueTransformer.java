@@ -18,7 +18,7 @@ package io.zyient.base.core.mapping.transformers;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.CommonUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
 import io.zyient.base.core.mapping.model.CurrencyValue;
@@ -80,7 +80,7 @@ public class CurrencyValueTransformer implements Transformer<CurrencyValue> {
     public CurrencyValue transform(@NonNull Object source) throws DataException {
         if (source instanceof CurrencyValue) {
             return (CurrencyValue) source;
-        } else if (ReflectionUtils.isNumericType(source.getClass())) {
+        } else if (ReflectionHelper.isNumericType(source.getClass())) {
             double dv = (double) source;
             return new CurrencyValue(currency, dv);
         } else if (source instanceof String value) {

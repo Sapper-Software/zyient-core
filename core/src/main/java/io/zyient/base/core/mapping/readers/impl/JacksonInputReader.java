@@ -16,7 +16,7 @@
 
 package io.zyient.base.core.mapping.readers.impl;
 
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.readers.InputReader;
 
 import java.io.IOException;
@@ -35,8 +35,8 @@ public abstract class JacksonInputReader extends InputReader {
         } else {
             Object node = data.get(parts[index]);
             if (node instanceof Map<?, ?>) {
-                Class<?> vt = ReflectionUtils.getGenericMapValueType((Map<?, ?>) node);
-                Class<?> kt = ReflectionUtils.getGenericMapKeyType((Map<?, ?>) node);
+                Class<?> vt = ReflectionHelper.getGenericMapValueType((Map<?, ?>) node);
+                Class<?> kt = ReflectionHelper.getGenericMapKeyType((Map<?, ?>) node);
                 if (vt != null && kt != null) {
                     if (vt.equals(Object.class) && kt.equals(String.class)) {
                         Map<String, Object> map = (Map<String, Object>) node;

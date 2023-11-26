@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.QueryParser;
 import jakarta.persistence.*;
@@ -62,7 +62,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
 
     @Override
     protected Map<String, QueryField> extractFields(@NonNull Class<? extends E> type) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(type);
+        Field[] fields = ReflectionHelper.getAllFields(type);
         Preconditions.checkNotNull(fields);
         Map<String, QueryField> map = new HashMap<>();
         for (Field field : fields) {
@@ -81,7 +81,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
     @Override
     protected Map<String, QueryField> extractKeyFields(@NonNull Class<? extends E> entityType,
                                                        @NonNull Class<? extends K> type) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(entityType);
+        Field[] fields = ReflectionHelper.getAllFields(entityType);
         Preconditions.checkNotNull(fields);
         Class<?> idType = null;
         Field idField = null;
@@ -96,7 +96,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
             throw new Exception(String.format("Primary Key not defined for type. [type=%s]",
                     entityType.getCanonicalName()));
         }
-        if (!ReflectionUtils.isSuperType(idType, type)) {
+        if (!ReflectionHelper.isSuperType(idType, type)) {
             throw new Exception(String.format("Invalid Key type specified. [expected=%s][key type=%s]",
                     idType.getCanonicalName(), type.getCanonicalName()));
         }
@@ -110,7 +110,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
             if (!type.isAnnotationPresent(Embeddable.class)) {
                 throw new Exception(String.format("Key type is not embeddable. [type=%s]", type.getCanonicalName()));
             }
-            Field[] kfields = ReflectionUtils.getAllFields(idType);
+            Field[] kfields = ReflectionHelper.getAllFields(idType);
             Preconditions.checkNotNull(kfields);
             Map<String, QueryField> map = new HashMap<>();
             String prefix = idField.getName();
@@ -131,7 +131,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
     }
 
     private boolean processField(Field field) {
-        return ReflectionUtils.isPrimitiveTypeOrString(field) ||
+        return ReflectionHelper.isPrimitiveTypeOrString(field) ||
                 field.getType().isEnum() ||
                 field.getType().equals(Date.class);
     }

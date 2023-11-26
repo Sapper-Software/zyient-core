@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.cache.Expireable;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.InvalidDataError;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.processing.ProcessorState;
@@ -301,7 +301,7 @@ public abstract class SchemaManager implements Closeable {
             }
             schemaCache.addSchema(entity, schema);
         }
-        if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
+        if (!ReflectionHelper.isSuperType(type, schema.getClass())) {
             throw new InvalidDataError(EntitySchema.class,
                     String.format("Schema Type mismatch: [expected=%s][actual=%s]",
                             type.getCanonicalName(), schema.getClass().getCanonicalName()));
@@ -322,7 +322,7 @@ public abstract class SchemaManager implements Closeable {
             Schema avs = new Schema.Parser().parse(schema.getSchemaStr());
             schema.setSchema(avs);
         }
-        if (!ReflectionUtils.isSuperType(type, schema.getClass())) {
+        if (!ReflectionHelper.isSuperType(type, schema.getClass())) {
             throw new InvalidDataError(EntitySchema.class,
                     String.format("Schema Type mismatch: [expected=%s][actual=%s]",
                             type.getCanonicalName(), schema.getClass().getCanonicalName()));

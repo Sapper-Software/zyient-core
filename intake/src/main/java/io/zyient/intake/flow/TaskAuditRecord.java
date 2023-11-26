@@ -22,7 +22,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -96,7 +96,7 @@ public class TaskAuditRecord implements IEntity<TaskAuditId> {
             if (source instanceof TaskAuditRecord record) {
                 params = new HashMap<>(record.params);
                 taskId = record.taskId;
-                ReflectionUtils.copyNatives(record, this);
+                ReflectionHelper.copyNatives(record, this);
                 return this;
             } else {
                 throw new Exception(

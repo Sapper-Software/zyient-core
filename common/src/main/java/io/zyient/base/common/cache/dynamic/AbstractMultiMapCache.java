@@ -25,7 +25,7 @@ import io.zyient.base.common.model.entity.IKeyed;
 import io.zyient.base.common.threads.ManagedThread;
 import io.zyient.base.common.threads.Runner;
 import io.zyient.base.common.threads.ThreadManager;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -70,7 +70,7 @@ public abstract class AbstractMultiMapCache<K extends IKey, T extends IKeyed<K>>
             this.settings = settings;
             String lp = ConfigReader.getPathAnnotation(AbstractCacheLoaderSettings.class);
             Preconditions.checkNotNull(lp);
-            loader = (MultiMapCacheLoader<K, T>) ReflectionUtils.createInstance(settings.loaderClass)
+            loader = (MultiMapCacheLoader<K, T>) ReflectionHelper.createInstance(settings.loaderClass)
                     .init(config, lp);
             init(config);
             state.setState(ECacheState.Available);

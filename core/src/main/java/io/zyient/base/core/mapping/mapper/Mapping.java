@@ -21,8 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.PropertyModel;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.annotations.Ignore;
 import io.zyient.base.core.mapping.annotations.Target;
@@ -108,7 +107,7 @@ public class Mapping<T> {
     }
 
     private void buildFieldTree(Class<?> type, String prefix) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(type);
+        Field[] fields = ReflectionHelper.getAllFields(type);
         Preconditions.checkNotNull(fields);
         for (Field field : fields) {
             if (field.isAnnotationPresent(Ignore.class)) continue;
@@ -128,16 +127,16 @@ public class Mapping<T> {
                 }
             }
 
-            if (ReflectionUtils.isPrimitiveTypeOrString(field) ||
+            if (ReflectionHelper.isPrimitiveTypeOrString(field) ||
                     field.getType().isEnum() ||
                     field.getType().equals(Date.class)) {
                 fieldTree.put(name, field);
                 if (!Strings.isNullOrEmpty(target)) {
                     fieldTree.put(target, field);
                 }
-            } else if (ReflectionUtils.isCollection(field)) {
-                Class<?> inner = ReflectionUtils.getGenericCollectionType(field);
-                if (!ReflectionUtils.isPrimitiveTypeOrString(inner)) {
+            } else if (ReflectionHelper.isCollection(field)) {
+                Class<?> inner = ReflectionHelper.getGenericCollectionType(field);
+                if (!ReflectionHelper.isPrimitiveTypeOrString(inner)) {
                     throw new Exception(String.format("Collection type not supported. [type=%s]",
                             inner.getCanonicalName()));
                 }
@@ -145,13 +144,13 @@ public class Mapping<T> {
                 if (!Strings.isNullOrEmpty(target)) {
                     fieldTree.put(target, field);
                 }
-            } else if (ReflectionUtils.isMap(field)) {
-                Class<?> kt = ReflectionUtils.getGenericMapKeyType(field);
+            } else if (ReflectionHelper.isMap(field)) {
+                Class<?> kt = ReflectionHelper.getGenericMapKeyType(field);
                 if (!kt.equals(String.class)) {
                     throw new Exception(String.format("Map Key type not supported. [type=%s]", kt.getCanonicalName()));
                 }
-                Class<?> vt = ReflectionUtils.getGenericMapValueType(field);
-                if (!ReflectionUtils.isPrimitiveTypeOrString(vt)) {
+                Class<?> vt = ReflectionHelper.getGenericMapValueType(field);
+                if (!ReflectionHelper.isPrimitiveTypeOrString(vt)) {
                     throw new Exception(String.format("Map Value type not supported. [type=%s]", kt.getCanonicalName()));
                 }
                 fieldTree.put(name, field);
@@ -254,7 +253,7 @@ public class Mapping<T> {
                             element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
-                ReflectionUtils.setValue(tv, data, field);
+                ReflectionHelper.setValue(tv, data, field);
             }
         }
     }
@@ -298,18 +297,18 @@ public class Mapping<T> {
                     .getDeclaredConstructor()
                     .newInstance()
                     .configure(settings);
-        } else if (ReflectionUtils.isBoolean(type)) {
+        } else if (ReflectionHelper.isBoolean(type)) {
             transformer = new BooleanTransformer();
-        } else if (ReflectionUtils.isInt(type)) {
+        } else if (ReflectionHelper.isInt(type)) {
             transformer = new IntegerTransformer()
                     .configure(settings);
-        } else if (ReflectionUtils.isFloat(type)) {
+        } else if (ReflectionHelper.isFloat(type)) {
             transformer = new FloatTransformer()
                     .configure(settings);
-        } else if (ReflectionUtils.isLong(type)) {
+        } else if (ReflectionHelper.isLong(type)) {
             transformer = new LongTransformer()
                     .configure(settings);
-        } else if (ReflectionUtils.isDouble(type)) {
+        } else if (ReflectionHelper.isDouble(type)) {
             transformer = new DoubleTransformer()
                     .configure(settings);
         } else if (type.equals(Date.class)) {
@@ -331,7 +330,7 @@ public class Mapping<T> {
                         .type((Class<? extends Enum>) type)
                         .configure(settings);
             }
-        } else if (ReflectionUtils.isSuperType(CurrencyValue.class, type)) {
+        } else if (ReflectionHelper.isSuperType(CurrencyValue.class, type)) {
             transformer = new CurrencyValueTransformer()
                     .locale(settings.getLocale())
                     .configure(settings);
@@ -378,7 +377,7 @@ public class Mapping<T> {
                 if (field == null) {
                     throw new Exception(String.format("Field not registered. [field=%s]", me.getTargetPath()));
                 }
-                Object value = ReflectionUtils.getFieldValue(data, field);
+                Object value = ReflectionHelper.getFieldValue(data, field);
                 setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
             } else if (me.getMappingType() == MappingType.Custom) {
                 if (!(data instanceof PropertyBag bag)) {

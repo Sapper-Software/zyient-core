@@ -23,7 +23,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
@@ -275,7 +275,7 @@ public abstract class BaseStateManager implements Closeable {
         OffsetStateManager<?> manager = offsetManagers.get(name);
         if (manager != null) {
             if (manager.getClass().equals(managerType)
-                    || ReflectionUtils.isSuperType(managerType, manager.getClass())) {
+                    || ReflectionHelper.isSuperType(managerType, manager.getClass())) {
                 return (T) manager;
             }
         }

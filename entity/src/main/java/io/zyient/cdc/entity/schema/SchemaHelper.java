@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -47,16 +47,16 @@ public class SchemaHelper {
         }
 
         public static EDataType get(@NonNull Class<?> type) {
-            if (ReflectionUtils.isNumericType(type)) {
+            if (ReflectionHelper.isNumericType(type)) {
                 return Number;
-            } else if (ReflectionUtils.isBoolean(type)) {
+            } else if (ReflectionHelper.isBoolean(type)) {
                 return Boolean;
             } else if (type.isEnum()) {
                 return Enum;
-            } else if (ReflectionUtils.implementsInterface(Map.class, type)) {
+            } else if (ReflectionHelper.implementsInterface(Map.class, type)) {
                 return Map;
             } else if (type.isArray()
-                    || ReflectionUtils.implementsInterface(List.class, type)) {
+                    || ReflectionHelper.implementsInterface(List.class, type)) {
                 return Array;
             } else if (type.equals(String.class)) {
                 return String;
@@ -77,16 +77,16 @@ public class SchemaHelper {
         }
 
         public static ENumberType get(@NonNull Class<?> type) throws Exception {
-            if (ReflectionUtils.isNumericType(type)) {
-                if (ReflectionUtils.isShort(type)) {
+            if (ReflectionHelper.isNumericType(type)) {
+                if (ReflectionHelper.isShort(type)) {
                     return Short;
-                } else if (ReflectionUtils.isInt(type)) {
+                } else if (ReflectionHelper.isInt(type)) {
                     return Integer;
-                } else if (ReflectionUtils.isLong(type)) {
+                } else if (ReflectionHelper.isLong(type)) {
                     return Long;
-                } else if (ReflectionUtils.isFloat(type)) {
+                } else if (ReflectionHelper.isFloat(type)) {
                     return Float;
-                } else if (ReflectionUtils.isDouble(type)) {
+                } else if (ReflectionHelper.isDouble(type)) {
                     return Double;
                 } else if (type.equals(java.math.BigInteger.class)) {
                     return BigInteger;
@@ -175,10 +175,10 @@ public class SchemaHelper {
         public static Field parseField(String name, Class<?> type) {
             if (type.equals(String.class)) {
                 return new StringField(name);
-            } else if (ReflectionUtils.isNumericType(type)) {
+            } else if (ReflectionHelper.isNumericType(type)) {
                 NumberField f = new NumberField(name);
                 return f.fromJavaType(type);
-            } else if (ReflectionUtils.isBoolean(type)) {
+            } else if (ReflectionHelper.isBoolean(type)) {
                 return new BooleanField(name);
             }
             return null;
@@ -206,10 +206,10 @@ public class SchemaHelper {
                     sf.length(((String) value).length());
                     return sf;
                 }
-            } else if (ReflectionUtils.isNumericType(value.getClass())) {
+            } else if (ReflectionHelper.isNumericType(value.getClass())) {
                 NumberField f = new NumberField(name);
                 return f.fromJavaType(value.getClass());
-            } else if (ReflectionUtils.isBoolean(value.getClass())) {
+            } else if (ReflectionHelper.isBoolean(value.getClass())) {
                 return new BooleanField(name);
             } else if (value instanceof List) {
                 if (nested) {
@@ -242,37 +242,37 @@ public class SchemaHelper {
             for (Object value : values.values()) {
                 if (value != null) {
                     Class<?> vt = value.getClass();
-                    if (!ReflectionUtils.isPrimitiveTypeOrString(vt)) {
+                    if (!ReflectionHelper.isPrimitiveTypeOrString(vt)) {
                         return null;
                     }
                     if (vtype == null) {
                         vtype = vt;
                     } else if (vt.equals(Strings.class) && !vtype.equals(String.class)) {
                         return null;
-                    } else if (ReflectionUtils.isNumericType(vt) && !ReflectionUtils.isNumericType(vtype)) {
+                    } else if (ReflectionHelper.isNumericType(vt) && !ReflectionHelper.isNumericType(vtype)) {
                         return null;
                     } else if (!vt.equals(vtype)) {
-                        if (ReflectionUtils.isDouble(vtype)) continue;
-                        else if (ReflectionUtils.isFloat(vtype)) {
-                            if (ReflectionUtils.isDouble(vt)) {
+                        if (ReflectionHelper.isDouble(vtype)) continue;
+                        else if (ReflectionHelper.isFloat(vtype)) {
+                            if (ReflectionHelper.isDouble(vt)) {
                                 vtype = vt;
                             }
-                        } else if (ReflectionUtils.isLong(vtype)) {
-                            if (ReflectionUtils.isFloat(vt)
-                                    || ReflectionUtils.isDouble(vt)) {
+                        } else if (ReflectionHelper.isLong(vtype)) {
+                            if (ReflectionHelper.isFloat(vt)
+                                    || ReflectionHelper.isDouble(vt)) {
                                 vtype = vt;
                             }
-                        } else if (ReflectionUtils.isInt(vtype)) {
-                            if (ReflectionUtils.isLong(vt)
-                                    || ReflectionUtils.isFloat(vt)
-                                    || ReflectionUtils.isDouble(vt)) {
+                        } else if (ReflectionHelper.isInt(vtype)) {
+                            if (ReflectionHelper.isLong(vt)
+                                    || ReflectionHelper.isFloat(vt)
+                                    || ReflectionHelper.isDouble(vt)) {
                                 vtype = vt;
                             }
-                        } else if (ReflectionUtils.isShort(vtype)) {
-                            if (ReflectionUtils.isInt(vt)
-                                    || ReflectionUtils.isLong(vt)
-                                    || ReflectionUtils.isFloat(vt)
-                                    || ReflectionUtils.isDouble(vt)) {
+                        } else if (ReflectionHelper.isShort(vtype)) {
+                            if (ReflectionHelper.isInt(vt)
+                                    || ReflectionHelper.isLong(vt)
+                                    || ReflectionHelper.isFloat(vt)
+                                    || ReflectionHelper.isDouble(vt)) {
                                 vtype = vt;
                             }
                         }
@@ -422,16 +422,16 @@ public class SchemaHelper {
         }
 
         public NumberField fromJavaType(Class<?> type) {
-            Preconditions.checkArgument(ReflectionUtils.isNumericType(type));
-            if (ReflectionUtils.isShort(type)) {
+            Preconditions.checkArgument(ReflectionHelper.isNumericType(type));
+            if (ReflectionHelper.isShort(type)) {
                 numberType = ENumberType.Short;
-            } else if (ReflectionUtils.isInt(type)) {
+            } else if (ReflectionHelper.isInt(type)) {
                 numberType = ENumberType.Integer;
-            } else if (ReflectionUtils.isLong(type)) {
+            } else if (ReflectionHelper.isLong(type)) {
                 numberType = ENumberType.Long;
-            } else if (ReflectionUtils.isFloat(type)) {
+            } else if (ReflectionHelper.isFloat(type)) {
                 numberType = ENumberType.Float;
-            } else if (ReflectionUtils.isDouble(type)) {
+            } else if (ReflectionHelper.isDouble(type)) {
                 numberType = ENumberType.Double;
             } else if (type.equals(BigInteger.class)) {
                 numberType = ENumberType.BigInteger;
@@ -813,7 +813,7 @@ public class SchemaHelper {
                         type = f;
                     } else {
                         if (!type.equals(f)) {
-                            if (ReflectionUtils.isPrimitiveTypeOrString(value.getClass())) {
+                            if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
                                 type = new StringField("inner");
                             } else {
                                 type = new JsonField("inner");
@@ -905,7 +905,7 @@ public class SchemaHelper {
                         type = f;
                     } else {
                         if (!type.equals(f)) {
-                            if (ReflectionUtils.isPrimitiveTypeOrString(value.getClass())) {
+                            if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
                                 type = new StringField("value");
                             } else {
                                 type = new JsonField("value");

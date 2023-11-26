@@ -17,7 +17,7 @@
 package io.zyient.cdc.entity.types;
 
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.cdc.entity.utils.ConversionUtils;
 import io.zyient.cdc.entity.utils.DateTimeHelper;
 import lombok.NonNull;
@@ -40,15 +40,15 @@ public class BasicDataTypeReaders {
     public static BytesReader BYTES_READER = new BytesReader();
 
     public static DataTypeReader<?> getReader(@NonNull DataType<?> type) throws Exception {
-        if (ReflectionUtils.isBoolean(type.getJavaType())) {
+        if (ReflectionHelper.isBoolean(type.getJavaType())) {
             return BOOLEAN_READER;
-        } else if (ReflectionUtils.isInt(type.getJavaType())) {
+        } else if (ReflectionHelper.isInt(type.getJavaType())) {
             return INTEGER_READER;
-        } else if (ReflectionUtils.isLong(type.getJavaType())) {
+        } else if (ReflectionHelper.isLong(type.getJavaType())) {
             return LONG_READER;
-        } else if (ReflectionUtils.isFloat(type.getJavaType())) {
+        } else if (ReflectionHelper.isFloat(type.getJavaType())) {
             return FLOAT_READER;
-        } else if (ReflectionUtils.isDouble(type.getJavaType())) {
+        } else if (ReflectionHelper.isDouble(type.getJavaType())) {
             return DOUBLE_READER;
         } else if (type.getJavaType().equals(String.class)) {
             return STRING_READER;
@@ -78,7 +78,7 @@ public class BasicDataTypeReaders {
                 if (!Strings.isNullOrEmpty(s)) {
                     return Boolean.parseBoolean(data.toString());
                 }
-            } else if (ReflectionUtils.isNumericType(data.getClass())) {
+            } else if (ReflectionHelper.isNumericType(data.getClass())) {
                 Long value = ConversionUtils.getLong(data);
                 if (value == null) {
                     throw new Exception("DataType conversion returned null.");
@@ -119,7 +119,7 @@ public class BasicDataTypeReaders {
                 if (!Strings.isNullOrEmpty(s)) {
                     return Integer.parseInt(data.toString());
                 }
-            } else if (ReflectionUtils.isNumericType(data.getClass())) {
+            } else if (ReflectionHelper.isNumericType(data.getClass())) {
                 return ConversionUtils.getInt(data);
             } else if (data instanceof BigInteger) {
                 BigInteger bi = (BigInteger) data;
@@ -161,7 +161,7 @@ public class BasicDataTypeReaders {
                 if (!Strings.isNullOrEmpty(s)) {
                     return Long.parseLong(data.toString());
                 }
-            } else if (ReflectionUtils.isNumericType(data.getClass())) {
+            } else if (ReflectionHelper.isNumericType(data.getClass())) {
                 return ConversionUtils.getLong(data);
             } else if (data instanceof BigInteger) {
                 BigInteger bi = (BigInteger) data;
@@ -200,7 +200,7 @@ public class BasicDataTypeReaders {
                 if (!Strings.isNullOrEmpty(s)) {
                     return Float.parseFloat(data.toString());
                 }
-            } else if (ReflectionUtils.isNumericType(data.getClass())) {
+            } else if (ReflectionHelper.isNumericType(data.getClass())) {
                 return ConversionUtils.getFloat(data);
             } else if (data instanceof BigInteger) {
                 BigInteger bi = (BigInteger) data;
@@ -239,7 +239,7 @@ public class BasicDataTypeReaders {
                 if (!Strings.isNullOrEmpty(s)) {
                     return Double.parseDouble(data.toString());
                 }
-            } else if (ReflectionUtils.isNumericType(data.getClass())) {
+            } else if (ReflectionHelper.isNumericType(data.getClass())) {
                 return ConversionUtils.getDouble(data);
             } else if (data instanceof BigInteger) {
                 BigInteger bi = (BigInteger) data;
@@ -273,7 +273,7 @@ public class BasicDataTypeReaders {
                 return (String) data;
             } else if (data instanceof Utf8) {
                 return data.toString();
-            } else if (ReflectionUtils.isNumericType(data.getClass())) {
+            } else if (ReflectionHelper.isNumericType(data.getClass())) {
                 return String.valueOf(data);
             } else if (data instanceof byte[]) {
                 byte[] b = (byte[]) data;

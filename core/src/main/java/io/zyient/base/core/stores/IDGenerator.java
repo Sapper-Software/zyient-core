@@ -18,7 +18,7 @@ package io.zyient.base.core.stores;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.annotations.EGeneratedType;
 import io.zyient.base.core.stores.annotations.GeneratedId;
 import jakarta.persistence.EmbeddedId;
@@ -31,7 +31,7 @@ import java.util.UUID;
 public class IDGenerator {
     public static void process(@NonNull IEntity<?> entity,
                                @NonNull AbstractDataStore<?> dataStore) throws DataStoreException {
-        Field[] fields = ReflectionUtils.getAllFields(entity.getClass());
+        Field[] fields = ReflectionHelper.getAllFields(entity.getClass());
         if (fields != null) {
             for (Field field : fields) {
                 if (field.isAnnotationPresent(Id.class) || field.isAnnotationPresent(EmbeddedId.class)) {
@@ -51,29 +51,29 @@ public class IDGenerator {
                 if (field.isAnnotationPresent(GeneratedId.class)) {
                     GeneratedId gi = field.getAnnotation(GeneratedId.class);
                     if (gi.type() == EGeneratedType.UUID) {
-                        ReflectionUtils.setObjectValue(entity, field, UUID.randomUUID().toString());
+                        ReflectionHelper.setObjectValue(entity, field, UUID.randomUUID().toString());
                     } else {
                         Long value = dataStore.nextSequence(gi.sequence());
-                        ReflectionUtils.setObjectValue(entity, field, value);
+                        ReflectionHelper.setObjectValue(entity, field, value);
                     }
                 }
             } else {
                 Class<?> type = field.getType();
-                Field[] fields = ReflectionUtils.getAllFields(type);
+                Field[] fields = ReflectionHelper.getAllFields(type);
                 if (fields != null) {
                     for (Field f : fields) {
                         if (f.isAnnotationPresent(GeneratedId.class)) {
-                            Object fv = ReflectionUtils.getFieldValue(entity, field);
+                            Object fv = ReflectionHelper.getFieldValue(entity, field);
                             if (fv == null) {
-                                fv = ReflectionUtils.createInstance(field.getType());
-                                ReflectionUtils.setObjectValue(entity, field, fv);
+                                fv = ReflectionHelper.createInstance(field.getType());
+                                ReflectionHelper.setObjectValue(entity, field, fv);
                             }
                             GeneratedId gi = f.getAnnotation(GeneratedId.class);
                             if (gi.type() == EGeneratedType.UUID) {
-                                ReflectionUtils.setObjectValue(fv, f, UUID.randomUUID().toString());
+                                ReflectionHelper.setObjectValue(fv, f, UUID.randomUUID().toString());
                             } else {
                                 Long value = dataStore.nextSequence(gi.sequence());
-                                ReflectionUtils.setObjectValue(fv, f, value);
+                                ReflectionHelper.setObjectValue(fv, f, value);
                             }
                             break;
                         }

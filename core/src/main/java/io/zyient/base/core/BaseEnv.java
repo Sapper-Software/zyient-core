@@ -28,7 +28,7 @@ import io.zyient.base.common.model.InvalidDataError;
 import io.zyient.base.common.threads.ManagedThread;
 import io.zyient.base.common.threads.ThreadManager;
 import io.zyient.base.common.utils.NetUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.io.FileSystemManager;
@@ -340,7 +340,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     public static <T extends BaseEnv<?>> T get(@NonNull String name, @NonNull Class<? extends T> type) throws Exception {
         BaseEnv<?> env = __instances.get(name);
         if (env != null) {
-            if (!ReflectionUtils.isSuperType(type, env.getClass()))
+            if (!ReflectionHelper.isSuperType(type, env.getClass()))
                 throw new Exception(
                         String.format("Invalid Env type. [name=%s][expected=%s][actual=%s]",
                                 name, type.getCanonicalName(), env.getClass().getCanonicalName()));

@@ -16,7 +16,7 @@
 
 package io.zyient.cdc.entity.types;
 
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.cdc.entity.schema.SchemaField;
 import lombok.NonNull;
 import org.apache.commons.lang3.ObjectUtils;
@@ -64,13 +64,13 @@ public class DataTypeUtils {
         if (current.equals(target)) return true;
         if (current.getJavaType().equals(String.class)) {
             Class<?> type = target.getJavaType();
-            if (ReflectionUtils.isPrimitiveTypeOrString(type)) {
+            if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
                 return true;
             } else if (type.equals(ByteBuffer.class)) {
                 return true;
             }
-        } else if (ReflectionUtils.isNumericType(current.getJavaType()) &&
-                ReflectionUtils.isNumericType(target.getJavaType())) {
+        } else if (ReflectionHelper.isNumericType(current.getJavaType()) &&
+                ReflectionHelper.isNumericType(target.getJavaType())) {
             return true;
         }
         return false;

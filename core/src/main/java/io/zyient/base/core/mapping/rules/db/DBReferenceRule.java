@@ -22,7 +22,7 @@ import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.MappingExecutor;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.mapping.rules.*;
@@ -155,7 +155,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 sourceFields = new HashMap<>();
                 targetMappings = new HashMap<>();
                 for (String key : ((DBRuleConfig) config).getFieldMappings().keySet()) {
-                    PropertyModel source = ReflectionUtils.findProperty(refEntityType, key);
+                    PropertyModel source = ReflectionHelper.findProperty(refEntityType, key);
                     if (source == null) {
                         throw new Exception(String.format("[source] Property not found. [entity=%s][field=%s]",
                                 refEntityType.getCanonicalName(), key));

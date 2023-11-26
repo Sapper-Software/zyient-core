@@ -20,7 +20,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.readers.ReadCursor;
 import io.zyient.base.core.mapping.readers.impl.JacksonInputReader;
 import io.zyient.base.core.mapping.readers.settings.XmlReaderSettings;
@@ -63,7 +63,7 @@ public class XmlInputReader extends JacksonInputReader {
                             for (Object a : array) {
                                 data.add((Map<String, Object>) a);
                             }
-                        } else if (ReflectionUtils.isCollection(type)) {
+                        } else if (ReflectionHelper.isCollection(type)) {
                             List<Object> array = (List<Object>) node;
                             data = new ArrayList<>(array.size());
                             for (Object a : array) {

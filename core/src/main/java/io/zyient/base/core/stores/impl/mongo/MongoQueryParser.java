@@ -25,7 +25,7 @@ import dev.morphia.annotations.Property;
 import dev.morphia.annotations.Transient;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.QueryParser;
 import lombok.NonNull;
@@ -114,7 +114,7 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
                                String prefix,
                                String alias,
                                Map<String, QueryField> map) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(type);
+        Field[] fields = ReflectionHelper.getAllFields(type);
         Preconditions.checkNotNull(fields);
         for (Field field : fields) {
             if (ignore(field)) continue;
@@ -132,9 +132,9 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
                         .field(field)
                         .alias(a);
                 map.put(qf.path(), qf);
-            } else if (ReflectionUtils.isCollection(field)) {
+            } else if (ReflectionHelper.isCollection(field)) {
                 continue;
-            } else if (ReflectionUtils.isSuperType(Map.class, field.getType())) {
+            } else if (ReflectionHelper.isSuperType(Map.class, field.getType())) {
                 continue;
             } else {
                 String p = field.getName();
@@ -153,7 +153,7 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
     @Override
     protected Map<String, QueryField> extractKeyFields(@NonNull Class<? extends E> entityType,
                                                        @NonNull Class<? extends K> type) throws Exception {
-        Field[] fields = ReflectionUtils.getAllFields(entityType);
+        Field[] fields = ReflectionHelper.getAllFields(entityType);
         Preconditions.checkNotNull(fields);
         Class<?> idType = null;
         Field idField = null;
@@ -178,7 +178,7 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
             if (!type.isAnnotationPresent(Entity.class)) {
                 throw new Exception(String.format("Key type is not embeddable. [type=%s]", type.getCanonicalName()));
             }
-            Field[] kfields = ReflectionUtils.getAllFields(idType);
+            Field[] kfields = ReflectionHelper.getAllFields(idType);
             Preconditions.checkNotNull(kfields);
             Map<String, QueryField> map = new HashMap<>();
             String prefix = idField.getName();
@@ -200,7 +200,7 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
 
     private boolean processField(Field field) {
         return field.getType().equals(ObjectId.class) ||
-                ReflectionUtils.isPrimitiveTypeOrString(field) ||
+                ReflectionHelper.isPrimitiveTypeOrString(field) ||
                 field.getType().isEnum() ||
                 field.getType().equals(Date.class) ||
                 field.getType().equals(Object.class);

@@ -20,7 +20,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.settings.ReaderFactorySettings;
 import io.zyient.base.core.mapping.rules.RulesCache;
@@ -96,7 +96,7 @@ public class MapperFactory {
     private void readMappingConfigs(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         for (String name : settings.getMappingConfigs().keySet()) {
             String v = settings.getMappingConfigs().get(name);
-            Map<String, String> map = ReflectionUtils.mapFromString(v);
+            Map<String, String> map = ReflectionHelper.mapFromString(v);
             if (map == null) {
                 throw new ConfigurationException(String.format("Invalid mapping configuration: [value=%s]", v));
             }

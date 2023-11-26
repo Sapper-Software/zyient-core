@@ -23,7 +23,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.IOUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.mail.ExchangeConnection;
 import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.sources.email.settings.ExchangeDataSourceSettings;
@@ -784,7 +784,7 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
                                                  @Nonnull Class<? extends E> entityType,
                                                  Context context) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
-        Preconditions.checkArgument(ReflectionUtils.isSuperType(EmailMessageWrapper.class, entityType));
+        Preconditions.checkArgument(ReflectionHelper.isSuperType(EmailMessageWrapper.class, entityType));
         try {
             EmailMessageWrapper message = (EmailMessageWrapper) entity;
             if (message.getMessage() == null) {
@@ -861,7 +861,7 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
                                                Context context) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
         Preconditions.checkArgument(key instanceof String || key instanceof StringKey);
-        Preconditions.checkArgument(ReflectionUtils.isSuperType(EmailMessageWrapper.class, entityType));
+        Preconditions.checkArgument(ReflectionHelper.isSuperType(EmailMessageWrapper.class, entityType));
         String id = null;
         if (key instanceof String) {
             id = (String) key;

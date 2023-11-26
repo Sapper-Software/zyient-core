@@ -19,7 +19,7 @@ package io.zyient.cdc.entity.jdbc;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.cdc.entity.Metadata;
 import io.zyient.cdc.entity.schema.ArraySchemaField;
 import io.zyient.cdc.entity.schema.EntitySchema;
@@ -231,12 +231,12 @@ public class DbEntitySchema extends EntitySchema {
     }
 
     public static DataType<?> getNativeDatatype(@NonNull Class<?> type) {
-        if (ReflectionUtils.isBoolean(type)) return BOOLEAN;
-        if (ReflectionUtils.isShort(type)) return SMALLINT;
-        if (ReflectionUtils.isInt(type)) return INTEGER;
-        if (ReflectionUtils.isLong(type)) return BIGINT;
-        if (ReflectionUtils.isFloat(type)) return FLOAT;
-        if (ReflectionUtils.isDouble(type)) return DOUBLE;
+        if (ReflectionHelper.isBoolean(type)) return BOOLEAN;
+        if (ReflectionHelper.isShort(type)) return SMALLINT;
+        if (ReflectionHelper.isInt(type)) return INTEGER;
+        if (ReflectionHelper.isLong(type)) return BIGINT;
+        if (ReflectionHelper.isFloat(type)) return FLOAT;
+        if (ReflectionHelper.isDouble(type)) return DOUBLE;
         if (type.equals(String.class)) return new TextType(VARCHAR.getName(), Types.VARCHAR,
                 ((SizedDataType<?>) VARCHAR).getSize());
         if (type.equals(ByteBuffer.class) ||

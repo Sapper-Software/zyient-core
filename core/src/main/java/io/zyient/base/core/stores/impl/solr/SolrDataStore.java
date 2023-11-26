@@ -24,7 +24,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
@@ -288,7 +288,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 throw new DataStoreException(String.format("Key type not supported. [type=%s]",
                         key.getClass().getCanonicalName()));
             }
-            if (ReflectionUtils.isSuperType(SolrEntity.class, type)) {
+            if (ReflectionHelper.isSuperType(SolrEntity.class, type)) {
                 SolrQuery q = new SolrQuery();
                 q.set("q", getQueryString(SolrEntity.FIELD_SOLR_ID, k, String.class));
                 final QueryResponse response = client.query(q);
@@ -339,9 +339,9 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     public static String getQueryString(@NonNull String field,
                                         @NonNull Object value,
                                         @NonNull Class<?> type) {
-        if (ReflectionUtils.isDecimal(type)) {
+        if (ReflectionHelper.isDecimal(type)) {
             return String.format("%s:%f", field, (double) value);
-        } else if (ReflectionUtils.isNumericType(type)) {
+        } else if (ReflectionHelper.isNumericType(type)) {
             return String.format("%s:%d", field, (long) value);
         }
         return String.format("%s:\"%s\"", field, value);

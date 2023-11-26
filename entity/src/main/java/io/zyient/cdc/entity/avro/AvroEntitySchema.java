@@ -19,7 +19,7 @@ package io.zyient.cdc.entity.avro;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.cdc.entity.Metadata;
 import io.zyient.cdc.entity.jdbc.DbEntitySchema;
 import io.zyient.cdc.entity.model.DbDataType;
@@ -176,11 +176,11 @@ public class AvroEntitySchema extends EntitySchema {
     }
 
     public static DataType<?> getNativeDatatype(@NonNull Class<?> type) {
-        if (ReflectionUtils.isBoolean(type)) return BOOLEAN;
-        if (ReflectionUtils.isInt(type) || ReflectionUtils.isShort(type)) return INTEGER;
-        if (ReflectionUtils.isLong(type)) return LONG;
-        if (ReflectionUtils.isFloat(type)) return FLOAT;
-        if (ReflectionUtils.isDouble(type)) return DOUBLE;
+        if (ReflectionHelper.isBoolean(type)) return BOOLEAN;
+        if (ReflectionHelper.isInt(type) || ReflectionHelper.isShort(type)) return INTEGER;
+        if (ReflectionHelper.isLong(type)) return LONG;
+        if (ReflectionHelper.isFloat(type)) return FLOAT;
+        if (ReflectionHelper.isDouble(type)) return DOUBLE;
         if (type.equals(String.class)) return STRING;
         if (type.equals(ByteBuffer.class)) return BYTES;
         return null;
@@ -236,11 +236,11 @@ public class AvroEntitySchema extends EntitySchema {
                 dataType.equals(TIMESTAMP_MILLIS) ||
                 dataType.equals(TIMESTAMP_MICROS)) return Schema.Type.LONG;
         Class<?> type = dataType.getJavaType();
-        if (ReflectionUtils.isBoolean(type)) return Schema.Type.BOOLEAN;
-        if (ReflectionUtils.isInt(type) || ReflectionUtils.isShort(type)) return Schema.Type.INT;
-        if (ReflectionUtils.isLong(type) || type.equals(BigInteger.class)) return Schema.Type.LONG;
-        if (ReflectionUtils.isFloat(type)) return Schema.Type.FLOAT;
-        if (ReflectionUtils.isDouble(type) || type.equals(BigDecimal.class)) return Schema.Type.DOUBLE;
+        if (ReflectionHelper.isBoolean(type)) return Schema.Type.BOOLEAN;
+        if (ReflectionHelper.isInt(type) || ReflectionHelper.isShort(type)) return Schema.Type.INT;
+        if (ReflectionHelper.isLong(type) || type.equals(BigInteger.class)) return Schema.Type.LONG;
+        if (ReflectionHelper.isFloat(type)) return Schema.Type.FLOAT;
+        if (ReflectionHelper.isDouble(type) || type.equals(BigDecimal.class)) return Schema.Type.DOUBLE;
         if (type.equals(String.class)) return Schema.Type.STRING;
         if (type.equals(ByteBuffer.class)) return Schema.Type.BYTES;
 

@@ -50,8 +50,8 @@ public class JSONUtils {
         String json = new String(data, Charset.defaultCharset());
         if (Strings.isNullOrEmpty(json)) return null;
         if (NetUtils.isIPV4Address(json)) return null;
-        if (ReflectionUtils.isPrimitiveTypeOrString(type)) {
-            return ReflectionUtils.getValueFromString(type, json);
+        if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
+            return ReflectionHelper.getValueFromString(type, json);
         }
         if (!isJson(json)) {
             return null;

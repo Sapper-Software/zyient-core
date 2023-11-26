@@ -18,7 +18,7 @@ package io.zyient.cdc.entity;
 
 import com.google.protobuf.ByteString;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.cdc.entity.model.*;
 import io.zyient.cdc.entity.schema.EntitySchema;
 import io.zyient.cdc.entity.types.*;
@@ -61,7 +61,7 @@ public abstract class ValueParser {
             vb.setJson(data);
             return true;
         }
-        if (ReflectionUtils.isBoolean(type.getJavaType())) {
+        if (ReflectionHelper.isBoolean(type.getJavaType())) {
             boolean v = BasicDataTypeReaders.BOOLEAN_READER.read(value);
             BooleanColumnData data = BooleanColumnData.newBuilder()
                     .setData(v)
@@ -69,8 +69,8 @@ public abstract class ValueParser {
             vb.setBoolean(data);
             return true;
         }
-        if (ReflectionUtils.isInt(type.getJavaType()) ||
-                ReflectionUtils.isShort(type.getJavaType())) {
+        if (ReflectionHelper.isInt(type.getJavaType()) ||
+                ReflectionHelper.isShort(type.getJavaType())) {
             int v = BasicDataTypeReaders.INTEGER_READER.read(value);
             IntegerColumnData data = IntegerColumnData.newBuilder()
                     .setData(v)
@@ -78,7 +78,7 @@ public abstract class ValueParser {
             vb.setInteger(data);
             return true;
         }
-        if (ReflectionUtils.isLong(type.getJavaType())) {
+        if (ReflectionHelper.isLong(type.getJavaType())) {
             long v = BasicDataTypeReaders.LONG_READER.read(value);
             LongColumnData data = LongColumnData.newBuilder()
                     .setData(v)
@@ -86,7 +86,7 @@ public abstract class ValueParser {
             vb.setLong(data);
             return true;
         }
-        if (ReflectionUtils.isFloat(type.getJavaType())) {
+        if (ReflectionHelper.isFloat(type.getJavaType())) {
             float v = BasicDataTypeReaders.FLOAT_READER.read(value);
             FloatColumnData data = FloatColumnData.newBuilder()
                     .setData(v)
@@ -94,7 +94,7 @@ public abstract class ValueParser {
             vb.setFloat(data);
             return true;
         }
-        if (ReflectionUtils.isDouble(type.getJavaType())) {
+        if (ReflectionHelper.isDouble(type.getJavaType())) {
             double v = BasicDataTypeReaders.DOUBLE_READER.read(value);
             DoubleColumnData data = DoubleColumnData.newBuilder()
                     .setData(v)

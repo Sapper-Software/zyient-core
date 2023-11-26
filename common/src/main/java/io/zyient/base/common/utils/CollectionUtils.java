@@ -55,9 +55,6 @@ public class CollectionUtils {
                                            @Nonnull Field field,
                                            @Nonnull List<String> values)
             throws Exception {
-        Preconditions.checkArgument(source != null);
-        Preconditions.checkArgument(field != null);
-        Preconditions.checkArgument(values != null);
 
         Class<?> type = field.getType();
         if (!type.equals(List.class)) {
@@ -66,40 +63,40 @@ public class CollectionUtils {
                             List.class.getCanonicalName(),
                             type.getCanonicalName()));
         }
-        Class<?> ptype = ReflectionUtils.getGenericCollectionType(field);
+        Class<?> ptype = ReflectionHelper.getGenericCollectionType(field);
         Preconditions.checkNotNull(ptype);
         if (ptype.equals(String.class)) {
-            ReflectionUtils.setObjectValue(source, field, values);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, values);
         } else if (ptype.equals(Boolean.class)) {
             List<Boolean> bl = createBoolList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Character.class)) {
             List<Character> bl = createCharList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Short.class)) {
             List<Short> bl = createShortList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Integer.class)) {
             List<Integer> bl = createIntList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Long.class)) {
             List<Long> bl = createLongList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Float.class)) {
             List<Float> bl = createFloatList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Double.class)) {
             List<Double> bl = createDoubleList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(BigInteger.class)) {
             List<BigInteger> bl = createBigIntegerList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(BigDecimal.class)) {
             List<BigDecimal> bl = createBigDecimalList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Date.class)) {
             List<Date> bl = createDateList(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         }
     }
 
@@ -226,42 +223,42 @@ public class CollectionUtils {
                             Set.class.getCanonicalName(),
                             type.getCanonicalName()));
         }
-        Class<?> ptype = ReflectionUtils.getGenericCollectionType(field);
+        Class<?> ptype = ReflectionHelper.getGenericCollectionType(field);
         Preconditions.checkNotNull(ptype);
         if (ptype.equals(String.class)) {
             Set<String> nvalues = new HashSet<>(values.size());
             nvalues.addAll(values);
-            ReflectionUtils.setObjectValue(source, field, nvalues);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, nvalues);
         } else if (ptype.equals(Boolean.class)) {
             Set<Boolean> bl = createBoolSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Character.class)) {
             Set<Character> bl = createCharSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Short.class)) {
             Set<Short> bl = createShortSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Integer.class)) {
             Set<Integer> bl = createIntSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Long.class)) {
             Set<Long> bl = createLongSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Float.class)) {
             Set<Float> bl = createFloatSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Double.class)) {
             Set<Double> bl = createDoubleSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(BigInteger.class)) {
             Set<BigInteger> bl = createBigIntegerSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(BigDecimal.class)) {
             Set<BigDecimal> bl = createBigDecimalSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         } else if (ptype.equals(Date.class)) {
             Set<Date> bl = createDateSet(values);
-            ReflectionUtils.setObjectValue(source, field, bl);
+            ReflectionHelper.reflectionUtils().setFieldValue(source, field, bl);
         }
     }
 

@@ -20,7 +20,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.model.entity.NativeKey;
-import io.zyient.base.common.utils.ReflectionUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -76,7 +76,7 @@ public abstract class QueryParser<K extends IKey, E extends IEntity<K>> {
     }
 
     protected boolean isNativeKey(@NonNull Field field) {
-        if (ReflectionUtils.isSuperType(NativeKey.class, field.getType())) {
+        if (ReflectionHelper.isSuperType(NativeKey.class, field.getType())) {
             return true;
         }
         return false;
