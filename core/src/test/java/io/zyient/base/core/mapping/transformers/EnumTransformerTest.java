@@ -32,14 +32,15 @@ class EnumTransformerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void transform() {
         try {
             EnumMappedElement me = new EnumMappedElement();
             me.setEnumType(TestTransform.class);
             me.setEnumMappings(Map.of("ea", "A", "ec", "C"));
             MappingSettings settings = new MappingSettings();
-            EnumTransformer transformer = (EnumTransformer) new EnumTransformer()
-                    .type(me.getEnumType())
+            EnumTransformer<TestTransform> transformer = (EnumTransformer<TestTransform>) new EnumTransformer<>(TestTransform.class)
+                    .type((Class<TestTransform>) me.getEnumType())
                     .enumValues(me.getEnumMappings())
                     .configure(settings);
             TestTransform v = (TestTransform) transformer.transform("ea");

@@ -55,7 +55,7 @@ public class Mapping<T> {
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
     private final Map<String, Field> fieldTree = new HashMap<>();
     private MappingSettings settings;
-    private final Map<String, Transformer<?>> transformers = new HashMap<>();
+    private final Map<String, DeSerializer<?>> transformers = new HashMap<>();
     private RulesExecutor<T> rulesExecutor;
     private MappingContextProvider contextProvider;
     private RulesCache<T> rulesCache;
@@ -242,19 +242,7 @@ public class Mapping<T> {
                 response.add(element.getTargetPath(), tv);
             }
         } else {
-            Field field = fieldTree.get(element.getTargetPath());
-            if (field == null) {
-                throw new Exception(String.format("Target field not found. [path=%s]", element.getTargetPath()));
-            }
-            Object tv = transform(value, element, field.getType());
-            if (tv == null) {
-                if (!element.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
-                            element.getSourcePath(), element.getTargetPath()));
-                }
-            } else {
-                ReflectionHelper.setValue(tv, data, field);
-            }
+
         }
     }
 
@@ -267,7 +255,7 @@ public class Mapping<T> {
         if (type == null) {
             type = String.class;
         }
-        Transformer<?> transformer = null;
+        DeSerializer<?> transformer = null;
         if (element instanceof CustomMappedElement) {
             transformer = getTransformer(null, element);
         } else {
@@ -280,8 +268,8 @@ public class Mapping<T> {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private Transformer<?> getTransformer(Class<?> type,
-                                          MappedElement element) throws Exception {
+    private DeSerializer<?> getTransformer(Class<?> type,
+                                           MappedElement element) throws Exception {
         if (type != null && transformers.containsKey(type.getCanonicalName())) {
             return transformers.get(type.getCanonicalName());
         } else if (element instanceof CustomMappedElement) {
@@ -291,14 +279,12 @@ public class Mapping<T> {
                 }
             }
         }
-        Transformer<?> transformer = null;
+        DeSerializer<?> transformer = null;
         if (type == null && element instanceof CustomMappedElement) {
             transformer = ((CustomMappedElement) element).getTransformer()
                     .getDeclaredConstructor()
                     .newInstance()
                     .configure(settings);
-        } else if (ReflectionHelper.isBoolean(type)) {
-            transformer = new BooleanTransformer();
         } else if (ReflectionHelper.isInt(type)) {
             transformer = new IntegerTransformer()
                     .configure(settings);
@@ -321,13 +307,11 @@ public class Mapping<T> {
                 return transformers.get(type.getSimpleName());
             }
             if (element instanceof EnumMappedElement) {
-                transformer = new EnumTransformer()
-                        .type((Class<? extends Enum>) type)
+                transformer = new EnumTransformer(type)
                         .enumValues(((EnumMappedElement) element).getEnumMappings())
                         .configure(settings);
             } else {
-                transformer = new EnumTransformer()
-                        .type((Class<? extends Enum>) type)
+                transformer = new EnumTransformer(type)
                         .configure(settings);
             }
         } else if (ReflectionHelper.isSuperType(CurrencyValue.class, type)) {
@@ -340,8 +324,8 @@ public class Mapping<T> {
             }
             transformer = new RegexTransformer()
                     .regex(re.getRegex())
-                    .name(re.getName())
-                    .format(re.getFormat())
+                    .name(re.getName());
+            ((RegexTransformer) transformer).format(re.getFormat())
                     .groups(re.getGroups())
                     .replace(re.getReplace())
                     .configure(settings);
@@ -377,8 +361,8 @@ public class Mapping<T> {
                 if (field == null) {
                     throw new Exception(String.format("Field not registered. [field=%s]", me.getTargetPath()));
                 }
-                Object value = ReflectionHelper.getFieldValue(data, field);
-                setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
+                //Object value = ReflectionHelper.getFieldValue(data, field);
+                //setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
             } else if (me.getMappingType() == MappingType.Custom) {
                 if (!(data instanceof PropertyBag bag)) {
                     throw new Exception(String.format("Type does not support custom fields. [type=%s]",

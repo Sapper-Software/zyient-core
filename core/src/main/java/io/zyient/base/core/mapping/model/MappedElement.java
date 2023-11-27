@@ -41,6 +41,25 @@ public class MappedElement {
     @Config(name = "type", required = false, type = MappingType.class)
     private MappingType mappingType = MappingType.Field;
 
+    public MappedElement() {
+
+    }
+
+    public MappedElement(@NonNull String sourcePath,
+                         @NonNull String targetPath,
+                         boolean nullable,
+                         @NonNull Class<?> type,
+                         String regex,
+                         MappingType mappingType) {
+        this.sourcePath = sourcePath;
+        this.targetPath = targetPath;
+        this.nullable = nullable;
+        this.type = type;
+        this.regex = regex;
+        if (mappingType != null)
+            this.mappingType = mappingType;
+    }
+
     public static MappedElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                      @NonNull Class<? extends MappedElement> type) throws Exception {
         return ConfigReader.read(xmlConfig, type);

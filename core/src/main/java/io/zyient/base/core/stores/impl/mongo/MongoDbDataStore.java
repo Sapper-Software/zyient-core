@@ -146,7 +146,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                 throw new DataStoreException(String.format("Array type not supported. [type=%s]",
                                         inner.getCanonicalName()));
                             }
-                            Object value = ReflectionHelper.getFieldValue(entity, field);
+                            Object value = ReflectionHelper.reflectionUtils().getFieldValue(entity, field);
                             if (value != null) {
                                 Object[] array = ReflectionHelper.convertToObjectArray(value);
                                 for (Object av : array) {
@@ -169,7 +169,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                 throw new DataStoreException(String.format("Collection type not supported. [type=%s]",
                                         inner.getCanonicalName()));
                             }
-                            Object value = ReflectionHelper.getFieldValue(entity, field);
+                            Object value = ReflectionHelper.reflectionUtils().getFieldValue(entity, field);
                             if (value != null) {
                                 Collection<?> collection = (Collection<?>) value;
 

@@ -42,9 +42,4 @@ public class FloatTransformer extends NumericTransformer<Float> {
         }
         throw new DataException(String.format("Cannot transform to Float. [source=%s]", source.getClass()));
     }
-
-    @Override
-    public String write(@NonNull Float source) throws DataException {
-        return format.format(source);
-    }
 }

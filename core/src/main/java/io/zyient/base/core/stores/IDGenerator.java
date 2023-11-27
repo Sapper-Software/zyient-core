@@ -51,10 +51,10 @@ public class IDGenerator {
                 if (field.isAnnotationPresent(GeneratedId.class)) {
                     GeneratedId gi = field.getAnnotation(GeneratedId.class);
                     if (gi.type() == EGeneratedType.UUID) {
-                        ReflectionHelper.setObjectValue(entity, field, UUID.randomUUID().toString());
+                        ReflectionHelper.reflectionUtils().setFieldValue(entity, field, UUID.randomUUID().toString());
                     } else {
                         Long value = dataStore.nextSequence(gi.sequence());
-                        ReflectionHelper.setObjectValue(entity, field, value);
+                        ReflectionHelper.reflectionUtils().setFieldValue(entity, field, value);
                     }
                 }
             } else {
@@ -63,17 +63,17 @@ public class IDGenerator {
                 if (fields != null) {
                     for (Field f : fields) {
                         if (f.isAnnotationPresent(GeneratedId.class)) {
-                            Object fv = ReflectionHelper.getFieldValue(entity, field);
+                            Object fv = ReflectionHelper.reflectionUtils().getFieldValue(entity, field);
                             if (fv == null) {
                                 fv = ReflectionHelper.createInstance(field.getType());
-                                ReflectionHelper.setObjectValue(entity, field, fv);
+                                ReflectionHelper.reflectionUtils().setFieldValue(entity, field, fv);
                             }
                             GeneratedId gi = f.getAnnotation(GeneratedId.class);
                             if (gi.type() == EGeneratedType.UUID) {
-                                ReflectionHelper.setObjectValue(fv, f, UUID.randomUUID().toString());
+                                ReflectionHelper.reflectionUtils().setFieldValue(fv, f, UUID.randomUUID().toString());
                             } else {
                                 Long value = dataStore.nextSequence(gi.sequence());
-                                ReflectionHelper.setObjectValue(fv, f, value);
+                                ReflectionHelper.reflectionUtils().setFieldValue(fv, f, value);
                             }
                             break;
                         }

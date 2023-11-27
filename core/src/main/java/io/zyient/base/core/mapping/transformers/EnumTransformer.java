@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.mapping.transformers;
 
-import com.google.common.base.Preconditions;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
 import lombok.Getter;
@@ -30,24 +29,22 @@ import java.util.Map;
 @Getter
 @Setter
 @Accessors(fluent = true)
-@SuppressWarnings("rawtypes")
-public class EnumTransformer implements Transformer<Enum<?>> {
-    private Class<? extends Enum> type;
+public class EnumTransformer<T extends Enum<T>> extends DeSerializer<T> {
+    private Class<T> type;
     private Map<String, String> enumValues;
 
-    @Override
-    public String name() {
-        Preconditions.checkNotNull(type);
-        return type.getSimpleName();
+    public EnumTransformer(@NonNull Class<T> type) {
+        super(type);
+        this.type = type;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public Transformer<Enum<?>> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public DeSerializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         try {
+            name = type.getSimpleName();
             if (enumValues != null) {
                 for (String key : enumValues.keySet()) {
-                    Enum<?> e = Enum.valueOf(type, enumValues.get(key));
+                    Enum<T> e = Enum.valueOf(type, enumValues.get(key));
                 }
             }
             return this;
@@ -58,9 +55,9 @@ public class EnumTransformer implements Transformer<Enum<?>> {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Enum<?> transform(@NonNull Object source) throws DataException {
+    public T transform(@NonNull Object source) throws DataException {
         if (source.getClass().isEnum()) {
-            return (Enum<?>) source;
+            return (T) source;
         } else if (source instanceof String value) {
             if (enumValues.containsKey(value)) {
                 value = enumValues.get(value);
@@ -70,20 +67,5 @@ public class EnumTransformer implements Transformer<Enum<?>> {
             return type.getEnumConstants()[iv];
         }
         throw new DataException(String.format("Cannot transform to Enum. [source=%s]", source.getClass()));
-    }
-
-    @Override
-    public String write(@NonNull Enum<?> source) throws DataException {
-        String value = source.name();
-        if (enumValues != null) {
-            for (String key : enumValues.keySet()) {
-                String v = enumValues.get(key);
-                if (v.equals(value)) {
-                    value = key;
-                    break;
-                }
-            }
-        }
-        return value;
     }
 }

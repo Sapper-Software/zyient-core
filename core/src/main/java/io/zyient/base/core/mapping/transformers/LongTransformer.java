@@ -42,9 +42,4 @@ public class LongTransformer extends NumericTransformer<Long> {
         }
         throw new DataException(String.format("Cannot transform to Long. [source=%s]", source.getClass()));
     }
-
-    @Override
-    public String write(@NonNull Long source) throws DataException {
-        return format.format(source);
-    }
 }

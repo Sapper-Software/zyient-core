@@ -85,7 +85,7 @@ public abstract class ConnectionSettings extends Settings {
                 if (field.isAnnotationPresent(Config.class)) {
                     Config c = field.getAnnotation(Config.class);
                     if (c.required()) {
-                        Object v = ReflectionHelper.getFieldValue(this, field);
+                        Object v = ReflectionHelper.reflectionUtils().getFieldValue(this, field);
                         if (v == null) {
                             throw new Exception(String.format("[%s] Missing required field. [field=%s]",
                                     getClass().getCanonicalName(), c.name()));

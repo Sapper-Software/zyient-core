@@ -33,19 +33,19 @@ import java.util.Locale;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class DateTransformer implements Transformer<Date> {
+public class DateTransformer extends DeSerializer<Date> {
     public static final String LOCALE_OVERRIDE = "formatter.date.locale";
     public static final String FORMAT_OVERRIDE = "formatter.date.format";
     private String format;
     private Locale locale;
 
-    @Override
-    public String name() {
-        return Date.class.getCanonicalName();
+    public DateTransformer() {
+        super(Date.class);
     }
 
     @Override
-    public Transformer<Date> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public DeSerializer<Date> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+        name = Date.class.getSimpleName();
         String l = settings.getParameter(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {
@@ -82,11 +82,5 @@ public class DateTransformer implements Transformer<Date> {
         } catch (Exception ex) {
             throw new DataException(ex);
         }
-    }
-
-    @Override
-    public String write(@NonNull Date source) throws DataException {
-        SimpleDateFormat df = new SimpleDateFormat(format, locale);
-        return df.format(source);
     }
 }

@@ -39,7 +39,7 @@ public class IndexBuilder {
                 throw new Exception(String.format("No fields found. [type=%s]", source.getClass().getCanonicalName()));
             }
             for (Field field : fields) {
-                Object value = ReflectionHelper.getFieldValue(source, field, true);
+                Object value = ReflectionHelper.reflectionUtils().getFieldValue(source, field);
                 if (value != null)
                     build(null, doc, field, value);
             }
@@ -94,7 +94,7 @@ public class IndexBuilder {
                 Field[] fields = ReflectionHelper.getAllFields(value.getClass());
                 if (fields == null) return;
                 for (Field f : fields) {
-                    Object v = ReflectionHelper.getFieldValue(value, field, true);
+                    Object v = ReflectionHelper.reflectionUtils().getFieldValue(value, field);
                     if (v != null)
                         build(path, doc, f, v);
                 }

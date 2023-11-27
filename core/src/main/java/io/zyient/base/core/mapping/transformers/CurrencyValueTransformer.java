@@ -29,7 +29,6 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -38,7 +37,7 @@ import java.util.regex.Pattern;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class CurrencyValueTransformer implements Transformer<CurrencyValue> {
+public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
     public static final String LOCALE_OVERRIDE = "formatter.currency.locale";
     public static final String CURRENCY_PARSE_REGEX = "%s\\s*(.*)";
     public static Pattern CURRENCY_PARSE_PATTERN;
@@ -47,13 +46,14 @@ public class CurrencyValueTransformer implements Transformer<CurrencyValue> {
     private Currency currency;
     private DecimalFormat format;
 
-    @Override
-    public String name() {
-        return getClass().getCanonicalName();
+    public CurrencyValueTransformer() {
+        super(CurrencyValue.class);
     }
 
+
     @Override
-    public Transformer<CurrencyValue> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public DeSerializer<CurrencyValue> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+        name = CurrencyValue.class.getSimpleName();
         String l = settings.getParameter(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {
@@ -101,11 +101,5 @@ public class CurrencyValueTransformer implements Transformer<CurrencyValue> {
             }
         }
         throw new DataException(String.format("Cannot transform to Currency. [source=%s]", source.getClass()));
-    }
-
-    @Override
-    public String write(@NonNull CurrencyValue source) throws DataException {
-        NumberFormat nf = NumberFormat.getInstance(locale);
-        return nf.format(source.getValue());
     }
 }

@@ -33,8 +33,7 @@ import java.util.regex.Pattern;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class RegexTransformer implements Transformer<String> {
-    private String name;
+public class RegexTransformer extends DeSerializer<String> {
     private String regex;
     private String replace;
     private List<Integer> groups;
@@ -42,16 +41,16 @@ public class RegexTransformer implements Transformer<String> {
     @Setter(AccessLevel.NONE)
     private Pattern pattern;
 
-    @Override
-    public String name() {
-        return name;
+    public RegexTransformer() {
+        super(String.class);
     }
 
     @Override
-    public Transformer<String> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public DeSerializer<String> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         if (Strings.isNullOrEmpty(regex)) {
             throw new ConfigurationException("Regex not specified...");
         }
+        name = regex;
         pattern = Pattern.compile(regex);
         return this;
     }
@@ -81,10 +80,5 @@ public class RegexTransformer implements Transformer<String> {
             return null;
         }
         throw new DataException(String.format("Cannot transform to String. [source=%s]", source.getClass()));
-    }
-
-    @Override
-    public String write(@NonNull String source) throws DataException {
-        return source;
     }
 }

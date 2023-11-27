@@ -16,8 +16,10 @@
 
 package io.zyient.base.core.mapping.transformers;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.CommonUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
 import lombok.Getter;
@@ -32,14 +34,16 @@ import java.util.Locale;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class NumericTransformer<T> implements Transformer<T> {
+public abstract class NumericTransformer<T> extends DeSerializer<T> {
     public static final String LOCALE_OVERRIDE = "formatter.numeric.locale";
 
-    private final Class<? extends T> type;
+    private final Class<T> type;
     private Locale locale;
     protected NumberFormat format;
 
-    protected NumericTransformer(@NonNull Class<? extends T> type) {
+    protected NumericTransformer(@NonNull Class<T> type) {
+        super(type);
+        Preconditions.checkArgument(ReflectionHelper.isNumericType(type));
         this.type = type;
     }
 
@@ -49,7 +53,7 @@ public abstract class NumericTransformer<T> implements Transformer<T> {
     }
 
     @Override
-    public Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public DeSerializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         String l = settings.getParameter(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {

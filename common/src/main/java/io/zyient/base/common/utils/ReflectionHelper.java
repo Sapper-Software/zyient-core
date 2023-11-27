@@ -24,6 +24,7 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
 import io.zyient.base.common.model.PropertyModel;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.lang.reflect.*;
@@ -114,6 +115,8 @@ public class ReflectionHelper {
                         } else {
                             break;
                         }
+                    } else {
+                        current = field.getType();
                     }
                 } else if (index == parts.length - 1) {
                     pm = new PropertyModel()
@@ -126,17 +129,24 @@ public class ReflectionHelper {
                 index++;
             }
             return pm;
+        } else {
+            Field field = findField(type, property);
+            return new PropertyModel()
+                    .property(property)
+                    .field(field)
+                    .getter(getGetterMethod(type, property))
+                    .setter(getSetterMethod(type, property));
         }
-        return null;
     }
 
     public static Method getSetterMethod(@NonNull Class<?> clazz, @NonNull String property) {
-        List<Method> getters = CLASS_UTILS.getSetterMethods(clazz);
-        if (getters != null && !getters.isEmpty()) {
-            for (Method getter : getters) {
-                String name = getter.getName().toLowerCase();
-                if (name.endsWith(property)) {
-                    return getter;
+        List<Method> setters = CLASS_UTILS.getSetterMethods(clazz);
+        if (setters != null && !setters.isEmpty()) {
+            for (Method setter : setters) {
+                String name = setter.getName();
+                String p = StringUtils.capitalize(property);
+                if (name.compareTo(String.format("set%s", p)) == 0) {
+                    return setter;
                 }
             }
         }
@@ -147,8 +157,9 @@ public class ReflectionHelper {
         List<Method> getters = CLASS_UTILS.getGetterMethods(clazz);
         if (getters != null && !getters.isEmpty()) {
             for (Method getter : getters) {
-                String name = getter.getName().toLowerCase();
-                if (name.endsWith(property)) {
+                String name = getter.getName();
+                String p = StringUtils.capitalize(property);
+                if (name.compareTo(String.format("get%s", p)) == 0) {
                     return getter;
                 }
             }

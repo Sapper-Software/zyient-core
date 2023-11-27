@@ -17,7 +17,6 @@
 package io.zyient.base.common.config;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Strings;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;

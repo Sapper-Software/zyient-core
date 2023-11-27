@@ -42,9 +42,4 @@ public class IntegerTransformer extends NumericTransformer<Integer> {
         }
         throw new DataException(String.format("Cannot transform to Integer. [source=%s]", source.getClass()));
     }
-
-    @Override
-    public String write(@NonNull Integer source) throws DataException {
-        return format.format(source);
-    }
 }

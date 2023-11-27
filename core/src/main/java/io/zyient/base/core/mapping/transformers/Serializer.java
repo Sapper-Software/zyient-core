@@ -16,17 +16,22 @@
 
 package io.zyient.base.core.mapping.transformers;
 
-import io.zyient.base.core.mapping.DataException;
+import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-public interface Transformer<T> {
-    String name();
+@Getter
+@Accessors(fluent = true)
+public abstract class Serializer<T> extends StdSerializer<T> {
+    protected String name;
 
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
+    protected Serializer(@NonNull Class<T> t) {
+        super(t);
+    }
 
-    T transform(@NonNull Object source) throws DataException;
+    public abstract Serializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
 
-    String write(@NonNull T source) throws DataException;
 }

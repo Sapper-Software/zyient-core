@@ -19,11 +19,8 @@ package io.zyient.base.core.mapping.rules;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.base.common.config.StringListParser;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.List;
 
 @Getter
 @Setter

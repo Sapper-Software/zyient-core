@@ -18,6 +18,7 @@ package io.zyient.base.core.mapping.rules;
 
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.mapping.rules.spel.SpELRule;
+import io.zyient.base.core.mapping.rules.spel.SpELRuleConfig;
 import io.zyient.base.core.stores.impl.rdbms.model.CustomersEntity;
 import org.junit.jupiter.api.Test;
 
@@ -39,7 +40,7 @@ class SpELRuleTest {
             SpELRule<CustomersEntity> rule = new SpELRule<>();
             rule.name("test-setup")
                     .rule("${city} == 'Bangalore' and ${state} == 'KA'? 'IN' : 'UN' ")
-                    .setup(new RuleConfig());
+                    .setup(new SpELRuleConfig());
             List<CustomersEntity> entities = createCustomers(5);
             for (CustomersEntity entity : entities) {
                 MappedResponse<CustomersEntity> response = new MappedResponse<CustomersEntity>(new HashMap<>())

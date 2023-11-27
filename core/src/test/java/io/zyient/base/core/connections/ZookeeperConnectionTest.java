@@ -21,7 +21,6 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
-import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.common.ZookeeperSettings;
 import io.zyient.base.core.utils.DemoEnv;
 import org.apache.commons.configuration2.XMLConfiguration;
