@@ -48,6 +48,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.File;
 import java.util.Map;
 
 @Getter
@@ -61,6 +62,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     private RulesExecutor<E> postProcessor;
     private TransformerPipelineSettings settings;
     private MappingContextProvider contextProvider;
+    private File contentDir;
 
     public String name() {
         Preconditions.checkNotNull(mapping);
@@ -103,6 +105,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
             postProcessor = (RulesExecutor<E>) new RulesExecutor<>(entityType)
+                    .contentDir(contentDir)
                     .configure(xmlConfig);
         }
     }

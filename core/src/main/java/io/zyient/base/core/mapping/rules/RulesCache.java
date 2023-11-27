@@ -16,18 +16,26 @@
 
 package io.zyient.base.core.mapping.rules;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Setter
+@Accessors(fluent = true)
 public class RulesCache<T> {
     private Class<? extends T> type;
     private final Map<String, Rule<T>> cache = new HashMap<>();
+    private File contentDir;
 
     public boolean has(@NonNull String name) {
         return cache.containsKey(name);
@@ -44,6 +52,7 @@ public class RulesCache<T> {
         try {
             RuleConfigReader<T> reader = new RuleConfigReader<T>()
                     .cache(this)
+                    .contentDir(contentDir)
                     .entityType(this.type);
             List<Rule<T>> rules = reader.read(node);
             if (rules != null && !rules.isEmpty()) {

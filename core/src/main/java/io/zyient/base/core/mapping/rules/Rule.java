@@ -20,6 +20,7 @@ import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
+import java.io.File;
 import java.util.List;
 
 
@@ -27,6 +28,8 @@ public interface Rule<T> {
     String __RULE_TYPE = "rules";
 
     String name();
+
+    Rule<T> withContentDir(@NonNull File contentDir);
 
     Rule<T> withEntityType(@NonNull Class<? extends T> type);
 
@@ -36,5 +39,5 @@ public interface Rule<T> {
 
     RuleType getRuleType();
 
-    void addSubRules(@NonNull List<Rule<T>> rules);
+    void addSubRules(@NonNull List<Rule<T>> rules) throws Exception;
 }

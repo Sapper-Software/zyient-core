@@ -20,13 +20,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.mapping.model.MappedElement;
-import io.zyient.base.core.model.PropertyBag;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 

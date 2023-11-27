@@ -16,9 +16,24 @@
 
 package io.zyient.base.core.mapping.rules;
 
-public enum RuleType {
-    Condition,
-    Validation,
-    Transformation,
-    Group
+import com.google.common.base.Preconditions;
+import io.zyient.base.core.mapping.model.MappedResponse;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+
+@Getter
+@Accessors(fluent = true)
+public class RuleGroup<T> extends BaseRule<T> {
+
+    @Override
+    protected Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
+        return true;
+    }
+
+    @Override
+    protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
+        Preconditions.checkArgument(config instanceof RuleGroupConfig);
+    }
 }

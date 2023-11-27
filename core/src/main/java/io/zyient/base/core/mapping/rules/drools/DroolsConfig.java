@@ -18,15 +18,18 @@ package io.zyient.base.core.mapping.rules.drools;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.StringListParser;
 import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class DroolsConfig extends RuleConfig {
-    @Config(name = "drl")
-    private String drl;
+    @Config(name = "DRL", parser = StringListParser.class)
+    private List<String> drls;
 }

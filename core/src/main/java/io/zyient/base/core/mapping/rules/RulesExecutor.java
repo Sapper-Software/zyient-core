@@ -26,6 +26,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.File;
 import java.util.List;
 
 @Getter
@@ -36,6 +37,7 @@ public class RulesExecutor<T> {
     @Setter(AccessLevel.NONE)
     private List<Rule<T>> rules;
     private RulesCache<T> cache;
+    private File contentDir;
 
     public RulesExecutor(@NonNull Class<? extends T> type) {
         this.type = type;
@@ -44,6 +46,7 @@ public class RulesExecutor<T> {
     public RulesExecutor<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         RuleConfigReader<T> reader = new RuleConfigReader<T>()
                 .cache(cache)
+                .contentDir(contentDir)
                 .entityType(type);
         rules = reader.read(xmlConfig);
         return this;

@@ -16,15 +16,16 @@
 
 package io.zyient.base.core.mapping.mapper;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
-import io.zyient.base.core.mapping.annotations.Ignore;
-import io.zyient.base.core.mapping.annotations.Target;
 import io.zyient.base.core.mapping.model.*;
 import io.zyient.base.core.mapping.readers.MappingContextProvider;
 import io.zyient.base.core.mapping.rules.RuleConfigReader;
@@ -39,6 +40,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.HashMap;
@@ -51,14 +53,21 @@ public class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
 
     private Class<? extends T> type;
+    private File contentDir;
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
-    private final Map<String, Field> fieldTree = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> transformers = new HashMap<>();
     private RulesExecutor<T> rulesExecutor;
     private MappingContextProvider contextProvider;
     private RulesCache<T> rulesCache;
+    private MapTransformer<T> mapTransformer;
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public Mapping<T> withContentDir(@NonNull File contentDir) {
+        this.contentDir = contentDir;
+        return this;
+    }
 
     @SuppressWarnings("unchecked")
     public Mapping<T> withRulesCache(RulesCache<?> rulesCache) {
@@ -90,7 +99,14 @@ public class Mapping<T> {
             settings.postLoad();
             type = (Class<? extends T>) settings.getEntityType();
             readMappings(config);
-            buildFieldTree(type, null);
+            if (!transformers.isEmpty()) {
+                SimpleModule module = new SimpleModule();
+                for (String name : transformers.keySet()) {
+                    DeSerializer<?> deSerializer = transformers.get(name);
+                    addDeSerializer(module, name);
+                }
+                mapper.registerModule(module);
+            }
             checkAndLoadRules(config);
             return this;
         } catch (Exception ex) {
@@ -98,68 +114,18 @@ public class Mapping<T> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private <S> void addDeSerializer(SimpleModule module, String name) {
+        DeSerializer<S> deSerializer = (DeSerializer<S>) transformers.get(name);
+        module.addDeserializer(deSerializer.type(), deSerializer);
+    }
+
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
             rulesExecutor = new RulesExecutor<T>(type)
                     .cache(rulesCache)
+                    .contentDir(contentDir)
                     .configure(xmlConfig);
-        }
-    }
-
-    private void buildFieldTree(Class<?> type, String prefix) throws Exception {
-        Field[] fields = ReflectionHelper.getAllFields(type);
-        Preconditions.checkNotNull(fields);
-        for (Field field : fields) {
-            if (field.isAnnotationPresent(Ignore.class)) continue;
-            String name = field.getName();
-            if (!Strings.isNullOrEmpty(prefix)) {
-                name = String.format("%s.%s", prefix, name);
-            }
-            String target = null;
-            if (field.isAnnotationPresent(Target.class)) {
-                Target t = field.getAnnotation(Target.class);
-                Preconditions.checkArgument(!Strings.isNullOrEmpty(t.name()));
-                target = t.name();
-                if (fieldTree.containsKey(target)) {
-                    Field f = fieldTree.get(target);
-                    throw new Exception(String.format("Duplicate target name used. [fields={%s, %s}, target=%s]",
-                            f.getName(), field.getName(), target));
-                }
-            }
-
-            if (ReflectionHelper.isPrimitiveTypeOrString(field) ||
-                    field.getType().isEnum() ||
-                    field.getType().equals(Date.class)) {
-                fieldTree.put(name, field);
-                if (!Strings.isNullOrEmpty(target)) {
-                    fieldTree.put(target, field);
-                }
-            } else if (ReflectionHelper.isCollection(field)) {
-                Class<?> inner = ReflectionHelper.getGenericCollectionType(field);
-                if (!ReflectionHelper.isPrimitiveTypeOrString(inner)) {
-                    throw new Exception(String.format("Collection type not supported. [type=%s]",
-                            inner.getCanonicalName()));
-                }
-                fieldTree.put(name, field);
-                if (!Strings.isNullOrEmpty(target)) {
-                    fieldTree.put(target, field);
-                }
-            } else if (ReflectionHelper.isMap(field)) {
-                Class<?> kt = ReflectionHelper.getGenericMapKeyType(field);
-                if (!kt.equals(String.class)) {
-                    throw new Exception(String.format("Map Key type not supported. [type=%s]", kt.getCanonicalName()));
-                }
-                Class<?> vt = ReflectionHelper.getGenericMapValueType(field);
-                if (!ReflectionHelper.isPrimitiveTypeOrString(vt)) {
-                    throw new Exception(String.format("Map Value type not supported. [type=%s]", kt.getCanonicalName()));
-                }
-                fieldTree.put(name, field);
-                if (!Strings.isNullOrEmpty(target)) {
-                    fieldTree.put(target, field);
-                }
-            } else {
-                buildFieldTree(field.getType(), name);
-            }
         }
     }
 
@@ -178,6 +144,16 @@ public class Mapping<T> {
                 MappedElement me = MappedElement.read(node, type);
                 sourceIndex.put(me.getSourcePath(), me);
                 targetIndex.put(me.getTargetPath(), me);
+                if (me.getMappingType() == MappingType.Field) {
+                    mapTransformer.add(me);
+                    Field field = ReflectionHelper.findField(this.type, me.getTargetPath());
+                    Preconditions.checkNotNull(field);
+                    DeSerializer<?> transformer = getTransformer(field.getType(), me);
+                    if (transformer != null) {
+                        DefaultLogger.info(String.format("Using transformer. [type=%s][name=%s]",
+                                field.getType(), transformer.name()));
+                    }
+                }
             }
         } else {
             throw new Exception("No mappings found...");
@@ -185,19 +161,17 @@ public class Mapping<T> {
     }
 
     public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
-        T entity = null;
-        if (contextProvider != null) {
-            entity = contextProvider.createInstance(type);
-        } else {
-            entity = type.getDeclaredConstructor().newInstance();
-        }
+        Map<String, Object> converted = mapTransformer.transform(source);
+        T entity = mapper.convertValue(converted, type);
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
         response.entity(entity);
+
         for (String path : sourceIndex.keySet()) {
+            MappedElement me = sourceIndex.get(path);
+            if (me.getMappingType() == MappingType.Field) continue;
             String[] parts = path.split("\\.");
             Object value = findSourceValue(source, parts, 0);
-            MappedElement me = sourceIndex.get(path);
             if (value == null) {
                 if (!me.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
@@ -241,8 +215,6 @@ public class Mapping<T> {
             } else {
                 response.add(element.getTargetPath(), tv);
             }
-        } else {
-
         }
     }
 
@@ -350,47 +322,5 @@ public class Mapping<T> {
             }
         }
         return null;
-    }
-
-    public Map<String, Object> write(@NonNull T data) throws Exception {
-        Map<String, Object> response = new HashMap<>();
-        for (String key : targetIndex.keySet()) {
-            MappedElement me = targetIndex.get(key);
-            if (me.getMappingType() == MappingType.Field) {
-                Field field = fieldTree.get(me.getTargetPath());
-                if (field == null) {
-                    throw new Exception(String.format("Field not registered. [field=%s]", me.getTargetPath()));
-                }
-                //Object value = ReflectionHelper.getFieldValue(data, field);
-                //setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
-            } else if (me.getMappingType() == MappingType.Custom) {
-                if (!(data instanceof PropertyBag bag)) {
-                    throw new Exception(String.format("Type does not support custom fields. [type=%s]",
-                            data.getClass().getCanonicalName()));
-                }
-                Object value = bag.getProperty(me.getTargetPath());
-                setFieldValue(response, value, me.getSourcePath().split("\\."), 0);
-            }
-        }
-        return response;
-    }
-
-    @SuppressWarnings("unchecked")
-    private void setFieldValue(Map<String, Object> map, Object value, String[] path, int index) throws Exception {
-        String key = path[index];
-        if (index == path.length - 1) {
-            map.put(key, value);
-        } else if (map.containsKey(key)) {
-            Object node = map.get(key);
-            if (!(node instanceof Map<?, ?>)) {
-                throw new Exception(String.format("Node already populated. [node=%s]", (Object) path));
-            }
-            Map<String, Object> nmap = (Map<String, Object>) node;
-            setFieldValue(nmap, value, path, index + 1);
-        } else {
-            Map<String, Object> nmap = new HashMap<>();
-            map.put(key, nmap);
-            setFieldValue(nmap, value, path, index + 1);
-        }
     }
 }

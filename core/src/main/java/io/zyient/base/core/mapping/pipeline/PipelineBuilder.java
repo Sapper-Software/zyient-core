@@ -23,7 +23,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.mapping.mapper.MapperFactory;
 import io.zyient.base.core.mapping.model.ContentInfo;
 import io.zyient.base.core.mapping.model.InputContentInfo;
-import io.zyient.base.core.mapping.model.OutputContentInfo;
 import io.zyient.base.core.mapping.readers.InputReader;
 import io.zyient.base.core.mapping.readers.InputReaderFactory;
 import io.zyient.base.core.mapping.readers.MappingContextProvider;
@@ -69,6 +68,7 @@ public class PipelineBuilder {
                 TransformerPipeline<?, ?> pipeline = cls.getDeclaredConstructor()
                         .newInstance()
                         .contextProvider(contextProvider)
+                        .contentDir(mapperFactory.contentDir())
                         .configure(node, mapperFactory, dataStoreManager);
             }
             return this;
@@ -80,15 +80,10 @@ public class PipelineBuilder {
     public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> build(@NonNull ContentInfo contentInfo) throws Exception {
         if (contentInfo instanceof InputContentInfo) {
             return buildInputPipeline((InputContentInfo) contentInfo);
-        } else if (contentInfo instanceof OutputContentInfo) {
-            return buildOutputPipeline((OutputContentInfo) contentInfo);
         }
         throw new Exception(String.format("Content type not supported. [type=%s]", contentInfo.getClass().getCanonicalName()));
     }
 
-    public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> buildOutputPipeline(@NonNull OutputContentInfo outputContentInfo) throws Exception {
-        return null;
-    }
 
     @SuppressWarnings("unchecked")
     public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> buildInputPipeline(@NonNull InputContentInfo inputContentInfo) throws Exception {

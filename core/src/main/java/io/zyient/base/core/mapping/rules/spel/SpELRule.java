@@ -36,6 +36,7 @@ import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
+import java.io.File;
 import java.util.Map;
 
 @Getter
@@ -172,5 +173,10 @@ public class SpELRule<T> extends BaseRule<T> {
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
+    }
+
+    @Override
+    public Rule<T> withContentDir(@NonNull File contentDir) {
+        return this;
     }
 }

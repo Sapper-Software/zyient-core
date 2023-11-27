@@ -32,6 +32,4 @@ public interface MappingContextProvider {
     InputContentInfo inputContext(@NonNull ContentInfo contentInfo) throws Exception;
 
     OutputContentInfo outputContext(@NonNull ContentInfo contentInfo) throws Exception;
-
-    <E> E createInstance(Class<? extends E> entityType) throws Exception;
 }

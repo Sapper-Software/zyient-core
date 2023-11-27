@@ -25,6 +25,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,6 +38,7 @@ public class RuleConfigReader<T> {
 
     private Class<? extends T> entityType;
     private RulesCache<T> cache;
+    private File contentDir;
 
     @SuppressWarnings("unchecked")
     public List<Rule<T>> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
@@ -46,8 +48,9 @@ public class RuleConfigReader<T> {
                 List<Rule<T>> rules = new ArrayList<>(nodes.size());
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
                     Class<? extends RuleConfig> rType = (Class<? extends RuleConfig>) ConfigReader.readType(node);
-                    if (rType == null)
-                        rType = RuleConfig.class;
+                    if (rType == null) {
+                        throw new ConfigurationException("Rule configuration type missing...");
+                    }
                     ConfigReader reader = new ConfigReader(node, null, rType);
                     reader.read();
                     RuleConfig config = (RuleConfig) reader.settings();
@@ -65,16 +68,27 @@ public class RuleConfigReader<T> {
                         rules.add(rule);
                     } else {
                         Rule<T> rule = null;
-                        Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
-                        if (type == null) {
-                            rule = BaseRule.createDefaultInstance();
+                        if (config.getType() == RuleType.Group) {
+                            rule = new RuleGroup<>();
                         } else {
-                            rule = type.getDeclaredConstructor()
-                                    .newInstance();
+                            Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
+                            if (type == null) {
+                                rule = BaseRule.createDefaultInstance();
+                            } else {
+                                rule = type.getDeclaredConstructor()
+                                        .newInstance();
+                            }
                         }
                         rule.withEntityType(entityType)
+                                .withContentDir(contentDir)
                                 .configure(config);
                         if (ConfigReader.checkIfNodeExists(node, __CONFIG_PATH)) {
+                            if (rule.getRuleType() != RuleType.Group
+                                    && rule.getRuleType() != RuleType.Condition) {
+                                throw new Exception(String
+                                        .format("[rule=%s] Sub-rules can only be added to Rule group or condition Rule. [type=%s]",
+                                                rule.name(), rule.getRuleType().name()));
+                            }
                             List<Rule<T>> subRules = read(node);
                             if (subRules != null) {
                                 rule.addSubRules(subRules);

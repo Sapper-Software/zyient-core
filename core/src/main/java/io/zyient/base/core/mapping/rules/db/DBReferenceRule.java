@@ -34,6 +34,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -186,5 +187,10 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
+    }
+
+    @Override
+    public Rule<T> withContentDir(@NonNull File contentDir) {
+        return this;
     }
 }

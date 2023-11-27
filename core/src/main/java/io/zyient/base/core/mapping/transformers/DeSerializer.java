@@ -16,6 +16,9 @@
 
 package io.zyient.base.core.mapping.transformers;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
 import com.google.common.base.Strings;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
@@ -24,9 +27,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.deser.std.StdDeserializer;
 
 import java.io.IOException;
 
@@ -35,14 +35,17 @@ import java.io.IOException;
 @Accessors(fluent = true)
 public abstract class DeSerializer<T> extends StdDeserializer<T> {
     protected String name;
+    private final Class<T> type;
 
     protected DeSerializer(Class<T> t) {
         super(t);
+        type = t;
     }
 
     public abstract DeSerializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
 
     public abstract T transform(@NonNull Object value) throws DataException;
+
 
     /**
      * Method that can be called to ask implementation to deserialize

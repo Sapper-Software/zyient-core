@@ -16,9 +16,13 @@
 
 package io.zyient.base.core.mapping.rules;
 
-public enum RuleType {
-    Condition,
-    Validation,
-    Transformation,
-    Group
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class RuleGroupConfig extends RuleConfig {
 }

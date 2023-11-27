@@ -24,17 +24,22 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.settings.ReaderFactorySettings;
 import io.zyient.base.core.mapping.rules.RulesCache;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Getter
+@Accessors(fluent = true)
 public class MapperFactory {
     public static final String __CONFIG_PATH = "mappers";
     public static final String __CONFIG_PATH_FACTORY = String.format("%s.factory", __CONFIG_PATH);
@@ -44,6 +49,7 @@ public class MapperFactory {
     private MapperFactorySettings settings;
     private final Map<String, Mapping<?>> mappings = new HashMap<>();
     private final Map<Class<?>, RulesCache<?>> rulesCaches = new HashMap<>();
+    private File contentDir;
 
 
     public MapperFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
@@ -53,6 +59,11 @@ public class MapperFactory {
             ConfigReader reader = new ConfigReader(factoryConfig, null, ReaderFactorySettings.class);
             reader.read();
             settings = (MapperFactorySettings) reader.settings();
+            contentDir = new File(settings.getConfigDir());
+            if (!contentDir.exists()) {
+                throw new IOException(String.format("Content directory not found. [path=%s]",
+                        contentDir.getAbsolutePath()));
+            }
             readGlobalRules(xmlConfig);
             readMappingConfigs(config);
             return this;
@@ -83,6 +94,7 @@ public class MapperFactory {
             HierarchicalConfiguration<ImmutableNode> rNode =
                     rConfig.configurationAt(RulesCacheSettings.__CONFIG_PATH_GLOBAL);
             RulesCache<?> cache = createCache(cacheSettings.getEntityType())
+                    .contentDir(contentDir)
                     .configure(rNode, cacheSettings.getEntityType());
             rulesCaches.put(cacheSettings.getEntityType(), cache);
         }
@@ -122,6 +134,7 @@ public class MapperFactory {
             RulesCache<?> cache = rulesCaches.get(entityType);
             Mapping<?> mapping = createInstance(entityType, mCls)
                     .withRulesCache(cache)
+                    .withContentDir(contentDir)
                     .configure(mConfig);
             mappings.put(mapping.name(), mapping);
         }
