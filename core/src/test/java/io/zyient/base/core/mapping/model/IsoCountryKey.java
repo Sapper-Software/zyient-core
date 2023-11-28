@@ -14,30 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.model.entity;
+package io.zyient.base.core.mapping.model;
 
-import com.google.common.base.Preconditions;
-import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.model.entity.IKey;
 import jakarta.persistence.Column;
-import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.Transient;
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
-@MappedSuperclass
-public abstract class NativeKey<T> implements IKey {
-    @Transient
-    private final Class<? extends T> type;
-    @Column(name = "id")
-    private T key;
-
-    public NativeKey(@NonNull Class<? extends T> type) {
-        Preconditions.checkArgument(ReflectionHelper.isPrimitiveTypeOrString(type));
-        this.type = type;
-    }
+@Embeddable
+public class IsoCountryKey implements IKey {
+    @Column(name = "name")
+    private String name;
 
     /**
      * Get the String representation of the key.
@@ -46,6 +36,20 @@ public abstract class NativeKey<T> implements IKey {
      */
     @Override
     public String stringKey() {
-        return String.valueOf(key);
+        return name;
+    }
+
+    /**
+     * Compare the current key to the target.
+     *
+     * @param key - Key to compare to
+     * @return - == 0, < -x, > +x
+     */
+    @Override
+    public int compareTo(IKey key) {
+        if (key instanceof IsoCountryKey) {
+            return name.compareTo(((IsoCountryKey) key).name);
+        }
+        return Short.MIN_VALUE;
     }
 }

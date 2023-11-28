@@ -34,21 +34,22 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class Errors {
     public static final String __CONFIG_PATH = "errors";
+    public static final String __CONFIG_PATH_LOADER = "loader";
 
     private final Map<String, Map<Integer, Error>> errors = new HashMap<>();
-    private ErrorsLoaderConfig config;
 
+    @SuppressWarnings("unchecked")
     public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            ConfigReader reader = new ConfigReader(xmlConfig,
-                    ErrorsLoaderConfig.__CONFIG_PATH,
-                    ErrorsLoaderConfig.class);
-            reader.read();
-            config = (ErrorsLoaderConfig) reader.settings();
-            ErrorsReader r = config.getReader().getDeclaredConstructor()
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_LOADER);
+            Class<? extends ErrorsReader> type = (Class<? extends ErrorsReader>) ConfigReader.readType(config);
+            if (type == null) {
+                throw new ConfigurationException("Errors Reader not specified...");
+            }
+            ErrorsReader r = type.getDeclaredConstructor()
                     .newInstance()
                     .withLoader(this)
-                    .configure(reader.config());
+                    .configure(config);
             List<Error> result = r.read();
             if (result != null && !result.isEmpty()) {
                 for (Error error : result) {

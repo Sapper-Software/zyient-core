@@ -14,21 +14,27 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors;
+package io.zyient.base.core.mapping.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ErrorsLoaderConfig extends Settings {
-    public static final String __CONFIG_PATH = String.format("%s.loader", Errors.__CONFIG_PATH);
-
-    @Config(name = "reader", type = Class.class)
-    private Class<? extends ErrorsReader> reader;
+@Embeddable
+public class Address {
+    @Column(name = "address")
+    private String address;
+    @Column(name = "address_city")
+    private String city;
+    @Column(name = "address_state")
+    private String state;
+    @Column(name = "address_country")
+    private String country;
+    @Column(name = "country_code")
+    private String countryCode;
+    @Column(name = "address_zip_code")
+    private String zipCode;
 }

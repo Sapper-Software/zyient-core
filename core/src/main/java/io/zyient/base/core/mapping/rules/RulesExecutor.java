@@ -16,6 +16,8 @@
 
 package io.zyient.base.core.mapping.rules;
 
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -52,9 +54,20 @@ public class RulesExecutor<T> {
         return this;
     }
 
-    public void evaluate(@NonNull MappedResponse<T> input) throws Exception {
-        for (Rule<T> rule : rules) {
-            rule.evaluate(input);
+    public void evaluate(@NonNull MappedResponse<T> input,
+                         boolean terminateOnValidationError) throws Exception {
+        try {
+            for (Rule<T> rule : rules) {
+                rule.evaluate(input);
+            }
+        } catch (ValidationException ex) {
+            if (terminateOnValidationError)
+                throw ex;
+            input.errors(ValidationExceptions.add(ex, input.errors()));
+        } catch (ValidationExceptions ex) {
+            if (terminateOnValidationError)
+                throw ex;
+            input.errors(ex);
         }
     }
 }

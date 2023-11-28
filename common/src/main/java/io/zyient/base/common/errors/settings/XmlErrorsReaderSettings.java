@@ -26,6 +26,8 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class XmlErrorsReaderSettings extends FileErrorsReaderSettings {
-    @Config(name = "xpath", required = false)
+    @Config(name = "xpath.root", required = false)
     private String xPath = "errors";
+    @Config(name = "xpath.node", required = false)
+    private String xPathError = "error";
 }

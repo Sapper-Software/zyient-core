@@ -19,8 +19,10 @@ package io.zyient.base.core.mapping.rules.drools;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.StringListParser;
+import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 import java.util.List;
@@ -32,4 +34,9 @@ import java.util.List;
 public class DroolsConfig extends RuleConfig {
     @Config(name = "DRL", parser = StringListParser.class)
     private List<String> drls;
+
+    @Override
+    public <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception {
+        return new DroolsRule<E>();
+    }
 }

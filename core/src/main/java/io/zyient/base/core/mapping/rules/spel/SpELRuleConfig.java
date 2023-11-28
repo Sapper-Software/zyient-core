@@ -18,8 +18,10 @@ package io.zyient.base.core.mapping.rules.spel;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -29,4 +31,8 @@ import lombok.Setter;
 public class SpELRuleConfig extends RuleConfig {
     @Config(name = "field", required = false)
     private String target;
+
+    public  <E> Rule<E> createInstance(@NonNull Class<? extends E> entityType) throws Exception {
+        return new SpELRule<E>();
+    }
 }

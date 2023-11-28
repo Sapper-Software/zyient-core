@@ -36,6 +36,8 @@ public class TransformerPipelineSettings extends Settings {
     private Class<? extends IEntity<?>> entityType;
     @Config(name = "terminateOnValidationError", required = false, type = Boolean.class)
     private boolean terminateOnValidationError = true;
+    @Config(name = "saveValidationErrors", required = false, type = Boolean.class)
+    private boolean saveValidationErrors = false;
     @Config(name = "mapper")
     private String mapper;
     @Config(name = "dataStore.name")

@@ -35,6 +35,7 @@ import java.util.List;
 public class RuleConfigReader<T> {
     public static final String __CONFIG_PATH = "rules";
     public static final String __CONFIG_PATH_RULE = "rule";
+    public static final String __CONFIG_ATTR_TYPE = "settings";
 
     private Class<? extends T> entityType;
     private RulesCache<T> cache;
@@ -44,10 +45,12 @@ public class RuleConfigReader<T> {
     public List<Rule<T>> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
             if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH)) {
-                List<HierarchicalConfiguration<ImmutableNode>> nodes = xmlConfig.configurationsAt(__CONFIG_PATH_RULE);
+                HierarchicalConfiguration<ImmutableNode> root = xmlConfig.configurationAt(__CONFIG_PATH);
+                List<HierarchicalConfiguration<ImmutableNode>> nodes = root.configurationsAt(__CONFIG_PATH_RULE);
                 List<Rule<T>> rules = new ArrayList<>(nodes.size());
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                    Class<? extends RuleConfig> rType = (Class<? extends RuleConfig>) ConfigReader.readType(node);
+                    Class<? extends RuleConfig> rType = (Class<? extends RuleConfig>) ConfigReader
+                            .readType(node, __CONFIG_ATTR_TYPE);
                     if (rType == null) {
                         throw new ConfigurationException("Rule configuration type missing...");
                     }
@@ -67,18 +70,7 @@ public class RuleConfigReader<T> {
                         }
                         rules.add(rule);
                     } else {
-                        Rule<T> rule = null;
-                        if (config.getType() == RuleType.Group) {
-                            rule = new RuleGroup<>();
-                        } else {
-                            Class<? extends Rule<T>> type = (Class<? extends Rule<T>>) ConfigReader.readType(node);
-                            if (type == null) {
-                                rule = BaseRule.createDefaultInstance();
-                            } else {
-                                rule = type.getDeclaredConstructor()
-                                        .newInstance();
-                            }
-                        }
+                        Rule<T> rule = config.createInstance(entityType);
                         rule.withEntityType(entityType)
                                 .withContentDir(contentDir)
                                 .configure(config);

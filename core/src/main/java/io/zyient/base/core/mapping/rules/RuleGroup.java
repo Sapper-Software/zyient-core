@@ -23,6 +23,8 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
+import java.io.File;
+
 @Getter
 @Accessors(fluent = true)
 public class RuleGroup<T> extends BaseRule<T> {
@@ -35,5 +37,10 @@ public class RuleGroup<T> extends BaseRule<T> {
     @Override
     protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof RuleGroupConfig);
+    }
+
+    @Override
+    public Rule<T> withContentDir(@NonNull File contentDir) {
+        return this;
     }
 }

@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors;
+package io.zyient.base.core.mapping.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class Error {
-    private String type;
-    private int errorCode;
-    private String message;
+@Embeddable
+public class Contact {
+    @Column(name = "phone_no")
+    private String phoneNo;
+    @Column(name = "email_id")
+    private String emailId;
+    private Address address;
 }

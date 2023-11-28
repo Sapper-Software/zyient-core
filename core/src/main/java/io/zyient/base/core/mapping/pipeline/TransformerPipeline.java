@@ -27,6 +27,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.mapping.mapper.MapperFactory;
 import io.zyient.base.core.mapping.mapper.Mapping;
+import io.zyient.base.core.mapping.model.EntityValidationError;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.mapping.model.OutputContentInfo;
@@ -35,6 +36,7 @@ import io.zyient.base.core.mapping.readers.MappingContextProvider;
 import io.zyient.base.core.mapping.readers.ReadCursor;
 import io.zyient.base.core.mapping.readers.ReadResponse;
 import io.zyient.base.core.mapping.rules.RuleConfigReader;
+import io.zyient.base.core.mapping.rules.RuleValidationError;
 import io.zyient.base.core.mapping.rules.RulesExecutor;
 import io.zyient.base.core.mapping.writers.OutputWriter;
 import io.zyient.base.core.stores.AbstractDataStore;
@@ -84,6 +86,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                 throw new Exception(String.format("Specified mapping not found. [mapping=%s]",
                         settings.getMapper()));
             }
+            mapping.withTerminateOnValidationError(settings.isTerminateOnValidationError());
             if (contextProvider != null) {
                 mapping.withContextProvider(contextProvider);
             }
@@ -126,6 +129,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         // TODO: Finish writing
     }
 
+    @SuppressWarnings(("unchecked"))
     public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
         if (!Strings.isNullOrEmpty(context.mapping())) {
             if (mapping.name().compareTo(context.mapping()) != 0) {
@@ -144,12 +148,26 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                 if (data == null) break;
                 MappedResponse<E> r = mapping.read(data, context);
                 if (postProcessor != null) {
-                    postProcessor.evaluate(r);
+                    postProcessor.evaluate(r, settings().isTerminateOnValidationError());
                 }
                 E entity = dataStore.create(r.entity(), entityType, context);
                 if (DefaultLogger.isTraceEnabled()) {
                     String json = JSONUtils.asString(entity, entityType);
                     DefaultLogger.trace(json);
+                }
+                if (r.errors() != null) {
+                    ValidationExceptions errors = r.errors();
+                    if (settings().isSaveValidationErrors()) {
+                        for (ValidationException error : errors) {
+                            if (error instanceof RuleValidationError) {
+                                EntityValidationError ve = new EntityValidationError(entity.entityKey().stringKey(),
+                                        (Class<? extends IEntity<?>>) entity.getClass(),
+                                        (RuleValidationError) error);
+                                dataStore.create(ve, ve.getClass(), context);
+                            }
+                        }
+                    }
+                    throw errors;
                 }
                 count++;
             } catch (ValidationException ex) {

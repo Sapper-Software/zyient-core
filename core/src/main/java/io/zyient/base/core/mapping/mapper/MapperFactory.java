@@ -22,7 +22,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.model.InputContentInfo;
-import io.zyient.base.core.mapping.readers.settings.ReaderFactorySettings;
 import io.zyient.base.core.mapping.rules.RulesCache;
 import lombok.Getter;
 import lombok.NonNull;
@@ -51,15 +50,15 @@ public class MapperFactory {
     private final Map<Class<?>, RulesCache<?>> rulesCaches = new HashMap<>();
     private File contentDir;
 
-
     public MapperFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
             HierarchicalConfiguration<ImmutableNode> factoryConfig = xmlConfig.configurationAt(__CONFIG_PATH_FACTORY);
-            ConfigReader reader = new ConfigReader(factoryConfig, null, ReaderFactorySettings.class);
+            ConfigReader reader = new ConfigReader(factoryConfig, null, MapperFactorySettings.class);
             reader.read();
             settings = (MapperFactorySettings) reader.settings();
-            contentDir = new File(settings.getConfigDir());
+            settings.postLoad(reader.config());
+            contentDir = new File(settings.getContentDir());
             if (!contentDir.exists()) {
                 throw new IOException(String.format("Content directory not found. [path=%s]",
                         contentDir.getAbsolutePath()));
@@ -85,7 +84,7 @@ public class MapperFactory {
             reader.read();
             RulesCacheSettings cacheSettings = (RulesCacheSettings) reader.settings();
             File cf = new File(PathUtils.formatPath(String.format("%s/%s",
-                    settings.getConfigDir(), cacheSettings.getFilename())));
+                    settings.getContentDir(), cacheSettings.getFilename())));
             if (!cf.exists()) {
                 throw new ConfigurationException(String.format("Mapping configuration file not found. [path=%s]",
                         cf.getAbsolutePath()));
@@ -123,7 +122,7 @@ public class MapperFactory {
                 throw new ConfigurationException(String
                         .format("Invalid mapping configuration: missing mapping configuration path. [value=%s]", v));
             }
-            File cf = new File(PathUtils.formatPath(String.format("%s/%s", settings.getConfigDir(), cfg)));
+            File cf = new File(PathUtils.formatPath(String.format("%s/%s", settings.getContentDir(), cfg)));
             if (!cf.exists()) {
                 throw new ConfigurationException(String.format("Mapping configuration file not found. [path=%s]",
                         cf.getAbsolutePath()));

@@ -177,7 +177,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                 fileSystemManager.init(baseConfig, this);
             }
             if (ConfigReader.checkIfNodeExists(baseConfig, Errors.__CONFIG_PATH)) {
-                Errors.create(baseConfig);
+                Errors.create(baseConfig.configurationAt(Errors.__CONFIG_PATH));
             }
             DefaultExports.initialize();
             if (meterRegistry == null) {

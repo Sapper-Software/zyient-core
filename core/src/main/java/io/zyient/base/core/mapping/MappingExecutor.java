@@ -47,7 +47,8 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @Accessors(fluent = true)
 public class MappingExecutor implements Closeable {
-    public static final String __CONFIG_PATH = "pipeline.executor";
+    public static final String __CONFIG_PATH_PIPELINE = "pipeline";
+    public static final String __CONFIG_PATH_EXECUTOR = "executor";
 
     private final ProcessorState state = new ProcessorState();
     private PipelineBuilder builder;
@@ -62,19 +63,22 @@ public class MappingExecutor implements Closeable {
         this.connectionManager = dataStoreManager.connectionManager();
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
-            if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
-                config = xmlConfig.configurationAt(__CONFIG_PATH);
+            if (config.getRootElementName().compareTo(__CONFIG_PATH_PIPELINE) != 0) {
+                config = xmlConfig.configurationAt(__CONFIG_PATH_PIPELINE);
             }
-            ConfigReader reader = new ConfigReader(config, null, MappingExecutorSettings.class);
+            ConfigReader reader = new ConfigReader(config,
+                    __CONFIG_PATH_EXECUTOR,
+                    MappingExecutorSettings.class);
             reader.read();
             settings = (MappingExecutorSettings) reader.settings();
-            builder = new PipelineBuilder()
-                    .configure(config, dataStoreManager);
             executorService = new ThreadPoolExecutor(settings.getNumThreads(),
                     settings.getNumThreads(),
                     0L, TimeUnit.MILLISECONDS,
                     new LinkedBlockingQueue<>(settings.getTaskQueueSize()));
             state.setState(ProcessorState.EProcessorState.Running);
+
+            builder = new PipelineBuilder()
+                    .configure(config, dataStoreManager);
 
             __instance = this;
 

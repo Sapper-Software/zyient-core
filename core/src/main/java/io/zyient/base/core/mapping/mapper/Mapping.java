@@ -63,6 +63,7 @@ public class Mapping<T> {
     private RulesCache<T> rulesCache;
     private MapTransformer<T> mapTransformer;
     private final ObjectMapper mapper = new ObjectMapper();
+    private boolean terminateOnValidationError = false;
 
     public Mapping<T> withContentDir(@NonNull File contentDir) {
         this.contentDir = contentDir;
@@ -77,6 +78,11 @@ public class Mapping<T> {
 
     public Mapping<T> withContextProvider(MappingContextProvider contextProvider) {
         this.contextProvider = contextProvider;
+        return this;
+    }
+
+    public Mapping<T> withTerminateOnValidationError(boolean terminateOnValidationError) {
+        this.terminateOnValidationError = terminateOnValidationError;
         return this;
     }
 
@@ -182,7 +188,7 @@ public class Mapping<T> {
             setFieldValue(me, value, response);
         }
         if (rulesExecutor != null) {
-            rulesExecutor.evaluate(response);
+            rulesExecutor.evaluate(response, terminateOnValidationError);
         }
         return response;
     }

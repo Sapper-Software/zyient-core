@@ -33,10 +33,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 @Getter
 @Accessors(fluent = true)
@@ -70,6 +67,7 @@ public class XmlErrorsReader implements ErrorsReader {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public List<Error> read() throws Exception {
         Preconditions.checkNotNull(settings);
         Locale locale = Locale.getDefault();
@@ -85,25 +83,42 @@ public class XmlErrorsReader implements ErrorsReader {
         Object data = mapper.readValue(file, Object.class);
         if (data != null) {
             List<Error> errors = new ArrayList<>();
-            Class<?> type = data.getClass();
-            if (type.isArray()) {
-                Object[] array = (Object[]) data;
-                for (Object elem : array) {
-                    Error error = mapper.convertValue(elem, Error.class);
+            Map<String, Object> input = (Map<String, Object>) data;
+            if (input.containsKey(settings.getXPathError())) {
+                data = input.get(settings.getXPathError());
+                Class<?> type = data.getClass();
+                if (type.isArray()) {
+                    Object[] array = (Object[]) data;
+                    for (Object obj : array) {
+                        Error error = parse((Map<String, Object>) obj, mapper);
+                        errors.add(error);
+                    }
+                } else if (ReflectionHelper.isCollection(type)) {
+                    Collection<?> array = (Collection<?>) data;
+                    for (Object obj : array) {
+                        Error error = parse((Map<String, Object>) obj, mapper);
+                        errors.add(error);
+                    }
+                } else {
+                    Error error = parse(input, mapper);
                     errors.add(error);
                 }
-            } else if (ReflectionHelper.isCollection(type)) {
-                Collection<?> array = (Collection<?>) data;
-                for (Object elem : array) {
-                    Error error = mapper.convertValue(elem, Error.class);
-                    errors.add(error);
-                }
-            } else {
-                Error error = mapper.convertValue(data, Error.class);
-                errors.add(error);
             }
             return errors;
         }
         return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Error parse(Map<String, Object> input, XmlMapper mapper) {
+        Map<String, Object> map = null;
+        if (input.size() == 1) {
+            if (input.containsKey(settings.getXPathError())) {
+                map = (Map<String, Object>) input.get(settings.getXPathError());
+            }
+        } else {
+            map = input;
+        }
+        return mapper.convertValue(map, Error.class);
     }
 }

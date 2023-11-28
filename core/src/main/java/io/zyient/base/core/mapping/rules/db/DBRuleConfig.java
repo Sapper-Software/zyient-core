@@ -18,8 +18,12 @@ package io.zyient.base.core.mapping.rules.db;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.mapping.rules.Rule;
 import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 import java.util.Map;
@@ -32,11 +36,22 @@ public class DBRuleConfig extends RuleConfig {
     @Config(name = "dataStore")
     private String dataStore;
     @Config(name = "keyType", type = Class.class)
-    private Class<?> keyType;
+    private Class<? extends IKey> keyType;
     @Config(name = "entityType", type = Class.class)
-    private Class<?> entityType;
+    private Class<? extends IEntity<?>> entityType;
     @Config(name = "fieldMappings", required = false, type = Map.class)
     private Map<String, String> fieldMappings;
     @Config(name = "handler", required = false, type = Class.class)
     private Class<? extends DBRuleHandler<?, ?, ?>> handler;
+
+    @Override
+    public <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception {
+        return createInstance(type, keyType, entityType);
+    }
+
+    private <E, TK extends IKey, TE extends IEntity<TK>> Rule<E> createInstance(Class<? extends E> type,
+                                                                                Class<? extends IKey> keyType,
+                                                                                Class<? extends IEntity<?>> entityType) throws Exception {
+        return new DBReferenceRule<E, TK, TE>();
+    }
 }

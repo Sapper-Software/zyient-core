@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -39,4 +40,6 @@ public abstract class RuleConfig extends Settings {
     private Integer errorCode;
     @Config(name = "validationErrorCode", required = false, type = Integer.class)
     private Integer validationErrorCode;
+
+    public abstract <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception;
 }

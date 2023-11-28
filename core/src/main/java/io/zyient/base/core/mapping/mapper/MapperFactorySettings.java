@@ -18,9 +18,14 @@ package io.zyient.base.core.mapping.mapper;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.config.Settings;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.util.Map;
 
@@ -29,8 +34,15 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class MapperFactorySettings extends Settings {
-    @Config(name = "configDir")
-    private String configDir;
-    @Config(name = "mappings", type = Map.class)
+    public static final String __NODE_MAPPINGS = "mappings";
+    @Config(name = "contentDir")
+    private String contentDir;
     private Map<String, String> mappingConfigs;
+
+    public void postLoad(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        mappingConfigs = ConfigReader.readAsMap(xmlConfig, __NODE_MAPPINGS);
+        if (mappingConfigs == null || mappingConfigs.isEmpty()) {
+            throw new ConfigurationException("Mapping configurations not set...");
+        }
+    }
 }
