@@ -20,7 +20,6 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.rules.RulesCache;
 import lombok.Getter;
@@ -42,8 +41,6 @@ import java.util.Map;
 public class MapperFactory {
     public static final String __CONFIG_PATH = "mappers";
     public static final String __CONFIG_PATH_FACTORY = String.format("%s.factory", __CONFIG_PATH);
-    public static final String __KEY_CLASS = "class";
-    public static final String __KEY_CONFIG_PATH = "config";
 
     private MapperFactorySettings settings;
     private final Map<String, Mapping<?>> mappings = new HashMap<>();
@@ -103,24 +100,11 @@ public class MapperFactory {
         return new RulesCache<E>();
     }
 
-    @SuppressWarnings("unchecked")
     private void readMappingConfigs(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         for (String name : settings.getMappingConfigs().keySet()) {
-            String v = settings.getMappingConfigs().get(name);
-            Map<String, String> map = ReflectionHelper.mapFromString(v);
-            if (map == null) {
-                throw new ConfigurationException(String.format("Invalid mapping configuration: [value=%s]", v));
-            }
-            String cls = map.get(__KEY_CLASS);
-            if (Strings.isNullOrEmpty(cls)) {
-                throw new ConfigurationException(String
-                        .format("Invalid mapping configuration: missing mapping class. [value=%s]", v));
-            }
-            Class<? extends Mapping<?>> mCls = (Class<? extends Mapping<?>>) Class.forName(cls);
-            String cfg = map.get(__KEY_CONFIG_PATH);
-            if (Strings.isNullOrEmpty(cls)) {
-                throw new ConfigurationException(String
-                        .format("Invalid mapping configuration: missing mapping configuration path. [value=%s]", v));
+            String cfg = settings.getMappingConfigs().get(name);
+            if (Strings.isNullOrEmpty(cfg)) {
+                throw new ConfigurationException("Invalid mapping configuration: missing mapping configuration path.");
             }
             File cf = new File(PathUtils.formatPath(String.format("%s/%s", settings.getContentDir(), cfg)));
             if (!cf.exists()) {
@@ -131,7 +115,7 @@ public class MapperFactory {
             HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
             Class<?> entityType = ConfigReader.readType(mConfig, "entity");
             RulesCache<?> cache = rulesCaches.get(entityType);
-            Mapping<?> mapping = createInstance(entityType, mCls)
+            Mapping<?> mapping = createInstance(entityType)
                     .withRulesCache(cache)
                     .withContentDir(contentDir)
                     .configure(mConfig);
@@ -139,10 +123,9 @@ public class MapperFactory {
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private <E> Mapping<E> createInstance(Class<? extends E> entityType,
-                                          Class<? extends Mapping<?>> cls) throws Exception {
-        return (Mapping<E>) cls.getDeclaredConstructor().newInstance();
+    private <E> Mapping<E> createInstance(Class<? extends E> entityType) {
+        return new Mapping<E>()
+                .withEntityType(entityType);
     }
 
     public Mapping<?> findMapping(@NonNull InputContentInfo inputContentInfo) throws Exception {

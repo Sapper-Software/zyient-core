@@ -24,8 +24,10 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
 import io.zyient.base.common.model.PropertyModel;
 import lombok.NonNull;
+import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.*;
 import java.util.*;
@@ -521,6 +523,506 @@ public class ReflectionHelper {
             }
         }
         return null;
+    }
+
+    /**
+     * Set the value of a primitive attribute for the specified object.
+     *
+     * @param value  - Value to set.
+     * @param source - Object to set the attribute value.
+     * @param f      - Field to set value for.
+     * @throws Exception
+     */
+    public static void setPrimitiveValue(@NonNull String value,
+                                         @NonNull Object source,
+                                         @NonNull Field f) throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
+
+        Class<?> type = f.getType();
+        if (type.equals(boolean.class) || type.equals(Boolean.class)) {
+            setBooleanValue(source, f, value);
+        } else if (type.equals(short.class) || type.equals(Short.class)) {
+            setShortValue(source, f, value);
+        } else if (type.equals(int.class) || type.equals(Integer.class)) {
+            setIntValue(source, f, value);
+        } else if (type.equals(float.class) || type.equals(Float.class)) {
+            setFloatValue(source, f, value);
+        } else if (type.equals(double.class) || type.equals(Double.class)) {
+            setDoubleValue(source, f, value);
+        } else if (type.equals(long.class) || type.equals(Long.class)) {
+            setLongValue(source, f, value);
+        } else if (type.equals(char.class) || type.equals(Character.class)) {
+            setCharValue(source, f, value);
+        } else if (type.equals(Class.class)) {
+            setClassValue(source, f, value);
+        } else if (type.equals(String.class)) {
+            setStringValue(source, f, value);
+        }
+    }
+
+    public static void setPrimitiveValue(@NonNull Object value,
+                                         @NonNull Object source,
+                                         @NonNull Field f) throws Exception {
+        Class<?> type = f.getType();
+        if (type.equals(boolean.class) || type.equals(Boolean.class)) {
+            setBooleanValue(source, f, value);
+        } else if (type.equals(short.class) || type.equals(Short.class)) {
+            setShortValue(source, f, value);
+        } else if (type.equals(int.class) || type.equals(Integer.class)) {
+            setIntValue(source, f, value);
+        } else if (type.equals(float.class) || type.equals(Float.class)) {
+            setFloatValue(source, f, value);
+        } else if (type.equals(double.class) || type.equals(Double.class)) {
+            setDoubleValue(source, f, value);
+        } else if (type.equals(long.class) || type.equals(Long.class)) {
+            setLongValue(source, f, value);
+        } else if (type.equals(char.class) || type.equals(Character.class)) {
+            setCharValue(source, f, value);
+        } else if (type.equals(Class.class)) {
+            setClassValue(source, f, value);
+        } else if (type.equals(String.class)) {
+            setStringValue(source, f, value);
+        }
+    }
+
+    /**
+     * Set the value of the field by converting the specified String value to the
+     * required value type.
+     *
+     * @param value    - String value to set.
+     * @param source   - Object to set the attribute value.
+     * @param type     - Class type to set property for.
+     * @param property - Property to set.
+     * @return - True if value was set.
+     */
+    public static boolean setValueFromString(@NonNull String value,
+                                             @NonNull Object source,
+                                             @NonNull Class<?> type,
+                                             @NonNull String property) {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
+        Field f = findField(type, property);
+        if (f != null) {
+            try {
+                setValueFromString(value, source, f);
+                return true;
+            } catch (ReflectionException re) {
+                DefaultLogger.error(re.getLocalizedMessage(), re);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Set the value of the field by converting the specified String value to the
+     * required value type.
+     *
+     * @param value  - String value to set.
+     * @param source - Object to set the attribute value.
+     * @param f      - Field to set value for.
+     * @return - Updated object instance.
+     * @throws ReflectionException
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Object setValueFromString(@NonNull String value,
+                                            @NonNull Object source,
+                                            @NonNull Field f) throws
+            ReflectionException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
+
+        try {
+            Object retV = value;
+            Class<?> type = f.getType();
+            if (isPrimitiveTypeOrClass(f)) {
+                setPrimitiveValue(value, source, f);
+            } else if (type.equals(String.class)) {
+                setStringValue(source, f, value);
+            } else if (type.isEnum()) {
+                Class<Enum> et = (Class<Enum>) type;
+                Object ev = Enum.valueOf(et, value);
+                setObjectValue(source, f, ev);
+                retV = ev;
+            } else if (type.equals(File.class)) {
+                File file = new File(value);
+                setObjectValue(source, f, file);
+                retV = file;
+            } else if (type.equals(Class.class)) {
+                Class<?> cls = Class.forName(value.trim());
+                setObjectValue(source, f, cls);
+                retV = cls;
+            } else {
+                Class<?> cls = Class.forName(value.trim());
+                if (type.isAssignableFrom(cls)) {
+                    Object o = cls.newInstance();
+                    setObjectValue(source, f, o);
+                    retV = o;
+                } else {
+                    throw new InstantiationException(
+                            "Cannot create instance of type [type="
+                                    + cls.getCanonicalName()
+                                    + "] and assign to field [field="
+                                    + f.getName() + "]");
+                }
+            }
+            return retV;
+        } catch (Exception e) {
+            throw new ReflectionException(
+                    "Error setting object value : [type="
+                            + source.getClass().getCanonicalName() + "][field="
+                            + f.getName() + "]",
+                    e);
+        }
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Object setValue(Object value,
+                                  @NonNull Object source,
+                                  @NonNull Field f) throws
+            ReflectionException {
+        try {
+            Object retV = value;
+            Class<?> type = f.getType();
+            if (isPrimitiveTypeOrClass(f)) {
+                setPrimitiveValue(value, source, f);
+            } else if (type.equals(String.class)) {
+                setStringValue(source, f, value);
+            } else if (type.isEnum()) {
+                Object ev = null;
+                if (value instanceof Enum) {
+                    ev = value;
+                } else if (value instanceof String) {
+                    Class<Enum> et = (Class<Enum>) type;
+                    ev = Enum.valueOf(et, (String) value);
+                } else {
+                    throw new ReflectionException(String.format("Failed to convert to Enum[%s]. [type=%s]",
+                            type.getCanonicalName(),
+                            value.getClass().getCanonicalName()));
+                }
+
+                setObjectValue(source, f, ev);
+                retV = ev;
+            } else if (type.equals(File.class)) {
+                File file = null;
+                if (value instanceof File) {
+                    file = (File) value;
+                } else if (value instanceof String) {
+                    file = new File((String) value);
+                } else {
+                    throw new ReflectionException(String.format("Failed to convert to File. [type=%s]",
+                            value.getClass().getCanonicalName()));
+                }
+                setObjectValue(source, f, file);
+                retV = file;
+            } else if (type.equals(Class.class)) {
+                setClassValue(source, f, value);
+            } else if (value instanceof String) {
+                String v = (String) value;
+                Class<?> cls = Class.forName(v.trim());
+                if (type.isAssignableFrom(cls)) {
+                    Object o = cls.getConstructor().newInstance();
+                    setObjectValue(source, f, o);
+                    retV = o;
+                } else {
+                    throw new InstantiationException(
+                            "Cannot create instance of type [type="
+                                    + cls.getCanonicalName()
+                                    + "] and assign to field [field="
+                                    + f.getName() + "]");
+                }
+            } else {
+                setObjectValue(source, f, value);
+            }
+            return retV;
+        } catch (Exception e) {
+            throw new ReflectionException(
+                    "Error setting object value : [type="
+                            + source.getClass().getCanonicalName() + "][field="
+                            + f.getName() + "]",
+                    e);
+        }
+    }
+
+
+    /**
+     * Set the value of the specified field in the object to the value passed.
+     *
+     * @param o     - Object to set value for.
+     * @param f     - Field to set value for.
+     * @param value - Value to set to.
+     * @throws Exception
+     */
+    public static void setObjectValue(@NonNull Object o,
+                                      @NonNull Field f,
+                                      Object value)
+            throws Exception {
+
+        Method m = getSetter(o.getClass(), f);
+
+        if (m == null)
+            throw new Exception("No accessable method found for field. [field="
+                    + f.getName() + "][class=" +
+                    o.getClass().getCanonicalName()
+                    + "]");
+        MethodUtils.invokeMethod(o, m.getName(), value);
+    }
+
+
+    public static Method getSetter(Class<?> type, Field f) {
+        Preconditions.checkArgument(f != null);
+
+        String method = "set" + StringUtils.capitalize(f.getName());
+        Method m = MethodUtils.getAccessibleMethod(type, method,
+                f.getType());
+        if (m == null) {
+            method = f.getName();
+            m = MethodUtils.getAccessibleMethod(type, method,
+                    f.getType());
+        }
+        return m;
+    }
+
+    /**
+     * Set the value of the specified field in the object to the value passed.
+     *
+     * @param o        - Object to set value for.
+     * @param property - Property name to set value for.
+     * @param type     - Class type
+     * @param value    - Value to set to.
+     * @return - True, if value set.
+     * @throws Exception
+     */
+    public static boolean setObjectValue(@NonNull Object o,
+                                         @NonNull String property,
+                                         @NonNull Class<?> type,
+                                         Object value)
+            throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
+
+        Field f = type.getField(property);
+        if (f == null) {
+            return false;
+        }
+
+        String method = "set" + StringUtils.capitalize(f.getName());
+        Method m = MethodUtils.getAccessibleMethod(o.getClass(), method,
+                f.getType());
+        if (m == null) {
+            method = f.getName();
+            m = MethodUtils.getAccessibleMethod(o.getClass(), method,
+                    f.getType());
+        }
+
+        if (m == null)
+            return false;
+
+        MethodUtils.invokeMethod(o, method, value);
+        return true;
+    }
+
+    /**
+     * Set the value of the field to the passed String value.
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setStringValue(@NonNull Object o,
+                                      @NonNull Field f,
+                                      Object value)
+            throws Exception {
+        setObjectValue(o, f, value);
+    }
+
+    /**
+     * Set the value of the field to boolean value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setBooleanValue(@NonNull Object o,
+                                       @NonNull Field f,
+                                       @NonNull Object value)
+            throws Exception {
+        Boolean bv = null;
+        if (isBoolean(value.getClass())) {
+            bv = (Boolean) value;
+        } else if (value instanceof String) {
+            bv = Boolean.parseBoolean((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to boolean. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, bv);
+    }
+
+    /**
+     * Set the value of the field to Short value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setShortValue(@NonNull Object o,
+                                     @NonNull Field f,
+                                     @NonNull Object value)
+            throws Exception {
+        Short sv = null;
+        if (isShort(value.getClass())) {
+            sv = (Short) value;
+        } else if (value instanceof String) {
+            sv = Short.parseShort((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to short. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, sv);
+    }
+
+    /**
+     * Set the value of the field to Integer value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setIntValue(@NonNull Object o,
+                                   @NonNull Field f,
+                                   @NonNull Object value)
+            throws Exception {
+        Integer iv = null;
+        if (isInt(value.getClass())) {
+            iv = (Integer) value;
+        } else if (value instanceof String) {
+            iv = Integer.parseInt((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to integer. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, iv);
+    }
+
+    /**
+     * Set the value of the field to Long value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setLongValue(@NonNull Object o,
+                                    @NonNull Field f,
+                                    @NonNull Object value)
+            throws Exception {
+        Long lv = null;
+        if (isLong(value.getClass())) {
+            lv = (Long) value;
+        } else if (value instanceof String) {
+            lv = Long.parseLong((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to long. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, lv);
+    }
+
+    /**
+     * Set the value of the field to Float value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setFloatValue(@NonNull Object o,
+                                     @NonNull Field f,
+                                     @NonNull Object value)
+            throws Exception {
+        Float fv = null;
+        if (isFloat(value.getClass())) {
+            fv = (Float) value;
+        } else if (value instanceof String) {
+            fv = Float.parseFloat((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to float. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, fv);
+    }
+
+    /**
+     * Set the value of the field to Double value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setDoubleValue(@NonNull Object o,
+                                      @NonNull Field f,
+                                      @NonNull Object value)
+            throws Exception {
+        Double dv = null;
+        if (isDouble(value.getClass())) {
+            dv = (Double) value;
+        } else if (value instanceof String) {
+            dv = Double.parseDouble((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to double. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, dv);
+    }
+
+    /**
+     * Set the value of the field to Char value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setCharValue(@NonNull Object o,
+                                    @NonNull Field f,
+                                    @NonNull Object value)
+            throws Exception {
+        Character cv = null;
+        if (isChar(value.getClass())) {
+            cv = (Character) value;
+        } else if (value instanceof String) {
+            cv = ((String) value).charAt(0);
+        } else {
+            throw new Exception(String.format("Failed to convert to char. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, cv);
+    }
+
+    /**
+     * Set the value of the field to Class value by converting the passed string..
+     *
+     * @param o     - Object to set the value for.
+     * @param f     - Field to set the value for.
+     * @param value - Value to set.
+     * @throws Exception
+     */
+    public static void setClassValue(@NonNull Object o,
+                                     @NonNull Field f,
+                                     @NonNull Object value)
+            throws Exception {
+        Class<?> cv = null;
+        if (value instanceof Class) {
+            cv = (Class<?>) value;
+        } else if (value instanceof String) {
+            Class.forName((String) value);
+        } else {
+            throw new Exception(String.format("Failed to convert to class. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        setObjectValue(o, f, cv);
     }
 
     /**

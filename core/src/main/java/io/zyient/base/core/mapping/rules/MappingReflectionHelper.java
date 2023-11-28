@@ -133,23 +133,35 @@ public class MappingReflectionHelper {
         }
     }
 
-    private static String prefixed(String name) {
+    public static String prefixed(String name) {
         if (!name.endsWith(".")) {
             name = name + ".";
         }
         return name;
     }
 
-    private static String removePrefix(String name, String prefix) {
+    public static String removePrefix(String name, String prefix) {
         prefix = prefixed(prefix);
         if (name.startsWith(prefix))
             return name.replaceFirst(prefix, "");
         return name;
     }
 
+    public static boolean isCachePrefixed(@NonNull String name) {
+        return name.startsWith(FIELD_CACHED + ".");
+    }
+
+    public static boolean isPropertyPrefixed(@NonNull String name) {
+        return name.startsWith(FIELD_CUSTOM + ".");
+    }
+
+    public static boolean isEntityPrefixed(@NonNull String name) {
+        return name.startsWith(FIELD_ENTITY + ".");
+    }
+
     private static boolean prefixEntityField(String field) {
-        return !field.startsWith(FIELD_SOURCE) &&
-                !field.startsWith(FIELD_ENTITY) &&
-                !field.startsWith(FIELD_CACHED);
+        return !field.startsWith(FIELD_SOURCE + ".") &&
+                !field.startsWith(FIELD_ENTITY + ".") &&
+                !field.startsWith(FIELD_CACHED + ".");
     }
 }

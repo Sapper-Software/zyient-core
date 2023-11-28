@@ -16,5 +16,65 @@
   -->
 
 <configuration>
-
+    <mapping entity="io.zyient.base.core.mapping.model.Customer">
+        <settings>
+            <name>test-customer</name>
+            <!--
+            <currency>[ISO Currency Symbol]</currency>
+            <format>
+                <date>[Date Format String]</date>
+            </format>
+            <locale>[{Country Code}, {Language Code}]</locale>
+            -->
+        </settings>
+        <map source="_id">
+            <target>id.key</target>
+            <nullable>false</nullable>
+            <type>Field</type>
+        </map>
+        <map source="contactLastName">
+            <target>contact.name.last</target>
+            <type>Cached</type>
+        </map>
+        <map source="contactFirstName">
+            <target>contact.name.first</target>
+            <type>Cached</type>
+        </map>
+        <map source="phone">
+            <target>contact.phoneNo</target>
+            <nullable>false</nullable>
+            <type>Field</type>
+        </map>
+        <map source="addressLine1">
+            <target>contact.address.line1</target>
+            <type>Cached</type>
+        </map>
+        <map source="addressLine2">
+            <target>contact.address.line2</target>
+            <type>Cached</type>
+        </map>
+        <map source="city">
+            <target>contact.address.city</target>
+            <nullable>false</nullable>
+            <type>Field</type>
+        </map>
+        <map source="state">
+            <target>contact.address.state</target>
+            <type>Field</type>
+        </map>
+        <map source="postalCode">
+            <target>contact.address.zipCode</target>
+            <nullable>false</nullable>
+            <type>Field</type>
+        </map>
+        <map source="country">
+            <target>contact.address.country</target>
+            <nullable>false</nullable>
+            <type>Field</type>
+        </map>
+        <map source="creditLimit">
+            <target>creditLimit</target>
+            <type>Field</type>
+        </map>
+    </mapping>
 </configuration>

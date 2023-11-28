@@ -52,7 +52,7 @@ import java.util.Map;
 public class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
 
-    private Class<? extends T> type;
+    private Class<? extends T> entityType;
     private File contentDir;
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
@@ -64,6 +64,11 @@ public class Mapping<T> {
     private MapTransformer<T> mapTransformer;
     private final ObjectMapper mapper = new ObjectMapper();
     private boolean terminateOnValidationError = false;
+
+    public Mapping<T> withEntityType(@NonNull Class<? extends T> entityType) {
+        this.entityType = entityType;
+        return this;
+    }
 
     public Mapping<T> withContentDir(@NonNull File contentDir) {
         this.contentDir = contentDir;
@@ -93,6 +98,7 @@ public class Mapping<T> {
 
     @SuppressWarnings("unchecked")
     public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        Preconditions.checkNotNull(entityType);
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -103,7 +109,6 @@ public class Mapping<T> {
             reader.read();
             settings = (MappingSettings) reader.settings();
             settings.postLoad();
-            type = (Class<? extends T>) settings.getEntityType();
             readMappings(config);
             if (!transformers.isEmpty()) {
                 SimpleModule module = new SimpleModule();
@@ -128,7 +133,7 @@ public class Mapping<T> {
 
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
-            rulesExecutor = new RulesExecutor<T>(type)
+            rulesExecutor = new RulesExecutor<T>(entityType)
                     .cache(rulesCache)
                     .contentDir(contentDir)
                     .configure(xmlConfig);
@@ -142,6 +147,7 @@ public class Mapping<T> {
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
         List<HierarchicalConfiguration<ImmutableNode>> maps = xmlConfig.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
+            mapTransformer = new MapTransformer<>(entityType);
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
                 Class<? extends MappedElement> type = (Class<? extends MappedElement>) ConfigReader.readType(node);
                 if (type == null) {
@@ -152,7 +158,7 @@ public class Mapping<T> {
                 targetIndex.put(me.getTargetPath(), me);
                 if (me.getMappingType() == MappingType.Field) {
                     mapTransformer.add(me);
-                    Field field = ReflectionHelper.findField(this.type, me.getTargetPath());
+                    Field field = ReflectionHelper.findField(this.entityType, me.getTargetPath());
                     Preconditions.checkNotNull(field);
                     DeSerializer<?> transformer = getTransformer(field.getType(), me);
                     if (transformer != null) {
@@ -168,7 +174,7 @@ public class Mapping<T> {
 
     public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
         Map<String, Object> converted = mapTransformer.transform(source);
-        T entity = mapper.convertValue(converted, type);
+        T entity = mapper.convertValue(converted, entityType);
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
         response.entity(entity);
@@ -265,15 +271,19 @@ public class Mapping<T> {
                     .configure(settings);
         } else if (ReflectionHelper.isInt(type)) {
             transformer = new IntegerTransformer()
+                    .locale(settings.getLocale())
                     .configure(settings);
         } else if (ReflectionHelper.isFloat(type)) {
             transformer = new FloatTransformer()
+                    .locale(settings.getLocale())
                     .configure(settings);
         } else if (ReflectionHelper.isLong(type)) {
             transformer = new LongTransformer()
+                    .locale(settings.getLocale())
                     .configure(settings);
         } else if (ReflectionHelper.isDouble(type)) {
             transformer = new DoubleTransformer()
+                    .locale(settings.getLocale())
                     .configure(settings);
         } else if (type.equals(Date.class)) {
             transformer = new DateTransformer()

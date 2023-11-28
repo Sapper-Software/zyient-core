@@ -17,6 +17,7 @@
 package io.zyient.base.core.mapping.rules;
 
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.errors.Errors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -44,6 +45,9 @@ public class RuleConfigReader<T> {
     @SuppressWarnings("unchecked")
     public List<Rule<T>> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
+            if (Errors.getDefault() == null) {
+                throw new ConfigurationException("Errors cache not initialized...");
+            }
             if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH)) {
                 HierarchicalConfiguration<ImmutableNode> root = xmlConfig.configurationAt(__CONFIG_PATH);
                 List<HierarchicalConfiguration<ImmutableNode>> nodes = root.configurationsAt(__CONFIG_PATH_RULE);

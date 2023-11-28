@@ -37,12 +37,12 @@ class MapTransformerTest {
         try {
             ObjectMapper mapper = new ObjectMapper();
             MapTransformer<Constants.Target> transformer = new MapTransformer<>(Constants.Target.class);
-            transformer.add(new MappedElement("id", "sourceId", false, String.class, null, null));
-            transformer.add(new MappedElement("nested.date", "created", false, Date.class, null, null));
-            transformer.add(new MappedElement("nested.nested.id", "inner.id", false, String.class, null, null));
-            transformer.add(new MappedElement("type", "inner.etype", false, Constants.TestEnum.class, null, null));
-            transformer.add(new MappedElement("values", "inner.strings", false, List.class, null, null));
-            transformer.add(new MappedElement("nested.nested.values", "inner.doubles", false, List.class, null, null));
+            transformer.add(new MappedElement("id", "sourceId", false, String.class, null));
+            transformer.add(new MappedElement("nested.date", "created", false, Date.class, null));
+            transformer.add(new MappedElement("nested.nested.id", "inner.id", false, String.class, null));
+            transformer.add(new MappedElement("type", "inner.etype", false, Constants.TestEnum.class, null));
+            transformer.add(new MappedElement("values", "inner.strings", false, List.class, null));
+            transformer.add(new MappedElement("nested.nested.values", "inner.doubles", false, List.class, null));
 
             Constants.Source source = new Constants.Source();
             String json = JSONUtils.asString(source, Constants.Source.class);

@@ -26,6 +26,7 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.MappingExecutor;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.mapping.rules.*;
+import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore;
@@ -139,15 +140,23 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 int index = 0;
                 for (String key : fs.keySet()) {
                     String f = fs.get(key);
-                    PropertyModel field = MappingReflectionHelper.findField(f, entityType());
-                    if (field == null) {
-                        throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
-                                entityType().getCanonicalName(), f));
+                    if (MappingReflectionHelper.isPropertyPrefixed(f)) {
+                        if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType())) {
+                            throw new Exception(String.format("Properties not available for type. [type=%s]",
+                                    entityType().getCanonicalName()));
+                        }
+                    } else if (MappingReflectionHelper.isEntityPrefixed(f)) {
+                        f = MappingReflectionHelper.removePrefix(f, MappingReflectionHelper.FIELD_ENTITY);
+                        PropertyModel field = MappingReflectionHelper.findField(f, entityType());
+                        if (field == null) {
+                            throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
+                                    entityType().getCanonicalName(), f));
+                        }
+                        String param = String.format("param_%d", index);
+                        query = query.replace(key, ":" + param);
+                        whereFields.put(param, field);
+                        index++;
                     }
-                    String param = String.format("param_%d", index);
-                    query = query.replace(key, ":" + param);
-                    whereFields.put(param, field);
-                    index++;
                 }
             }
             keyType = (Class<? extends K>) ((DBRuleConfig) config).getKeyType();

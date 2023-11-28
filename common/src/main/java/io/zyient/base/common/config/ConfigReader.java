@@ -140,14 +140,14 @@ public class ConfigReader {
                         if (c.name().compareTo(Settings.CONFIG_PARAMS) == 0) {
                             Map<String, String> params = readParameters();
                             if (params != null)
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, params);
+                                ReflectionHelper.setValue(params, settings, field);
                             continue;
                         }
                         if (c.type().equals(Exists.class)) {
                             if (checkIfNodeExists(config, c.name())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, true);
+                                ReflectionHelper.setBooleanValue(settings, field, true);
                             } else {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, false);
+                                ReflectionHelper.setBooleanValue(settings, field, false);
                             }
                             continue;
                         }
@@ -157,49 +157,49 @@ public class ConfigReader {
                                 ConfigValueParser<?> parser = c.parser().getDeclaredConstructor().newInstance();
                                 Object o = parser.parse(value);
                                 if (o != null) {
-                                    ReflectionHelper.reflectionUtils().setFieldValue(settings, field, o);
+                                    ReflectionHelper.setValue(o, settings, field);
                                 } else if (c.required()) {
                                     throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
                                 }
                                 continue;
                             }
                             if (c.type().equals(String.class)) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, config.getString(c.name()));
+                                ReflectionHelper.setStringValue(settings, field, config.getString(c.name()));
                             } else if (ReflectionHelper.isBoolean(c.type())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue( settings, field, config.getBoolean(c.name()));
+                                ReflectionHelper.setBooleanValue(settings, field, config.getBoolean(c.name()));
                             } else if (ReflectionHelper.isShort(c.type())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, config.getShort(c.name()));
+                                ReflectionHelper.setShortValue(settings, field, config.getShort(c.name()));
                             } else if (ReflectionHelper.isInt(c.type())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, config.getInt(c.name()));
+                                ReflectionHelper.setIntValue(settings, field, config.getInt(c.name()));
                             } else if (ReflectionHelper.isLong(c.type())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, config.getLong(c.name()));
+                                ReflectionHelper.setLongValue(settings, field, config.getLong(c.name()));
                             } else if (ReflectionHelper.isFloat(c.type())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, config.getFloat(c.name()));
+                                ReflectionHelper.setFloatValue(settings, field, config.getFloat(c.name()));
                             } else if (ReflectionHelper.isDouble(c.type())) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, config.getDouble(c.name()));
+                                ReflectionHelper.setDoubleValue(settings, field, config.getDouble(c.name()));
                             } else if (c.type().equals(Options.class)) {
                                 Options options = new Options(c.name());
                                 options.read(config);
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, options);
+                                ReflectionHelper.setValue(options, settings, field);
                             } else if (c.type().equals(List.class)) {
                                 List<String> values = readAsList(c.name(), String.class);
                                 if (values != null) {
-                                    ReflectionHelper.reflectionUtils().setFieldValue(settings, field, values);
+                                    ReflectionHelper.setValue(values, settings, field);
                                 } else if (c.required()) {
                                     throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
                                 }
                             } else if (c.type().equals(Class.class)) {
                                 String cname = config.getString(c.name());
                                 Class<?> cls = Class.forName(cname);
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, cls);
+                                ReflectionHelper.setValue(cls, settings, field);
                             } else if (c.type().isEnum()) {
                                 String value = config.getString(c.name());
                                 Enum<?> e = (Enum<?>) ReflectionHelper.getValueFromString(c.type(), value);
-                                ReflectionHelper.reflectionUtils().setFieldValue(settings, field, e);
+                                ReflectionHelper.setValue(e, settings, field);
                             } else if (c.type().equals(Map.class)) {
                                 Map<String, String> map = readAsMap(config, c.name());
                                 if (map != null) {
-                                    ReflectionHelper.reflectionUtils().setFieldValue(settings, field, map);
+                                    ReflectionHelper.setValue(map, settings, field);
                                 } else if (c.required()) {
                                     throw new ConfigurationException(String.format("Required configuration not found. [name=%s]", c.name()));
                                 }
@@ -256,9 +256,9 @@ public class ConfigReader {
                             continue;
                         }
                     }
-                    ReflectionHelper.reflectionUtils().setFieldValue(pojo, field, v);
+                    ReflectionHelper.setValue(v, pojo, field);
                 } else {
-                    ReflectionHelper.reflectionUtils().setFieldValue(pojo, field, value);
+                    ReflectionHelper.setValueFromString(value, pojo, field);
                 }
             }
         }

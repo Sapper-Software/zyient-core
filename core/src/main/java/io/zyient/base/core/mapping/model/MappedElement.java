@@ -27,17 +27,15 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Setter
-@ConfigPath(path = "transformation")
+@ConfigPath(path = "map")
 public class MappedElement {
-    @Config(name = "source")
+    @Config(name = "[@source]")
     private String sourcePath;
     @Config(name = "target")
     private String targetPath;
     @Config(name = "nullable", required = false, type = Boolean.class)
     private boolean nullable = true;
     private Class<?> type;
-    @Config(name = "regex")
-    private String regex;
     @Config(name = "type", required = false, type = MappingType.class)
     private MappingType mappingType = MappingType.Field;
 
@@ -49,13 +47,11 @@ public class MappedElement {
                          @NonNull String targetPath,
                          boolean nullable,
                          @NonNull Class<?> type,
-                         String regex,
                          MappingType mappingType) {
         this.sourcePath = sourcePath;
         this.targetPath = targetPath;
         this.nullable = nullable;
         this.type = type;
-        this.regex = regex;
         if (mappingType != null)
             this.mappingType = mappingType;
     }

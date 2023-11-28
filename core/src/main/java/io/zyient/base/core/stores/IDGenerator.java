@@ -51,10 +51,10 @@ public class IDGenerator {
                 if (field.isAnnotationPresent(GeneratedId.class)) {
                     GeneratedId gi = field.getAnnotation(GeneratedId.class);
                     if (gi.type() == EGeneratedType.UUID) {
-                        ReflectionHelper.reflectionUtils().setFieldValue(entity, field, UUID.randomUUID().toString());
+                        ReflectionHelper.setStringValue(entity, field, UUID.randomUUID().toString());
                     } else {
                         Long value = dataStore.nextSequence(gi.sequence());
-                        ReflectionHelper.reflectionUtils().setFieldValue(entity, field, value);
+                        ReflectionHelper.setStringValue(entity, field, value);
                     }
                 }
             } else {
@@ -66,14 +66,14 @@ public class IDGenerator {
                             Object fv = ReflectionHelper.reflectionUtils().getFieldValue(entity, field);
                             if (fv == null) {
                                 fv = ReflectionHelper.createInstance(field.getType());
-                                ReflectionHelper.reflectionUtils().setFieldValue(entity, field, fv);
+                                ReflectionHelper.setValue(fv, entity, field);
                             }
                             GeneratedId gi = f.getAnnotation(GeneratedId.class);
                             if (gi.type() == EGeneratedType.UUID) {
-                                ReflectionHelper.reflectionUtils().setFieldValue(fv, f, UUID.randomUUID().toString());
+                                ReflectionHelper.setStringValue(fv, f, UUID.randomUUID().toString());
                             } else {
                                 Long value = dataStore.nextSequence(gi.sequence());
-                                ReflectionHelper.reflectionUtils().setFieldValue(fv, f, value);
+                                ReflectionHelper.setLongValue(fv, f, value);
                             }
                             break;
                         }
