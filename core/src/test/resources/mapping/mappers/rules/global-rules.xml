@@ -20,7 +20,7 @@
         <rules>
             <rule settings="io.zyient.base.core.mapping.rules.db.DBRuleConfig">
                 <name>fetch-iso-country</name>
-                <rule>name = ${contact.address.country}</rule>
+                <expression>name = ${contact.address.country}</expression>
                 <errorCode>1000001</errorCode>
                 <validationErrorCode>1500001</validationErrorCode>
                 <dataStore>test-rdbms</dataStore>

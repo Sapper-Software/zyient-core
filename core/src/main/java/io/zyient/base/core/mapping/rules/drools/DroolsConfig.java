@@ -24,6 +24,7 @@ import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.util.List;
 
@@ -34,6 +35,13 @@ import java.util.List;
 public class DroolsConfig extends RuleConfig {
     @Config(name = "DRL", parser = StringListParser.class)
     private List<String> drls;
+
+    @Override
+    public void validate() throws ConfigurationException {
+        if (drls.isEmpty()) {
+            throw new ConfigurationException("No DRL files specified...");
+        }
+    }
 
     @Override
     public <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception {

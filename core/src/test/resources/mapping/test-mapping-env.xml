@@ -113,7 +113,7 @@
                         <driver>org.mariadb.jdbc.Driver</driver>
                         <dialect>MySQL</dialect>
                         <model>
-                            <packages>io.zyient.base.core.stores.impl.rdbms.model</packages>
+                            <packages>io.zyient.base.core.stores.impl.rdbms.model, io.zyient.base.core.mapping.model</packages>
                         </model>
                     </hibernate>
                 </connection>

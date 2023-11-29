@@ -26,4 +26,9 @@
         <errorCode>1500001</errorCode>
         <message>This is a catch all validation errors message...</message>
     </error>
+    <error>
+        <type>Rules</type>
+        <errorCode>1000001</errorCode>
+        <message>This is a catch all errors message for Rules...</message>
+    </error>
 </errors>

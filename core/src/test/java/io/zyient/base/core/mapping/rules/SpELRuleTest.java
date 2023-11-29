@@ -39,7 +39,7 @@ class SpELRuleTest {
         try {
             SpELRule<CustomersEntity> rule = new SpELRule<>();
             rule.name("test-setup")
-                    .rule("${city} == 'Bangalore' and ${state} == 'KA'? 'IN' : 'UN' ")
+                    .expression("${city} == 'Bangalore' and ${state} == 'KA'? 'IN' : 'UN' ")
                     .setup(new SpELRuleConfig());
             List<CustomersEntity> entities = createCustomers(5);
             for (CustomersEntity entity : entities) {

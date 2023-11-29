@@ -26,18 +26,18 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class RuleGroupConfig extends RuleConfig {
-
-    public RuleGroupConfig() {
-        setType(RuleType.Group);
+public class RuleReferenceConfig extends RuleConfig {
+    public RuleReferenceConfig() {
+        setType(RuleType.Reference);
     }
 
     @Override
     public void validate() throws ConfigurationException {
+
     }
 
     @Override
     public <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception {
-        return new RuleGroup<E>();
+        throw new Exception("Method should not be called...");
     }
 }

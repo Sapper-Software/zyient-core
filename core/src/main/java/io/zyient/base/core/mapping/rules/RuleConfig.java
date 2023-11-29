@@ -22,6 +22,7 @@ import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
 @Getter
 @Setter
@@ -30,16 +31,10 @@ import lombok.Setter;
 public abstract class RuleConfig extends Settings {
     @Config(name = "name")
     private String name;
-    @Config(name = "rule")
-    private String rule;
-    @Config(name = "reference", required = false, type = Boolean.class)
-    private boolean reference = false;
     @Config(name = "ruleType", required = false, type = RuleType.class)
     private RuleType type = RuleType.Transformation;
-    @Config(name = "errorCode", type = Integer.class)
-    private Integer errorCode;
-    @Config(name = "validationErrorCode", required = false, type = Integer.class)
-    private Integer validationErrorCode;
+
+    public abstract void validate() throws ConfigurationException;
 
     public abstract <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception;
 }

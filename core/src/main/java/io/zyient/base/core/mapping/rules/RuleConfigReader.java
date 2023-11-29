@@ -61,7 +61,8 @@ public class RuleConfigReader<T> {
                     ConfigReader reader = new ConfigReader(node, null, rType);
                     reader.read();
                     RuleConfig config = (RuleConfig) reader.settings();
-                    if (config.isReference()) {
+                    config.validate();
+                    if (config instanceof RuleReferenceConfig) {
                         if (cache == null) {
                             throw new Exception(String
                                     .format("Reference rule specified, but cache is not available. [rule=%s]",

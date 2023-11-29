@@ -74,16 +74,16 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         } catch (RuntimeException re) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    rule(),
+                    expression(),
                     errorCode(),
-                    Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
+                    Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     re);
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    rule(),
+                    expression(),
                     errorCode(),
-                    Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
+                    Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     t);
         }
     }
@@ -114,17 +114,18 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    rule(),
+                    expression(),
                     errorCode(),
-                    Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
+                    Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     t);
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
-        Preconditions.checkArgument(config instanceof DBRuleConfig);
+    protected void setup(@NonNull RuleConfig cfg) throws ConfigurationException {
+        Preconditions.checkArgument(cfg instanceof DBRuleConfig);
+        DBRuleConfig config = (DBRuleConfig) cfg;
         try {
             dataStore = MappingExecutor.defaultInstance()
                     .dataStoreManager()
@@ -133,7 +134,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 throw new ConfigurationException(String.format("Data Store not found. [name=%s]",
                         ((DBRuleConfig) config).getDataStore()));
             }
-            query = config.getRule();
+            query = config.getExpression();
             Map<String, String> fs = MappingReflectionHelper.extractFields(query);
             if (!fs.isEmpty()) {
                 whereFields = new HashMap<>();

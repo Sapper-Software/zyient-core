@@ -34,16 +34,16 @@
                 <CSV>customer-csv-reader</CSV>
             </readers>
             <mappings>
-                <customer>test-customer</customer>
+                <customers>test-customer</customers>
             </mappings>
         </contextProvider>
         <pipelines>
             <pipeline type="io.zyient.base.core.mapping.pipeline.CustomerPipeline">
-                <name>customer-pipeline</name>
+                <mapping>test-customer</mapping>
                 <keyType>io.zyient.base.core.model.IntegerKey</keyType>
                 <entityType>io.zyient.base.core.mapping.model.Customer</entityType>
                 <terminateOnValidationError>false</terminateOnValidationError>
-                <saveValidationErrors>true</saveValidationErrors>
+                <saveValidationErrors>false</saveValidationErrors>
                 <dataStore>
                     <name>test-rdbms</name>
                     <type>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</type>

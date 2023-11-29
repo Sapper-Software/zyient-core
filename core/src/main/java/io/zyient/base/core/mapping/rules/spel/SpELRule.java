@@ -49,7 +49,7 @@ public class SpELRule<T> extends BaseRule<T> {
     private PropertyModel property;
 
     private void normalizeRule() throws Exception {
-        String r = rule();
+        String r = expression();
         Map<String, String> fields = MappingReflectionHelper.extractFields(r);
         if (!fields.isEmpty()) {
             for (String exp : fields.keySet()) {
@@ -57,8 +57,8 @@ public class SpELRule<T> extends BaseRule<T> {
                 var = String.format("%s.%s", FIELD_ROOT, var);
                 r = r.replace(exp, var);
             }
-            DefaultLogger.debug(String.format("[original=%s][normalized=%s]", rule(), r));
-            rule(r);
+            DefaultLogger.debug(String.format("[original=%s][normalized=%s]", expression(), r));
+            expression(r);
         }
     }
 
@@ -99,7 +99,7 @@ public class SpELRule<T> extends BaseRule<T> {
                                     entityType(),
                                     config.getTarget(),
                                     errorCode(),
-                                    Errors.getDefault().get(__RULE_TYPE, validationErrorCode()).getMessage(),
+                                    Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage(),
                                     new Exception(json)
                             );
                         } else
@@ -107,11 +107,11 @@ public class SpELRule<T> extends BaseRule<T> {
                                     entityType(),
                                     config.getTarget(),
                                     errorCode(),
-                                    Errors.getDefault().get(__RULE_TYPE, validationErrorCode()).getMessage()
+                                    Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
                             );
                     } else {
                         if (DefaultLogger.isTraceEnabled()) {
-                            DefaultLogger.trace(rule(), data);
+                            DefaultLogger.trace(expression(), data);
                         }
                         return false;
                     }
@@ -128,16 +128,16 @@ public class SpELRule<T> extends BaseRule<T> {
         } catch (RuntimeException re) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    rule(),
+                    expression(),
                     errorCode(),
-                    Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
+                    Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     re);
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
-                    rule(),
+                    expression(),
                     errorCode(),
-                    Errors.getDefault().get(__RULE_TYPE, errorCode()).getMessage(),
+                    Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     t);
         }
     }
@@ -151,17 +151,19 @@ public class SpELRule<T> extends BaseRule<T> {
                     throw new ConfigurationException(String.format("[rule=%s] Target not specified.", name()));
                 }
             }
-            property = MappingReflectionHelper.findField(((SpELRuleConfig) config).getTarget(), entityType());
-            if (property == null) {
-                throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
-                        entityType().getCanonicalName(), ((SpELRuleConfig) config).getTarget()));
+            if (((SpELRuleConfig) config).getTarget() != null) {
+                property = MappingReflectionHelper.findField(((SpELRuleConfig) config).getTarget(), entityType());
+                if (property == null) {
+                    throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
+                            entityType().getCanonicalName(), ((SpELRuleConfig) config).getTarget()));
+                }
             }
-            Error error = Errors.getDefault().get(__RULE_TYPE, errorCode());
+            Error error = Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode());
             if (error == null) {
                 throw new Exception(String.format("Invalid Error code: [code=%d]", errorCode()));
             }
             if (validationErrorCode() > 0) {
-                error = Errors.getDefault().get(__RULE_TYPE, validationErrorCode());
+                error = Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode());
                 if (error == null) {
                     throw new Exception(String.format("Invalid Validation Error code: [code=%d]", validationErrorCode()));
                 }
@@ -169,7 +171,7 @@ public class SpELRule<T> extends BaseRule<T> {
             normalizeRule();
             SpelParserConfiguration cfg = new SpelParserConfiguration(true, true);
             ExpressionParser parser = new SpelExpressionParser(cfg);
-            expression = parser.parseExpression(rule());
+            expression = parser.parseExpression(expression());
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }

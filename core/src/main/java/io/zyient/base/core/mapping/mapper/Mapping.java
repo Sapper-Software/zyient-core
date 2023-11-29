@@ -51,6 +51,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
+    public static final String __CONFIG_PATH_MAPPINGS = "mappings";
 
     private Class<? extends T> entityType;
     private File contentDir;
@@ -142,10 +143,11 @@ public class Mapping<T> {
 
     @SuppressWarnings("unchecked")
     private void readMappings(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        HierarchicalConfiguration<ImmutableNode> mNode = xmlConfig.configurationAt(__CONFIG_PATH_MAPPINGS);
         ConfigPath cp = MappedElement.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
-        List<HierarchicalConfiguration<ImmutableNode>> maps = xmlConfig.configurationsAt(cp.path());
+        List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
             mapTransformer = new MapTransformer<>(entityType);
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
@@ -238,6 +240,14 @@ public class Mapping<T> {
         }
         if (type == null) {
             type = String.class;
+        }
+        if (type.equals(String.class) && element.getClass().equals(MappedElement.class)) {
+            if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
+                return String.valueOf(value);
+            } else {
+                throw new Exception(String.format("Cannot map value to String. [type=%s]",
+                        value.getClass().getCanonicalName()));
+            }
         }
         DeSerializer<?> transformer = null;
         if (element instanceof CustomMappedElement) {

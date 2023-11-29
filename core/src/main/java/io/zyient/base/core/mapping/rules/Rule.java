@@ -25,7 +25,8 @@ import java.util.List;
 
 
 public interface Rule<T> {
-    String __RULE_TYPE = "rules";
+    String __ERROR_TYPE_RULES = "Rules";
+    String __ERROR_TYPE_VALIDATION = "Validation";
 
     String name();
 

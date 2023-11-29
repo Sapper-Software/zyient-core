@@ -35,7 +35,7 @@ import java.util.List;
 @Accessors(fluent = true)
 public abstract class BaseRule<T> implements Rule<T> {
     private String name;
-    private String rule;
+    private String expression;
     private RuleType ruleType = RuleType.Transformation;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
@@ -51,7 +51,11 @@ public abstract class BaseRule<T> implements Rule<T> {
 
     @Override
     public void addSubRules(@NonNull List<Rule<T>> rules) {
-        this.rules = rules;
+        if (this.rules == null)
+            this.rules = rules;
+        else {
+            this.rules.addAll(rules);
+        }
     }
 
     @Override
@@ -60,21 +64,20 @@ public abstract class BaseRule<T> implements Rule<T> {
     }
 
     @Override
-    public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
+    public Rule<T> configure(@NonNull RuleConfig cfg) throws ConfigurationException {
+        Preconditions.checkArgument(cfg instanceof BaseRuleConfig);
+        BaseRuleConfig config = (BaseRuleConfig) cfg;
         if (entityType == null) {
             throw new ConfigurationException("Entity type not specified...");
         }
         try {
             name = config.getName();
-            rule = config.getRule();
+            expression = config.getExpression();
             ruleType = config.getType();
-            errorCode = config.getErrorCode();
-            if (getRuleType() == RuleType.Validation) {
-                if (config.getValidationErrorCode() == null) {
-                    throw new Exception(String.format("Validation error code required for rule. [rule=%s]", name));
-                }
+            if (config.getErrorCode() != null)
+                errorCode = config.getErrorCode();
+            if (config.getValidationErrorCode() != null)
                 validationErrorCode = config.getValidationErrorCode();
-            }
             setup(config);
             this.config = config;
             return this;

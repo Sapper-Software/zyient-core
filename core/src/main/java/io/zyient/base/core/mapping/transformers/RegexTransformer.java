@@ -66,16 +66,16 @@ public class RegexTransformer extends DeSerializer<String> {
                 if (Strings.isNullOrEmpty(format)) {
                     return value;
                 }
-                if (groups == null || groups.isEmpty()) {
-                    throw new DataException("No regex groups specified...");
+                if (groups != null && !groups.isEmpty()) {
+                    value = format;
+                    for (int group : groups) {
+                        if (group > m.groupCount()) break;
+                        String v = m.group(group);
+                        String k = "{" + group + "}";
+                        value = value.replace(k, v);
+                    }
+                    return value;
                 }
-                for (int group : groups) {
-                    if (group > m.groupCount()) break;
-                    String v = m.group(group);
-                    String k = "{" + group + "}";
-                    value = value.replace(k, v);
-                }
-                return value;
             }
             return null;
         }

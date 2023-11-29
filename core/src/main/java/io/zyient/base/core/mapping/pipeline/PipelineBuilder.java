@@ -70,6 +70,7 @@ public class PipelineBuilder {
                         .contextProvider(contextProvider)
                         .contentDir(mapperFactory.contentDir())
                         .configure(node, mapperFactory, dataStoreManager);
+                transformers.put(pipeline.name(), pipeline);
             }
             return this;
         } catch (Exception ex) {

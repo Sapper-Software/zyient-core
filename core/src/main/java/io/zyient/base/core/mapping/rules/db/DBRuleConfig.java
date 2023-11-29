@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.mapping.rules.BaseRuleConfig;
 import io.zyient.base.core.mapping.rules.Rule;
-import io.zyient.base.core.mapping.rules.RuleConfig;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -32,7 +32,7 @@ import java.util.Map;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class DBRuleConfig extends RuleConfig {
+public class DBRuleConfig extends BaseRuleConfig {
     @Config(name = "dataStore")
     private String dataStore;
     @Config(name = "keyType", type = Class.class)

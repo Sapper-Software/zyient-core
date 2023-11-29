@@ -102,6 +102,12 @@ public class MappingExecutor implements Closeable {
         if (handle == null) {
             throw new Exception(DefaultLogger.traceInfo("Failed to get pipeline.", contentInfo));
         }
+        if (handle.pipeline() == null) {
+            throw new Exception("Failed to get pipeline...");
+        }
+        if (handle.reader() == null) {
+            throw new Exception("Failed to get input reader...");
+        }
         Reader reader = new Reader(handle.pipeline(),
                 handle.reader(),
                 contentInfo);

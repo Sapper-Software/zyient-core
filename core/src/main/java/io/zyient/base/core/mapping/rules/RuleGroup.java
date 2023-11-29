@@ -17,6 +17,8 @@
 package io.zyient.base.core.mapping.rules;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import lombok.Getter;
 import lombok.NonNull;
@@ -24,23 +26,83 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.io.File;
+import java.util.List;
 
 @Getter
 @Accessors(fluent = true)
-public class RuleGroup<T> extends BaseRule<T> {
+public class RuleGroup<T> implements Rule<T> {
+    private RuleGroupConfig settings;
+    private List<Rule<T>> rules;
 
     @Override
-    protected Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
-        return true;
-    }
-
-    @Override
-    protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
-        Preconditions.checkArgument(config instanceof RuleGroupConfig);
+    public String name() {
+        Preconditions.checkNotNull(settings);
+        return settings.getName();
     }
 
     @Override
     public Rule<T> withContentDir(@NonNull File contentDir) {
         return this;
+    }
+
+    @Override
+    public Rule<T> withEntityType(@NonNull Class<? extends T> type) {
+        return this;
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
+        Preconditions.checkArgument(config instanceof RuleGroupConfig);
+        settings = (RuleGroupConfig) config;
+        return this;
+    }
+
+    @Override
+    public Object evaluate(@NonNull MappedResponse<T> data) throws Exception {
+        ValidationExceptions errors = null;
+        try {
+            Object response = null;
+            if (rules != null && !rules.isEmpty()) {
+                for (Rule<T> rule : rules) {
+                    try {
+                        response = rule.evaluate(data);
+                        if (rule.getRuleType() == RuleType.Condition) {
+                            Preconditions.checkNotNull(response);
+                            if (!(response instanceof Boolean)) {
+                                throw new Exception(String
+                                        .format("Rule returned invalid response. [rule=%s][response=%s]",
+                                                rule.name(), response.getClass().getCanonicalName()));
+                            }
+                            if (!((Boolean) response)) {
+                                break;
+                            }
+                        }
+                    } catch (RuleValidationError ve) {
+                        errors = ValidationExceptions.add(ve, errors);
+                    }
+                }
+            }
+            if (errors != null) {
+                throw errors;
+            }
+            return response;
+        } catch (ValidationException ve) {
+            errors = ValidationExceptions.add(ve, errors);
+            throw errors;
+        }
+    }
+
+    @Override
+    public RuleType getRuleType() {
+        return RuleType.Group;
+    }
+
+    @Override
+    public void addSubRules(@NonNull List<Rule<T>> rules) throws Exception {
+        if (this.rules == null)
+            this.rules = rules;
+        else {
+            this.rules.addAll(rules);
+        }
     }
 }

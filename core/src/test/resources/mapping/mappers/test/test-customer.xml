@@ -27,54 +27,95 @@
             <locale>[{Country Code}, {Language Code}]</locale>
             -->
         </settings>
-        <map source="_id">
-            <target>id.key</target>
-            <nullable>false</nullable>
-            <type>Field</type>
-        </map>
-        <map source="contactLastName">
-            <target>contact.name.last</target>
-            <type>Cached</type>
-        </map>
-        <map source="contactFirstName">
-            <target>contact.name.first</target>
-            <type>Cached</type>
-        </map>
-        <map source="phone">
-            <target>contact.phoneNo</target>
-            <nullable>false</nullable>
-            <type>Field</type>
-        </map>
-        <map source="addressLine1">
-            <target>contact.address.line1</target>
-            <type>Cached</type>
-        </map>
-        <map source="addressLine2">
-            <target>contact.address.line2</target>
-            <type>Cached</type>
-        </map>
-        <map source="city">
-            <target>contact.address.city</target>
-            <nullable>false</nullable>
-            <type>Field</type>
-        </map>
-        <map source="state">
-            <target>contact.address.state</target>
-            <type>Field</type>
-        </map>
-        <map source="postalCode">
-            <target>contact.address.zipCode</target>
-            <nullable>false</nullable>
-            <type>Field</type>
-        </map>
-        <map source="country">
-            <target>contact.address.country</target>
-            <nullable>false</nullable>
-            <type>Field</type>
-        </map>
-        <map source="creditLimit">
-            <target>creditLimit</target>
-            <type>Field</type>
-        </map>
+        <mappings>
+            <map source="_id">
+                <target>id.key</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+            </map>
+            <map source="contactLastName">
+                <target>contact.name.last</target>
+                <type>Cached</type>
+            </map>
+            <map source="contactFirstName">
+                <target>contact.name.first</target>
+                <type>Cached</type>
+            </map>
+            <map source="phone" type="io.zyient.base.core.mapping.model.RegexMappedElement">
+                <name>phone-regex</name>
+                <target>contact.phoneNo</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+                <regex>(\+?\d{1,3})(\d{1,4})(\d{3})(\d{4})</regex>
+                <groups>1,2,3,4</groups>
+                <format>{1}({2}) {3}-{4}</format>
+            </map>
+            <map source="addressLine1">
+                <target>contact.address.line1</target>
+                <type>Cached</type>
+            </map>
+            <map source="addressLine2">
+                <target>contact.address.line2</target>
+                <type>Cached</type>
+            </map>
+            <map source="city">
+                <target>contact.address.city</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+            </map>
+            <map source="state">
+                <target>contact.address.state</target>
+                <type>Field</type>
+            </map>
+            <map source="postalCode">
+                <target>contact.address.zipCode</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+            </map>
+            <map source="country">
+                <target>contact.address.country</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+            </map>
+            <map source="creditLimit">
+                <target>creditLimit</target>
+                <type>Field</type>
+            </map>
+        </mappings>
+        <rules>
+            <rule settings="io.zyient.base.core.mapping.rules.RuleGroupConfig">
+                <name>customer-name</name>
+                <ruleType>Group</ruleType>
+                <rules>
+                    <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>validate-names</name>
+                        <expression>(${cached.contact.name.last} == null || ${cached.contact.name.last}.isEmpty()) or (${cached.contact.name.last} == null || ${cached.contact.name.last}.isEmpty())? false :
+                            true
+                        </expression>
+                        <ruleType>Validation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
+                    <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>append-names</name>
+                        <expression>(${cached.contact.name.last} + ', ' + ${cached.contact.name.last})</expression>
+                        <field>name</field>
+                        <ruleType>Transformation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
+                </rules>
+            </rule>
+            <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
+                <name>address-append</name>
+                <expression>${cached.contact.address.line1} + ", " + ${cached.contact.address.line2}</expression>
+                <field>contact.address.address</field>
+                <errorCode>1000001</errorCode>
+                <validationErrorCode>1500001</validationErrorCode>
+            </rule>
+            <rule settings="io.zyient.base.core.mapping.rules.RuleReferenceConfig">
+                <name>fetch-iso-country</name>
+            </rule>
+        </rules>
     </mapping>
 </configuration>

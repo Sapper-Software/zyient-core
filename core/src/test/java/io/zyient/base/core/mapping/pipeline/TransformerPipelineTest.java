@@ -16,8 +16,6 @@
 
 package io.zyient.base.core.mapping.pipeline;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class TransformerPipelineTest {
 
 }

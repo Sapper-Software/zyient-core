@@ -30,8 +30,8 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class TransformerPipelineSettings extends Settings {
-    @Config(name = "name")
-    private String name;
+    @Config(name = "mapping")
+    private String mapping;
     @Config(name = "keyType", type = Class.class)
     private Class<? extends IKey> keyType;
     @Config(name = "entityType", type = Class.class)
@@ -44,4 +44,6 @@ public class TransformerPipelineSettings extends Settings {
     private String dataStore;
     @Config(name = "dataStore.type", type = Class.class)
     private Class<? extends AbstractDataStore<?>> dataStoreType;
+    @Config(name = "dataStore.commitBatchSize", required = false, type = Integer.class)
+    private int commitBatchSize = 256;
 }

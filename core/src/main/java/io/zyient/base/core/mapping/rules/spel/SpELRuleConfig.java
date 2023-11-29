@@ -17,20 +17,34 @@
 package io.zyient.base.core.mapping.rules.spel;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.core.mapping.rules.BaseRuleConfig;
 import io.zyient.base.core.mapping.rules.Rule;
-import io.zyient.base.core.mapping.rules.RuleConfig;
+import io.zyient.base.core.mapping.rules.RuleType;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class SpELRuleConfig extends RuleConfig {
+public class SpELRuleConfig extends BaseRuleConfig {
     @Config(name = "field", required = false)
     private String target;
+
+    @Override
+    public void validate() throws ConfigurationException {
+        super.validate();
+        if (getType() == RuleType.Transformation) {
+            if (Strings.isNullOrEmpty(target)) {
+                throw new ConfigurationException(String.format("Missing required property [field]. [rule=%s]",
+                        getName()));
+            }
+        }
+    }
 
     public  <E> Rule<E> createInstance(@NonNull Class<? extends E> entityType) throws Exception {
         return new SpELRule<E>();
