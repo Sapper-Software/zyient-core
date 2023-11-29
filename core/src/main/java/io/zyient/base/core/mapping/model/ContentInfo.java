@@ -27,6 +27,21 @@ public abstract class ContentInfo extends Context implements UserContext {
     public static final String KEY_USER = "user.principle";
     public static final String KEY_REFERENCE_ID = "reference.id";
 
+    public ContentInfo() {
+    }
+
+    public ContentInfo(@NonNull ContentInfo source) {
+        if (source.containsKey(KEY_MAPPER_NAME)) {
+            mapping(source.mapping());
+        }
+        if (source.containsKey(KEY_USER)) {
+            user(source.user());
+        }
+        if (source.containsKey(KEY_REFERENCE_ID)) {
+            referenceId(source.referenceId());
+        }
+    }
+
     public ContentInfo mapping(@NonNull String name) {
         put(KEY_MAPPER_NAME, name);
         return this;

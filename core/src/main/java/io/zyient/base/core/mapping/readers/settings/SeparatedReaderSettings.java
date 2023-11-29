@@ -38,7 +38,7 @@ public class SeparatedReaderSettings extends ReaderSettings {
 
     @Config(name = "type", required = false, type = SeparatedReaderTypes.class)
     private SeparatedReaderTypes type = SeparatedReaderTypes.DEFAULT;
-    @Config(name = "header.use", required = false, type = Boolean.class)
+    @Config(name = "header.present", required = false, type = Boolean.class)
     private Boolean hasHeader = null;
     private Map<Integer, Column> headers = null;
     @Config(name = "override.delimiter", required = false)

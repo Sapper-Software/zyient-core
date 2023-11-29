@@ -39,6 +39,33 @@ public class InputContentInfo extends ContentInfo {
 
     private ReadCompleteCallback callback;
 
+    public InputContentInfo() {
+    }
+
+    public InputContentInfo(@NonNull ContentInfo source) {
+        super(source);
+        if (source instanceof InputContentInfo) {
+            if (source.containsKey(KEY_SOURCE_TYPE)) {
+                sourceType(((InputContentInfo) source).sourceType());
+            }
+            if (source.containsKey(KEY_SOURCE_DOC_ID)) {
+                documentId(((InputContentInfo) source).documentId());
+            }
+            if (source.containsKey(KEY_SOURCE_URI)) {
+                sourceURI(((InputContentInfo) source).sourceURI());
+            }
+            if (source.containsKey(KEY_SOURCE_LOCAL_PATH)) {
+                path(((InputContentInfo) source).path());
+            }
+            if (source.containsKey(KEY_FILE_TYPE)) {
+                contentType(((InputContentInfo) source).contentType());
+            }
+            if (source.containsKey(KEY_READER_NAME)) {
+                reader(((InputContentInfo) source).reader());
+            }
+        }
+    }
+
     public InputContentInfo sourceURI(@NonNull URI source) {
         put(KEY_SOURCE_URI, source);
         return this;

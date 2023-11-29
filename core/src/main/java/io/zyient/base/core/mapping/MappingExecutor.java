@@ -47,8 +47,8 @@ import java.util.concurrent.TimeUnit;
 @Getter
 @Accessors(fluent = true)
 public class MappingExecutor implements Closeable {
-    public static final String __CONFIG_PATH_PIPELINE = "pipeline";
-    public static final String __CONFIG_PATH_EXECUTOR = "executor";
+    public static final String __CONFIG_PATH_PIPELINE = "executor";
+    public static final String __CONFIG_PATH_EXECUTOR = "settings";
 
     private final ProcessorState state = new ProcessorState();
     private PipelineBuilder builder;

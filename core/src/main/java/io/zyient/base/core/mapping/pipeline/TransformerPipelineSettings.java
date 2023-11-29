@@ -30,16 +30,16 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class TransformerPipelineSettings extends Settings {
-    @Config(name = "key", type = Class.class)
+    @Config(name = "name")
+    private String name;
+    @Config(name = "keyType", type = Class.class)
     private Class<? extends IKey> keyType;
-    @Config(name = "entity", type = Class.class)
+    @Config(name = "entityType", type = Class.class)
     private Class<? extends IEntity<?>> entityType;
     @Config(name = "terminateOnValidationError", required = false, type = Boolean.class)
     private boolean terminateOnValidationError = true;
     @Config(name = "saveValidationErrors", required = false, type = Boolean.class)
     private boolean saveValidationErrors = false;
-    @Config(name = "mapper")
-    private String mapper;
     @Config(name = "dataStore.name")
     private String dataStore;
     @Config(name = "dataStore.type", type = Class.class)

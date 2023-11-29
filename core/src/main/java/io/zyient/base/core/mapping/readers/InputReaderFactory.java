@@ -47,10 +47,14 @@ public class InputReaderFactory {
     public InputReaderFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
-            HierarchicalConfiguration<ImmutableNode> factoryConfig = xmlConfig.configurationAt(__CONFIG_PATH_FACTORY);
-            ConfigReader reader = new ConfigReader(factoryConfig, null, ReaderFactorySettings.class);
-            reader.read();
-            settings = (ReaderFactorySettings) reader.settings();
+            if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH_FACTORY)) {
+                HierarchicalConfiguration<ImmutableNode> factoryConfig = xmlConfig.configurationAt(__CONFIG_PATH_FACTORY);
+                ConfigReader reader = new ConfigReader(factoryConfig, null, ReaderFactorySettings.class);
+                reader.read();
+                settings = (ReaderFactorySettings) reader.settings();
+            } else {
+                settings = new ReaderFactorySettings();
+            }
             readReaderConfigs(config);
             if (settings.getDefaults() != null && !settings.getDefaults().isEmpty()) {
                 for (String key : settings.getDefaults().keySet()) {

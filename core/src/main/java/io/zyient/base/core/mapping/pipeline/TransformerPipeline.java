@@ -59,16 +59,16 @@ import java.util.Map;
 public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     private Class<? extends E> entityType;
     private Class<? extends K> keyType;
-    private Mapping<E> mapping;
     private AbstractDataStore<?> dataStore;
+    private MapperFactory mapperFactory;
     private RulesExecutor<E> postProcessor;
     private TransformerPipelineSettings settings;
     private MappingContextProvider contextProvider;
     private File contentDir;
 
     public String name() {
-        Preconditions.checkNotNull(mapping);
-        return mapping.name();
+        Preconditions.checkNotNull(settings);
+        return settings.getName();
     }
 
     @SuppressWarnings("unchecked")
@@ -81,21 +81,13 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
             settings = (TransformerPipelineSettings) reader.settings();
             entityType = (Class<? extends E>) settings.getEntityType();
             keyType = (Class<? extends K>) settings.getKeyType();
-            mapping = mapperFactory.getMapping(settings.getMapper());
-            if (mapping == null) {
-                throw new Exception(String.format("Specified mapping not found. [mapping=%s]",
-                        settings.getMapper()));
-            }
-            mapping.withTerminateOnValidationError(settings.isTerminateOnValidationError());
-            if (contextProvider != null) {
-                mapping.withContextProvider(contextProvider);
-            }
             dataStore = dataStoreManager.getDataStore(settings.getDataStore(), settings().getDataStoreType());
             if (dataStore == null) {
                 throw new ConfigurationException(String.format("DataStore not found. [name=%s][type=%s]",
                         settings.getDataStore(), settings.getDataStoreType().getCanonicalName()));
             }
             checkAndLoadRules(reader.config());
+            this.mapperFactory = mapperFactory;
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -113,29 +105,15 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         }
     }
 
-    public void write(@NonNull OutputWriter writer, @NonNull OutputContentInfo context) throws Exception {
-        if (!Strings.isNullOrEmpty(context.mapping())) {
-            if (mapping.name().compareTo(context.mapping()) != 0) {
-                throw new Exception(String.format("Mapper mis-match: [expected=%s][specified=%s]",
-                        mapping.name(), context.mapping()));
-            }
-        }
-        AbstractDataStore.Q query = context.query();
-        if (query == null) {
-            throw new Exception("No query specified...");
-        }
-        DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType.getCanonicalName()));
-        Cursor<K, E> result = dataStore.search(query, keyType, entityType, context);
-        // TODO: Finish writing
-    }
-
     @SuppressWarnings(("unchecked"))
     public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
-        if (!Strings.isNullOrEmpty(context.mapping())) {
-            if (mapping.name().compareTo(context.mapping()) != 0) {
-                throw new Exception(String.format("Mapper mis-match: [expected=%s][specified=%s]",
-                        mapping.name(), context.mapping()));
-            }
+        if (Strings.isNullOrEmpty(context.mapping())) {
+            throw new Exception(String.format("[pipeline=%s] Mapping not specified...", name()));
+        }
+        Mapping<E> mapping = mapperFactory.getMapping(context.mapping());
+        if (mapping == null) {
+            throw new Exception(String.format("[pipeline=%s] Mapping not found. [mapping=%s]",
+                    name(), context.mapping()));
         }
         DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType.getCanonicalName()));
         ReadResponse response = new ReadResponse();
