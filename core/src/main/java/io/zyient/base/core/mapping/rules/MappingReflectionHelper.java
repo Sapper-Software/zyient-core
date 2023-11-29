@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.mapping.rules;
 
-import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.model.ExtendedPropertyModel;
@@ -33,7 +32,8 @@ import java.util.regex.Pattern;
 
 public class MappingReflectionHelper {
     public static final String FIELD_ENTITY = "entity";
-    public static final String FIELD_CUSTOM = "entity.property";
+    public static final String FIELD_PROPERTY = "property";
+    public static final String FIELD_CUSTOM = String.format("entity.%s", FIELD_PROPERTY);
     public static final String FIELD_SOURCE = "source";
     public static final String FIELD_CACHED = "cached";
     public static final String FIELD_REGEX = "(\\$\\{(.*?)\\})";
@@ -47,8 +47,11 @@ public class MappingReflectionHelper {
         while (m.find()) {
             String exp = m.group(1);
             String var = m.group(2);
-            if (var.startsWith("custom.")) {
+            if (isPropertyPrefixed(var)) {
                 var = var.replace("custom\\.", FIELD_CUSTOM);
+            } else if (isCachePrefixed(var)) {
+                var = removePrefix(var, FIELD_CACHED);
+                var = String.format("cached['%s']", var);
             } else if (prefixEntityField(var)) {
                 var = FIELD_ENTITY + "." + var;
             }
@@ -59,11 +62,11 @@ public class MappingReflectionHelper {
 
     public static PropertyModel findField(@NonNull String name,
                                           @NonNull Class<?> entityType) throws Exception {
-        if (name.startsWith(prefixed(FIELD_CACHED))) {
+        if (name.startsWith(dot(FIELD_CACHED))) {
             return ReflectionHelper.findProperty(MappedResponse.class, name);
-        } else if (name.startsWith(prefixed(FIELD_SOURCE))) {
+        } else if (name.startsWith(dot(FIELD_SOURCE))) {
             return ReflectionHelper.findProperty(MappedResponse.class, name);
-        } else if (name.startsWith(prefixed(FIELD_CUSTOM))) {
+        } else if (name.startsWith(dot(FIELD_PROPERTY))) {
             if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
                 throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
                         entityType.getCanonicalName()));
@@ -108,32 +111,45 @@ public class MappingReflectionHelper {
             }
             return pm;
         } else {
+            if (isEntityPrefixed(name)) {
+                name = removePrefix(name, FIELD_ENTITY);
+            }
             return ReflectionHelper.findProperty(entityType, name);
         }
     }
 
-    public static void setProperty(@NonNull PropertyModel property,
+    public static String normalizeField(@NonNull String field) {
+        if (isCachePrefixed(field) || isSourcePrefixed(field)) {
+            return field;
+        } else if (!isEntityPrefixed(field)){
+            return dot(FIELD_ENTITY) + field;
+        }
+        return field;
+    }
+
+    public static void setProperty(@NonNull String field,
+                                   @NonNull PropertyModel property,
                                    @NonNull Object entity,
                                    Object value) throws Exception {
-        Preconditions.checkNotNull(property.setter());
         if (property instanceof ExtendedPropertyModel) {
-            property.setter().invoke(entity, ((ExtendedPropertyModel) property).key(), value);
+            PropertyBag pb = (PropertyBag) entity;
+            pb.setProperty(((ExtendedPropertyModel) property).key(), value);
         } else {
-            property.setter().invoke(entity, value);
+            ReflectionHelper.setFieldValue(value, entity, field);
         }
     }
 
-    public static Object getProperty(@NonNull PropertyModel property,
+    public static Object getProperty(@NonNull String field,
+                                     @NonNull PropertyModel property,
                                      @NonNull Object entity) throws Exception {
-        Preconditions.checkNotNull(property.getter());
         if (property instanceof ExtendedPropertyModel) {
-            return property.getter().invoke(entity, ((ExtendedPropertyModel) property).key());
-        } else {
-            return property.getter().invoke(entity);
+            PropertyBag pb = (PropertyBag) entity;
+            return pb.getProperty(((ExtendedPropertyModel) property).key());
         }
+        return ReflectionHelper.getFieldValue(entity, field);
     }
 
-    public static String prefixed(String name) {
+    public static String dot(String name) {
         if (!name.endsWith(".")) {
             name = name + ".";
         }
@@ -141,7 +157,7 @@ public class MappingReflectionHelper {
     }
 
     public static String removePrefix(String name, String prefix) {
-        prefix = prefixed(prefix);
+        prefix = dot(prefix);
         if (name.startsWith(prefix))
             return name.replaceFirst(prefix, "");
         return name;
@@ -152,7 +168,11 @@ public class MappingReflectionHelper {
     }
 
     public static boolean isPropertyPrefixed(@NonNull String name) {
-        return name.startsWith(FIELD_CUSTOM + ".");
+        return name.startsWith(FIELD_PROPERTY + ".");
+    }
+
+    public static boolean isSourcePrefixed(@NonNull String name) {
+        return name.startsWith(FIELD_SOURCE + ".");
     }
 
     public static boolean isEntityPrefixed(@NonNull String name) {

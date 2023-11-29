@@ -98,7 +98,7 @@
                     </rule>
                     <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
                         <name>append-names</name>
-                        <expression>(${cached.contact.name.last} + ', ' + ${cached.contact.name.last})</expression>
+                        <expression>(${cached.contact.name.last} + ', ' + ${cached.contact.name.first})</expression>
                         <field>name</field>
                         <ruleType>Transformation</ruleType>
                         <errorCode>1000001</errorCode>
@@ -109,7 +109,7 @@
             <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
                 <name>address-append</name>
                 <expression>${cached.contact.address.line1} + ", " + ${cached.contact.address.line2}</expression>
-                <field>contact.address.address</field>
+                <field>contact.address.street</field>
                 <errorCode>1000001</errorCode>
                 <validationErrorCode>1500001</validationErrorCode>
             </rule>

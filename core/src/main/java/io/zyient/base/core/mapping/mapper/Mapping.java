@@ -20,10 +20,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.model.*;
@@ -63,7 +65,7 @@ public class Mapping<T> {
     private MappingContextProvider contextProvider;
     private RulesCache<T> rulesCache;
     private MapTransformer<T> mapTransformer;
-    private final ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
 
     public Mapping<T> withEntityType(@NonNull Class<? extends T> entityType) {
@@ -105,6 +107,7 @@ public class Mapping<T> {
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
                 config = xmlConfig.configurationAt(__CONFIG_PATH);
             }
+            mapper = GlobalConstants.getJsonMapper();
             String cp = MappingSettings.class.getAnnotation(ConfigPath.class).path();
             ConfigReader reader = new ConfigReader(xmlConfig, cp, MappingSettings.class);
             reader.read();
@@ -115,6 +118,8 @@ public class Mapping<T> {
                 SimpleModule module = new SimpleModule();
                 for (String name : transformers.keySet()) {
                     DeSerializer<?> deSerializer = transformers.get(name);
+                    if (deSerializer instanceof RegexTransformer)
+                        continue;
                     addDeSerializer(module, name);
                 }
                 mapper.registerModule(module);
@@ -176,7 +181,8 @@ public class Mapping<T> {
 
     public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
         Map<String, Object> converted = mapTransformer.transform(source);
-        T entity = mapper.convertValue(converted, entityType);
+        String json = JSONUtils.asString(converted, Map.class);
+        T entity = mapper.readValue(json, entityType);
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
         response.entity(entity);

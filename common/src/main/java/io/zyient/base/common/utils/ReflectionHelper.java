@@ -24,8 +24,8 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
 import io.zyient.base.common.model.PropertyModel;
 import lombok.NonNull;
-import org.apache.commons.beanutils.MethodUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -97,6 +97,99 @@ public class ReflectionHelper {
         } else {
             return (Object[]) array;
         }
+    }
+
+    public static Object getFieldValue(@NonNull Object source,
+                                       @NonNull String field) throws Exception {
+        String[] parts = field.split("\\.");
+        Object value = source;
+        Class<?> type = source.getClass();
+        int index = 0;
+        while (index < parts.length) {
+            Field f = findField(type, parts[index]);
+            if (f == null) {
+                throw new Exception(String.format("Field not found. [type=%s][field=%s]",
+                        type.getCanonicalName(), parts[index]));
+            }
+            value = getFieldValue(value, f);
+            if (value == null) {
+                break;
+            }
+            type = value.getClass();
+            index++;
+        }
+        return value;
+    }
+
+    public static void setFieldValue(@NonNull Object value,
+                                     @NonNull Object source,
+                                     @NonNull String field) throws Exception {
+        String[] parts = field.split("\\.");
+        Object current = source;
+        Class<?> type = source.getClass();
+        int index = 0;
+        while (index < parts.length) {
+            Field f = findField(type, parts[index]);
+            if (f == null) {
+                throw new Exception(String.format("Field not found. [type=%s][field=%s]",
+                        type.getCanonicalName(), parts[index]));
+            }
+            if (index == parts.length - 1) {
+                setValue(value, current, f);
+                break;
+            }
+            Object parent = current;
+            current = getFieldValue(current, f);
+            if (current == null) {
+                current = f.getType()
+                        .getDeclaredConstructor()
+                        .newInstance();
+                setValue(current, parent, f);
+            }
+            type = current.getClass();
+            index++;
+        }
+    }
+
+    /**
+     * Get the value of the specified field from the object passed.
+     * This assumes standard bean Getters/Setters.
+     *
+     * @param o     - Object to get field value from.
+     * @param field - Field value to extract.
+     * @return - Field value.
+     * @throws Exception
+     */
+    public static Object getFieldValue(@NonNull Object o, @NonNull Field field) throws Exception {
+        return getFieldValue(o, field, false);
+    }
+
+    public static Object getFieldValue(@NonNull Object o, @NonNull Field field, boolean ignore)
+            throws Exception {
+        String method = "get" + StringUtils.capitalize(field.getName());
+
+        Method m = MethodUtils.getAccessibleMethod(o.getClass(), method);
+        if (m == null) {
+            method = field.getName();
+            m = MethodUtils.getAccessibleMethod(o.getClass(), method);
+        }
+
+        if (m == null) {
+            Class<?> type = field.getType();
+            if (type.equals(boolean.class) || type.equals(Boolean.class)) {
+                method = "is" + StringUtils.capitalize(field.getName());
+                m = MethodUtils.getAccessibleMethod(o.getClass(), method);
+            }
+        }
+
+        if (m == null)
+            if (!ignore)
+                throw new Exception("No accessible method found for field. [field="
+                        + field.getName() + "][class="
+                        + o.getClass().getCanonicalName() + "]");
+            else return null;
+
+        return MethodUtils.invokeMethod(o, method);
     }
 
     public static PropertyModel findProperty(@NonNull Class<?> type,

@@ -43,6 +43,7 @@ class MapTransformerTest {
             transformer.add(new MappedElement("type", "inner.etype", false, Constants.TestEnum.class, null));
             transformer.add(new MappedElement("values", "inner.strings", false, List.class, null));
             transformer.add(new MappedElement("nested.nested.values", "inner.doubles", false, List.class, null));
+            transformer.add(new MappedElement("nested.nested.values", "properties.doubles", false, List.class, null));
 
             Constants.Source source = new Constants.Source();
             String json = JSONUtils.asString(source, Constants.Source.class);

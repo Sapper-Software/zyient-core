@@ -25,10 +25,9 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.mapping.rules.*;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -40,13 +39,14 @@ import java.io.File;
 import java.util.Map;
 
 @Getter
-@Setter
+@Accessors(fluent = true)
 public class SpELRule<T> extends BaseRule<T> {
     public static final String FIELD_ROOT = "#root";
+    public static final String FIELD_RESULT = "result";
 
-    @Setter(AccessLevel.NONE)
-    private Expression expression;
+    private Expression spELrule;
     private PropertyModel property;
+    private String target;
 
     private void normalizeRule() throws Exception {
         String r = expression();
@@ -60,6 +60,11 @@ public class SpELRule<T> extends BaseRule<T> {
             DefaultLogger.debug(String.format("[original=%s][normalized=%s]", expression(), r));
             expression(r);
         }
+        if (getRuleType() == RuleType.Transformation) {
+            r = expression();
+            r = String.format("#%s=(%s)", FIELD_RESULT, r);
+            expression(r);
+        }
     }
 
 
@@ -67,8 +72,10 @@ public class SpELRule<T> extends BaseRule<T> {
     public Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
         SpELRuleConfig config = (SpELRuleConfig) config();
         StandardEvaluationContext ctx = new StandardEvaluationContext(data);
+        Object result = null;
+        ctx.setVariable(FIELD_RESULT, result);
         try {
-            Object response = expression.getValue(ctx);
+            Object response = spELrule.getValue(ctx);
             if (getRuleType() == RuleType.Validation ||
                     getRuleType() == RuleType.Condition) {
                 if (!(response instanceof Boolean)) {
@@ -117,7 +124,7 @@ public class SpELRule<T> extends BaseRule<T> {
                     }
                 }
             } else if (response != null) {
-                MappingReflectionHelper.setProperty(property, data, response);
+                MappingReflectionHelper.setProperty(target, property, data, response);
             } else if (DefaultLogger.isTraceEnabled()) {
                 String json = JSONUtils.asString(data, data.getClass());
                 DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
@@ -157,6 +164,7 @@ public class SpELRule<T> extends BaseRule<T> {
                     throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
                             entityType().getCanonicalName(), ((SpELRuleConfig) config).getTarget()));
                 }
+                target = MappingReflectionHelper.normalizeField(((SpELRuleConfig) config).getTarget());
             }
             Error error = Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode());
             if (error == null) {
@@ -171,7 +179,7 @@ public class SpELRule<T> extends BaseRule<T> {
             normalizeRule();
             SpelParserConfiguration cfg = new SpelParserConfiguration(true, true);
             ExpressionParser parser = new SpelExpressionParser(cfg);
-            expression = parser.parseExpression(expression());
+            spELrule = parser.parseExpression(expression());
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }

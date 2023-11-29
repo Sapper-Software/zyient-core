@@ -99,8 +99,6 @@ class MappingExecutorTest {
             try {
                 String jc = JSONUtils.asString(contentInfo, contentInfo.getClass());
                 DefaultLogger.info(String.format("INPUT=[%s]", jc));
-                String jr = JSONUtils.asString(response, response.getClass());
-                DefaultLogger.info(String.format("RESPONSE=[%s]", jr));
                 finished = true;
             } catch (Exception ex) {
                 DefaultLogger.stacktrace(ex);

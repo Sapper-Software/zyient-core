@@ -26,7 +26,6 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.MappingExecutor;
 import io.zyient.base.core.mapping.model.MappedResponse;
 import io.zyient.base.core.mapping.rules.*;
-import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore;
@@ -43,14 +42,24 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends ExternalRule<T> {
+    private static class FieldProperty {
+        private PropertyModel property;
+        private String field;
+
+        private FieldProperty(PropertyModel property, String field) {
+            this.property = property;
+            this.field = field;
+        }
+    }
+
     private RdbmsDataStore dataStore;
     private String query;
-    private Map<String, PropertyModel> whereFields = null;
+    private Map<String, FieldProperty> whereFields = null;
     private Class<? extends K> keyType;
     private Class<? extends E> refEntityType;
     private DBRuleHandler<T, K, E> handler;
-    private Map<String, PropertyModel> sourceFields = null;
-    private Map<String, PropertyModel> targetMappings = null;
+    private Map<String, FieldProperty> sourceFields = null;
+    private Map<String, FieldProperty> targetMappings = null;
 
     @Override
     protected Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
@@ -61,8 +70,8 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             if (whereFields != null && !whereFields.isEmpty()) {
                 Map<String, Object> params = new HashMap<>();
                 for (String key : whereFields.keySet()) {
-                    PropertyModel field = whereFields.get(key);
-                    Object value = MappingReflectionHelper.getProperty(field, data);
+                    FieldProperty field = whereFields.get(key);
+                    Object value = MappingReflectionHelper.getProperty(field.field, field.property, data);
                     params.put(key, value);
                 }
                 q.addAll(params);
@@ -99,12 +108,12 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 E entity = entities.get(0);
                 if (targetMappings != null && !targetMappings.isEmpty()) {
                     for (String key : targetMappings.keySet()) {
-                        PropertyModel target = targetMappings.get(key);
-                        PropertyModel source = sourceFields.get(key);
+                        FieldProperty target = targetMappings.get(key);
+                        FieldProperty source = sourceFields.get(key);
                         Preconditions.checkNotNull(source);
-                        Object value = source.getter().invoke(entity);
+                        Object value = ReflectionHelper.getFieldValue(entity, source.field);
                         if (value != null) {
-                            MappingReflectionHelper.setProperty(target, response, value);
+                            MappingReflectionHelper.setProperty(target.field, target.property, response, value);
                         }
                     }
                 }
@@ -141,23 +150,16 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 int index = 0;
                 for (String key : fs.keySet()) {
                     String f = fs.get(key);
-                    if (MappingReflectionHelper.isPropertyPrefixed(f)) {
-                        if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType())) {
-                            throw new Exception(String.format("Properties not available for type. [type=%s]",
-                                    entityType().getCanonicalName()));
-                        }
-                    } else if (MappingReflectionHelper.isEntityPrefixed(f)) {
-                        f = MappingReflectionHelper.removePrefix(f, MappingReflectionHelper.FIELD_ENTITY);
-                        PropertyModel field = MappingReflectionHelper.findField(f, entityType());
-                        if (field == null) {
-                            throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
-                                    entityType().getCanonicalName(), f));
-                        }
-                        String param = String.format("param_%d", index);
-                        query = query.replace(key, ":" + param);
-                        whereFields.put(param, field);
-                        index++;
+                    PropertyModel field = MappingReflectionHelper.findField(f, entityType());
+                    if (field == null) {
+                        throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
+                                entityType().getCanonicalName(), f));
                     }
+                    String param = String.format("param_%d", index);
+                    query = query.replace(key, ":" + param);
+                    f = MappingReflectionHelper.normalizeField(f);
+                    whereFields.put(param, new FieldProperty(field, f));
+                    index++;
                 }
             }
             keyType = (Class<? extends K>) ((DBRuleConfig) config).getKeyType();
@@ -177,8 +179,10 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                         throw new Exception(String.format("[target] Property not found. [entity=%s][field=%s]",
                                 entityType().getCanonicalName(), tf));
                     }
-                    sourceFields.put(key, source);
-                    targetMappings.put(key, target);
+                    String fieldKey = MappingReflectionHelper.normalizeField(key);
+                    sourceFields.put(fieldKey, new FieldProperty(source, key));
+                    String targetField = MappingReflectionHelper.normalizeField(config.getFieldMappings().get(key));
+                    targetMappings.put(fieldKey, new FieldProperty(target, targetField));
                 }
             }
             if (getRuleType() == RuleType.Transformation) {

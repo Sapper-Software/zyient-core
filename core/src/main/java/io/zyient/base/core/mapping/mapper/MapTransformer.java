@@ -144,19 +144,21 @@ public class MapTransformer<T> {
                     if (ii == parts.length - 1) {
                         if (node.nodes != null && node.nodes.containsKey(name)) {
                             node = node.nodes.get(name);
-                            if (node.type != null) {
+                            if (node.type != null && property.field() != null) {
                                 if (node.type.equals(property.field().getType())) {
                                     throw new Exception(String.format("Type mis-match: [current=%s][specified=%s]",
                                             node.type.getCanonicalName(),
                                             property.field().getType().getCanonicalName()));
                                 }
                             } else {
-                                node.type = property.field().getType();
+                                if (property.field() != null)
+                                    node.type = property.field().getType();
                                 node.targetPath = element.getTargetPath();
                             }
                         } else {
                             MapNode nnode = new MapNode();
-                            nnode.type = property.field().getType();
+                            if (property.field() != null)
+                                nnode.type = property.field().getType();
                             nnode.name = name;
                             nnode.targetPath = element.getTargetPath();
                             if (node.nodes == null) {

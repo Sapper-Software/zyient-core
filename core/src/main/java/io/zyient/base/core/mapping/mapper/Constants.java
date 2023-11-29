@@ -30,11 +30,12 @@ public class Constants {
 
     @Getter
     @Setter
-    public static class Source {
+    public static class Source implements PropertyBag {
         private TestEnum type;
-        public String id;
-        public List<String> values;
-        public Source1Nested nested;
+        private String id;
+        private List<String> values;
+        private Source1Nested nested;
+        private Map<String, Object> properties = new HashMap<>();
 
         public Source() {
             id = UUID.randomUUID().toString();
@@ -49,6 +50,32 @@ public class Constants {
                     values.add(UUID.randomUUID().toString());
                 }
             }
+        }
+
+        @Override
+        public Map<String, Object> getProperties() {
+            return properties;
+        }
+
+        @Override
+        public void setProperties(Map<String, Object> properties) {
+            this.properties = properties;
+        }
+
+        @Override
+        public boolean hasProperty(@NonNull String name) {
+            return properties.containsKey(name);
+        }
+
+        @Override
+        public Object getProperty(@NonNull String name) {
+            return properties.get(name);
+        }
+
+        @Override
+        public PropertyBag setProperty(@NonNull String name, @NonNull Object value) {
+            properties.put(name, value);
+            return this;
         }
     }
 

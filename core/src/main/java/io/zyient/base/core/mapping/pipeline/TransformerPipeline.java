@@ -187,9 +187,9 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                 DefaultLogger.error(e.getLocalizedMessage());
                 throw e;
             }
-            if (!committed && commitCount > 0) {
-                commit();
-            }
+        }
+        if (!committed && commitCount > 0) {
+            commit();
         }
         DefaultLogger.info(String.format("Processed [%d] records for entity. [type=%s]",
                 count, entityType.getCanonicalName()));

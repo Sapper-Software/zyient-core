@@ -26,7 +26,7 @@ import lombok.Setter;
 @Embeddable
 public class Address {
     @Column(name = "address")
-    private String address;
+    private String street;
     @Column(name = "address_city")
     private String city;
     @Column(name = "address_state")
