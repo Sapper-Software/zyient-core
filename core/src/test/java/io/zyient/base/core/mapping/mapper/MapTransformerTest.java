@@ -17,9 +17,12 @@
 package io.zyient.base.core.mapping.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.mapping.model.MappedElement;
+import io.zyient.base.core.mapping.model.MappedResponse;
+import io.zyient.base.core.mapping.rules.MappingReflectionHelper;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
@@ -53,6 +56,9 @@ class MapTransformerTest {
             assertNotNull(output);
             Constants.Target target = mapper.convertValue(output, Constants.Target.class);
             assertNotNull(target);
+            MappedResponse<Constants.Target> response = new MappedResponse<>((Map<String, Object>) data);
+            Object r = MappingReflectionHelper.getProperty("source['nested'].['nested'].['id']", new PropertyModel(), response);
+            assertTrue(r instanceof String);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

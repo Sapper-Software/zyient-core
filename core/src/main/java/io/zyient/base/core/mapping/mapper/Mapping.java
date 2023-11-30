@@ -238,7 +238,7 @@ public class Mapping<T> {
                                Object value,
                                MappedResponse<T> response) throws Exception {
         T data = response.entity();
-        if (element.getMappingType() == MappingType.Custom) {
+        if (element.getMappingType() == MappingType.Property) {
             if (!(data instanceof PropertyBag)) {
                 throw new Exception(String.format("Custom mapping not supported for type. [type=%s]",
                         data.getClass().getCanonicalName()));

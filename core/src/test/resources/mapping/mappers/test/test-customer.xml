@@ -35,11 +35,11 @@
             </map>
             <map source="contactLastName">
                 <target>contact.name.last</target>
-                <type>Cached</type>
+                <type>Property</type>
             </map>
             <map source="contactFirstName">
                 <target>contact.name.first</target>
-                <type>Cached</type>
+                <type>Property</type>
             </map>
             <map source="phone" type="io.zyient.base.core.mapping.model.RegexMappedElement">
                 <name>phone-regex</name>
@@ -89,8 +89,9 @@
                 <rules>
                     <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
                         <name>validate-names</name>
-                        <expression>(${cached.contact.name.last} == null || ${cached.contact.name.last}.isEmpty()) or (${cached.contact.name.last} == null || ${cached.contact.name.last}.isEmpty())? false :
-                            true
+                        <expression>(${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())
+                            or (${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())?
+                            false : true
                         </expression>
                         <ruleType>Validation</ruleType>
                         <errorCode>1000001</errorCode>
@@ -98,7 +99,7 @@
                     </rule>
                     <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
                         <name>append-names</name>
-                        <expression>(${cached.contact.name.last} + ', ' + ${cached.contact.name.first})</expression>
+                        <expression>(${property['contact.name.last']} + ', ' + ${property['contact.name.first']})</expression>
                         <field>name</field>
                         <ruleType>Transformation</ruleType>
                         <errorCode>1000001</errorCode>
@@ -108,7 +109,7 @@
             </rule>
             <rule settings="io.zyient.base.core.mapping.rules.spel.SpELRuleConfig">
                 <name>address-append</name>
-                <expression>${cached.contact.address.line1} + ", " + ${cached.contact.address.line2}</expression>
+                <expression>${source['addressLine1']} + ", " + ${source['addressLine2']}</expression>
                 <field>contact.address.street</field>
                 <errorCode>1000001</errorCode>
                 <validationErrorCode>1500001</validationErrorCode>

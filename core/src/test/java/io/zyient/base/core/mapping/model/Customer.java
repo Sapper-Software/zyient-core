@@ -21,18 +21,21 @@ import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.IntegerKey;
+import io.zyient.base.core.model.PropertyBag;
 import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Getter
 @Setter
 @Entity(name = "tb_customers")
 @Table(name = "tb_customers", schema = "test")
-public class Customer implements IEntity<IntegerKey> {
+public class Customer implements IEntity<IntegerKey>, PropertyBag {
     @EmbeddedId
     private IntegerKey id;
     @Column(name = "customer_name")
@@ -40,7 +43,8 @@ public class Customer implements IEntity<IntegerKey> {
     private Contact contact;
     @Column(name = "credit_limit")
     private double creditLimit;
-
+    @Transient
+    private Map<String, Object> properties;
     /**
      * Compare the entity key with the key specified.
      *
@@ -104,5 +108,30 @@ public class Customer implements IEntity<IntegerKey> {
     @Override
     public void validate() throws ValidationExceptions {
 
+    }
+
+    @Override
+    public boolean hasProperty(@NonNull String name) {
+        if (properties != null) {
+            return properties.containsKey(name);
+        }
+        return false;
+    }
+
+    @Override
+    public Object getProperty(@NonNull String name) {
+        if (properties != null) {
+            return properties.get(name);
+        }
+        return null;
+    }
+
+    @Override
+    public PropertyBag setProperty(@NonNull String name, @NonNull Object value) {
+        if (properties == null) {
+            properties = new HashMap<>();
+        }
+        properties.put(name, value);
+        return this;
     }
 }

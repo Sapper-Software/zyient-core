@@ -44,7 +44,7 @@ public class SpELRule<T> extends BaseRule<T> {
     public static final String FIELD_ROOT = "#root";
     public static final String FIELD_RESULT = "result";
 
-    private Expression spELrule;
+    private Expression spELRule;
     private PropertyModel property;
     private String target;
 
@@ -54,6 +54,10 @@ public class SpELRule<T> extends BaseRule<T> {
         if (!fields.isEmpty()) {
             for (String exp : fields.keySet()) {
                 String var = fields.get(exp);
+                if (MappingReflectionHelper.isPropertyPrefixed(var)
+                        || MappingReflectionHelper.isEntityPropertyPrefixed(var)) {
+                    var = MappingReflectionHelper.fieldToPropertyGetMethod(var);
+                }
                 var = String.format("%s.%s", FIELD_ROOT, var);
                 r = r.replace(exp, var);
             }
@@ -75,14 +79,14 @@ public class SpELRule<T> extends BaseRule<T> {
         Object result = null;
         ctx.setVariable(FIELD_RESULT, result);
         try {
-            Object response = spELrule.getValue(ctx);
+            Object response = spELRule.getValue(ctx);
             if (getRuleType() == RuleType.Validation ||
                     getRuleType() == RuleType.Condition) {
                 if (!(response instanceof Boolean)) {
                     if (response == null) {
                         throw new RuleEvaluationError(name(),
                                 entityType(),
-                                "validation",
+                                getRuleType().name(),
                                 errorCode(),
                                 "NULL response from rule."
                         );
@@ -90,7 +94,7 @@ public class SpELRule<T> extends BaseRule<T> {
                     } else {
                         throw new RuleEvaluationError(name(),
                                 entityType(),
-                                "validation",
+                                getRuleType().name(),
                                 errorCode(),
                                 String.format("Expected boolean response. [response=%s]",
                                         response.getClass().getCanonicalName())
@@ -104,7 +108,7 @@ public class SpELRule<T> extends BaseRule<T> {
                             String json = JSONUtils.asString(data, data.getClass());
                             throw new RuleValidationError(name(),
                                     entityType(),
-                                    config.getTarget(),
+                                    getRuleType().name(),
                                     errorCode(),
                                     Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage(),
                                     new Exception(json)
@@ -112,7 +116,7 @@ public class SpELRule<T> extends BaseRule<T> {
                         } else
                             throw new RuleValidationError(name(),
                                     entityType(),
-                                    config.getTarget(),
+                                    getRuleType().name(),
                                     errorCode(),
                                     Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
                             );
@@ -179,7 +183,7 @@ public class SpELRule<T> extends BaseRule<T> {
             normalizeRule();
             SpelParserConfiguration cfg = new SpelParserConfiguration(true, true);
             ExpressionParser parser = new SpelExpressionParser(cfg);
-            spELrule = parser.parseExpression(expression());
+            spELRule = parser.parseExpression(expression());
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
