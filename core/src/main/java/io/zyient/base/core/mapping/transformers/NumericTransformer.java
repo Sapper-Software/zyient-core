@@ -26,7 +26,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.text.NumberFormat;
 import java.util.Locale;
@@ -55,6 +57,24 @@ public abstract class NumericTransformer<T> extends DeSerializer<T> {
     @Override
     public DeSerializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         String l = settings.getParameter(LOCALE_OVERRIDE);
+        if (!Strings.isNullOrEmpty(l)) {
+            try {
+                locale = CommonUtils.parseLocale(l);
+            } catch (Exception ex) {
+                throw new ConfigurationException(ex);
+            }
+        } else {
+            if (locale == null) {
+                throw new ConfigurationException("Locale not specified...");
+            }
+        }
+        format = NumberFormat.getInstance(locale);
+        return this;
+    }
+
+    @Override
+    public DeSerializer<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        String l = xmlConfig.getString(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {
                 locale = CommonUtils.parseLocale(l);

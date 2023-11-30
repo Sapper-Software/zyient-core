@@ -26,7 +26,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.text.DecimalFormat;
 import java.util.Currency;
@@ -39,8 +41,10 @@ import java.util.regex.Pattern;
 @Accessors(fluent = true)
 public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
     public static final String LOCALE_OVERRIDE = "formatter.currency.locale";
+    public static final String CURRENCY_OVERRIDE = "formatter.currency.code";
     public static final String CURRENCY_PARSE_REGEX = "%s\\s*(.*)";
-    public static Pattern CURRENCY_PARSE_PATTERN;
+    private static Pattern CURRENCY_PARSE_CODE;
+    private static Pattern CURRENCY_PARSE_SYMBOL;
 
     private Locale locale;
     private Currency currency;
@@ -53,7 +57,7 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
 
     @Override
     public DeSerializer<CurrencyValue> configure(@NonNull MappingSettings settings) throws ConfigurationException {
-        name = CurrencyValue.class.getSimpleName();
+        name = CurrencyValue.class.getCanonicalName();
         String l = settings.getParameter(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {
@@ -68,11 +72,38 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
         }
         format = (DecimalFormat) DecimalFormat.getInstance(locale);
         currency = Currency.getInstance(locale);
-        String c = settings.getCurrency();
+        String c = settings.getCurrencyCode();
         if (!Strings.isNullOrEmpty(c)) {
             currency = Currency.getInstance(c);
         }
-        CURRENCY_PARSE_PATTERN = Pattern.compile(String.format(CURRENCY_PARSE_REGEX, currency.getSymbol()));
+        CURRENCY_PARSE_SYMBOL = Pattern.compile(String.format(CURRENCY_PARSE_REGEX, currency.getSymbol()));
+        CURRENCY_PARSE_CODE = Pattern.compile(String.format(CURRENCY_PARSE_REGEX, currency.getCurrencyCode()));
+        return this;
+    }
+
+    @Override
+    public DeSerializer<CurrencyValue> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        name = CurrencyValue.class.getCanonicalName();
+        String l = xmlConfig.getString(LOCALE_OVERRIDE);
+        if (!Strings.isNullOrEmpty(l)) {
+            try {
+                locale = CommonUtils.parseLocale(l);
+            } catch (Exception ex) {
+                throw new ConfigurationException(ex);
+            }
+        } else {
+            if (locale == null) {
+                throw new ConfigurationException("Locale not specified...");
+            }
+        }
+        format = (DecimalFormat) DecimalFormat.getInstance(locale);
+        currency = Currency.getInstance(locale);
+        String c = xmlConfig.getString(CURRENCY_OVERRIDE);
+        if (!Strings.isNullOrEmpty(c)) {
+            currency = Currency.getInstance(c);
+        }
+        CURRENCY_PARSE_SYMBOL = Pattern.compile(String.format(CURRENCY_PARSE_REGEX, currency.getSymbol()));
+        CURRENCY_PARSE_CODE = Pattern.compile(String.format(CURRENCY_PARSE_REGEX, currency.getCurrencyCode()));
         return this;
     }
 
@@ -85,17 +116,24 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
             return new CurrencyValue(currency, dv);
         } else if (source instanceof String value) {
             try {
-                Matcher m = CURRENCY_PARSE_PATTERN.matcher(value);
+                Matcher m = CURRENCY_PARSE_SYMBOL.matcher(value);
                 if (m.matches()) {
                     String ds = m.group(1);
                     if (!Strings.isNullOrEmpty(ds)) {
                         Number number = format.parse(ds);
                         return new CurrencyValue(currency, number.doubleValue());
                     }
-                } else {
-                    Number number = format.parse(value);
-                    return new CurrencyValue(currency, number.doubleValue());
                 }
+                m = CURRENCY_PARSE_CODE.matcher(value);
+                if (m.matches()) {
+                    String ds = m.group(1);
+                    if (!Strings.isNullOrEmpty(ds)) {
+                        Number number = format.parse(ds);
+                        return new CurrencyValue(currency, number.doubleValue());
+                    }
+                }
+                Number number = format.parse(value);
+                return new CurrencyValue(currency, number.doubleValue());
             } catch (Exception ex) {
                 throw new DataException(ex);
             }

@@ -35,8 +35,8 @@ import java.util.Locale;
 public class MappingSettings extends Settings {
     @Config(name = "name")
     private String name;
-    @Config(name = "currency", required = false)
-    private String currency = null;
+    @Config(name = "currencyCode", required = false)
+    private String currencyCode = null;
     @Config(name = "format.date", required = false)
     private String dateFormat = null;
     @Config(name = "locale", required = false)

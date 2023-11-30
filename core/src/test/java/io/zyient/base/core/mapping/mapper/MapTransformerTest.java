@@ -36,7 +36,7 @@ class MapTransformerTest {
     void mapper() {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            MapTransformer<Constants.Target> transformer = new MapTransformer<>(Constants.Target.class);
+            MapTransformer<Constants.Target> transformer = new MapTransformer<>(Constants.Target.class, new MappingSettings());
             transformer.add(new MappedElement("id", "sourceId", false, String.class, null));
             transformer.add(new MappedElement("nested.date", "created", false, Date.class, null));
             transformer.add(new MappedElement("nested.nested.id", "inner.id", false, String.class, null));

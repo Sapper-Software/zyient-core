@@ -16,13 +16,16 @@
 
 package io.zyient.base.core.mapping.transformers;
 
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.util.Map;
 
@@ -30,6 +33,8 @@ import java.util.Map;
 @Setter
 @Accessors(fluent = true)
 public class EnumTransformer<T extends Enum<T>> extends DeSerializer<T> {
+    public static final String __CONFIG_PATH_ENUMS = "enums";
+
     private Class<T> type;
     private Map<String, String> enumValues;
 
@@ -42,6 +47,24 @@ public class EnumTransformer<T extends Enum<T>> extends DeSerializer<T> {
     public DeSerializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         try {
             name = type.getSimpleName();
+            if (enumValues != null) {
+                for (String key : enumValues.keySet()) {
+                    Enum<T> e = Enum.valueOf(type, enumValues.get(key));
+                }
+            }
+            return this;
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
+    }
+
+    @Override
+    public DeSerializer<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        try {
+            name = type.getSimpleName();
+            if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH_ENUMS)) {
+                enumValues = ConfigReader.readAsMap(xmlConfig, __CONFIG_PATH_ENUMS);
+            }
             if (enumValues != null) {
                 for (String key : enumValues.keySet()) {
                     Enum<T> e = Enum.valueOf(type, enumValues.get(key));

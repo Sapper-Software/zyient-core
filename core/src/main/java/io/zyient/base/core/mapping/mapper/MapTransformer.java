@@ -20,7 +20,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.core.mapping.model.CustomMappedElement;
 import io.zyient.base.core.mapping.model.MappedElement;
+import io.zyient.base.core.mapping.model.RegexMappedElement;
+import io.zyient.base.core.mapping.transformers.RegexTransformer;
+import io.zyient.base.core.mapping.transformers.Transformer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -40,13 +44,17 @@ public class MapTransformer<T> {
         private Class<?> type;
         private String targetPath;
         private Map<String, MapNode> nodes;
+        private Transformer<?> transformer;
     }
 
     private final Class<? extends T> type;
+    private final MappingSettings settings;
     private final Map<String, MapNode> mapper = new HashMap<>();
+    private final Map<String, Transformer<?>> transformers = new HashMap<>();
 
-    public MapTransformer(@NonNull Class<? extends T> type) {
+    public MapTransformer(@NonNull Class<? extends T> type, @NonNull MappingSettings settings) {
         this.type = type;
+        this.settings = settings;
     }
 
     public MapTransformer<T> add(@NonNull MappedElement element) throws Exception {
@@ -56,7 +64,63 @@ public class MapTransformer<T> {
                     type.getCanonicalName(), element.getTargetPath()));
         }
         MapNode node = findNode(element, pm);
+        if (element instanceof CustomMappedElement
+                || element instanceof RegexMappedElement) {
+            node.transformer = findTransformer(element, true);
+        }
         return this;
+    }
+
+    private Transformer<?> findTransformer(MappedElement elem, boolean create) throws Exception {
+        if (elem instanceof CustomMappedElement element) {
+            if (transformers.containsKey(element.getTransformer())) {
+                Transformer<?> transformer = transformers.get(element.getTransformer());
+                if (!transformer.getClass().equals(element.getTransformerClass())) {
+                    throw new Exception(String.format("Transformer type mismatch. [current=%s][requested=%s]",
+                            transformer.getClass().getCanonicalName(), element.getTransformerClass().getCanonicalName()));
+                }
+                return transformer;
+            } else if (create) {
+                Transformer<?> transformer = element.getTransformerClass().getDeclaredConstructor()
+                        .newInstance()
+                        .configure(settings);
+                transformers.put(transformer.name(), transformer);
+                return transformer;
+            }
+        } else if (elem instanceof RegexMappedElement element) {
+            if (transformers.containsKey(element.getRegex())) {
+                return transformers.get(element.getRegex());
+            } else if (create) {
+                RegexTransformer transformer = (RegexTransformer) new RegexTransformer()
+                        .regex(element.getRegex())
+                        .groups(element.getGroups())
+                        .format(element.getFormat())
+                        .replace(element.getReplace())
+                        .configure(settings);
+                transformers.put(transformer.name(), transformer);
+                return transformer;
+            }
+        }
+        return null;
+    }
+
+    public Object transform(@NonNull MappedElement element, @NonNull Object source) throws Exception {
+        if (element instanceof CustomMappedElement) {
+            Transformer<?> transformer = findTransformer(element, false);
+            if (transformer == null) {
+                throw new Exception(String.format("Transformer not found. [name=%s]",
+                        ((CustomMappedElement) element).getTransformer()));
+            }
+            return transformer.read(source);
+        } else if (element instanceof RegexMappedElement re) {
+            Transformer<?> transformer = findTransformer(re, false);
+            if (transformer == null) {
+                throw new Exception(String.format("Transformer not found. [name=%s]",
+                        re.getName()));
+            }
+            return transformer.read(source);
+        }
+        return source;
     }
 
     public Map<String, Object> transform(@NonNull Map<String, Object> source) throws Exception {
@@ -79,6 +143,9 @@ public class MapTransformer<T> {
                 Map<String, Object> map = getTargetNode(data, node.targetPath);
                 String[] parts = node.targetPath.split("\\.");
                 String key = parts[parts.length - 1];
+                if (node.transformer != null) {
+                    value = node.transformer.read(value);
+                }
                 map.put(key, value);
             } else if (value != null) {
                 if (!(value instanceof Map<?, ?>)) {

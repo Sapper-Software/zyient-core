@@ -17,7 +17,6 @@
 package io.zyient.base.core.mapping.transformers;
 
 import com.google.common.base.Strings;
-import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.mapper.MappingSettings;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -25,6 +24,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.lang3.SerializationException;
 
 import java.util.List;
 import java.util.regex.Matcher;
@@ -33,20 +33,17 @@ import java.util.regex.Pattern;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class RegexTransformer extends DeSerializer<String> {
+public class RegexTransformer implements Transformer<String> {
     private String regex;
     private String replace;
     private List<Integer> groups;
     private String format;
     @Setter(AccessLevel.NONE)
     private Pattern pattern;
-
-    public RegexTransformer() {
-        super(String.class);
-    }
+    private String name;
 
     @Override
-    public DeSerializer<String> configure(@NonNull MappingSettings settings) throws ConfigurationException {
+    public Transformer<String> configure(@NonNull MappingSettings settings) throws ConfigurationException {
         if (Strings.isNullOrEmpty(regex)) {
             throw new ConfigurationException("Regex not specified...");
         }
@@ -56,7 +53,7 @@ public class RegexTransformer extends DeSerializer<String> {
     }
 
     @Override
-    public String transform(@NonNull Object source) throws DataException {
+    public String read(@NonNull Object source) throws SerializationException {
         if (source instanceof String value) {
             if (!Strings.isNullOrEmpty(replace)) {
                 return ((String) source).replaceAll(regex, replace);
@@ -79,6 +76,6 @@ public class RegexTransformer extends DeSerializer<String> {
             }
             return null;
         }
-        throw new DataException(String.format("Cannot transform to String. [source=%s]", source.getClass()));
+        throw new SerializationException(String.format("Cannot transform to String. [source=%s]", source.getClass()));
     }
 }

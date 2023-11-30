@@ -24,7 +24,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -45,7 +47,7 @@ public class DateTransformer extends DeSerializer<Date> {
 
     @Override
     public DeSerializer<Date> configure(@NonNull MappingSettings settings) throws ConfigurationException {
-        name = Date.class.getSimpleName();
+        name = Date.class.getCanonicalName();
         String l = settings.getParameter(LOCALE_OVERRIDE);
         if (!Strings.isNullOrEmpty(l)) {
             try {
@@ -66,7 +68,33 @@ public class DateTransformer extends DeSerializer<Date> {
                 throw new ConfigurationException("Date format not specified...");
             }
         }
-        return null;
+        return this;
+    }
+
+    @Override
+    public DeSerializer<Date> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        name = Date.class.getCanonicalName();
+        String s = xmlConfig.getString(FORMAT_OVERRIDE);
+        if (!Strings.isNullOrEmpty(s)) {
+            format = s;
+        } else {
+            if (Strings.isNullOrEmpty(format)) {
+                throw new ConfigurationException("Date format not specified...");
+            }
+        }
+        s = xmlConfig.getString(LOCALE_OVERRIDE);
+        if (!Strings.isNullOrEmpty(s)) {
+            try {
+                locale = CommonUtils.parseLocale(s);
+            } catch (Exception ex) {
+                throw new ConfigurationException(ex);
+            }
+        } else {
+            if (locale == null) {
+                throw new ConfigurationException("Locale not specified...");
+            }
+        }
+        return this;
     }
 
     @Override

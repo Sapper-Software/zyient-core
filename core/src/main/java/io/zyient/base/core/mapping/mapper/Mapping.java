@@ -24,8 +24,6 @@ import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.mapping.DataException;
 import io.zyient.base.core.mapping.model.*;
@@ -43,8 +41,6 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.lang.reflect.Field;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,13 +50,14 @@ import java.util.Map;
 public class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
     public static final String __CONFIG_PATH_MAPPINGS = "mappings";
+    public static final String __CONFIG_PATH_SERDE = "serdes";
 
     private Class<? extends T> entityType;
     private File contentDir;
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
     private MappingSettings settings;
-    private final Map<String, DeSerializer<?>> transformers = new HashMap<>();
+    private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
     private RulesExecutor<T> rulesExecutor;
     private MappingContextProvider contextProvider;
     private RulesCache<T> rulesCache;
@@ -99,7 +96,6 @@ public class Mapping<T> {
         return settings.getName();
     }
 
-    @SuppressWarnings("unchecked")
     public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         Preconditions.checkNotNull(entityType);
         try {
@@ -113,13 +109,12 @@ public class Mapping<T> {
             reader.read();
             settings = (MappingSettings) reader.settings();
             settings.postLoad();
+            readDeSerializers(config);
             readMappings(config);
-            if (!transformers.isEmpty()) {
+            if (!deSerializers.isEmpty()) {
                 SimpleModule module = new SimpleModule();
-                for (String name : transformers.keySet()) {
-                    DeSerializer<?> deSerializer = transformers.get(name);
-                    if (deSerializer instanceof RegexTransformer)
-                        continue;
+                for (String name : deSerializers.keySet()) {
+                    DeSerializer<?> deSerializer = deSerializers.get(name);
                     addDeSerializer(module, name);
                 }
                 mapper.registerModule(module);
@@ -132,8 +127,48 @@ public class Mapping<T> {
     }
 
     @SuppressWarnings("unchecked")
+    private void readDeSerializers(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH_SERDE)) {
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_SERDE);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(DeSerializer.__CONFIG_PATH);
+            for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                Class<? extends DeSerializer<?>> type = (Class<? extends DeSerializer<?>>) ConfigReader.readType(node);
+                if (type == null) {
+                    throw new Exception("Class not specified for DeSerializer...");
+                }
+                DeSerializer<?> deSerializer = type.getDeclaredConstructor()
+                        .newInstance()
+                        .configure(node);
+                deSerializers.put(deSerializer.name(), deSerializer);
+            }
+        }
+        DeSerializer<?> deSerializer = null;
+        deSerializer = new IntegerTransformer()
+                .locale(settings.getLocale())
+                .configure(settings);
+        deSerializers.put(deSerializer.name(), deSerializer);
+        deSerializer = new FloatTransformer()
+                .locale(settings.getLocale())
+                .configure(settings);
+        deSerializers.put(deSerializer.name(), deSerializer);
+        deSerializer = new LongTransformer()
+                .locale(settings.getLocale())
+                .configure(settings);
+        deSerializers.put(deSerializer.name(), deSerializer);
+        deSerializer = new DoubleTransformer()
+                .locale(settings.getLocale())
+                .configure(settings);
+        deSerializers.put(deSerializer.name(), deSerializer);
+        deSerializer = new DateTransformer()
+                .locale(settings.getLocale())
+                .format(settings.getDateFormat())
+                .configure(settings);
+        deSerializers.put(deSerializer.name(), deSerializer);
+    }
+
+    @SuppressWarnings("unchecked")
     private <S> void addDeSerializer(SimpleModule module, String name) {
-        DeSerializer<S> deSerializer = (DeSerializer<S>) transformers.get(name);
+        DeSerializer<S> deSerializer = (DeSerializer<S>) deSerializers.get(name);
         module.addDeserializer(deSerializer.type(), deSerializer);
     }
 
@@ -154,7 +189,7 @@ public class Mapping<T> {
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
         List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
-            mapTransformer = new MapTransformer<>(entityType);
+            mapTransformer = new MapTransformer<>(entityType, settings);
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
                 Class<? extends MappedElement> type = (Class<? extends MappedElement>) ConfigReader.readType(node);
                 if (type == null) {
@@ -165,13 +200,6 @@ public class Mapping<T> {
                 targetIndex.put(me.getTargetPath(), me);
                 if (me.getMappingType() == MappingType.Field) {
                     mapTransformer.add(me);
-                    Field field = ReflectionHelper.findField(this.entityType, me.getTargetPath());
-                    Preconditions.checkNotNull(field);
-                    DeSerializer<?> transformer = getTransformer(field.getType(), me);
-                    if (transformer != null) {
-                        DefaultLogger.info(String.format("Using transformer. [type=%s][name=%s]",
-                                field.getType(), transformer.name()));
-                    }
                 }
             }
         } else {
@@ -181,8 +209,7 @@ public class Mapping<T> {
 
     public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
         Map<String, Object> converted = mapTransformer.transform(source);
-        String json = JSONUtils.asString(converted, Map.class);
-        T entity = mapper.readValue(json, entityType);
+        T entity = mapper.convertValue(converted, entityType);
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
         response.entity(entity);
@@ -247,97 +274,51 @@ public class Mapping<T> {
         if (type == null) {
             type = String.class;
         }
-        if (type.equals(String.class) && element.getClass().equals(MappedElement.class)) {
-            if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
-                return String.valueOf(value);
-            } else {
-                throw new Exception(String.format("Cannot map value to String. [type=%s]",
-                        value.getClass().getCanonicalName()));
+        if (element.getClass().equals(MappedElement.class)) {
+            if (type.equals(String.class)) {
+                if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
+                    return String.valueOf(value);
+                } else {
+                    throw new Exception(String.format("Cannot map value to String. [type=%s]",
+                            value.getClass().getCanonicalName()));
+                }
+            } else if (ReflectionHelper.isSuperType(type, value.getClass())) {
+                return value;
+            } else if (type.isInterface() && ReflectionHelper.implementsInterface(type, value.getClass())) {
+                return value;
             }
         }
-        DeSerializer<?> transformer = null;
-        if (element instanceof CustomMappedElement) {
-            transformer = getTransformer(null, element);
-        } else {
-            transformer = getTransformer(type, element);
-        }
-        if (transformer == null) {
-            throw new Exception(String.format("Transformer not found for type. [type=%s]", type.getCanonicalName()));
-        }
-        return transformer.transform(value);
+        return mapTransformer.transform(element, value);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private DeSerializer<?> getTransformer(Class<?> type,
-                                           MappedElement element) throws Exception {
-        if (type != null && transformers.containsKey(type.getCanonicalName())) {
-            return transformers.get(type.getCanonicalName());
-        } else if (element instanceof CustomMappedElement) {
-            if (!Strings.isNullOrEmpty(((CustomMappedElement) element).getTransformerName())) {
-                if (transformers.containsKey(((CustomMappedElement) element).getTransformerName())) {
-                    return transformers.get(((CustomMappedElement) element).getTransformerName());
-                }
-            }
+    private DeSerializer<?> getDeSerializer(@NonNull Class<?> type,
+                                            MappedElement element) throws Exception {
+        if (deSerializers.containsKey(type.getCanonicalName())) {
+            return deSerializers.get(type.getCanonicalName());
         }
-        DeSerializer<?> transformer = null;
-        if (type == null && element instanceof CustomMappedElement) {
-            transformer = ((CustomMappedElement) element).getTransformer()
-                    .getDeclaredConstructor()
-                    .newInstance()
-                    .configure(settings);
-        } else if (ReflectionHelper.isInt(type)) {
-            transformer = new IntegerTransformer()
-                    .locale(settings.getLocale())
-                    .configure(settings);
-        } else if (ReflectionHelper.isFloat(type)) {
-            transformer = new FloatTransformer()
-                    .locale(settings.getLocale())
-                    .configure(settings);
-        } else if (ReflectionHelper.isLong(type)) {
-            transformer = new LongTransformer()
-                    .locale(settings.getLocale())
-                    .configure(settings);
-        } else if (ReflectionHelper.isDouble(type)) {
-            transformer = new DoubleTransformer()
-                    .locale(settings.getLocale())
-                    .configure(settings);
-        } else if (type.equals(Date.class)) {
-            transformer = new DateTransformer()
-                    .locale(settings.getLocale())
-                    .format(settings.getDateFormat())
-                    .configure(settings);
-        } else if (type.isEnum()) {
-            if (transformers.containsKey(type.getSimpleName())) {
-                return transformers.get(type.getSimpleName());
+        DeSerializer<?> deSerializer = null;
+        if (type.isEnum()) {
+            if (deSerializers.containsKey(type.getSimpleName())) {
+                return deSerializers.get(type.getSimpleName());
             }
             if (element instanceof EnumMappedElement) {
-                transformer = new EnumTransformer(type)
+                deSerializer = new EnumTransformer(type)
                         .enumValues(((EnumMappedElement) element).getEnumMappings())
                         .configure(settings);
             } else {
-                transformer = new EnumTransformer(type)
+                deSerializer = new EnumTransformer(type)
                         .configure(settings);
             }
         } else if (ReflectionHelper.isSuperType(CurrencyValue.class, type)) {
-            transformer = new CurrencyValueTransformer()
+            deSerializer = new CurrencyValueTransformer()
                     .locale(settings.getLocale())
                     .configure(settings);
-        } else if (element instanceof RegexMappedElement re) {
-            if (transformers.containsKey(re.getName())) {
-                return transformers.get(re.getName());
-            }
-            transformer = new RegexTransformer()
-                    .regex(re.getRegex())
-                    .name(re.getName());
-            ((RegexTransformer) transformer).format(re.getFormat())
-                    .groups(re.getGroups())
-                    .replace(re.getReplace())
-                    .configure(settings);
         }
-        if (transformer != null) {
-            transformers.put(transformer.name(), transformer);
+        if (deSerializer != null) {
+            deSerializers.put(deSerializer.name(), deSerializer);
         }
-        return transformer;
+        return deSerializer;
     }
 
     @SuppressWarnings("unchecked")

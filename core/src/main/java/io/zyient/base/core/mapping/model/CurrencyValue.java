@@ -17,6 +17,9 @@
 package io.zyient.base.core.mapping.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -29,8 +32,11 @@ import java.util.Locale;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
+@Embeddable
 public class CurrencyValue {
-    private Currency currency;
+    @Column(name = "currency")
+    private String currencyCode;
+    @Column(name = "value")
     private Double value;
 
     public CurrencyValue() {
@@ -38,16 +44,17 @@ public class CurrencyValue {
     }
 
     public CurrencyValue(@NonNull String code) {
-        currency = Currency.getInstance(code);
+        currencyCode = code;
     }
 
     public CurrencyValue(@NonNull Locale locale) {
-        currency = Currency.getInstance(locale);
+        Currency currency = Currency.getInstance(locale);
+        currencyCode = currency.getCurrencyCode();
     }
 
     public CurrencyValue(@NonNull Currency currency,
                          @NonNull Double value) {
-        this.currency = currency;
+        this.currencyCode = currency.getCurrencyCode();
         this.value = value;
     }
 
@@ -65,7 +72,13 @@ public class CurrencyValue {
     }
 
     public String toString(@NonNull Locale locale) {
-        if (value != null && currency != null) {
+        Currency currency = null;
+        if (Strings.isNullOrEmpty(currencyCode)) {
+            currency = Currency.getInstance(locale);
+        } else {
+            currency = Currency.getInstance(currencyCode);
+        }
+        if (value != null) {
             NumberFormat fmt = NumberFormat.getInstance(locale);
             String dv = fmt.format(value);
             return String.format("%s%s", currency.getSymbol(), dv);

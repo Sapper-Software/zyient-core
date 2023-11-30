@@ -26,7 +26,9 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
 
@@ -34,6 +36,8 @@ import java.io.IOException;
 @Setter
 @Accessors(fluent = true)
 public abstract class DeSerializer<T> extends StdDeserializer<T> {
+    public static final String __CONFIG_PATH = "deSerializer";
+
     protected String name;
     private final Class<T> type;
 
@@ -43,6 +47,8 @@ public abstract class DeSerializer<T> extends StdDeserializer<T> {
     }
 
     public abstract DeSerializer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
+
+    public abstract DeSerializer<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     public abstract T transform(@NonNull Object value) throws DataException;
 

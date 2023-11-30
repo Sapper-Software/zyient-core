@@ -18,17 +18,15 @@ package io.zyient.base.core.mapping.model;
 
 
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.core.mapping.transformers.DeSerializer;
+import io.zyient.base.core.mapping.transformers.Transformer;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@ConfigPath(path = "mapping")
 public class CustomMappedElement extends MappedElement {
     @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends DeSerializer<?>> transformer;
-    @Config(name = "transformer.class", required = true)
-    private String transformerName;
+    private Class<? extends Transformer<?>> transformerClass;
+    @Config(name = "transformer.name", required = true)
+    private String transformer;
 }
