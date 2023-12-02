@@ -19,11 +19,13 @@ package io.zyient.base.common.utils;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.EReaderType;
+import org.apache.commons.io.FileUtils;
 
 import javax.annotation.Nonnull;
 import java.io.*;
 import java.net.URI;
 import java.nio.channels.FileChannel;
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -53,7 +55,7 @@ public class IOUtils {
      * @param path - Directory path.
      * @return - Created or Exists?
      */
-    public static boolean CheckDirectory(String path) {
+    public static boolean checkDirectory(String path) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         File file = new File(path);
         if (file.exists()) {
@@ -71,7 +73,7 @@ public class IOUtils {
      * @param path - File Path
      * @return - Created or Exists?
      */
-    public static boolean CheckParentDirectory(String path) {
+    public static boolean checkParentDirectory(String path) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         File file = new File(path);
         if (file.exists()) {
@@ -80,7 +82,7 @@ public class IOUtils {
             }
             return false;
         }
-        return CheckDirectory(file.getParent());
+        return checkDirectory(file.getParent());
     }
 
     /**
@@ -203,7 +205,7 @@ public class IOUtils {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line = null;
             StringBuilder builder = new StringBuilder();
-            while((line = reader.readLine()) != null) {
+            while ((line = reader.readLine()) != null) {
                 builder.append(line).append("\n");
             }
             if (builder.length() > 0) {
@@ -211,5 +213,20 @@ public class IOUtils {
             }
         }
         return null;
+    }
+
+    public static void cleanDirectory(@Nonnull File path, boolean recursive) throws IOException {
+        Collection<File> files = FileUtils.listFiles(path, null, recursive);
+        if (files != null && !files.isEmpty()) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    if (recursive)
+                        cleanDirectory(file, recursive);
+                }
+                if (!file.delete()) {
+                    DefaultLogger.debug(String.format("Failed to delete. [path=%s]", file.getAbsolutePath()));
+                }
+            }
+        }
     }
 }

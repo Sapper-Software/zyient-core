@@ -40,20 +40,16 @@ import org.apache.solr.client.solrj.beans.Field;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class SolrEntity<K extends IKey> implements IEntity<K>, VersionedEntity {
-    public static final String FIELD_SOLR_ID = "id";
-    public static final String FIELD_SOLR_TYPE = "class";
-    public static final String FIELD_SOLR_TIME_CREATED = "time_created";
-    public static final String FIELD_SOLR_TIME_UPDATED = "time_updated";
-    @Field(FIELD_SOLR_ID)
+    @Field(SolrConstants.FIELD_SOLR_ID)
     private String id;
-    @Field(FIELD_SOLR_TYPE)
+    @Field(SolrConstants.FIELD_SOLR_TYPE)
     private String type;
     @Setter(AccessLevel.NONE)
     @JsonIgnore
     private final EntityState state = new EntityState();
-    @Field(FIELD_SOLR_TIME_CREATED)
+    @Field(SolrConstants.FIELD_SOLR_TIME_CREATED)
     private long createdTime;
-    @Field(FIELD_SOLR_TIME_UPDATED)
+    @Field(SolrConstants.FIELD_SOLR_TIME_UPDATED)
     private long updatedTime;
 
     protected SolrEntity() {

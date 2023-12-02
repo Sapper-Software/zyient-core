@@ -140,8 +140,7 @@ public class FileUtils {
         return false;
     }
 
-    public static boolean isArchiveFile(@Nonnull String filename) throws FileUtilsException {
-        String mime = getFileMimeType(filename);
+    public static boolean isArchiveType(@NonNull String mime) {
         if (!Strings.isNullOrEmpty(mime)) {
             mime = mime.trim().toLowerCase();
             if (!Strings.isNullOrEmpty(mime)) {
@@ -153,6 +152,11 @@ public class FileUtils {
             }
         }
         return false;
+    }
+
+    public static boolean isArchiveFile(@Nonnull String filename) throws FileUtilsException {
+        String mime = getFileMimeType(filename);
+        return isArchiveType(mime);
     }
 
     public static boolean isEmailFile(@Nonnull String filename) throws FileUtilsException {

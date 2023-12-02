@@ -17,6 +17,9 @@
 package io.zyient.base.core.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
@@ -29,6 +32,7 @@ import jakarta.persistence.Transient;
 import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -73,6 +77,40 @@ public abstract class BaseEntity<K extends IKey> implements IEntity<K>, Versione
             state.error(ex);
             throw ex;
         }
+    }
+
+    /**
+     * Copy the changes from the specified source entity
+     * to this instance.
+     * <p>
+     * All properties other than the Key will be copied.
+     * Copy Type:
+     * Primitive - Copy
+     * String - Copy
+     * Enum - Copy
+     * Nested Entity - Copy Recursive
+     * Other Objects - Copy Reference.
+     *
+     * @param source  - Source instance to Copy from.
+     * @param context - Execution context.
+     * @return - Copied Entity instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<K> copyChanges(IEntity<K> source, Context context) throws CopyException {
+        Preconditions.checkArgument(source instanceof BaseEntity<?>);
+        BaseEntity<K> entity = (BaseEntity<K>) source;
+        this.state.setState(entity.state.getState());
+        this.updatedTime = entity.updatedTime;
+        this.createdTime = entity.createdTime;
+        return this;
+    }
+
+
+    public void clone(@NonNull BaseEntity<K> entity, @NonNull EEntityState state) throws CopyException {
+        this.state.setState(state);
+        this.createdTime = System.nanoTime();
+        this.updatedTime = System.nanoTime();
     }
 
     /**

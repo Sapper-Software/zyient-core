@@ -25,9 +25,12 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.core.content.model.Document;
+import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
+import io.zyient.base.core.utils.FileUtils;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -36,8 +39,6 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
@@ -54,15 +55,18 @@ import java.util.Map;
 
 
 public class SolrDataStore extends AbstractDataStore<SolrClient> {
+    public static final String SOLR_URL_UPDATE = "/update";
+    public static final String SOLR_URL_EXTRACT = String.format("%s/extract", SOLR_URL_UPDATE);
     public static final String LITERALS_PREFIX = "literal.";
     public static final String MAP_PREFIX = "fmap.";
     public static final String CONTEXT_KEY_JSON_MAP = "SOLR_JSON_FIELDS";
     public static final String CONTEXT_KEY_JSON_SPLITS = "SOLR_JSON_SPLITS";
+    public static final String JSON_FIELD = "data_json";
 
     @Override
     protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
                                                                                     @NonNull Class<? extends K> keyTpe) throws Exception {
-        return null;
+        throw new Exception("Query Parser not available...");
     }
 
     @Override
@@ -78,6 +82,13 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
+    private <E extends IEntity<?>> String getCollection(E entity) throws Exception {
+        if (entity instanceof Document<?, ?>) {
+            return ((Document<?, ?>) entity).getId().getCollection();
+        }
+        return getCollection(entity.getClass());
+    }
+
     private String getCollection(Class<?> type) throws Exception {
         if (type.isAnnotationPresent(SolrCollection.class)) {
             SolrCollection sc = type.getAnnotation(SolrCollection.class);
@@ -90,6 +101,13 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         throw new Exception(String.format("Annotation not found. [type=%s]", type.getCanonicalName()));
     }
 
+    private String getCollection(Object key, Class<?> type) throws Exception {
+        if (key instanceof DocumentId) {
+            return ((DocumentId) key).getCollection();
+        }
+        return getCollection(type);
+    }
+
     @Override
     public <E extends IEntity<?>> E createEntity(@NonNull E entity,
                                                  @NonNull Class<? extends E> type,
@@ -97,18 +115,23 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         checkState();
         try {
             SolrConnection connection = (SolrConnection) connection();
-            String cname = getCollection(type);
+            String cname = getCollection(entity);
             SolrClient client = connection.connect(cname);
             entity.validate();
-            if (entity instanceof SolrDocumentEntity) {
-                if (((SolrDocumentEntity) entity).getCreatedTime() <= 0)
-                    ((SolrEntity<?>) entity).setCreatedTime(System.nanoTime());
-                ((SolrEntity<?>) entity).setUpdatedTime(System.nanoTime());
-                if (Strings.isNullOrEmpty(((SolrDocumentEntity) entity).getMimeType())) {
-                    String mimeType = getDocumentType(((SolrDocumentEntity) entity).getContent());
-                    ((SolrDocumentEntity) entity).setMimeType(mimeType);
+            if (entity instanceof Document<?, ?>) {
+                if (((Document<?, ?>) entity).getCreatedTime() <= 0)
+                    ((Document<?, ?>) entity).setCreatedTime(System.nanoTime());
+                ((Document<?, ?>) entity).setUpdatedTime(System.nanoTime());
+                if (Strings.isNullOrEmpty(((Document<?, ?>) entity).getMimeType())) {
+                    String mimeType = getDocumentType(((Document<?, ?>) entity).getPath());
+                    ((Document<?, ?>) entity).setMimeType(mimeType);
                 }
-                ContentStreamUpdateRequest ur = getContentUpdateRequest((SolrDocumentEntity) entity);
+                ((Document<?, ?>) entity).setSearchId(((Document<?, ?>) entity).getId().stringKey());
+                if (((Document<?, ?>) entity).getReferenceId() != null) {
+                    ((Document<?, ?>) entity)
+                            .setSearchReferenceId(((Document<?, ?>) entity).getReferenceId().stringKey());
+                }
+                ContentStreamUpdateRequest ur = getContentUpdateRequest((Document<?, ?>) entity);
                 NamedList<Object> request = client.request(ur);
                 if (DefaultLogger.isTraceEnabled()) {
                     for (Map.Entry<String, Object> entry : request) {
@@ -116,8 +139,9 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                 entry.getKey(), entry.getValue()));
                     }
                 }
-                ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
+                ((Document<?, ?>) entity).getState().setState(EEntityState.Synced);
             } else if (entity instanceof SolrEntity<?>) {
+                ((SolrEntity<?>) entity).setId(entity.entityKey().stringKey());
                 if (((SolrEntity<?>) entity).getCreatedTime() <= 0)
                     ((SolrEntity<?>) entity).setCreatedTime(System.nanoTime());
                 ((SolrEntity<?>) entity).setUpdatedTime(System.nanoTime());
@@ -128,18 +152,26 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 }
                 ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
             } else {
+                long createdTimestamp = System.nanoTime();
+                long updatedTimestamp = System.nanoTime();
                 if (entity instanceof BaseEntity<?>) {
-                    if (((BaseEntity<?>) entity).getCreatedTime() <= 0)
-                        ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
-                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
-                }
-                JSONUpdateRequest ur = getJsonUpdateRequest(entity, context);
-                NamedList<Object> request = client.request(ur);
-                if (DefaultLogger.isTraceEnabled()) {
-                    for (Map.Entry<String, Object> entry : request) {
-                        DefaultLogger.trace(String.format("Response [key=%s, value=%s]",
-                                entry.getKey(), entry.getValue()));
+                    if (((BaseEntity<?>) entity).getCreatedTime() <= 0) {
+                        ((BaseEntity<?>) entity).setCreatedTime(createdTimestamp);
+                    } else {
+                        createdTimestamp = ((BaseEntity<?>) entity).getCreatedTime();
                     }
+                    ((BaseEntity<?>) entity).setUpdatedTime(updatedTimestamp);
+                }
+                SolrJsonEntity je = new SolrJsonEntity();
+                je.setId(entity.entityKey().stringKey());
+                je.setJson(JSONUtils.asString(entity, entity.getClass()));
+                je.setCreatedTime(createdTimestamp);
+                je.setUpdatedTime(updatedTimestamp);
+
+                UpdateResponse ur = client.addBean(je);
+                if (ur.getStatus() != 0) {
+                    throw new DataStoreException(String.format("Insert failed [status=%d]. [type=%s][id=%s]",
+                            ur.getStatus(), type.getCanonicalName(), entity.entityKey().stringKey()));
                 }
                 if (entity instanceof BaseEntity<?>) {
                     ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
@@ -161,7 +193,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         checkState();
         try {
             SolrConnection connection = (SolrConnection) connection();
-            String cname = getCollection(type);
+            String cname = getCollection(entity);
             SolrClient client = connection.connect(cname);
             entity.validate();
             if (checkEntityVersion(context)) {
@@ -201,7 +233,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         checkState();
         try {
             SolrConnection connection = (SolrConnection) connection();
-            String cname = getCollection(type);
+            String cname = getCollection(key, type);
             SolrClient client = connection.connect(cname);
             String k = null;
             if (key instanceof String) {
@@ -259,14 +291,29 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         return ur;
     }
 
-    private static ContentStreamUpdateRequest getContentUpdateRequest(SolrDocumentEntity entity) throws IOException {
-        ContentStreamUpdateRequest ur = new ContentStreamUpdateRequest("/update/extract");
-        ur.addFile(entity.getContent(), entity.getMimeType());
-        ur.setParam(LITERALS_PREFIX + "id", entity.getId());
-        ur.setParam(LITERALS_PREFIX + "location", entity.getSourceLocation());
-        ur.setParam(MAP_PREFIX + "content", "attr_content");
+    private static ContentStreamUpdateRequest getContentUpdateRequest(Document<?, ?> entity) throws IOException {
+        String url = SOLR_URL_UPDATE;
+        String mime = entity.getMimeType();
+        if (needsExtract(mime)) {
+            url = SOLR_URL_EXTRACT;
+        }
+        ContentStreamUpdateRequest ur = new ContentStreamUpdateRequest(url);
+        ur.addFile(entity.getPath(), entity.getMimeType());
+        ur.setParam(LITERALS_PREFIX + "id", entity.getId().getId());
+        ur.setParam(LITERALS_PREFIX + "location", entity.getUri());
+        if (mime.compareToIgnoreCase(FileUtils.MIME_TYPE_JSON) == 0)
+            ur.setParam("json.command", "false");
+        if (mime.compareToIgnoreCase(FileUtils.MIME_TYPE_XML) == 0)
+            ur.setParam("xml.command", "false");
         ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
         return ur;
+    }
+
+    private static boolean needsExtract(String mimeType) {
+        if (FileUtils.isArchiveType(mimeType) || mimeType.compareToIgnoreCase(FileUtils.MIME_TYPE_PDF) == 0) {
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -277,7 +324,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         checkState();
         try {
             SolrConnection connection = (SolrConnection) connection();
-            String cname = getCollection(type);
+            String cname = getCollection(key, type);
             SolrClient client = connection.connect(cname);
             String k = null;
             if (key instanceof String) {
@@ -290,7 +337,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             }
             if (ReflectionHelper.isSuperType(SolrEntity.class, type)) {
                 SolrQuery q = new SolrQuery();
-                q.set("q", getQueryString(SolrEntity.FIELD_SOLR_ID, k, String.class));
+                q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
                 final QueryResponse response = client.query(q);
                 List<E> entities = (List<E>) response.getBeans(type);
                 if (entities != null) {
@@ -305,18 +352,38 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                         return (E) entity;
                     }
                 }
-            } else {
+            } else if (ReflectionHelper.isSuperType(Document.class, type)) {
                 SolrQuery q = new SolrQuery();
-                q.set("q", getQueryString(SolrEntity.FIELD_SOLR_ID, k, String.class));
+                q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
                 final QueryResponse response = client.query(q);
-                SolrDocumentList docs = response.getResults();
-                if (docs != null) {
-                    if (docs.size() > 1) {
+                List<E> entities = (List<E>) response.getBeans(type);
+                if (entities != null) {
+                    if (entities.size() > 1) {
                         throw new DataStoreException(
                                 String.format("Multiple entries found for key. [type=%s][key=%s]",
                                         type.getCanonicalName(), k));
                     }
-                    SolrDocument doc = docs.get(0);
+                    if (!entities.isEmpty()) {
+                        Document<?, ?> entity = (Document<?, ?>) entities.get(0);
+                        entity.getState().setState(EEntityState.Synced);
+                        return (E) entity;
+                    }
+                }
+            } else {
+                SolrQuery q = new SolrQuery();
+                q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
+                final QueryResponse response = client.query(q);
+                List<SolrJsonEntity> entities = (List<SolrJsonEntity>) response.getBeans(SolrJsonEntity.class);
+                if (entities != null) {
+                    if (entities.size() > 1) {
+                        throw new DataStoreException(
+                                String.format("Multiple entries found for key. [type=%s][key=%s]",
+                                        type.getCanonicalName(), k));
+                    }
+                    if (!entities.isEmpty()) {
+                        SolrJsonEntity json = entities.get(0);
+                        return JSONUtils.read(json.getJson(), type);
+                    }
                 }
             }
             return null;
@@ -332,7 +399,20 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
                                                                         Context context) throws DataStoreException {
-        throw new DataStoreException("Not implemented...");
+        if (!(query instanceof EntityQueryBuilder.LuceneQuery)) {
+            throw new DataStoreException(String.format("Invalid Query type. [type=%s]",
+                    query.getClass().getCanonicalName()));
+        }
+        try {
+            SolrConnection connection = (SolrConnection) connection();
+            String cname = getCollection(type);
+            SolrClient client = connection.connect(cname);
+            EntityQueryBuilder.LuceneQuery q = (EntityQueryBuilder.LuceneQuery) query;
+            return new SolrCursor<>(type, client, q, maxResults);
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new DataStoreException(ex);
+        }
     }
 
 

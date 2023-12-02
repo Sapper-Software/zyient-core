@@ -36,7 +36,7 @@ import java.util.UUID;
         property = "@class")
 public class SolrJsonEntity extends SolrEntity<StringKey> {
     private StringKey key;
-    @Field("JSON")
+    @Field(SolrConstants.FIELD_SOLR_JSON_DATA)
     private String json;
 
     /**
