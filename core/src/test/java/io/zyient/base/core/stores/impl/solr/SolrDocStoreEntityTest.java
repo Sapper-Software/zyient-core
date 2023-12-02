@@ -29,6 +29,8 @@ import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.impl.solr.model.DemoDocState;
+import io.zyient.base.core.stores.impl.solr.model.DemoTestDocument;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.jupiter.api.AfterAll;
@@ -43,20 +45,8 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SolrDocStoreEntityTest {
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class DemoDocState extends DocumentState<EEntityState> {
 
-        protected DemoDocState() {
-            super(EEntityState.Error, EEntityState.New);
-        }
-    }
 
-    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-            property = "@class")
-    public static class TestDocument extends Document<EEntityState, StringKey> {
-
-    }
 
     private static final String __CONFIG_FILE = "src/test/resources/solr/test-solr-env.xml";
     private static final String __SOLR_DB_NAME = "test-solr";
@@ -87,7 +77,7 @@ class SolrDocStoreEntityTest {
         env.close();
     }
 
-    //@Test
+    @Test
     @SuppressWarnings("unchecked")
     void createEntity() {
         try {
@@ -97,7 +87,7 @@ class SolrDocStoreEntityTest {
             assertNotNull(dataStore);
             for (String source : DOCUMENTS) {
                 File path = new File(source);
-                Document<EEntityState, StringKey> doc = new Document<>();
+                DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                 doc.setName(source);
                 doc.setDocState(new DemoDocState());
@@ -128,7 +118,7 @@ class SolrDocStoreEntityTest {
             for (String source : DOCUMENTS) {
                 if (!source.endsWith(".pdf")) continue;
                 File path = new File(source);
-                Document<EEntityState, StringKey> doc = new Document<>();
+                DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                 doc.setName(source);
                 doc.setDocState(new DemoDocState());
@@ -155,7 +145,7 @@ class SolrDocStoreEntityTest {
         }
     }
 
-   // @Test
+    @Test
     @SuppressWarnings("unchecked")
     void doSearch() {
         try {
@@ -166,7 +156,7 @@ class SolrDocStoreEntityTest {
             for (String source : DOCUMENTS) {
                 if (!source.endsWith(".pdf")) continue;
                 File path = new File(source);
-                Document<EEntityState, StringKey> doc = new Document<>();
+                DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                 doc.setName(source);
                 doc.setDocState(new DemoDocState());
@@ -183,13 +173,13 @@ class SolrDocStoreEntityTest {
                     new StandardAnalyzer(),
                     __SOLR_COLLECTION_NAME);
             builder.matches("Clean and simple SQL processing.");
-            Cursor<DocumentId, TestDocument> cursor = dataStore.search(builder.build(),
+            Cursor<DocumentId, DemoTestDocument> cursor = dataStore.search(builder.build(),
                     DocumentId.class,
-                    TestDocument.class,
+                    DemoTestDocument.class,
                     null);
             int count = 0;
             while (true) {
-                List<TestDocument> docs = cursor.nextPage();
+                List<DemoTestDocument> docs = cursor.nextPage();
                 if (docs == null || docs.isEmpty()) break;
                 count += docs.size();
             }
