@@ -17,14 +17,27 @@
 package io.zyient.base.core.stores.impl.solr;
 
 import io.zyient.base.core.content.model.Document;
-import io.zyient.base.core.content.model.DocumentId;
+import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.NonNull;
 import org.apache.lucene.analysis.Analyzer;
 
-public class DocumentQueryBuilder extends EntityQueryBuilder<DocumentId, Document<?, ?>> {
+public class DocumentQueryBuilder extends EntityQueryBuilder {
+    private final String collection;
 
-    public DocumentQueryBuilder(@NonNull Class<? extends Document<?, ?>> entityType,
-                                @NonNull Analyzer analyzer) {
+    public DocumentQueryBuilder(@NonNull Class<? extends Document> entityType,
+                                @NonNull Analyzer analyzer,
+                                @NonNull String collection) {
         super(entityType, analyzer);
+        this.collection = collection;
+    }
+
+    public DocumentQueryBuilder matches(@NonNull String value) throws Exception {
+        return (DocumentQueryBuilder) createPhraseQuery(FIELD_TEXT, value);
+    }
+
+    @Override
+    public AbstractDataStore.Q build() {
+        LuceneQuery q = (LuceneQuery) super.build();
+        return q.collection(collection);
     }
 }

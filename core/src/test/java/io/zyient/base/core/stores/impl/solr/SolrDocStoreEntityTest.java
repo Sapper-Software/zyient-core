@@ -25,17 +25,20 @@ import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.content.model.DocumentState;
 import io.zyient.base.core.model.StringKey;
+import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
 import org.apache.commons.configuration2.XMLConfiguration;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 class SolrDocStoreEntityTest {
     public static class DemoDocState extends DocumentState<EEntityState> {
@@ -43,6 +46,10 @@ class SolrDocStoreEntityTest {
         protected DemoDocState() {
             super(EEntityState.Error, EEntityState.New);
         }
+    }
+
+    public static class TestDocument extends Document<EEntityState, StringKey> {
+
     }
 
     private static final String __CONFIG_FILE = "src/test/resources/solr/test-solr-env.xml";
@@ -54,7 +61,9 @@ class SolrDocStoreEntityTest {
             "src/test/resources/data/search/sample-docs.zip",
             "src/test/resources/data/search/hibernate_tutorial.pdf",
             "src/test/resources/data/Financial Sample.xlsx",
-            "src/test/resources/data/iso_countries.csv"
+            "src/test/resources/data/iso_countries.csv",
+            "src/test/resources/data/customers_202311231645.xml",
+            "src/test/resources/data/employees_202311232000.json"
     };
     private static XMLConfiguration xmlConfiguration = null;
     private static DataStoreEnv env = new DataStoreEnv();
@@ -102,17 +111,35 @@ class SolrDocStoreEntityTest {
     }
 
     @Test
-    void deleteEntity() {
-        try {
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            fail(ex);
-        }
-    }
-
-    @Test
+    @SuppressWarnings("unchecked")
     void findEntity() {
         try {
+            DataStoreManager manager = env.dataStoreManager();
+            assertNotNull(manager);
+            SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
+            assertNotNull(dataStore);
+            List<DocumentId> ids = new ArrayList<>();
+            for (String source : DOCUMENTS) {
+                if (!source.endsWith(".pdf")) continue;
+                File path = new File(source);
+                Document<EEntityState, StringKey> doc = new Document<>();
+                doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
+                doc.setName(source);
+                doc.setDocState(new DemoDocState());
+                doc.getDocState().setState(EEntityState.New);
+                doc.setPath(path);
+                doc.setUri(path.toURI().toString());
+                doc.setCreatedBy("DEMO");
+                doc.setModifiedBy("DEMO");
+
+                doc = dataStore.create(doc, doc.getClass(), null);
+                assertNotNull(doc);
+                ids.add(doc.entityKey());
+            }
+            for (DocumentId id : ids) {
+                Document<EEntityState, StringKey> doc = dataStore.find(id, Document.class, null);
+                assertNotNull(doc);
+            }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);
@@ -120,6 +147,47 @@ class SolrDocStoreEntityTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void doSearch() {
+        try {
+            DataStoreManager manager = env.dataStoreManager();
+            assertNotNull(manager);
+            SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
+            assertNotNull(dataStore);
+            for (String source : DOCUMENTS) {
+                if (!source.endsWith(".pdf")) continue;
+                File path = new File(source);
+                Document<EEntityState, StringKey> doc = new Document<>();
+                doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
+                doc.setName(source);
+                doc.setDocState(new DemoDocState());
+                doc.getDocState().setState(EEntityState.New);
+                doc.setPath(path);
+                doc.setUri(path.toURI().toString());
+                doc.setCreatedBy("DEMO");
+                doc.setModifiedBy("DEMO");
+
+                doc = dataStore.create(doc, doc.getClass(), null);
+                assertNotNull(doc);
+            }
+            DocumentQueryBuilder builder = new DocumentQueryBuilder(Document.class,
+                    new StandardAnalyzer(),
+                    __SOLR_COLLECTION_NAME);
+            builder.matches("Clean and simple SQL processing.");
+            Cursor<DocumentId, TestDocument> cursor = dataStore.search(builder.build(),
+                    DocumentId.class,
+                    TestDocument.class,
+                    null);
+            int count = 0;
+            while (true) {
+                List<TestDocument> docs = cursor.nextPage();
+                if (docs == null || docs.isEmpty()) break;
+                count += docs.size();
+            }
+            assertTrue(count > 0);
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
     }
 }

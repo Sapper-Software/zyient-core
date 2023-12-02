@@ -310,7 +310,9 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     }
 
     private static boolean needsExtract(String mimeType) {
-        if (FileUtils.isArchiveType(mimeType) || mimeType.compareToIgnoreCase(FileUtils.MIME_TYPE_PDF) == 0) {
+        if (FileUtils.isArchiveType(mimeType)
+                || mimeType.compareToIgnoreCase(FileUtils.MIME_TYPE_PDF) == 0
+                || FileUtils.isOfficeFileType(mimeType)) {
             return true;
         }
         return false;
@@ -329,6 +331,8 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             String k = null;
             if (key instanceof String) {
                 k = (String) key;
+            } else if (key instanceof DocumentId) {
+                k = ((DocumentId) key).getId();
             } else if (key instanceof IKey) {
                 k = ((IKey) key).stringKey();
             } else {
@@ -405,7 +409,10 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
         try {
             SolrConnection connection = (SolrConnection) connection();
-            String cname = getCollection(type);
+            String cname = ((EntityQueryBuilder.LuceneQuery) query).collection();
+            if (Strings.isNullOrEmpty(cname)) {
+                cname = getCollection(type);
+            }
             SolrClient client = connection.connect(cname);
             EntityQueryBuilder.LuceneQuery q = (EntityQueryBuilder.LuceneQuery) query;
             return new SolrCursor<>(type, client, q, maxResults);

@@ -90,6 +90,25 @@ public class FileUtils {
             "application/vnd.openxmlformats-officedocument.presentationml.presentation"
     };
 
+    public static boolean isOfficeFileType(@NonNull String mimeType) {
+        for (String type : MIME_TYPE_MS_WORD) {
+            if (type.compareToIgnoreCase(mimeType) == 0) {
+                return true;
+            }
+        }
+        for (String type : MIME_TYPE_MS_EXCEL) {
+            if (type.compareToIgnoreCase(mimeType) == 0) {
+                return true;
+            }
+        }
+        for (String type : MIME_TYPE_MS_POWER_POINT) {
+            if (type.compareToIgnoreCase(mimeType) == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static String detectURLMimeType(final File file) throws IOException {
         URLConnection connection = file.toURL().openConnection();
         String mimeType = connection.getContentType();

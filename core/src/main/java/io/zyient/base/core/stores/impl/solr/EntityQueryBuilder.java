@@ -17,8 +17,6 @@
 package io.zyient.base.core.stores.impl.solr;
 
 import io.zyient.base.common.model.PropertyModel;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
@@ -34,21 +32,24 @@ import java.lang.reflect.Modifier;
 
 @Getter
 @Accessors(fluent = true)
-public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
+public class EntityQueryBuilder {
+    public static final String FIELD_TEXT = "_text_";
+
     @Getter
     @Setter
     @Accessors(fluent = true)
     public static class LuceneQuery extends AbstractDataStore.Q {
+        private String collection;
         private Query query;
     }
 
-    private final Class<? extends E> entityType;
+    private final Class<?> entityType;
     private final Analyzer analyzer;
 
     private final QueryBuilder builder;
     private Query query;
 
-    public EntityQueryBuilder(@Nonnull Class<? extends E> entityType,
+    public EntityQueryBuilder(@Nonnull Class<?> entityType,
                               @Nonnull Analyzer analyzer) {
         this.analyzer = analyzer;
         this.entityType = entityType;
@@ -57,6 +58,7 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
 
 
     private void checkProperty(String field) throws Exception {
+        if (isTextField(field)) return;;
         PropertyModel pm = ReflectionHelper.findProperty(entityType, field);
         if (pm == null) {
             throw new Exception(String.format("Property not found. [type=%s][field=%s]",
@@ -72,6 +74,13 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
         }
     }
 
+    private boolean isTextField(String field) {
+        if (field.compareTo(FIELD_TEXT) == 0) {
+            return true;
+        }
+        return false;
+    }
+
     /**
      * Creates a boolean query from the query text.
      *
@@ -81,7 +90,7 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
      * @param queryText text to be passed to the analyzer
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder<K, E> createBooleanQuery(String field, String queryText) throws Exception {
+    public EntityQueryBuilder createBooleanQuery(String field, String queryText) throws Exception {
         checkProperty(field);
         query = builder.createBooleanQuery(field, queryText);
         return this;
@@ -95,7 +104,7 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
      * @param operator  operator used for clauses between analyzer tokens.
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder<K, E> createBooleanQuery(String field, String queryText, BooleanClause.Occur operator) throws Exception {
+    public EntityQueryBuilder createBooleanQuery(String field, String queryText, BooleanClause.Occur operator) throws Exception {
         checkProperty(field);
         query = builder.createBooleanQuery(field, queryText, operator);
         return this;
@@ -111,7 +120,7 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
      * @return {@code TermQuery}, {@code BooleanQuery}, {@code PhraseQuery}, or {@code
      * MultiPhraseQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder<K, E> createPhraseQuery(String field, String queryText) throws Exception {
+    public EntityQueryBuilder createPhraseQuery(String field, String queryText) throws Exception {
         checkProperty(field);
         query = builder.createPhraseQuery(field, queryText);
         return this;
@@ -126,7 +135,7 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
      * @return {@code TermQuery}, {@code BooleanQuery}, {@code PhraseQuery}, or {@code
      * MultiPhraseQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder<K, E> createPhraseQuery(String field, String queryText, int phraseSlop) throws Exception {
+    public EntityQueryBuilder createPhraseQuery(String field, String queryText, int phraseSlop) throws Exception {
         checkProperty(field);
         query = builder.createPhraseQuery(field, queryText, phraseSlop);
         return this;
@@ -140,7 +149,7 @@ public class EntityQueryBuilder<K extends IKey, E extends IEntity<K>> {
      * @param fraction  of query terms {@code [0..1]} that should match
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder<K, E> createMinShouldMatchQuery(String field, String queryText, float fraction) {
+    public EntityQueryBuilder createMinShouldMatchQuery(String field, String queryText, float fraction) {
         query = builder.createMinShouldMatchQuery(field, queryText, fraction);
         return this;
     }
