@@ -16,6 +16,8 @@
 
 package io.zyient.base.core.content.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
@@ -25,20 +27,27 @@ import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.model.BaseEntity;
+import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.model.UserContext;
+import io.zyient.base.core.stores.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.base.core.stores.impl.solr.SolrConstants;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.solr.client.solrj.beans.Field;
 
 import java.io.File;
 import java.security.Principal;
+import java.util.HashMap;
+import java.util.Map;
 
 @Entity
 @Getter
 @Setter
-public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<DocumentId> {
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<DocumentId> implements PropertyBag {
     @Transient
     @Field(SolrConstants.FIELD_SOLR_ID)
     private String searchId;
@@ -65,7 +74,11 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     private String modifiedBy;
     private K referenceId;
     @Transient
+    @JsonIgnore
     private File path;
+    @Convert(converter = PropertiesConverter.class)
+    @Field(SolrConstants.FIELD_DOC_PROPERTIES)
+    private Map<String, Object> properties;
 
     /**
      * Compare the entity key with the key specified.
@@ -179,5 +192,31 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
             }
         }
         return errors;
+    }
+
+    @Override
+    public boolean hasProperty(@NonNull String name) {
+        if (properties != null) {
+            return properties.containsKey(name);
+        }
+        return false;
+    }
+
+    @Override
+    public Object getProperty(@NonNull String name) {
+        if (properties != null) {
+            return properties.get(name);
+        }
+        return null;
+    }
+
+    @Override
+    public PropertyBag setProperty(@NonNull String name,
+                                   @NonNull Object value) {
+        if (properties == null) {
+            properties = new HashMap<>();
+        }
+        properties.put(name, value);
+        return this;
     }
 }

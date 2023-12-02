@@ -18,13 +18,13 @@ package io.zyient.base.core.messaging.chronicle;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.DemoEnv;
 import io.zyient.base.core.connections.TestUtils;
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.builders.MessageReceiverSettings;
 import io.zyient.base.core.messaging.builders.MessageSenderSettings;
 import io.zyient.base.core.messaging.chronicle.builders.ChronicleConsumerBuilder;
 import io.zyient.base.core.messaging.chronicle.builders.ChronicleProducerBuilder;
-import io.zyient.base.core.utils.DemoEnv;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

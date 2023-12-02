@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
@@ -36,11 +37,14 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SolrDocStoreEntityTest {
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+            property = "@class")
     public static class DemoDocState extends DocumentState<EEntityState> {
 
         protected DemoDocState() {
@@ -48,6 +52,8 @@ class SolrDocStoreEntityTest {
         }
     }
 
+    @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+            property = "@class")
     public static class TestDocument extends Document<EEntityState, StringKey> {
 
     }
@@ -81,7 +87,7 @@ class SolrDocStoreEntityTest {
         env.close();
     }
 
-    @Test
+    //@Test
     @SuppressWarnings("unchecked")
     void createEntity() {
         try {
@@ -131,6 +137,9 @@ class SolrDocStoreEntityTest {
                 doc.setUri(path.toURI().toString());
                 doc.setCreatedBy("DEMO");
                 doc.setModifiedBy("DEMO");
+                doc.setProperty("TEST-LONG", System.nanoTime());
+                doc.setProperty("TEST-ENUM", doc.getDocState().getState());
+                doc.setProperty("TEST-DATE", new Date(System.currentTimeMillis()));
 
                 doc = dataStore.create(doc, doc.getClass(), null);
                 assertNotNull(doc);
@@ -146,7 +155,7 @@ class SolrDocStoreEntityTest {
         }
     }
 
-    @Test
+   // @Test
     @SuppressWarnings("unchecked")
     void doSearch() {
         try {

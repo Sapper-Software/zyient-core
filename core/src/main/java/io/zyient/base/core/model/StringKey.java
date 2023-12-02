@@ -54,6 +54,19 @@ public class StringKey extends NativeKey<String> {
         return -1;
     }
 
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        setKey(value);
+        return this;
+    }
+
     @Override
     public int hashCode() {
         return ChecksumUtils.getHashCode(stringKey());

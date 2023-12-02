@@ -20,12 +20,13 @@ public class SolrConstants {
     public static final String FIELD_SOLR_ID = "id";
     public static final String FIELD_SOLR_DOC_NAME = "name";
     public static final String FIELD_SOLR_TYPE = "class";
-    public static final String FIELD_SOLR_MIME_TYPE = "mime-type";
-    public static final String FIELD_SOLR_CREATED_BY = "created-by";
-    public static final String FIELD_SOLR_MODIFIED_BY = "modified-by";
-    public static final String FIELD_SOLR_TIME_CREATED = "created-time";
-    public static final String FIELD_SOLR_TIME_UPDATED = "modified-time";
-    public static final String FIELD_SOLR_URI = "modified-time";
-    public static final String FIELD_REFERENCE_ID = "reference-id";
-    public static final String FIELD_SOLR_JSON_DATA = "json-body";
+    public static final String FIELD_SOLR_MIME_TYPE = "mime_type";
+    public static final String FIELD_SOLR_CREATED_BY = "created_by";
+    public static final String FIELD_SOLR_MODIFIED_BY = "modified_by";
+    public static final String FIELD_SOLR_TIME_CREATED = "created_time";
+    public static final String FIELD_SOLR_TIME_UPDATED = "modified_time";
+    public static final String FIELD_SOLR_URI = "modified_time";
+    public static final String FIELD_REFERENCE_ID = "reference_id";
+    public static final String FIELD_SOLR_JSON_DATA = "json_body";
+    public static final String FIELD_DOC_PROPERTIES = "properties";
 }

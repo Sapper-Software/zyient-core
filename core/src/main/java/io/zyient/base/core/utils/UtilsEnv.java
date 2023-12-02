@@ -16,11 +16,21 @@
 
 package io.zyient.base.core.utils;
 
+import com.google.common.base.Strings;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.BaseEnvSettings;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 
 public class UtilsEnv extends BaseEnv<UtilsEnv.EUtilsState> {
+    public static final String __DEFAULT_NAME = "utils";
+
     public enum EUtilsState {
         Unknown, Available, Disposed, Error
     }
@@ -42,7 +52,29 @@ public class UtilsEnv extends BaseEnv<UtilsEnv.EUtilsState> {
         }
     }
 
+    private HierarchicalConfiguration<ImmutableNode> configNode;
+
     public UtilsEnv(@NonNull String name) {
         super(name);
+    }
+
+
+    @Getter
+    @Setter
+    public static class UtilsEnvSettings extends BaseEnvSettings {
+
+    }
+
+    public BaseEnv<EUtilsState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                     @NonNull String password) throws ConfigurationException {
+        if (Strings.isNullOrEmpty(storeKey()))
+            withStoreKey(password);
+        CompositeMeterRegistry registry = new CompositeMeterRegistry();
+        BaseEnv.registry(registry);
+        super.init(xmlConfig, new UtilsState(), UtilsEnvSettings.class);
+
+        configNode = baseConfig().configurationAt(name());
+
+        return this;
     }
 }

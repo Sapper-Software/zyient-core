@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.content.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -24,6 +25,8 @@ import lombok.Setter;
 @Embeddable
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public abstract class DocumentState<E extends Enum<?>> {
     @Transient
     private final E errorState;

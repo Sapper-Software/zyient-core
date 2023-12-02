@@ -21,6 +21,7 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.model.entity.NativeKey;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -44,5 +45,18 @@ public class IntegerKey extends NativeKey<Integer> {
             return (getKey() - ((IntegerKey) key).getKey());
         }
         return -1;
+    }
+
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        setKey(Integer.parseInt(value));
+        return this;
     }
 }

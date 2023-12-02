@@ -39,6 +39,8 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.detect.Detector;
@@ -50,6 +52,8 @@ import software.amazon.awssdk.utils.StringInputStream;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -305,6 +309,21 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             ur.setParam("json.command", "false");
         if (mime.compareToIgnoreCase(FileUtils.MIME_TYPE_XML) == 0)
             ur.setParam("xml.command", "false");
+        String json = JSONUtils.asString(entity, entity.getClass());
+        ur.setParam(LITERALS_PREFIX + SolrConstants.FIELD_SOLR_JSON_DATA, json);
+        if (entity.getProperties() != null) {
+            Map<String, Object> properties = entity.getProperties();
+            for (String key : properties.keySet()) {
+                Object prop = properties.get(key);
+                if (ReflectionHelper.isPrimitiveTypeOrString(prop.getClass())) {
+                    ur.setParam(LITERALS_PREFIX + key, String.valueOf(prop));
+                } else if (prop.getClass().isEnum()) {
+                    ur.setParam(LITERALS_PREFIX + key, ((Enum<?>) prop).name());
+                } else if (prop instanceof Date) {
+                    ur.setParam(LITERALS_PREFIX + key, prop.toString());
+                }
+            }
+        }
         ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
         return ur;
     }
@@ -360,18 +379,42 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 SolrQuery q = new SolrQuery();
                 q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
                 final QueryResponse response = client.query(q);
-                List<E> entities = (List<E>) response.getBeans(type);
-                if (entities != null) {
-                    if (entities.size() > 1) {
+                SolrDocumentList documents = response.getResults();
+                if (documents != null && !documents.isEmpty()) {
+                    if (documents.size() > 1) {
                         throw new DataStoreException(
                                 String.format("Multiple entries found for key. [type=%s][key=%s]",
                                         type.getCanonicalName(), k));
                     }
-                    if (!entities.isEmpty()) {
-                        Document<?, ?> entity = (Document<?, ?>) entities.get(0);
-                        entity.getState().setState(EEntityState.Synced);
-                        return (E) entity;
+                    SolrDocument doc = documents.get(0);
+                    Object fv = doc.getFieldValue(SolrConstants.FIELD_SOLR_JSON_DATA);
+                    if (fv == null) {
+                        throw new DataStoreException(
+                                String.format("Search returned NULL object for key. [type=%s][key=%s]",
+                                        type.getCanonicalName(), k));
                     }
+                    String json = null;
+                    if (fv instanceof String) {
+                        json = (String) fv;
+                    } else if (fv instanceof Collection<?>) {
+                        Collection<?> c = (Collection<?>) fv;
+                        if (c.isEmpty()) {
+                            throw new DataStoreException(
+                                    String.format("Search returned empty array for key. [type=%s][key=%s]",
+                                            type.getCanonicalName(), k));
+                        }
+                        for (Object o : c) {
+                            if (o instanceof String) {
+                                json = (String) o;
+                            }
+                        }
+                    }
+                    if (Strings.isNullOrEmpty(json)) {
+                        throw new DataStoreException(
+                                String.format("Search returned empty json for key. [type=%s][key=%s]",
+                                        type.getCanonicalName(), k));
+                    }
+                    return JSONUtils.read(json, type);
                 }
             } else {
                 SolrQuery q = new SolrQuery();

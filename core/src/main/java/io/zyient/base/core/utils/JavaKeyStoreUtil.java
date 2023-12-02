@@ -46,7 +46,7 @@ public class JavaKeyStoreUtil {
     private String password;
     private EConfigFileType fileSource = EConfigFileType.File;
     @Setter(AccessLevel.NONE)
-    private DemoEnv env = new DemoEnv();
+    private UtilsEnv env = new UtilsEnv(UtilsEnv.__DEFAULT_NAME);
 
     @SuppressWarnings("unchecked")
     public void run() throws Exception {
@@ -56,7 +56,7 @@ public class JavaKeyStoreUtil {
         Preconditions.checkNotNull(fileSource);
         HierarchicalConfiguration<ImmutableNode> config = ConfigReader.read(configFile, fileSource);
         env.withStoreKey(password);
-        env.init(config);
+        env.init(config, password);
 
         config = env.baseConfig();
 

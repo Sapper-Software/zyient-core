@@ -20,6 +20,7 @@ import io.zyient.base.common.model.entity.IKey;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -38,7 +39,7 @@ public class EntityErrorsId implements IKey {
      */
     @Override
     public String stringKey() {
-        return String.format("%s::%s", entityType, entityId);
+        return String.format("%s" + __DEFAULT_SEPARATOR + "%s", entityType, entityId);
     }
 
     /**
@@ -57,5 +58,23 @@ public class EntityErrorsId implements IKey {
             return r;
         }
         return Short.MIN_VALUE;
+    }
+
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        String[] parts = value.split(__DEFAULT_SEPARATOR);
+        if (parts.length != 2) {
+            throw new Exception(String.format("Invalid Errors Key: [key=%s]", value));
+        }
+        entityType = parts[0].trim();
+        entityId = parts[1].trim();
+        return this;
     }
 }

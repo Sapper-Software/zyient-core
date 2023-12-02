@@ -23,13 +23,13 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.IOUtils;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.model.UserContext;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -50,16 +50,13 @@ public abstract class ContentManager implements Closeable {
 
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends ContentManagerSettings> settingsType;
-    private final boolean supportsMetadata;
 
-    private AbstractDataStore<?> metadataStore;
     private ContentManagerSettings settings;
     private File baseDir;
+    private BaseEnv<?> env;
 
-    protected ContentManager(@NonNull Class<? extends ContentManagerSettings> settingsType,
-                             boolean supportsMetadata) {
+    protected ContentManager(@NonNull Class<? extends ContentManagerSettings> settingsType) {
         this.settingsType = settingsType;
-        this.supportsMetadata = supportsMetadata;
     }
 
     public String name() {
@@ -68,7 +65,7 @@ public abstract class ContentManager implements Closeable {
     }
 
     public ContentManager configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                    DataStoreManager dataStoreManager) throws ConfigurationException {
+                                    @NonNull BaseEnv<?> env) throws ConfigurationException {
         synchronized (this) {
             try {
                 ConfigReader reader = new ConfigReader(xmlConfig, __CONFIG_PATH, settingsType);
@@ -76,25 +73,6 @@ public abstract class ContentManager implements Closeable {
                 settings = (ContentManagerSettings) reader.settings();
                 settings.validate();
 
-                if (settings().isSaveMetadata()) {
-                    if (!supportsMetadata) {
-                        DefaultLogger.warn(String.format("[%s] Metadata persistence not supported. [type=%s]",
-                                settings.getName(), getClass().getCanonicalName()));
-                    } else {
-                        if (dataStoreManager == null) {
-                            throw new Exception(String.format("[%s] Data Store manager not specified...",
-                                    settings.getName()));
-                        }
-                        metadataStore = dataStoreManager.getDataStore(settings.getMetadataStore(),
-                                settings.getMetadataStoreType());
-                        if (metadataStore == null) {
-                            throw new Exception(String.format("[%s] Data Store not found. [name=%s][type=%s]",
-                                    settings.getName(),
-                                    settings.getMetadataStore(),
-                                    settings.getMetadataStoreType().getCanonicalName()));
-                        }
-                    }
-                }
                 baseDir = new File(settings.getBaseDir());
                 if (!baseDir.exists()) {
                     if (!baseDir.mkdirs()) {
@@ -102,7 +80,7 @@ public abstract class ContentManager implements Closeable {
                                 baseDir.getAbsolutePath()));
                     }
                 }
-                configure(reader.config());
+                doConfigure(reader.config());
                 state.setState(ProcessorState.EProcessorState.Running);
                 return this;
             } catch (Exception ex) {
@@ -196,7 +174,13 @@ public abstract class ContentManager implements Closeable {
         return deleteDoc(docId, context);
     }
 
-    protected abstract void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+    public <E extends Enum<?>, K extends IKey> Document<E, K> find(@NonNull DocumentId id,
+                                                                   Context context) throws DataStoreException {
+        return findDoc(id, context);
+    }
+
+
+    protected abstract void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     protected abstract <E extends Enum<?>, K extends IKey> Document<E, K> createDoc(@NonNull Document<E, K> document,
                                                                                     @NonNull Context context) throws DataStoreException;
@@ -214,5 +198,6 @@ public abstract class ContentManager implements Closeable {
                                                                                   Context context) throws DataStoreException;
 
     protected abstract <E extends Enum<?>, K extends IKey> DocumentCursor<E, K> searchDocs(@NonNull AbstractDataStore.Q query,
+                                                                                           int batchSize,
                                                                                            Context context) throws DataStoreException;
 }

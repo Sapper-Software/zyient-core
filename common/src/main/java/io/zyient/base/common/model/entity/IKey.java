@@ -16,12 +16,16 @@
 
 package io.zyient.base.common.model.entity;
 
+import lombok.NonNull;
+
 import java.io.Serializable;
 
 /**
  * Define an entity Key type.
  */
 public interface IKey extends Serializable {
+    String __DEFAULT_SEPARATOR = "::";
+
     /**
      * Get the String representation of the key.
      *
@@ -36,4 +40,13 @@ public interface IKey extends Serializable {
      * @return - == 0, < -x, > +x
      */
     int compareTo(IKey key);
+
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    IKey fromString(@NonNull String value) throws Exception;
 }

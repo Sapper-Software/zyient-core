@@ -18,6 +18,7 @@ package io.zyient.base.core.messaging.azure;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.DemoEnv;
 import io.zyient.base.core.connections.TestUtils;
 import io.zyient.base.core.messaging.MessageObject;
 import io.zyient.base.core.messaging.azure.builder.DemoAzureMessageConsumerBuilder;
@@ -25,7 +26,6 @@ import io.zyient.base.core.messaging.azure.builder.DemoAzureMessageProducerBuild
 import io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerBuilder;
 import io.zyient.base.core.messaging.azure.builders.AzureMessageProducerBuilder;
 import io.zyient.base.core.messaging.chronicle.BaseChronicleMessage;
-import io.zyient.base.core.utils.DemoEnv;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;

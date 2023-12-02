@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
+import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
@@ -28,9 +29,12 @@ import lombok.NonNull;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, E> {
@@ -68,15 +72,42 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
                 }
                 return entities;
             } else if (ReflectionHelper.isSuperType(Document.class, entityType)) {
-                List<E> entities = (List<E>) response.getBeans(entityType);
-                if (entities != null) {
-                    if (!entities.isEmpty()) {
-                        for (E entity : entities) {
-                            ((Document<?, ?>) entity).getState().setState(EEntityState.Synced);
+                SolrDocumentList documents = response.getResults();
+                if (documents != null && !documents.isEmpty()) {
+                    List<E> entities = new ArrayList<>(documents.size());
+                    for (SolrDocument doc : documents) {
+                        Object fv = doc.getFieldValue(SolrConstants.FIELD_SOLR_JSON_DATA);
+                        if (fv == null) {
+                            throw new DataStoreException(
+                                    String.format("Search returned NULL object for key. [type=%s]",
+                                            entityType.getCanonicalName()));
                         }
+                        String json = null;
+                        if (fv instanceof String) {
+                            json = (String) fv;
+                        } else if (fv instanceof Collection<?>) {
+                            Collection<?> c = (Collection<?>) fv;
+                            if (c.isEmpty()) {
+                                throw new DataStoreException(
+                                        String.format("Search returned empty array for key. [type=%s]",
+                                                entityType.getCanonicalName()));
+                            }
+                            for (Object o : c) {
+                                if (o instanceof String) {
+                                    json = (String) o;
+                                }
+                            }
+                        }
+                        if (Strings.isNullOrEmpty(json)) {
+                            throw new DataStoreException(
+                                    String.format("Search returned empty json for key. [type=%s]",
+                                            entityType.getCanonicalName()));
+                        }
+                        E entity = JSONUtils.read(json, entityType);
+                        entities.add(entity);
                     }
+                    return entities;
                 }
-                return entities;
             } else {
                 List<SolrJsonEntity> entities = response.getBeans(SolrJsonEntity.class);
                 if (entities != null && !entities.isEmpty()) {

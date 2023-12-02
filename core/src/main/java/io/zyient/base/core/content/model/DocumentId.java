@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.content.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IKey;
 import jakarta.persistence.Column;
@@ -29,6 +30,8 @@ import java.util.UUID;
 @Getter
 @Setter
 @Embeddable
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class DocumentId implements IKey {
     @Column(name = "doc_id")
     private String id;
@@ -62,7 +65,7 @@ public class DocumentId implements IKey {
      */
     @Override
     public String stringKey() {
-        return String.format("%s::%s", collection, id);
+        return String.format("%s" + __DEFAULT_SEPARATOR + "%s", collection, id);
     }
 
     /**
@@ -82,16 +85,30 @@ public class DocumentId implements IKey {
         throw new RuntimeException(String.format("Invalid document id. [type=%s]", key.getClass().getCanonicalName()));
     }
 
-    public static DocumentId parse(@NonNull String key) throws Exception {
-        String[] parts = key.split("::");
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        String[] parts = value.split(__DEFAULT_SEPARATOR);
         if (parts.length != 2) {
-            throw new Exception(String.format("Invalid Document ID: [id=%s]", key));
+            throw new Exception(String.format("Invalid Document ID: [id=%s]", value));
         }
         String collection = parts[0].trim();
         String id = parts[1].trim();
         if (Strings.isNullOrEmpty(collection) || Strings.isNullOrEmpty(id)) {
-            throw new Exception(String.format("Invalid Document ID: [id=%s]", key));
+            throw new Exception(String.format("Invalid Document ID: [id=%s]", value));
         }
-        return new DocumentId(collection, id);
+        return this;
+    }
+
+
+    public static DocumentId parse(@NonNull String key) throws Exception {
+        return (DocumentId) new DocumentId()
+                .fromString(key);
     }
 }

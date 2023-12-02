@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.utils;
+package io.zyient.base.core;
 
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
-import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.BaseEnvSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

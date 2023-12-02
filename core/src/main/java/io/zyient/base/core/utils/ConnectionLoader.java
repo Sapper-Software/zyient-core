@@ -50,8 +50,8 @@ public class ConnectionLoader {
         Preconditions.checkNotNull(fileSource);
         config = ConfigReader.read(configFile, fileSource);
 
-        UtilsEnv env = new UtilsEnv(getClass().getSimpleName());
-        env.init(config, new UtilsEnv.UtilsState(), DemoEnv.DemoEnvSettings.class);
+        UtilsEnv env = new UtilsEnv(UtilsEnv.__DEFAULT_NAME);
+        env.init(config, new UtilsEnv.UtilsState(), UtilsEnv.UtilsEnvSettings.class);
         try (ConnectionManager manager = new ConnectionManager()) {
             manager.init(config, env, env.name());
             manager.save();

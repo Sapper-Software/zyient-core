@@ -22,7 +22,7 @@ import com.mongodb.client.MongoDatabase;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.utils.DemoEnv;
+import io.zyient.base.core.DemoEnv;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.bson.BsonDocument;
 import org.bson.BsonInt64;

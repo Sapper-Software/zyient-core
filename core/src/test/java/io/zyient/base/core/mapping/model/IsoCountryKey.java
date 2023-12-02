@@ -20,6 +20,7 @@ import io.zyient.base.common.model.entity.IKey;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -51,5 +52,18 @@ public class IsoCountryKey implements IKey {
             return name.compareTo(((IsoCountryKey) key).name);
         }
         return Short.MIN_VALUE;
+    }
+
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        name = value;
+        return this;
     }
 }

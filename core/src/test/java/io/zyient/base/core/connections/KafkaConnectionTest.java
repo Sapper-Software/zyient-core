@@ -18,9 +18,9 @@ package io.zyient.base.core.connections;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.DemoEnv;
 import io.zyient.base.core.connections.kafka.BasicKafkaConsumerConnection;
 import io.zyient.base.core.connections.kafka.BasicKafkaProducerConnection;
-import io.zyient.base.core.utils.DemoEnv;
 import lombok.NonNull;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.kafka.clients.consumer.ConsumerRecord;

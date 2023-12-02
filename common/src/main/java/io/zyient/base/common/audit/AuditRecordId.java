@@ -18,6 +18,7 @@ package io.zyient.base.common.audit;
 
 import io.zyient.base.common.model.entity.IKey;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 
@@ -88,7 +89,13 @@ public class AuditRecordId implements IKey, Serializable {
      */
     @Override
     public String stringKey() {
-        return String.format("%s::%s::%s::%s", dataStoreType, dataStoreName, recordType, recordId);
+        return String.format("%s" + __DEFAULT_SEPARATOR
+                        + "%s" + __DEFAULT_SEPARATOR
+                        + "%s" + __DEFAULT_SEPARATOR + "%s",
+                dataStoreType,
+                dataStoreName,
+                recordType,
+                recordId);
     }
 
     /**
@@ -104,5 +111,25 @@ public class AuditRecordId implements IKey, Serializable {
             return compareTo(k);
         }
         return -1;
+    }
+
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        String[] parts = value.split(__DEFAULT_SEPARATOR);
+        if (parts.length != 4) {
+            throw new Exception(String.format("Invalid Audit Key: [key=%s]", value));
+        }
+        dataStoreType = parts[0].trim();
+        dataStoreName = parts[1].trim();
+        recordType = parts[2].trim();
+        recordId = parts[3].trim();
+        return this;
     }
 }
