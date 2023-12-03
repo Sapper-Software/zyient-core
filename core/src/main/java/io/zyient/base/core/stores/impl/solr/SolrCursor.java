@@ -25,7 +25,9 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -37,6 +39,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+@Getter
+@Accessors(fluent = true)
 public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, E> {
     private final EntityQueryBuilder.LuceneQuery query;
     private final SolrClient client;

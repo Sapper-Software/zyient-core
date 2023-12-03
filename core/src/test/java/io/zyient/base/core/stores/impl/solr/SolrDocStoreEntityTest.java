@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
@@ -24,7 +23,6 @@ import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.content.model.DocumentId;
-import io.zyient.base.core.content.model.DocumentState;
 import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreEnv;

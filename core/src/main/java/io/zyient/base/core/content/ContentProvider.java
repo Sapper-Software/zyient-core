@@ -29,7 +29,9 @@ import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.model.UserContext;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -45,17 +47,18 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class ContentManager implements Closeable {
+public abstract class ContentProvider implements Closeable {
     public static final String __CONFIG_PATH = "contentManager";
 
     private final ProcessorState state = new ProcessorState();
-    private final Class<? extends ContentManagerSettings> settingsType;
+    private final Class<? extends ContentProviderSettings> settingsType;
 
-    private ContentManagerSettings settings;
+    private ContentProviderSettings settings;
     private File baseDir;
     private BaseEnv<?> env;
+    private ContentProviderMetrics metrics;
 
-    protected ContentManager(@NonNull Class<? extends ContentManagerSettings> settingsType) {
+    protected ContentProvider(@NonNull Class<? extends ContentProviderSettings> settingsType) {
         this.settingsType = settingsType;
     }
 
@@ -64,13 +67,13 @@ public abstract class ContentManager implements Closeable {
         return settings.getName();
     }
 
-    public ContentManager configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                    @NonNull BaseEnv<?> env) throws ConfigurationException {
+    public ContentProvider configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                     @NonNull BaseEnv<?> env) throws ConfigurationException {
         synchronized (this) {
             try {
                 ConfigReader reader = new ConfigReader(xmlConfig, __CONFIG_PATH, settingsType);
                 reader.read();
-                settings = (ContentManagerSettings) reader.settings();
+                settings = (ContentProviderSettings) reader.settings();
                 settings.validate();
 
                 baseDir = new File(settings.getBaseDir());
@@ -114,14 +117,17 @@ public abstract class ContentManager implements Closeable {
                 throw new DataStoreException(String.format("Local file not found. [doc id=%s][path=%s]",
                         document.getId().stringKey(), document.getPath().getAbsolutePath()));
             }
-            UserContext uc = (UserContext) context;
-            document.setCreatedBy(uc.user().getName());
-            document.setModifiedBy(uc.user().getName());
-            document.setCreatedTime(System.nanoTime());
-            document.setUpdatedTime(System.nanoTime());
-            document.validate();
+            metrics.createCounter().increment();
+            try (Timer t = new Timer(metrics.createTimer())) {
+                UserContext uc = (UserContext) context;
+                document.setCreatedBy(uc.user().getName());
+                document.setModifiedBy(uc.user().getName());
+                document.setCreatedTime(System.nanoTime());
+                document.setUpdatedTime(System.nanoTime());
+                document.validate();
 
-            document = createDoc(document, context);
+                document = createDoc(document, context);
+            }
             return document;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -145,12 +151,14 @@ public abstract class ContentManager implements Closeable {
                 throw new DataStoreException(String.format("Local file not found. [doc id=%s][path=%s]",
                         document.getId().stringKey(), document.getPath().getAbsolutePath()));
             }
-            UserContext uc = (UserContext) context;
-            document.setModifiedBy(uc.user().getName());
-            document.setUpdatedTime(System.nanoTime());
-            document = updateDoc(document, context);
-            document.validate();
-
+            metrics.updateCounter().increment();
+            try (Timer t = new Timer(metrics.updateTimer())) {
+                UserContext uc = (UserContext) context;
+                document.setModifiedBy(uc.user().getName());
+                document.setUpdatedTime(System.nanoTime());
+                document = updateDoc(document, context);
+                document.validate();
+            }
             return document;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -164,21 +172,70 @@ public abstract class ContentManager implements Closeable {
             if (state.isAvailable()) {
                 state.setState(ProcessorState.EProcessorState.Stopped);
             }
+            doClose();
             if (settings.isCleanOnExit()) {
                 IOUtils.cleanDirectory(baseDir, true);
             }
         }
     }
 
-    public boolean delete(@NonNull DocumentId docId, @NonNull Context context) throws DataStoreException {
-        return deleteDoc(docId, context);
+    public <E extends Enum<?>, K extends IKey> boolean delete(@NonNull DocumentId docId,
+                                                              @NonNull Class<? extends Document<E, K>> entityType,
+                                                              @NonNull Context context) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            metrics.deleteCounter().increment();
+            try (Timer t = new Timer(metrics.deleteTimer())) {
+                return deleteDoc(docId, entityType, context);
+            }
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
     }
 
     public <E extends Enum<?>, K extends IKey> Document<E, K> find(@NonNull DocumentId id,
+                                                                   @NonNull Class<? extends Document<E, K>> entityType,
                                                                    Context context) throws DataStoreException {
-        return findDoc(id, context);
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            metrics.readCounter().increment();
+            try (Timer t = new Timer(metrics.readTimer())) {
+                return findDoc(id, entityType, context);
+            }
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
     }
 
+    public <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> search(@NonNull AbstractDataStore.Q query,
+                                                                                         @NonNull Class<? extends Document<E, K>> entityType,
+                                                                                         Context context) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            metrics.searchCounter().increment();
+            try (Timer t = new Timer(metrics.searchTimer())) {
+                return searchDocs(query, entityType, settings().getBatchSize(), false, context);
+            }
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
+    }
+
+    public <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> search(@NonNull AbstractDataStore.Q query,
+                                                                                         @NonNull Class<? extends Document<E, K>> entityType,
+                                                                                         int batchSize,
+                                                                                         boolean download,
+                                                                                         Context context) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            metrics.searchCounter().increment();
+            try (Timer t = new Timer(metrics.searchTimer())) {
+                return searchDocs(query, entityType, batchSize, download, context);
+            }
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
+    }
 
     protected abstract void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
@@ -188,16 +245,23 @@ public abstract class ContentManager implements Closeable {
     protected abstract <E extends Enum<?>, K extends IKey> Document<E, K> updateDoc(@NonNull Document<E, K> document,
                                                                                     @NonNull Context context) throws DataStoreException;
 
-    protected abstract boolean deleteDoc(@NonNull DocumentId id,
-                                         @NonNull Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey> boolean deleteDoc(@NonNull DocumentId id,
+                                                                             @NonNull Class<? extends Document<E, K>> entityType,
+                                                                             @NonNull Context context) throws DataStoreException;
 
-    protected abstract Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
-                                                           @NonNull Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
+                                                                                               @NonNull Class<? extends Document<E, K>> entityType,
+                                                                                               @NonNull Context context) throws DataStoreException;
 
     protected abstract <E extends Enum<?>, K extends IKey> Document<E, K> findDoc(@NonNull DocumentId docId,
+                                                                                  @NonNull Class<? extends Document<E, K>> entityType,
                                                                                   Context context) throws DataStoreException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> DocumentCursor<E, K> searchDocs(@NonNull AbstractDataStore.Q query,
-                                                                                           int batchSize,
-                                                                                           Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> searchDocs(@NonNull AbstractDataStore.Q query,
+                                                                                                         @NonNull Class<? extends Document<E, K>> entityType,
+                                                                                                         int batchSize,
+                                                                                                         boolean download,
+                                                                                                         Context context) throws DataStoreException;
+
+    protected abstract void doClose() throws IOException;
 }

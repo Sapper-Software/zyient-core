@@ -17,10 +17,8 @@
 package io.zyient.base.core.content;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Strings;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -29,28 +27,15 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ContentManagerSettings extends Settings {
+public abstract class ContentProviderSettings extends Settings {
     @Config(name = "name")
     private String name;
-    @Config(name = "metadata.save", required = false, type = Boolean.class)
-    private boolean saveMetadata = false;
-    @Config(name = "metadata.dataStore", required = false)
-    private String metadataStore;
-    @Config(name = "metadata.dataStoreType", required = false, type = Class.class)
-    private Class<? extends AbstractDataStore<?>> metadataStoreType;
     @Config(name = "baseDir")
     private String baseDir;
     @Config(name = "cleanOnExit", required = false, type = Boolean.class)
     private boolean cleanOnExit = true;
+    @Config(name = "batchSize", required = false, type = Integer.class)
+    private int batchSize = 32;
 
-    public void validate() throws ConfigurationException {
-        if (saveMetadata) {
-            if (Strings.isNullOrEmpty(metadataStore)) {
-                throw new ConfigurationException(String.format("[%s] Metadata store not specified...", name));
-            }
-            if (metadataStoreType == null) {
-                throw new ConfigurationException(String.format("[%s] Metadata store type not specified...", name));
-            }
-        }
-    }
+    public abstract void validate() throws ConfigurationException;
 }
