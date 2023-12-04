@@ -41,6 +41,13 @@ public class MongoDbCursor<K extends IKey, E extends IEntity<K>> extends Cursor<
         this.query = query;
     }
 
+    public MongoDbCursor(@NonNull MongoDbCursor<K, E> cursor) {
+        this.keyType = cursor.keyType;
+        this.entityType = cursor.entityType;
+        this.dataStore = cursor.dataStore;
+        this.query = cursor.query;
+    }
+
     @Override
     protected List<E> next(int page) throws DataStoreException {
         int offset = page * pageSize();

@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.content.impl;
+package io.zyient.base.core.content;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.core.content.ContentProvider;
-import io.zyient.base.core.content.SolrContentCursor;
 import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.content.model.DocumentId;
-import io.zyient.base.core.content.settings.IndexedProviderSettings;
+import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.PathInfo;
-import io.zyient.base.core.stores.*;
-import io.zyient.base.core.stores.impl.solr.SolrCursor;
+import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.DataStoreProvider;
 import io.zyient.base.core.stores.impl.solr.SolrDataStore;
 import lombok.Getter;
 import lombok.NonNull;
@@ -48,18 +48,20 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class IndexedContentProvider extends ContentProvider {
-    private SolrDataStore dataStore;
+public abstract class ManagedContentProvider<T> extends ContentProvider {
+    private AbstractDataStore<T> dataStore;
     private FileSystem fileSystem;
 
-    protected IndexedContentProvider() {
-        super(IndexedProviderSettings.class);
+    protected ManagedContentProvider(@NonNull Class<? extends ContentProviderSettings> settingsType) {
+        super(settingsType);
     }
 
+
     @Override
+    @SuppressWarnings("unchecked")
     protected void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         try {
-            IndexedProviderSettings settings = (IndexedProviderSettings) settings();
+            ManagedProviderSettings settings = (ManagedProviderSettings) settings();
             if (!(env() instanceof DataStoreProvider)) {
                 throw new ConfigurationException(
                         String.format("Environment does not initialize DataStore manager. [type=%s]",
@@ -67,10 +69,10 @@ public class IndexedContentProvider extends ContentProvider {
             }
             DataStoreManager dataStoreManager = ((DataStoreProvider) env()).getDataStoreManager();
             Preconditions.checkNotNull(dataStoreManager);
-            dataStore = dataStoreManager.getDataStore(settings.getIndexer(), SolrDataStore.class);
+            dataStore = (AbstractDataStore<T>) dataStoreManager.getDataStore(settings.getDataStore(), settings.getDataStoreType());
             if (dataStore == null) {
                 throw new ConfigurationException(String.format("DataStore not found. [name=%s][type=%s]",
-                        settings.getIndexer(), SolrDataStore.class.getCanonicalName()));
+                        settings.getDataStore(), SolrDataStore.class.getCanonicalName()));
             }
             fileSystem = env().fileSystemManager().get(settings.getFileSystem());
             if (fileSystem == null) {
@@ -183,22 +185,6 @@ public class IndexedContentProvider extends ContentProvider {
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> searchDocs(AbstractDataStore.@NonNull Q query,
-                                                                                                @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                                int batchSize,
-                                                                                                boolean download,
-                                                                                                Context context) throws DataStoreException {
-        SolrCursor<DocumentId, Document<E, K>> cursor = (SolrCursor<DocumentId, Document<E, K>>) dataStore
-                .search(query,
-                        batchSize,
-                        DocumentId.class,
-                        entityType,
-                        context);
-        return new SolrContentCursor<>(cursor, fileSystem);
     }
 
     @Override

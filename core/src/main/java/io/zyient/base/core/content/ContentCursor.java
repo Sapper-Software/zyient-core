@@ -17,14 +17,44 @@
 package io.zyient.base.core.content;
 
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.content.model.Document;
+import io.zyient.base.core.io.FileSystem;
+import io.zyient.base.core.io.Reader;
+import io.zyient.base.core.io.model.FileInode;
+import io.zyient.base.core.io.model.PathInfo;
 import io.zyient.base.core.stores.DataStoreException;
 import lombok.NonNull;
 
+import java.io.File;
+import java.util.Map;
+
 public interface ContentCursor<E extends Enum<?>, K extends IKey> {
-    Document<E, K> fetch(@NonNull Document<E, K> doc) throws DataStoreException;
+
+    @SuppressWarnings("unchecked")
+    static <E extends Enum<?>, K extends IKey> Document<E, K> fetch(@NonNull Document<E, K> doc,
+                                                                    @NonNull FileSystem fileSystem) throws DataStoreException {
+        try {
+            Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
+            PathInfo pi = fileSystem.parsePathInfo(map);
+            FileInode fi = (FileInode) fileSystem.getInode(pi);
+            if (fi == null) {
+                throw new DataStoreException(String.format("Document not found. [uri=%s]", doc.getUri()));
+            }
+            try (Reader reader = fileSystem.reader(pi)) {
+                File path = reader.copy();
+                doc.setPath(path);
+            }
+            return doc;
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
+    }
+
 
     boolean download();
 
     ContentCursor<E, K> download(boolean download);
+
+    Document<E, K> fetch(@NonNull Document<E, K> doc) throws DataStoreException;
 }

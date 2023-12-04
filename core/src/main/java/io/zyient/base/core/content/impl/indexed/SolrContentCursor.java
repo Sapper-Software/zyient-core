@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.content;
+package io.zyient.base.core.content.impl.indexed;
 
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.core.content.ContentCursor;
 import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.io.FileSystem;
-import io.zyient.base.core.io.Reader;
-import io.zyient.base.core.io.model.FileInode;
-import io.zyient.base.core.io.model.PathInfo;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.impl.solr.SolrCursor;
 import lombok.Getter;
@@ -31,9 +28,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -60,22 +55,8 @@ public class SolrContentCursor<E extends Enum<?>, K extends IKey> extends SolrCu
         return docs;
     }
 
-    @SuppressWarnings("unchecked")
+    @Override
     public Document<E, K> fetch(@NonNull Document<E, K> doc) throws DataStoreException {
-        try {
-            Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
-            PathInfo pi = fileSystem.parsePathInfo(map);
-            FileInode fi = (FileInode) fileSystem.getInode(pi);
-            if (fi == null) {
-                throw new DataStoreException(String.format("Document not found. [uri=%s]", doc.getUri()));
-            }
-            try (Reader reader = fileSystem.reader(pi)) {
-                File path = reader.copy();
-                doc.setPath(path);
-            }
-            return doc;
-        } catch (Exception ex) {
-            throw new DataStoreException(ex);
-        }
+        return ContentCursor.fetch(doc, fileSystem);
     }
 }

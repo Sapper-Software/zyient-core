@@ -18,6 +18,7 @@ package io.zyient.base.core.content.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -26,9 +27,11 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class IndexedProviderSettings extends ContentProviderFsSettings {
-    @Config(name = "indexer")
-    private String indexer;
+public class ManagedProviderSettings extends ContentProviderFsSettings {
+    @Config(name = "dataStore.name")
+    private String dataStore;
+    @Config(name = "dataStore.type")
+    private Class<? extends AbstractDataStore<?>> dataStoreType;
 
     @Override
     public void validate() throws ConfigurationException {

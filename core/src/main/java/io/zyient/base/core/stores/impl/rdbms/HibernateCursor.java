@@ -34,6 +34,10 @@ public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Curso
         this.results = results;
     }
 
+    protected HibernateCursor(@NonNull HibernateCursor<K, E> cursor) {
+        results = cursor.results;
+    }
+
     @Override
     protected List<E> next(int page) throws DataStoreException {
         int index = page * pageSize() + 1;

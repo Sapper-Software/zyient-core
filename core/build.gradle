@@ -97,6 +97,10 @@ dependencies {
     implementation 'org.springframework:spring-expression:6.1.0'
     implementation 'org.kie:kie-ci:9.44.0.Final'
     implementation 'org.drools:drools-decisiontables:9.44.0.Final'
+
+    implementation 'org.eclipse.jgit:org.eclipse.jgit:6.7.0.202309050840-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.7.0.202309050840-r'
+    implementation 'org.eclipse.jgit:org.eclipse.jgit.gpg.bc:6.7.0.202309050840-r'
 }
 
 test {
