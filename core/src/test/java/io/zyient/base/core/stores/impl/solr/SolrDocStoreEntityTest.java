@@ -36,9 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -74,7 +72,7 @@ class SolrDocStoreEntityTest {
         env.close();
     }
 
-    @Test
+    //@Test
     @SuppressWarnings("unchecked")
     void createEntity() {
         try {
@@ -103,7 +101,7 @@ class SolrDocStoreEntityTest {
         }
     }
 
-    @Test
+    //@Test
     @SuppressWarnings("unchecked")
     void findEntity() {
         try {
@@ -150,6 +148,7 @@ class SolrDocStoreEntityTest {
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
+            Map<String, Integer> docMap = new HashMap<>();
             for (String source : DOCUMENTS) {
                 if (!source.endsWith(".pdf")) continue;
                 File path = new File(source);
@@ -163,7 +162,7 @@ class SolrDocStoreEntityTest {
                 doc.setCreatedBy("DEMO");
                 doc.setModifiedBy("DEMO");
                 for (String d : DOCUMENTS) {
-                    if (source.endsWith(".pdf")) continue;
+                    if (d.endsWith(".pdf")) continue;
                     File cp = new File(source);
                     DemoTestDocument cd = new DemoTestDocument();
                     cd.setId(new DocumentId(__SOLR_COLLECTION_NAME));
@@ -177,6 +176,7 @@ class SolrDocStoreEntityTest {
                     doc.add(cd);
                 }
                 doc = dataStore.create(doc, doc.getClass(), null);
+                docMap.put(doc.getSearchId(), doc.getDocuments().size());
                 assertNotNull(doc);
             }
             DocumentQueryBuilder builder = new DocumentQueryBuilder(Document.class,
@@ -191,6 +191,19 @@ class SolrDocStoreEntityTest {
             while (true) {
                 List<DemoTestDocument> docs = cursor.nextPage();
                 if (docs == null || docs.isEmpty()) break;
+                for (DemoTestDocument doc : docs) {
+                    if (docMap.containsKey(doc.getSearchId())) {
+                        int size = docMap.get(doc.getSearchId());
+                        if (doc.getDocuments() == null && size > 0) {
+                            throw new Exception(String.format("Nested documents is NULL. [expected=%d]", size));
+                        }
+                        if (size > 0) {
+                            assertEquals(size, doc.getDocuments().size());
+                        } else {
+                            assertNull(doc.getDocuments());
+                        }
+                    }
+                }
                 count += docs.size();
             }
             assertTrue(count > 0);

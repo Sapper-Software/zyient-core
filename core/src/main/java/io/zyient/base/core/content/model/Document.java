@@ -64,6 +64,7 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @EmbeddedId
     private DocumentId id;
     @Column(name = "parent_doc_id")
+    @Field(SolrConstants.FIELD_DOC_PARENT_ID)
     private String parentDocId;
     @Column(name = "doc_name")
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
@@ -87,6 +88,7 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     private File path;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "parent_doc_id")
+    @JsonIgnore
     private Set<Document<E, K>> documents;
     @Convert(converter = PropertiesConverter.class)
     @Field(SolrConstants.FIELD_DOC_PROPERTIES)
@@ -103,11 +105,12 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
         return id.compareTo(key);
     }
 
-    public Document<E, K> add(@NonNull Document<E, K> doc) {
+    @SuppressWarnings("unchecked")
+    public Document<E, K> add(@NonNull Document<?, ?> doc) {
         if (documents == null) {
             documents = new HashSet<>();
         }
-        documents.add(doc);
+        documents.add((Document<E, K>) doc);
         return this;
     }
 

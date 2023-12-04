@@ -34,6 +34,7 @@ import io.zyient.base.core.stores.impl.solr.schema.SolrFieldTypes;
 import io.zyient.base.core.utils.FileUtils;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -55,7 +56,6 @@ import org.apache.tika.mime.MediaType;
 import software.amazon.awssdk.utils.StringInputStream;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -478,7 +478,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
-    private static ContentStreamUpdateRequest getContentUpdateRequest(Document<?, ?> entity) throws IOException {
+    private static ContentStreamUpdateRequest getContentUpdateRequest(Document<?, ?> entity) throws Exception {
         String url = SOLR_URL_UPDATE;
         String mime = entity.getMimeType();
         if (needsExtract(mime)) {
@@ -486,8 +486,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
         ContentStreamUpdateRequest ur = new ContentStreamUpdateRequest(url);
         ur.addFile(entity.getPath(), entity.getMimeType());
-        ur.setParam(LITERALS_PREFIX + "id", entity.getId().getId());
-        ur.setParam(LITERALS_PREFIX + "location", entity.getUri());
+        setDocumentFields(ur, entity);
         if (mime.compareToIgnoreCase(FileUtils.MIME_TYPE_JSON) == 0)
             ur.setParam("json.command", "false");
         if (mime.compareToIgnoreCase(FileUtils.MIME_TYPE_XML) == 0)
@@ -509,6 +508,25 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
         ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
         return ur;
+    }
+
+    private static void setDocumentFields(ContentStreamUpdateRequest request, Document<?, ?> document) throws Exception {
+        Field[] fields = ReflectionHelper.getAllFields(document.getClass());
+        Preconditions.checkNotNull(fields);
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(org.apache.solr.client.solrj.beans.Field.class)) {
+                org.apache.solr.client.solrj.beans.Field f =
+                        field.getAnnotation(org.apache.solr.client.solrj.beans.Field.class);
+                String name = f.value();
+                if (Strings.isNullOrEmpty(name)) {
+                    name = field.getName();
+                }
+                Object value = ReflectionHelper.getFieldValue(document, field, true);
+                if (value != null) {
+                    request.setParam(LITERALS_PREFIX + name, String.valueOf(value));
+                }
+            }
+        }
     }
 
     private static boolean needsExtract(String mimeType) {
@@ -597,7 +615,11 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                 String.format("Search returned empty json for key. [type=%s][key=%s]",
                                         type.getCanonicalName(), k));
                     }
-                    return JSONUtils.read(json, type);
+                    Document<?, ?> document = (Document<?, ?>) JSONUtils.read(json, type);
+                    if (document.isSearchDocuments()) {
+                        fetchChildren(document);
+                    }
+                    return (E) document;
                 }
             } else {
                 SolrQuery q = new SolrQuery();
@@ -623,6 +645,30 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public void fetchChildren(@NonNull Document<?, ?> parent) throws Exception {
+        if (!parent.isSearchDocuments()) return;
+        DocumentQueryBuilder builder = new DocumentQueryBuilder(Document.class,
+                new StandardAnalyzer(),
+                parent.getId().getCollection());
+        builder.createPhraseQuery(SolrConstants.FIELD_DOC_PARENT_ID, parent.getId().getId());
+        try (Cursor<DocumentId, Document<?, ?>> cursor = search(builder.build(),
+                DocumentId.class,
+                parent.getClass(),
+                null)) {
+            while (true) {
+                List<Document<?, ?>> docs = cursor.nextPage();
+                if (docs == null || docs.isEmpty()) break;
+                for (Document<?, ?> doc : docs) {
+                    if (doc.isSearchDocuments()) {
+                        fetchChildren(doc);
+                    }
+                    parent.add(doc);
+                }
+            }
+        }
+    }
+
     @Override
     public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
                                                                         int maxResults,
@@ -641,7 +687,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             }
             SolrClient client = connection.connect(cname);
             EntityQueryBuilder.LuceneQuery q = (EntityQueryBuilder.LuceneQuery) query;
-            return new SolrCursor<>(type, client, q, maxResults);
+            return new SolrCursor<>(type, this, client, q, maxResults);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);

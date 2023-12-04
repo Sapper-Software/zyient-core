@@ -43,15 +43,18 @@ import java.util.List;
 @Accessors(fluent = true)
 public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, E> {
     private final EntityQueryBuilder.LuceneQuery query;
-    private final SolrClient client;
     private final int batchSize;
     private final Class<? extends E> entityType;
+    private final SolrDataStore dataStore;
+    private final SolrClient client;
 
     public SolrCursor(@NonNull Class<? extends E> entityType,
+                      @NonNull SolrDataStore dataStore,
                       @NonNull SolrClient client,
                       @NonNull EntityQueryBuilder.LuceneQuery query,
                       int batchSize) {
         this.entityType = entityType;
+        this.dataStore = dataStore;
         this.client = client;
         this.query = query;
         this.batchSize = batchSize;
@@ -61,6 +64,7 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
     @SuppressWarnings("unchecked")
     protected List<E> next(int page) throws DataStoreException {
         try {
+
             SolrQuery query = new SolrQuery(this.query.where());
             query.setStart(page * batchSize);
             query.setRows(batchSize);
@@ -107,8 +111,11 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
                                     String.format("Search returned empty json for key. [type=%s]",
                                             entityType.getCanonicalName()));
                         }
-                        E entity = JSONUtils.read(json, entityType);
-                        entities.add(entity);
+                        Document<?, ?> entity = (Document<?, ?>) JSONUtils.read(json, entityType);
+                        if (entity.isSearchDocuments()) {
+                            dataStore.fetchChildren(entity);
+                        }
+                        entities.add((E) entity);
                     }
                     return entities;
                 }

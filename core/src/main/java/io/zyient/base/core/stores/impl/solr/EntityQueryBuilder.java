@@ -16,8 +16,6 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
-import io.zyient.base.common.model.PropertyModel;
-import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
@@ -28,7 +26,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.QueryBuilder;
 
 import javax.annotation.Nonnull;
-import java.lang.reflect.Modifier;
 
 @Getter
 @Accessors(fluent = true)
@@ -56,31 +53,6 @@ public class EntityQueryBuilder {
         builder = new QueryBuilder(analyzer);
     }
 
-
-    private void checkProperty(String field) throws Exception {
-        if (isTextField(field)) return;;
-        PropertyModel pm = ReflectionHelper.findProperty(entityType, field);
-        if (pm == null) {
-            throw new Exception(String.format("Property not found. [type=%s][field=%s]",
-                    entityType.getCanonicalName(), field));
-        }
-        if (pm.field() == null
-                || Modifier.isPrivate(pm.field().getModifiers())
-                || Modifier.isProtected(pm.field().getModifiers())) {
-            if (pm.getter() == null) {
-                throw new Exception(String.format("Property not accessible. [type=%s][field=%s]",
-                        entityType.getCanonicalName(), field));
-            }
-        }
-    }
-
-    private boolean isTextField(String field) {
-        if (field.compareTo(FIELD_TEXT) == 0) {
-            return true;
-        }
-        return false;
-    }
-
     /**
      * Creates a boolean query from the query text.
      *
@@ -91,7 +63,6 @@ public class EntityQueryBuilder {
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
     public EntityQueryBuilder createBooleanQuery(String field, String queryText) throws Exception {
-        checkProperty(field);
         query = builder.createBooleanQuery(field, queryText);
         return this;
     }
@@ -105,7 +76,6 @@ public class EntityQueryBuilder {
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
     public EntityQueryBuilder createBooleanQuery(String field, String queryText, BooleanClause.Occur operator) throws Exception {
-        checkProperty(field);
         query = builder.createBooleanQuery(field, queryText, operator);
         return this;
     }
@@ -121,7 +91,6 @@ public class EntityQueryBuilder {
      * MultiPhraseQuery}, based on the analysis of {@code queryText}
      */
     public EntityQueryBuilder createPhraseQuery(String field, String queryText) throws Exception {
-        checkProperty(field);
         query = builder.createPhraseQuery(field, queryText);
         return this;
     }
@@ -136,7 +105,6 @@ public class EntityQueryBuilder {
      * MultiPhraseQuery}, based on the analysis of {@code queryText}
      */
     public EntityQueryBuilder createPhraseQuery(String field, String queryText, int phraseSlop) throws Exception {
-        checkProperty(field);
         query = builder.createPhraseQuery(field, queryText, phraseSlop);
         return this;
     }
