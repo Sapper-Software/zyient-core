@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core;
+package io.zyient.base.core.env;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

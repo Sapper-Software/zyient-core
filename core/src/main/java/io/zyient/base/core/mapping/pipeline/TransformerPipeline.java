@@ -200,7 +200,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     private void rollback() throws Exception {
         if (dataStore instanceof TransactionDataStore<?,?>) {
             if (((TransactionDataStore<?, ?>) dataStore).isInTransaction()) {
-                ((TransactionDataStore<?, ?>) dataStore).rollback();
+                ((TransactionDataStore<?, ?>) dataStore).rollback(true);
             }
         }
     }

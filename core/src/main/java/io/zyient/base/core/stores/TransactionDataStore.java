@@ -63,8 +63,13 @@ public abstract class TransactionDataStore<C, T> extends AbstractDataStore<C> {
         sessionManager.commit();
     }
 
-    public void rollback() throws DataStoreException {
+    public void rollback(boolean raiseError) throws DataStoreException {
         checkState();
+        if (!raiseError) {
+            if (!isInTransaction()) {
+                return;
+            }
+        }
         sessionManager().rollback();
     }
 

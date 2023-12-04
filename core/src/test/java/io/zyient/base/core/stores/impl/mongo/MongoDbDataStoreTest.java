@@ -21,8 +21,8 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.StringKey;
-import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.DemoDataStoreEnv;
 import io.zyient.base.core.stores.impl.mongo.model.TestMongoEntity;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -39,7 +39,7 @@ class MongoDbDataStoreTest {
     private static final String __MONGO_DB_NAME = "test-mongodb";
 
     private static XMLConfiguration xmlConfiguration = null;
-    private static DataStoreEnv env = new DataStoreEnv();
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -57,7 +57,7 @@ class MongoDbDataStoreTest {
     @Test
     void createEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             MongoDbDataStore dataStore = manager.getDataStore(__MONGO_DB_NAME, MongoDbDataStore.class);
             assertNotNull(dataStore);
@@ -71,7 +71,7 @@ class MongoDbDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
         } catch (Exception ex) {
@@ -83,7 +83,7 @@ class MongoDbDataStoreTest {
     @Test
     void updateEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             MongoDbDataStore dataStore = manager.getDataStore(__MONGO_DB_NAME, MongoDbDataStore.class);
             assertNotNull(dataStore);
@@ -100,7 +100,7 @@ class MongoDbDataStoreTest {
     @Test
     void findEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             MongoDbDataStore dataStore = manager.getDataStore(__MONGO_DB_NAME, MongoDbDataStore.class);
             assertNotNull(dataStore);
@@ -120,7 +120,7 @@ class MongoDbDataStoreTest {
                     }
                     dataStore.commit();
                 } catch (Exception ex) {
-                    dataStore.rollback();
+                    dataStore.rollback(false);
                     throw ex;
                 }
                 for (StringKey key : counts.keySet()) {

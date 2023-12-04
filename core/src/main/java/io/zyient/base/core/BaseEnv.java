@@ -31,6 +31,7 @@ import io.zyient.base.common.utils.NetUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
+import io.zyient.base.core.env.BaseEnvSettings;
 import io.zyient.base.core.io.FileSystemManager;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.ModuleInstance;
@@ -96,22 +97,6 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     public BaseEnv<?> withProcessor(@NonNull Processor<?, ?> processor) {
         this.processor = processor;
         return this;
-    }
-
-    public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                           @NonNull BaseEnvConfig config,
-                           @NonNull AbstractEnvState<T> state) throws ConfigurationException {
-        try {
-            this.config = config;
-            settings = (BaseEnvSettings) config.settings();
-            if (settings == null) {
-                throw new ConfigurationException("Environment settings not initialized...");
-            }
-
-            return setup(xmlConfig, state);
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
     }
 
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,

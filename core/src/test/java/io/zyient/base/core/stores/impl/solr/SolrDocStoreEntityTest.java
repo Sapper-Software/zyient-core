@@ -25,8 +25,8 @@ import io.zyient.base.core.content.model.Document;
 import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.Cursor;
-import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.DemoDataStoreEnv;
 import io.zyient.base.core.stores.impl.solr.model.DemoDocState;
 import io.zyient.base.core.stores.impl.solr.model.DemoTestDocument;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -60,7 +60,7 @@ class SolrDocStoreEntityTest {
             "src/test/resources/data/employees_202311232000.json"
     };
     private static XMLConfiguration xmlConfiguration = null;
-    private static DataStoreEnv env = new DataStoreEnv();
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -79,7 +79,7 @@ class SolrDocStoreEntityTest {
     @SuppressWarnings("unchecked")
     void createEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
@@ -108,7 +108,7 @@ class SolrDocStoreEntityTest {
     @SuppressWarnings("unchecked")
     void findEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
@@ -147,7 +147,7 @@ class SolrDocStoreEntityTest {
     @SuppressWarnings("unchecked")
     void doSearch() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);

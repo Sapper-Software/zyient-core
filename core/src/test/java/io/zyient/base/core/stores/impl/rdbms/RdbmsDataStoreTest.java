@@ -23,8 +23,8 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.IntegerKey;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
-import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.DemoDataStoreEnv;
 import io.zyient.base.core.stores.impl.rdbms.model.CustomersEntity;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -43,7 +43,7 @@ class RdbmsDataStoreTest {
     private static final String __CONFIG_FILE = "src/test/resources/rdbms/test-mariadb-env.xml";
     private static final String __DATASTORE = "test-rdbms";
     private static XMLConfiguration xmlConfiguration = null;
-    private static DataStoreEnv env = new DataStoreEnv();
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -61,7 +61,7 @@ class RdbmsDataStoreTest {
     @Test
     void createEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             RdbmsDataStore dataStore = manager.getDataStore(__DATASTORE, RdbmsDataStore.class);
             assertNotNull(dataStore);
@@ -73,7 +73,7 @@ class RdbmsDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
         } catch (Exception ex) {
@@ -85,7 +85,7 @@ class RdbmsDataStoreTest {
     @Test
     void updateEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             RdbmsDataStore dataStore = manager.getDataStore(__DATASTORE, RdbmsDataStore.class);
             assertNotNull(dataStore);
@@ -98,7 +98,7 @@ class RdbmsDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
             dataStore.beingTransaction();
@@ -112,7 +112,7 @@ class RdbmsDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
             for (CustomersEntity ce : customers) {
@@ -129,7 +129,7 @@ class RdbmsDataStoreTest {
     @Test
     void deleteEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             RdbmsDataStore dataStore = manager.getDataStore(__DATASTORE, RdbmsDataStore.class);
             assertNotNull(dataStore);
@@ -142,7 +142,7 @@ class RdbmsDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
             dataStore.beingTransaction();
@@ -153,7 +153,7 @@ class RdbmsDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
             for (CustomersEntity ce : customers) {
@@ -169,7 +169,7 @@ class RdbmsDataStoreTest {
     @Test
     void doSearch() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             RdbmsDataStore dataStore = manager.getDataStore(__DATASTORE, RdbmsDataStore.class);
             assertNotNull(dataStore);
@@ -182,7 +182,7 @@ class RdbmsDataStoreTest {
                 }
                 dataStore.commit();
             } catch (Exception ex) {
-                dataStore.rollback();
+                dataStore.rollback(false);
                 throw ex;
             }
             String condition = "city = :city AND state = :state";

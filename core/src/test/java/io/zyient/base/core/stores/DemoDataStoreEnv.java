@@ -19,9 +19,9 @@ package io.zyient.base.core.stores;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
-import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.BaseEnvSettings;
+import io.zyient.base.core.DataStoreEnv;
+import io.zyient.base.core.env.DataStoreEnvSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -32,8 +32,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Accessors(fluent = true)
-public class DataStoreEnv extends BaseEnv<DataStoreEnv.EDemoState> {
-    public DataStoreEnv() {
+public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> {
+    public DemoDataStoreEnv() {
         super("demo");
     }
 
@@ -64,12 +64,11 @@ public class DataStoreEnv extends BaseEnv<DataStoreEnv.EDemoState> {
 
     private HierarchicalConfiguration<ImmutableNode> configNode;
     private final String module = "TEST";
-    private String passKey = TEST_PASSWD;
-    private DataStoreManager dataStoreManager;
+    private final String passKey = TEST_PASSWD;
 
     @Getter
     @Setter
-    public static class DemoEnvSettings extends BaseEnvSettings {
+    public static class DemoEnvSettings extends DataStoreEnvSettings {
 
     }
 
@@ -79,12 +78,6 @@ public class DataStoreEnv extends BaseEnv<DataStoreEnv.EDemoState> {
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
         super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
-
-        configNode = baseConfig().configurationAt(__CONFIG_PATH);
-        if (ConfigReader.checkIfNodeExists(configNode, DataStoreManagerSettings.__CONFIG_PATH)) {
-            dataStoreManager = new DataStoreManager();
-            dataStoreManager.init(configNode, this, null);
-        }
         return this;
     }
 }

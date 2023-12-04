@@ -24,7 +24,7 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.mapping.model.InputContentInfo;
 import io.zyient.base.core.mapping.readers.ReadCompleteCallback;
 import io.zyient.base.core.mapping.readers.ReadResponse;
-import io.zyient.base.core.stores.DataStoreEnv;
+import io.zyient.base.core.stores.DemoDataStoreEnv;
 import lombok.NonNull;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -42,7 +42,7 @@ class MappingExecutorTest {
     private static final String __INPUT_CUSTOMER_CSV = "src/test/resources/data/customers_202311231439.csv";
 
     private static XMLConfiguration xmlConfiguration = null;
-    private static DataStoreEnv env = new DataStoreEnv();
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
 
     @BeforeAll
     static void beforeAll() throws Exception {
@@ -52,7 +52,7 @@ class MappingExecutorTest {
         env.connectionManager().save();
 
         XMLConfiguration mConfig = ConfigReader.readFromFile(__CONFIG_FILE_MAPPING);
-        MappingExecutor.create(mConfig, env.dataStoreManager());
+        MappingExecutor.create(mConfig, env.getDataStoreManager());
     }
 
     @AfterAll

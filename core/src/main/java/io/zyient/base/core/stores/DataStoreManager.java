@@ -226,7 +226,7 @@ public class DataStoreManager {
                     AbstractDataStore<?> store = stores.get(name);
                     if (store instanceof TransactionDataStore) {
                         if (((TransactionDataStore) store).isInTransaction()) {
-                            ((TransactionDataStore) store).rollback();
+                            ((TransactionDataStore) store).rollback(true);
                         }
                     }
                 }
@@ -248,7 +248,7 @@ public class DataStoreManager {
                             DefaultLogger.error(
                                     String.format("Store has pending transactions, rolling back. [name=%s][thread id=%d]",
                                             store.name(), Thread.currentThread().getId()));
-                            ((TransactionDataStore) store).rollback();
+                            ((TransactionDataStore) store).rollback(false);
                         }
                     }
                     storeList.add(store);
@@ -278,7 +278,7 @@ public class DataStoreManager {
                             DefaultLogger.error(
                                     String.format("Data Store has un-committed transaction. [name=%s][thread=%d]",
                                             dataStore.name(), Thread.currentThread().getId()));
-                            ts.rollback();
+                            ts.rollback(false);
                         }
                     }
                     openedStores.remove(dataStore.name());
@@ -289,9 +289,9 @@ public class DataStoreManager {
         }
     }
 
-    public void init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                     @Nonnull BaseEnv<?> env,
-                     String path) throws ConfigurationException {
+    public DataStoreManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                 @Nonnull BaseEnv<?> env,
+                                 String path) throws ConfigurationException {
         this.env = env;
         this.connectionManager = env.connectionManager();
         try {
@@ -301,12 +301,16 @@ public class DataStoreManager {
             updateLock = env.createLock(lp);
             updateLock.lock();
             try {
-                if (!ConfigReader.checkIfNodeExists(xmlConfig, DataStoreManagerSettings.__CONFIG_PATH)) {
+                String p = path;
+                if (Strings.isNullOrEmpty(p)) {
+                    p = DataStoreManagerSettings.__CONFIG_PATH;
+                }
+                if (!ConfigReader.checkIfNodeExists(xmlConfig, p)) {
                     state.setState(ProcessorState.EProcessorState.Running);
-                    return;
+                    return this;
                 }
                 HierarchicalConfiguration<ImmutableNode> config
-                        = xmlConfig.configurationAt(DataStoreManagerSettings.__CONFIG_PATH);
+                        = xmlConfig.configurationAt(p);
                 ConfigReader reader = new ConfigReader(config, null, DataStoreManagerSettings.class);
                 reader.read();
                 settings = (DataStoreManagerSettings) reader.settings();
@@ -343,6 +347,7 @@ public class DataStoreManager {
             if (settings.isAutoSave()) {
                 save();
             }
+            return this;
         } catch (Exception ex) {
             state.error(ex);
             throw new ConfigurationException(ex);

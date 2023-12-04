@@ -26,6 +26,7 @@
             <connections>config</connections>
             <registry>/test/registry</registry>
             <root>/test</root>
+            <dataStores>demo.dataStores</dataStores>
         </paths>
         <managers>
             <state>

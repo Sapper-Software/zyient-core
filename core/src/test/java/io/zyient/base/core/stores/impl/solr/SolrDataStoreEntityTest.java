@@ -22,8 +22,8 @@ import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.StringKey;
-import io.zyient.base.core.stores.DataStoreEnv;
 import io.zyient.base.core.stores.DataStoreManager;
+import io.zyient.base.core.stores.DemoDataStoreEnv;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -39,7 +39,7 @@ class SolrDataStoreEntityTest {
     private static final String __SOLR_DB_NAME = "test-solr";
 
     private static XMLConfiguration xmlConfiguration = null;
-    private static DataStoreEnv env = new DataStoreEnv();
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -57,7 +57,7 @@ class SolrDataStoreEntityTest {
     @Test
     void createEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
@@ -80,7 +80,7 @@ class SolrDataStoreEntityTest {
     @Test
     void deleteEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
@@ -109,7 +109,7 @@ class SolrDataStoreEntityTest {
     @Test
     void findEntity() {
         try {
-            DataStoreManager manager = env.dataStoreManager();
+            DataStoreManager manager = env.getDataStoreManager();
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
