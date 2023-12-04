@@ -19,10 +19,9 @@ package io.zyient.base.core.stores.impl.solr.model;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.core.content.model.Document;
-import io.zyient.base.core.model.StringKey;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class DemoTestDocument extends Document<EEntityState, StringKey> {
+public class DemoTestDocument extends Document<EEntityState, ReferenceKey> {
 
 }

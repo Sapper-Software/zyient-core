@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class SolrDocStoreEntityTest {
 
 
-
     private static final String __CONFIG_FILE = "src/test/resources/solr/test-solr-env.xml";
     private static final String __SOLR_DB_NAME = "test-solr";
     private static final String __SOLR_COLLECTION_NAME = "test-db";
@@ -163,7 +162,20 @@ class SolrDocStoreEntityTest {
                 doc.setUri(path.toURI().toString());
                 doc.setCreatedBy("DEMO");
                 doc.setModifiedBy("DEMO");
-
+                for (String d : DOCUMENTS) {
+                    if (source.endsWith(".pdf")) continue;
+                    File cp = new File(source);
+                    DemoTestDocument cd = new DemoTestDocument();
+                    cd.setId(new DocumentId(__SOLR_COLLECTION_NAME));
+                    cd.setName(d);
+                    cd.setDocState(new DemoDocState());
+                    cd.getDocState().setState(EEntityState.New);
+                    cd.setPath(cp);
+                    cd.setUri(cp.toURI().toString());
+                    cd.setCreatedBy("DEMO");
+                    cd.setModifiedBy("DEMO");
+                    doc.add(cd);
+                }
                 doc = dataStore.create(doc, doc.getClass(), null);
                 assertNotNull(doc);
             }

@@ -40,7 +40,9 @@ import org.apache.solr.client.solrj.beans.Field;
 import java.io.File;
 import java.security.Principal;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -54,8 +56,15 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @Transient
     @Field(SolrConstants.FIELD_REFERENCE_ID)
     private String searchReferenceId;
+    @Transient
+    @Field(SolrConstants.FIELD_DOC_HAS_CHILDREN)
+    private boolean searchDocuments = false;
+
+
     @EmbeddedId
     private DocumentId id;
+    @Column(name = "parent_doc_id")
+    private String parentDocId;
     @Column(name = "doc_name")
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
     private String name;
@@ -76,6 +85,9 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @Transient
     @JsonIgnore
     private File path;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "parent_doc_id")
+    private Set<Document<E, K>> documents;
     @Convert(converter = PropertiesConverter.class)
     @Field(SolrConstants.FIELD_DOC_PROPERTIES)
     private Map<String, Object> properties;
@@ -89,6 +101,37 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @Override
     public int compare(DocumentId key) {
         return id.compareTo(key);
+    }
+
+    public Document<E, K> add(@NonNull Document<E, K> doc) {
+        if (documents == null) {
+            documents = new HashSet<>();
+        }
+        documents.add(doc);
+        return this;
+    }
+
+    public boolean remove(@NonNull Document<E, K> doc) {
+        if (documents != null) {
+            return documents.remove(doc);
+        }
+        return false;
+    }
+
+    public boolean remove(@NonNull DocumentId key) {
+        if (documents != null) {
+            Document<E, K> remove = null;
+            for (Document<E, K> doc : documents) {
+                if (doc.getId().compareTo(key) == 0) {
+                    remove = doc;
+                    break;
+                }
+            }
+            if (remove != null) {
+                return documents.remove(remove);
+            }
+        }
+        return false;
     }
 
     /**
@@ -122,7 +165,12 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
         this.mimeType = doc.mimeType;
         this.createdBy = doc.createdBy;
         this.modifiedBy = doc.modifiedBy;
+        this.parentDocId = doc.parentDocId;
         this.referenceId = doc.referenceId;
+        if (doc.documents != null) {
+            this.documents = new HashSet<>(doc.documents);
+        }
+        this.properties = doc.properties;
         return this;
     }
 
@@ -145,6 +193,7 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
             doc.name = name;
             doc.uri = uri;
             doc.mimeType = mimeType;
+            doc.parentDocId = parentDocId;
             if (context instanceof UserContext) {
                 Principal p = ((UserContext) context).user();
                 doc.createdBy = p.getName();
@@ -153,7 +202,16 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
                 doc.modifiedBy = modifiedBy;
                 doc.createdBy = createdBy;
             }
+            if (documents != null) {
+                doc.documents = new HashSet<>(documents.size());
+                for (Document<E, K> d : documents) {
+                    doc.documents.add((Document<E, K>) d.clone(context));
+                }
+            }
             doc.referenceId = referenceId;
+            if (properties != null) {
+                doc.properties = new HashMap<>(properties);
+            }
             return this;
         } catch (Exception ex) {
             throw new CopyException(ex);

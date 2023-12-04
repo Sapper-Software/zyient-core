@@ -30,6 +30,7 @@ import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
+import io.zyient.base.core.stores.impl.solr.schema.SolrFieldTypes;
 import io.zyient.base.core.utils.FileUtils;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -37,8 +38,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
+import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
@@ -52,13 +56,25 @@ import software.amazon.awssdk.utils.StringInputStream;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Field;
+import java.util.*;
 
 
 public class SolrDataStore extends AbstractDataStore<SolrClient> {
+    public static class SchemaConstants {
+        public static final String NAME = "name";
+        public static final String TYPE = "type";
+        public static final String STORED = "stored";
+        public static final String INDEXED = "indexed";
+        public static final String DOC_VALUES = "docValues";
+    }
+
+    public static class SchemaScanResponse {
+        private final Map<String, Map<String, Object>> added = new HashMap<>();
+        private final Map<String, Map<String, Object>> updated = new HashMap<>();
+        private final Set<Class<?>> scanned = new HashSet<>();
+    }
+
     public static final String SOLR_URL_UPDATE = "/update";
     public static final String SOLR_URL_EXTRACT = String.format("%s/extract", SOLR_URL_UPDATE);
     public static final String LITERALS_PREFIX = "literal.";
@@ -66,6 +82,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     public static final String CONTEXT_KEY_JSON_MAP = "SOLR_JSON_FIELDS";
     public static final String CONTEXT_KEY_JSON_SPLITS = "SOLR_JSON_SPLITS";
     public static final String JSON_FIELD = "data_json";
+    private final Map<Class<?>, Boolean> checkedSchema = new HashMap<>();
 
     @Override
     protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
@@ -117,11 +134,21 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws DataStoreException {
         checkState();
+        return createEntity(entity, null, type, context);
+    }
+
+    private <E extends IEntity<?>> E createEntity(E entity,
+                                                  E current,
+                                                  Class<? extends E> type,
+                                                  Context context) throws DataStoreException {
         try {
             SolrConnection connection = (SolrConnection) connection();
             String cname = getCollection(entity);
             SolrClient client = connection.connect(cname);
             entity.validate();
+            if (!checkedSchema.containsKey(type)) {
+                checkSchema(type, client);
+            }
             if (entity instanceof Document<?, ?>) {
                 if (((Document<?, ?>) entity).getCreatedTime() <= 0)
                     ((Document<?, ?>) entity).setCreatedTime(System.nanoTime());
@@ -135,12 +162,33 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                     ((Document<?, ?>) entity)
                             .setSearchReferenceId(((Document<?, ?>) entity).getReferenceId().stringKey());
                 }
+                Set<? extends Document<?, ?>> children = ((Document<?, ?>) entity).getDocuments();
+                if (children != null && !children.isEmpty()) {
+                    ((Document<?, ?>) entity).setSearchDocuments(true);
+                }
                 ContentStreamUpdateRequest ur = getContentUpdateRequest((Document<?, ?>) entity);
                 NamedList<Object> request = client.request(ur);
                 if (DefaultLogger.isTraceEnabled()) {
                     for (Map.Entry<String, Object> entry : request) {
                         DefaultLogger.trace(String.format("Response [key=%s, value=%s]",
                                 entry.getKey(), entry.getValue()));
+                    }
+                }
+                if (children != null && !children.isEmpty()) {
+                    Set<Document<?, ?>> delete = null;
+                    if (current != null) {
+                        delete = getChildrenToDelete(((Document<?, ?>) entity).getDocuments(),
+                                ((Document<?, ?>) current).getDocuments());
+                    }
+                    for (Document<?, ?> child : children) {
+                        child.setParentDocId(((Document<?, ?>) entity).getId().getId());
+                        child.getId().setCollection(((Document<?, ?>) entity).getId().getCollection());
+                        child = (Document<?, ?>) createEntity(child, type, context);
+                    }
+                    if (delete != null && !delete.isEmpty()) {
+                        for (Document<?, ?> child : delete) {
+                            deleteEntity(child.entityKey(), type, context);
+                        }
                     }
                 }
                 ((Document<?, ?>) entity).getState().setState(EEntityState.Synced);
@@ -200,10 +248,23 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             String cname = getCollection(entity);
             SolrClient client = connection.connect(cname);
             entity.validate();
+            E current = null;
             if (checkEntityVersion(context)) {
-                checkEntity(entity, client);
+                current = checkEntity(entity, client);
             }
-            return createEntity(entity, type, context);
+            if (entity instanceof Document<?, ?>) {
+                Set<? extends Document<?, ?>> children = ((Document<?, ?>) entity).getDocuments();
+                if (children != null && !children.isEmpty()) {
+                    if (current == null) {
+                        current = findEntity(entity.entityKey(), type, context);
+                        if (current == null) {
+                            throw new DataStoreException(String.format("Existing instance not found. [id=%s]",
+                                    entity.entityKey().stringKey()));
+                        }
+                    }
+                }
+            }
+            return createEntity(entity, current, type, context);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
@@ -211,7 +272,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     }
 
     @SuppressWarnings("unchecked")
-    private <E extends IEntity<?>> void checkEntity(E entity, SolrClient client) throws Exception {
+    private <E extends IEntity<?>> E checkEntity(E entity, SolrClient client) throws Exception {
         E current = (E) findEntity(entity.entityKey(), entity.getClass(), null);
         if (current == null) {
             throw new DataStoreException(String.format("Entity not found. [type=%s][key=%s]",
@@ -223,11 +284,28 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                         ((VersionedEntity) current).version(), ((VersionedEntity) entity).version()));
             }
         }
-        UpdateResponse ur = client.deleteById(entity.entityKey().stringKey());
-        if (ur.getStatus() != 0) {
-            throw new DataStoreException(String.format("Delete failed [status=%d]. [type=%s][id=%s]",
-                    ur.getStatus(), entity.getClass().getCanonicalName(), entity.entityKey().stringKey()));
+        return current;
+    }
+
+    private Set<Document<?, ?>> getChildrenToDelete(Set<? extends Document<?, ?>> updated,
+                                                    Set<? extends Document<?, ?>> existing) {
+        if (existing != null && !existing.isEmpty()) {
+            Set<Document<?, ?>> delete = new HashSet<>();
+            Map<String, Boolean> exists = new HashMap<>();
+            for (Document<?, ?> doc : updated) {
+                exists.put(doc.getId().stringKey(), true);
+            }
+            for (Document<?, ?> doc : existing) {
+                String key = doc.entityKey().stringKey();
+                if (!exists.containsKey(key)) {
+                    delete.add(doc);
+                }
+            }
+            if (!delete.isEmpty()) {
+                return delete;
+            }
         }
+        return null;
     }
 
     @Override
@@ -248,11 +326,22 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 throw new DataStoreException(String.format("Key type not supported. [type=%s]",
                         key.getClass().getCanonicalName()));
             }
-            if (checkEntityVersion(context)) {
-                E current = (E) findEntity(key, type, null);
-                if (current == null) {
-                    throw new DataStoreException(String.format("Entity not found. [type=%s][key=%s]",
-                            type.getCanonicalName(), k));
+            E current = (E) findEntity(key, type, null);
+            if (current == null) {
+                throw new DataStoreException(String.format("Entity not found. [type=%s][key=%s]",
+                        type.getCanonicalName(), k));
+            }
+            if (current instanceof Document<?, ?>) {
+                if (((Document<?, ?>) current).isSearchDocuments()) {
+                    Set<? extends Document<?, ?>> children = ((Document<?, ?>) current).getDocuments();
+                    if (children != null && !children.isEmpty()) {
+                        for (Document<?, ?> child : children) {
+                            if (!deleteEntity(child.entityKey(), type, context)) {
+                                DefaultLogger.warn(String.format("Failed to delete nested document. [id=%s]",
+                                        child.entityKey().stringKey()));
+                            }
+                        }
+                    }
                 }
             }
             UpdateResponse ur = client.deleteById(k);
@@ -293,6 +382,100 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
         ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
         return ur;
+    }
+
+    private void checkSchema(Class<?> type,
+                             SolrClient client) throws Exception {
+        SchemaRequest request = new SchemaRequest();
+        SchemaResponse response = request.process(client);
+        SchemaRepresentation schema = response.getSchemaRepresentation();
+        List<Map<String, Object>> fields = schema.getFields();
+        Map<String, Map<String, Object>> fieldMap = new HashMap<>();
+        for (Map<String, Object> field : fields) {
+            fieldMap.put((String) field.get(SchemaConstants.NAME), field);
+        }
+        SchemaScanResponse result = new SchemaScanResponse();
+        scanType(type, result, fieldMap);
+        if (!result.added.isEmpty()) {
+            addSchemaFields(result.added, client);
+        }
+        if (!result.updated.isEmpty()) {
+            updateSchemaFields(result.updated, client);
+        }
+        checkedSchema.put(type, true);
+    }
+
+    private void addSchemaFields(Map<String, Map<String, Object>> fields, SolrClient client) throws Exception {
+        for (String name : fields.keySet()) {
+            Map<String, Object> field = fields.get(name);
+            SchemaRequest.AddField addField = new SchemaRequest.AddField(field);
+            SchemaResponse.UpdateResponse r = addField.process(client);
+            if (DefaultLogger.isTraceEnabled()) {
+                DefaultLogger.trace(r);
+            }
+        }
+    }
+
+    private void updateSchemaFields(Map<String, Map<String, Object>> fields, SolrClient client) throws Exception {
+        for (String name : fields.keySet()) {
+            Map<String, Object> field = fields.get(name);
+            SchemaRequest.ReplaceField replaceField = new SchemaRequest.ReplaceField(field);
+            SchemaResponse.UpdateResponse r = replaceField.process(client);
+            if (DefaultLogger.isTraceEnabled()) {
+                DefaultLogger.trace(r);
+            }
+        }
+    }
+
+    private void scanType(Class<?> type,
+                          SchemaScanResponse response,
+                          Map<String, Map<String, Object>> schema) throws Exception {
+        response.scanned.add(type);
+        Field[] fields = ReflectionHelper.getAllFields(type);
+        if (fields != null) {
+            for (Field field : fields) {
+                if (field.isAnnotationPresent(org.apache.solr.client.solrj.beans.Field.class)) {
+                    org.apache.solr.client.solrj.beans.Field f =
+                            field.getAnnotation(org.apache.solr.client.solrj.beans.Field.class);
+                    SolrFieldTypes t = SolrFieldTypes.getType(field);
+                    if (t != null) {
+                        String name = f.value();
+                        if (Strings.isNullOrEmpty(name)) {
+                            name = field.getName();
+                        }
+                        if (schema.containsKey(name)) {
+                            Map<String, Object> s = schema.get(name);
+                            String st = (String) s.get(SchemaConstants.TYPE);
+                            if (st.compareTo(t.type()) == 0) {
+                                continue;
+                            }
+                            s.put(SchemaConstants.TYPE, t.type());
+                            s.put(SchemaConstants.STORED, true);
+                            s.put(SchemaConstants.INDEXED, true);
+                            s.put(SchemaConstants.DOC_VALUES, true);
+                            response.updated.put(name, s);
+                        } else {
+                            Map<String, Object> s = new HashMap<>();
+                            s.put(SchemaConstants.NAME, name);
+                            s.put(SchemaConstants.TYPE, t.type());
+                            s.put(SchemaConstants.STORED, true);
+                            s.put(SchemaConstants.INDEXED, true);
+                            s.put(SchemaConstants.DOC_VALUES, true);
+                            response.added.put(name, s);
+                        }
+                    } else {
+                        DefaultLogger.warn(String.format("[SOLR SCHEMA] Field type not supported. [type=%s]",
+                                field.getType().getCanonicalName()));
+                    }
+                } else if (!ReflectionHelper.isPrimitiveTypeOrString(field)
+                        && !field.getType().isEnum()
+                        && !ReflectionHelper.isSuperType(Throwable.class, field.getType())
+                        && !field.getType().equals(Object.class)
+                        && !response.scanned.contains(type)) {
+                    scanType(field.getType(), response, schema);
+                }
+            }
+        }
     }
 
     private static ContentStreamUpdateRequest getContentUpdateRequest(Document<?, ?> entity) throws IOException {

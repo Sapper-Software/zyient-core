@@ -29,4 +29,5 @@ public class SolrConstants {
     public static final String FIELD_REFERENCE_ID = "reference_id";
     public static final String FIELD_SOLR_JSON_DATA = "json_body";
     public static final String FIELD_DOC_PROPERTIES = "properties";
+    public static final String FIELD_DOC_HAS_CHILDREN = "has_children";
 }

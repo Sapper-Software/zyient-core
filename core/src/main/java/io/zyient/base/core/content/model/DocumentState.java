@@ -50,6 +50,7 @@ public abstract class DocumentState<E extends Enum<?>> {
         return this;
     }
 
+    @SuppressWarnings("unchecked")
     public DocumentState<E> create() throws Exception {
         DocumentState<E> state = getClass().getDeclaredConstructor()
                 .newInstance();

@@ -101,6 +101,8 @@ public enum SolrFieldTypes {
             }
         } else if (t.equals(java.util.Date.class)) {
             return Date;
+        } else if (t.isEnum()) {
+            return String;
         }
         return String;
     }
