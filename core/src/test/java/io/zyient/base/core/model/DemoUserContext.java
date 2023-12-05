@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.stores.impl.solr.model;
+package io.zyient.base.core.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.base.core.stores.model.Document;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import io.zyient.base.common.model.Context;
+import lombok.NonNull;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-@Entity
-@Table(name = "tb_documents", schema = "test")
-public class DemoTestDocument extends Document<EEntityState, ReferenceKey, DemoTestDocument> {
+import java.security.Principal;
 
+public class DemoUserContext extends Context implements UserContext {
+    public static final String KEY_USER_CONTEXT = "user.principal";
+
+    @Override
+    public UserContext user(@NonNull Principal user) {
+        return (UserContext) put(KEY_USER_CONTEXT, user);
+    }
+
+    @Override
+    public Principal user() {
+        return (Principal) get(KEY_USER_CONTEXT);
+    }
 }

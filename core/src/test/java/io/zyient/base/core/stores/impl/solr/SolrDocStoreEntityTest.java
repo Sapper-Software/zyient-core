@@ -21,14 +21,13 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
-import io.zyient.base.core.model.StringKey;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.DemoDataStoreEnv;
 import io.zyient.base.core.stores.impl.solr.model.DemoDocState;
 import io.zyient.base.core.stores.impl.solr.model.DemoTestDocument;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.junit.jupiter.api.AfterAll;
@@ -102,7 +101,6 @@ class SolrDocStoreEntityTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void findEntity() {
         try {
             DataStoreManager manager = env.getDataStoreManager();
@@ -131,7 +129,7 @@ class SolrDocStoreEntityTest {
                 ids.add(doc.entityKey());
             }
             for (DocumentId id : ids) {
-                Document<EEntityState, StringKey> doc = dataStore.find(id, Document.class, null);
+                DemoTestDocument doc = dataStore.find(id, DemoTestDocument.class, null);
                 assertNotNull(doc);
             }
         } catch (Exception ex) {

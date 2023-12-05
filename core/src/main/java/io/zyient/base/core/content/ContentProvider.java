@@ -24,13 +24,13 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.IOUtils;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.model.UserContext;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.utils.Timer;
 import lombok.Getter;
 import lombok.NonNull;
@@ -48,6 +48,7 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public abstract class ContentProvider implements Closeable {
+    public static final String KEY_ENGINE = "ContentProvider";
     public static final String __CONFIG_PATH = "contentManager";
 
     private final ProcessorState state = new ProcessorState();
@@ -70,6 +71,7 @@ public abstract class ContentProvider implements Closeable {
     public ContentProvider configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                      @NonNull BaseEnv<?> env) throws ConfigurationException {
         synchronized (this) {
+            this.env = env;
             try {
                 ConfigReader reader = new ConfigReader(xmlConfig, __CONFIG_PATH, settingsType);
                 reader.read();
@@ -85,6 +87,8 @@ public abstract class ContentProvider implements Closeable {
                 }
                 doConfigure(reader.config());
                 state.setState(ProcessorState.EProcessorState.Running);
+                metrics = new ContentProviderMetrics(KEY_ENGINE,
+                        settings.getName(), getClass().getSimpleName(), env, getClass());
                 return this;
             } catch (Exception ex) {
                 state.error(ex);
@@ -101,8 +105,8 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public <E extends Enum<?>, K extends IKey> Document<E, K> create(@NonNull Document<E, K> document,
-                                                                     @NonNull Context context) throws DataStoreException {
+    public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> create(@NonNull Document<E, K, T> document,
+                                                                                                     @NonNull Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             if (!(context instanceof UserContext)) {
@@ -135,8 +139,8 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public <E extends Enum<?>, K extends IKey> Document<E, K> update(@NonNull Document<E, K> document,
-                                                                     @NonNull Context context) throws DataStoreException {
+    public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> update(@NonNull Document<E, K, T> document,
+                                                                                                     @NonNull Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             if (!(context instanceof UserContext)) {
@@ -179,9 +183,9 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public <E extends Enum<?>, K extends IKey> boolean delete(@NonNull DocumentId docId,
-                                                              @NonNull Class<? extends Document<E, K>> entityType,
-                                                              @NonNull Context context) throws DataStoreException {
+    public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> boolean delete(@NonNull DocumentId docId,
+                                                                                           @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                           @NonNull Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.deleteCounter().increment();
@@ -193,9 +197,9 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public <E extends Enum<?>, K extends IKey> Document<E, K> find(@NonNull DocumentId id,
-                                                                   @NonNull Class<? extends Document<E, K>> entityType,
-                                                                   Context context) throws DataStoreException {
+    public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> find(@NonNull DocumentId id,
+                                                                                                   @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                   Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.readCounter().increment();
@@ -207,9 +211,9 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> search(@NonNull AbstractDataStore.Q query,
-                                                                                         @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                         Context context) throws DataStoreException {
+    public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> search(@NonNull AbstractDataStore.Q query,
+                                                                                                                         @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                         Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.searchCounter().increment();
@@ -221,11 +225,11 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> search(@NonNull AbstractDataStore.Q query,
-                                                                                         @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                         int batchSize,
-                                                                                         boolean download,
-                                                                                         Context context) throws DataStoreException {
+    public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> search(@NonNull AbstractDataStore.Q query,
+                                                                                                                         @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                         int batchSize,
+                                                                                                                         boolean download,
+                                                                                                                         Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.searchCounter().increment();
@@ -239,29 +243,29 @@ public abstract class ContentProvider implements Closeable {
 
     protected abstract void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> Document<E, K> createDoc(@NonNull Document<E, K> document,
-                                                                                    @NonNull Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> createDoc(@NonNull Document<E, K, T> document,
+                                                                                                                    @NonNull Context context) throws DataStoreException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> Document<E, K> updateDoc(@NonNull Document<E, K> document,
-                                                                                    @NonNull Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> updateDoc(@NonNull Document<E, K, T> document,
+                                                                                                                    @NonNull Context context) throws DataStoreException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> boolean deleteDoc(@NonNull DocumentId id,
-                                                                             @NonNull Class<? extends Document<E, K>> entityType,
-                                                                             @NonNull Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> boolean deleteDoc(@NonNull DocumentId id,
+                                                                                                          @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                          @NonNull Context context) throws DataStoreException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
-                                                                                               @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                               @NonNull Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
+                                                                                                                            @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                            @NonNull Context context) throws DataStoreException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> Document<E, K> findDoc(@NonNull DocumentId docId,
-                                                                                  @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                  Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> findDoc(@NonNull DocumentId docId,
+                                                                                                                  @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                  Context context) throws DataStoreException;
 
-    protected abstract <E extends Enum<?>, K extends IKey> Cursor<DocumentId, Document<E, K>> searchDocs(@NonNull AbstractDataStore.Q query,
-                                                                                                         @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                                         int batchSize,
-                                                                                                         boolean download,
-                                                                                                         Context context) throws DataStoreException;
+    protected abstract <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> searchDocs(@NonNull AbstractDataStore.Q query,
+                                                                                                                                         @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                                         int batchSize,
+                                                                                                                                         boolean download,
+                                                                                                                                         Context context) throws DataStoreException;
 
     protected abstract void doClose() throws IOException;
 }

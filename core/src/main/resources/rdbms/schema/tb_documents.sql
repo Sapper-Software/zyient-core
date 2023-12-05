@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS `tb_documents`;
 
 CREATE TABLE <db>.`tb_documents`
 (
-    id            VARCHAR(64)   NOT NULL,
+    doc_id        VARCHAR(64)   NOT NULL,
     collection    VARCHAR(64)   NOT NULL,
     parent_doc_id VARCHAR(64),
     doc_name      VARCHAR(1024) NOT NULL,
@@ -14,8 +14,8 @@ CREATE TABLE <db>.`tb_documents`
     time_created  NUMERIC(11)   NOT NULL,
     time_updated  NUMERIC(11)   NOT NULL,
     properties    MEDIUMTEXT,
-    <reference_id> ...
-    PRIMARY KEY (collection, id),
+    --<reference_id> ...
+    PRIMARY KEY (collection, doc_id),
     FULLTEXT(properties)
 ) ENGINE=Aria;
 

@@ -18,22 +18,22 @@ package io.zyient.base.core.content;
 
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.PathInfo;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.model.Document;
 import lombok.NonNull;
 
 import java.io.File;
 import java.util.Map;
 
-public interface ContentCursor<E extends Enum<?>, K extends IKey> {
+public interface ContentCursor<E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> {
 
     @SuppressWarnings("unchecked")
-    static <E extends Enum<?>, K extends IKey> Document<E, K> fetch(@NonNull Document<E, K> doc,
-                                                                    @NonNull FileSystem fileSystem) throws DataStoreException {
+    static <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> fetch(@NonNull Document<E, K, D> doc,
+                                                                                                    @NonNull FileSystem fileSystem) throws DataStoreException {
         try {
             Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
             PathInfo pi = fileSystem.parsePathInfo(map);
@@ -54,7 +54,7 @@ public interface ContentCursor<E extends Enum<?>, K extends IKey> {
 
     boolean download();
 
-    ContentCursor<E, K> download(boolean download);
+    ContentCursor<E, K, D> download(boolean download);
 
-    Document<E, K> fetch(@NonNull Document<E, K> doc) throws DataStoreException;
+    Document<E, K, D> fetch(@NonNull Document<E, K, D> doc) throws DataStoreException;
 }

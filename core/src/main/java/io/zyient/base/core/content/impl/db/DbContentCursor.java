@@ -18,11 +18,11 @@ package io.zyient.base.core.content.impl.db;
 
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.content.ContentCursor;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.impl.rdbms.HibernateCursor;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -33,22 +33,22 @@ import java.util.List;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class DbContentCursor<E extends Enum<?>, K extends IKey> extends HibernateCursor<DocumentId, Document<E, K>>
-        implements ContentCursor<E, K> {
+public class DbContentCursor<E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> extends HibernateCursor<DocumentId, Document<E, K, D>>
+        implements ContentCursor<E, K, D> {
     private final FileSystem fileSystem;
     private boolean download = false;
 
-    protected DbContentCursor(@NonNull HibernateCursor<DocumentId, Document<E, K>> cursor,
+    protected DbContentCursor(@NonNull HibernateCursor<DocumentId, Document<E, K, D>> cursor,
                               @NonNull FileSystem fileSystem) {
         super(cursor);
         this.fileSystem = fileSystem;
     }
 
     @Override
-    protected List<Document<E, K>> next(int page) throws DataStoreException {
-        List<Document<E, K>> docs = super.next(page);
+    protected List<Document<E, K, D>> next(int page) throws DataStoreException {
+        List<Document<E, K, D>> docs = super.next(page);
         if (download) {
-            for (Document<E, K> doc : docs) {
+            for (Document<E, K, D> doc : docs) {
                 fetch(doc);
             }
         }
@@ -56,7 +56,7 @@ public class DbContentCursor<E extends Enum<?>, K extends IKey> extends Hibernat
     }
 
     @Override
-    public Document<E, K> fetch(@NonNull Document<E, K> doc) throws DataStoreException {
+    public Document<E, K, D> fetch(@NonNull Document<E, K, D> doc) throws DataStoreException {
         return ContentCursor.fetch(doc, fileSystem);
     }
 

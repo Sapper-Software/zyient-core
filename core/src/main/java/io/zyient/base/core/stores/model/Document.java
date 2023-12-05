@@ -26,6 +26,8 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.content.impl.db.converters.DocumentStateConverter;
+import io.zyient.base.core.content.impl.db.converters.GenericJsonConverter;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.model.UserContext;
@@ -44,12 +46,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-@Entity
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<DocumentId> implements PropertyBag {
+@MappedSuperclass
+public abstract class Document<E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> extends BaseEntity<DocumentId> implements PropertyBag {
     @Transient
     @Field(SolrConstants.FIELD_SOLR_ID)
     private String searchId;
@@ -69,6 +71,8 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @Column(name = "doc_name")
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
     private String name;
+    @Convert(converter = DocumentStateConverter.class)
+    @Column(name = "doc_state")
     private DocumentState<E> docState;
     @Column(name = "mime_type")
     @Field(SolrConstants.FIELD_SOLR_MIME_TYPE)
@@ -82,16 +86,22 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @Column(name = "modified_by")
     @Field(SolrConstants.FIELD_SOLR_MODIFIED_BY)
     private String modifiedBy;
+    @Column(name = "reference_id")
+    @Convert(converter = GenericJsonConverter.class)
     private K referenceId;
     @Transient
     @JsonIgnore
     private File path;
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "parent_doc_id")
+    @JoinColumns({
+            @JoinColumn(name = "parent_doc_id", referencedColumnName = "doc_id"),
+            @JoinColumn(name = "collection", referencedColumnName = "collection")
+    })
     @JsonIgnore
-    private Set<Document<E, K>> documents;
+    private Set<T> documents;
     @Convert(converter = PropertiesConverter.class)
     @Field(SolrConstants.FIELD_DOC_PROPERTIES)
+    @Column(name = "properties")
     private Map<String, Object> properties;
 
     /**
@@ -106,32 +116,34 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     }
 
     @SuppressWarnings("unchecked")
-    public Document<E, K> add(@NonNull Document<?, ?> doc) {
+    public Document<E, K, T> add(@NonNull Document<?, ?, ?> doc) {
         if (documents == null) {
             documents = new HashSet<>();
         }
-        documents.add((Document<E, K>) doc);
+        documents.add((T) doc);
         return this;
     }
 
-    public boolean remove(@NonNull Document<E, K> doc) {
+    @SuppressWarnings("unchecked")
+    public boolean remove(@NonNull Document<?, ?, ?> doc) {
         if (documents != null) {
-            return documents.remove(doc);
+            return documents.remove((T) doc);
         }
         return false;
     }
 
+    @SuppressWarnings("unchecked")
     public boolean remove(@NonNull DocumentId key) {
         if (documents != null) {
-            Document<E, K> remove = null;
-            for (Document<E, K> doc : documents) {
+            Document<E, K, T> remove = null;
+            for (Document<E, K, T> doc : documents) {
                 if (doc.getId().compareTo(key) == 0) {
                     remove = doc;
                     break;
                 }
             }
             if (remove != null) {
-                return documents.remove(remove);
+                return documents.remove((T) remove);
             }
         }
         return false;
@@ -156,12 +168,12 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
      */
     @Override
     public IEntity<DocumentId> copyChanges(IEntity<DocumentId> source, Context context) throws CopyException {
-        if (!(source instanceof Document<?, ?>)) {
+        if (!(source instanceof Document<?, ?, ?>)) {
             throw new CopyException(String.format("Invalid source type. [type=%s]",
                     source.getClass().getCanonicalName()));
         }
         super.copyChanges(source, context);
-        Document<E, K> doc = (Document<E, K>) source;
+        Document<E, K, T> doc = (Document<E, K, T>) source;
         this.docState = doc.docState;
         this.name = doc.name;
         this.uri = doc.uri;
@@ -188,7 +200,7 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
     @SuppressWarnings("unchecked")
     public IEntity<DocumentId> clone(Context context) throws CopyException {
         try {
-            Document<E, K> doc = getClass().getDeclaredConstructor()
+            Document<E, K, T> doc = getClass().getDeclaredConstructor()
                     .newInstance();
             doc.id = new DocumentId();
             clone(doc, EEntityState.New);
@@ -207,8 +219,8 @@ public class Document<E extends Enum<?>, K extends IKey> extends BaseEntity<Docu
             }
             if (documents != null) {
                 doc.documents = new HashSet<>(documents.size());
-                for (Document<E, K> d : documents) {
-                    doc.documents.add((Document<E, K>) d.clone(context));
+                for (T d : documents) {
+                    doc.documents.add((T) d.clone(context));
                 }
             }
             doc.referenceId = referenceId;

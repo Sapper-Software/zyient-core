@@ -62,7 +62,7 @@ public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> 
     private static final String CONFIG_CONNECTIONS = "connections.path";
     private static final String TEST_PASSWD = "test1234";
 
-    private HierarchicalConfiguration<ImmutableNode> configNode;
+    private HierarchicalConfiguration<ImmutableNode> demoConfig;
     private final String module = "TEST";
     private final String passKey = TEST_PASSWD;
 
@@ -78,6 +78,7 @@ public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> 
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
         super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
+        demoConfig = baseConfig().configurationAt(__CONFIG_PATH);
         return this;
     }
 }

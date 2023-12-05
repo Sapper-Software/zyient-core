@@ -314,11 +314,9 @@ public class DataStoreManager {
                 ConfigReader reader = new ConfigReader(config, null, DataStoreManagerSettings.class);
                 reader.read();
                 settings = (DataStoreManagerSettings) reader.settings();
-                if (Strings.isNullOrEmpty(path)) {
-                    path = DataStoreManagerSettings.CONFIG_NODE_DATA_STORE;
-                }
-                if (ConfigReader.checkIfNodeExists(config, path)) {
-                    List<HierarchicalConfiguration<ImmutableNode>> dsnodes = config.configurationsAt(path);
+                if (ConfigReader.checkIfNodeExists(config, DataStoreManagerSettings.CONFIG_NODE_DATA_STORE)) {
+                    List<HierarchicalConfiguration<ImmutableNode>> dsnodes =
+                            config.configurationsAt(DataStoreManagerSettings.CONFIG_NODE_DATA_STORE);
                     for (HierarchicalConfiguration<ImmutableNode> node : dsnodes) {
                         readDataStoreConfig(node);
                     }

@@ -21,18 +21,15 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.PathInfo;
-import io.zyient.base.core.stores.AbstractDataStore;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.DataStoreManager;
-import io.zyient.base.core.stores.DataStoreProvider;
+import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.solr.SolrDataStore;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -88,14 +85,33 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey> Document<E, K> createDoc(@NonNull Document<E, K> document,
-                                                                           @NonNull Context context) throws DataStoreException {
+    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> createDoc(@NonNull Document<E, K, D> document,
+                                                                                                           @NonNull Context context) throws DataStoreException {
         try {
             FileInode fi = fileSystem.create(document.getId().getCollection(), document.getId().getId());
             fi = fileSystem.upload(document.getPath(), fi);
             String uri = JSONUtils.asString(fi.getPath(), Map.class);
             document.setUri(uri);
-            return dataStore.create(document, document.getClass(), context);
+            if (dataStore instanceof TransactionDataStore<?, ?>) {
+                ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
+            }
+            try {
+                document = dataStore.create(document, document.getClass(), context);
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).commit();
+                }
+                return document;
+            } catch (RuntimeException re) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw re;
+            } catch (Throwable t) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw t;
+            }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
@@ -103,8 +119,8 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey> Document<E, K> updateDoc(@NonNull Document<E, K> document,
-                                                                           @NonNull Context context) throws DataStoreException {
+    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> updateDoc(@NonNull Document<E, K, D> document,
+                                                                                                           @NonNull Context context) throws DataStoreException {
         try {
             Map<String, String> map = JSONUtils.read(document.getUri(), Map.class);
             PathInfo pi = fileSystem.parsePathInfo(map);
@@ -113,7 +129,26 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
                 throw new DataStoreException(String.format("Document not found. [uri=%s]", document.getUri()));
             }
             fi = fileSystem.upload(document.getPath(), fi);
-            return dataStore.update(document, document.getClass(), context);
+            if (dataStore instanceof TransactionDataStore<?, ?>) {
+                ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
+            }
+            try {
+                document = dataStore.update(document, document.getClass(), context);
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).commit();
+                }
+                return document;
+            } catch (RuntimeException re) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw re;
+            } catch (Throwable t) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw t;
+            }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
@@ -121,11 +156,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey> boolean deleteDoc(@NonNull DocumentId id,
-                                                                    @NonNull Class<? extends Document<E, K>> entityType,
-                                                                    @NonNull Context context) throws DataStoreException {
+    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> boolean deleteDoc(@NonNull DocumentId id,
+                                                                                                 @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                 @NonNull Context context) throws DataStoreException {
         try {
-            Document<?, ?> doc = findDoc(id, entityType, context);
+            Document<?, ?, ?> doc = findDoc(id, entityType, context);
             if (doc != null) {
                 Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
                 PathInfo pi = fileSystem.parsePathInfo(map);
@@ -137,7 +172,26 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
                         DefaultLogger.warn(String.format("Document delete returned false. [uri=%s]", doc.getUri()));
                     }
                 }
-                return dataStore.delete(id, Document.class, context);
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
+                }
+                try {
+                    boolean r = dataStore.delete(id, Document.class, context);
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).commit();
+                    }
+                    return r;
+                } catch (RuntimeException re) {
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                    }
+                    throw re;
+                } catch (Throwable t) {
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                    }
+                    throw t;
+                }
             }
             return false;
         } catch (Exception ex) {
@@ -146,9 +200,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
     }
 
     @Override
-    protected <E extends Enum<?>, K extends IKey> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
-                                                                                      @NonNull Class<? extends Document<E, K>> entityType,
-                                                                                      @NonNull Context context) throws DataStoreException {
+    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
+                                                                                                                   @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                   @NonNull Context context) throws DataStoreException {
         try {
             Map<DocumentId, Boolean> response = new HashMap<>();
             for (DocumentId id : ids) {
@@ -163,11 +217,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey> Document<E, K> findDoc(@NonNull DocumentId docId,
-                                                                         @NonNull Class<? extends Document<E, K>> entityType,
-                                                                         Context context) throws DataStoreException {
+    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull DocumentId docId,
+                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                         Context context) throws DataStoreException {
         try {
-            Document<E, K> doc = dataStore.find(docId, entityType, context);
+            Document<E, K, D> doc = dataStore.find(docId, entityType, context);
             if (doc != null) {
                 Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
                 PathInfo pi = fileSystem.parsePathInfo(map);

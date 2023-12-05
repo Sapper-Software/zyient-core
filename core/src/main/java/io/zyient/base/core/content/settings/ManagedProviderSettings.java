@@ -30,7 +30,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 public class ManagedProviderSettings extends ContentProviderFsSettings {
     @Config(name = "dataStore.name")
     private String dataStore;
-    @Config(name = "dataStore.type")
+    @Config(name = "dataStore.type", type = Class.class)
     private Class<? extends AbstractDataStore<?>> dataStoreType;
 
     @Override

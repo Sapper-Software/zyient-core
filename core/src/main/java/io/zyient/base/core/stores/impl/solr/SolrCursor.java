@@ -22,10 +22,10 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -87,9 +87,9 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
                 if (documents != null && !documents.isEmpty()) {
                     List<E> entities = new ArrayList<>(documents.size());
                     for (SolrDocument doc : documents) {
-                        Document<?, ?> document = dataStore().readDocument(doc,
+                        Document<?, ?, ?> document = dataStore().readDocument(doc,
                                 this.query.where(),
-                                (Class<? extends Document<?, ?>>) entityType,
+                                (Class<? extends Document<?, ?, ?>>) entityType,
                                 fetchChildren);
                         entities.add((E) document);
                     }
@@ -112,8 +112,8 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
         }
     }
 
-    public Set<Document<?, ?>> fetchChildren(@NonNull DocumentId id,
-                                             @NonNull Class<? extends Document<?, ?>> type) throws DataStoreException {
+    public Set<Document<?, ?, ?>> fetchChildren(@NonNull DocumentId id,
+                                             @NonNull Class<? extends Document<?, ?, ?>> type) throws DataStoreException {
         try {
             return dataStore.fetchChildren(id, type, fetchChildren);
         } catch (Exception ex) {
