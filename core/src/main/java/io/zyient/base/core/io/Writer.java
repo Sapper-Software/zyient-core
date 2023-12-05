@@ -48,6 +48,7 @@ public abstract class Writer extends OutputStream implements Closeable {
     @Getter(AccessLevel.PROTECTED)
     protected File temp;
     protected long dataSize;
+    protected final boolean delete;
 
     protected Writer(@NonNull FileInode inode,
                      @NonNull FileSystem fs,
@@ -57,6 +58,19 @@ public abstract class Writer extends OutputStream implements Closeable {
         this.fs = fs;
         this.metrics = fs.metrics();
         this.overwrite = overwrite;
+        delete = true;
+    }
+
+    protected Writer(@NonNull FileInode inode,
+                     @NonNull FileSystem fs,
+                     @NonNull File temp) {
+        Preconditions.checkArgument(inode.getPathInfo() != null);
+        this.inode = inode;
+        this.fs = fs;
+        this.metrics = fs.metrics();
+        this.overwrite = false;
+        this.temp = temp;
+        delete = false;
     }
 
     public Writer open(boolean overwrite) throws IOException, DistributedLock.LockError {

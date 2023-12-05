@@ -247,6 +247,12 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
+    protected Writer getWriter(@NonNull FileInode inode, @NonNull File temp) throws IOException {
+        LocalPathInfo pi = checkAndGetPath(inode);
+        return new LocalWriter(inode, this, temp).open();
+    }
+
+    @Override
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         LocalPathInfo sp = checkAndGetPath(source);
         LocalPathInfo tp = checkAndGetPath(target);

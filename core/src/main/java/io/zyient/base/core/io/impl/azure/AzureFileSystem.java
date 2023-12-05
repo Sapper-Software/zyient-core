@@ -241,6 +241,12 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
+    protected Writer getWriter(@NonNull FileInode inode, @NonNull File temp) throws IOException {
+        AzurePathInfo pi = checkAndGetPath(inode);
+        return new AzureWriter(inode, this, temp).open();
+    }
+
+    @Override
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
         AzurePathInfo sp = checkAndGetPath(source);

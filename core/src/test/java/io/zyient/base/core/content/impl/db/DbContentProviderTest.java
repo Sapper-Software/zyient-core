@@ -36,9 +36,10 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 
 class DbContentProviderTest {
@@ -83,7 +84,7 @@ class DbContentProviderTest {
         env.close();
     }
 
-    @Test
+    //@Test
     void insertDocs() {
         try {
             for (String source : DOCUMENTS) {
@@ -101,6 +102,53 @@ class DbContentProviderTest {
 
                 doc = (DemoTestDocument) contentProvider.create(doc, userContext);
                 assertNotNull(doc);
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
+    }
+
+    @Test
+    void findDocs() {
+        try {
+            List<DocumentId> ids = new ArrayList<>();
+            for (String source : DOCUMENTS) {
+                if (!source.endsWith(".pdf")) continue;
+                File path = new File(source);
+                DemoTestDocument doc = new DemoTestDocument();
+                doc.setId(new DocumentId(__COLLECTION_NAME));
+                doc.setName(source);
+                doc.setDocState(new DemoDocState());
+                doc.getDocState().setState(EEntityState.New);
+                doc.setPath(path);
+                doc.setUri(path.toURI().toString());
+                doc.setCreatedBy("DEMO");
+                doc.setModifiedBy("DEMO");
+                doc.getState().setState(EEntityState.New);
+                for (String d : DOCUMENTS) {
+                    if (d.endsWith(".pdf")) continue;
+                    File cp = new File(source);
+                    DemoTestDocument cd = new DemoTestDocument();
+                    cd.setId(new DocumentId(__COLLECTION_NAME));
+                    cd.setName(d);
+                    cd.setDocState(new DemoDocState());
+                    cd.getDocState().setState(EEntityState.New);
+                    cd.setPath(cp);
+                    cd.setUri(cp.toURI().toString());
+                    cd.setCreatedBy("DEMO");
+                    cd.setModifiedBy("DEMO");
+                    doc.add(cd);
+                }
+                doc = (DemoTestDocument) contentProvider.create(doc, userContext);
+                assertNotNull(doc);
+                ids.add(doc.entityKey());
+            }
+            Thread.sleep(10000);
+            for (DocumentId id : ids) {
+                DemoTestDocument doc = (DemoTestDocument) contentProvider.find(id, DemoTestDocument.class, null);
+                assertNotNull(doc);
+                assertEquals(DOCUMENTS.length, doc.getDocuments().size());
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

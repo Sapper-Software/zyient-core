@@ -24,6 +24,7 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
+import io.zyient.base.core.io.Writer;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.PathInfo;
 import io.zyient.base.core.stores.*;
@@ -89,7 +90,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
                                                                                                            @NonNull Context context) throws DataStoreException {
         try {
             FileInode fi = fileSystem.create(document.getId().getCollection(), document.getId().getId());
-            fi = fileSystem.upload(document.getPath(), fi);
+            try (Writer writer = fileSystem.writer(fi, document.getPath())) {
+                writer.commit(true);
+            }
             String uri = JSONUtils.asString(fi.getPath(), Map.class);
             document.setUri(uri);
             if (dataStore instanceof TransactionDataStore<?, ?>) {
@@ -128,7 +131,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
             if (fi == null) {
                 throw new DataStoreException(String.format("Document not found. [uri=%s]", document.getUri()));
             }
-            fi = fileSystem.upload(document.getPath(), fi);
+            try (Writer writer = fileSystem.writer(fi, document.getPath())) {
+                writer.commit(true);
+            }
             if (dataStore instanceof TransactionDataStore<?, ?>) {
                 ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }

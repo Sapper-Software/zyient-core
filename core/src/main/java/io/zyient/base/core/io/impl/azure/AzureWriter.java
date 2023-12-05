@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.File;
 import java.io.IOException;
 
 @Getter
@@ -34,6 +35,18 @@ public class AzureWriter extends RemoteWriter {
                           @NonNull AzureFileSystem fs,
                           boolean overwrite) throws IOException {
         super(path, fs, overwrite);
+        if (path.getPathInfo() != null) {
+            pathInfo = (AzurePathInfo) path.getPathInfo();
+        } else {
+            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getPath());
+            path.setPathInfo(pathInfo);
+        }
+    }
+
+    protected AzureWriter(@NonNull FileInode path,
+                          @NonNull AzureFileSystem fs,
+                          @NonNull File temp) throws IOException {
+        super(path, fs, temp);
         if (path.getPathInfo() != null) {
             pathInfo = (AzurePathInfo) path.getPathInfo();
         } else {

@@ -244,6 +244,17 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
+    protected Writer getWriter(@NonNull FileInode inode, @NonNull File temp) throws IOException {
+        S3PathInfo pi = (S3PathInfo) inode.getPathInfo();
+        if (pi == null) {
+            S3Container container = (S3Container) domainMap.get(inode.getDomain());
+            pi = new S3PathInfo(this, inode, container.getBucket());
+            inode.setPathInfo(pi);
+        }
+        return new S3Writer(inode, this, temp).open();
+    }
+
+    @Override
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         S3PathInfo sp = checkAndGetPath(source);
         S3PathInfo tp = checkAndGetPath(target);

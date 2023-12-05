@@ -48,6 +48,14 @@ public abstract class RemoteWriter extends Writer {
         cache = fs.cache();
     }
 
+    protected RemoteWriter(@NonNull FileInode inode,
+                           @NonNull RemoteFileSystem fs,
+                           @NonNull File temp) {
+        super(inode, fs, temp);
+        cache = fs.cache();
+    }
+
+
     @Override
     public void doOpen(boolean overwrite) throws IOException {
         try (DistributedLock lock = fs.getLock(inode)) {
@@ -205,7 +213,7 @@ public abstract class RemoteWriter extends Writer {
             outputStream.close();
             outputStream = null;
         }
-        if (temp != null && temp.exists()) {
+        if (delete && temp != null && temp.exists()) {
             if (!temp.delete()) {
                 DefaultLogger.warn(String.format("Failed to delete local copy. [path=%s]", temp.getAbsolutePath()));
             }

@@ -58,10 +58,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
             }
         }
         IDGenerator.process(entity, this);
-        Object result = session.save(entity);
-        if (result == null) {
-            throw new DataStoreException(String.format("Error saving entity. [type=%s][key=%s]", type.getCanonicalName(), entity.entityKey()));
-        }
+        session.persist(entity);
         if (entity instanceof BaseEntity) {
             entity = (E) sessionManager.updateCache((BaseEntity<?>) entity, EEntityState.Synced);
         }
@@ -99,10 +96,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                 entity = (E) sessionManager.checkCache((BaseEntity<?>) entity);
             }
         }
-        Object result = session.save(entity);
-        if (result == null) {
-            throw new DataStoreException(String.format("Error updating entity. [type=%s][key=%s]", type.getCanonicalName(), entity.entityKey()));
-        }
+        session.persist(entity);
         if (entity instanceof BaseEntity) {
             entity = (E) sessionManager.updateCache((BaseEntity<?>) entity, EEntityState.Synced);
         }
@@ -121,7 +115,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Session session = sessionManager.session();
         E entity = findEntity(key, type, context);
         if (entity != null) {
-            session.delete(entity);
+            session.remove(entity);
             if (entity instanceof BaseEntity) {
                 entity = (E) sessionManager.updateCache((BaseEntity<?>) entity, EEntityState.Deleted);
             }

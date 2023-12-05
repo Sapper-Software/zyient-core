@@ -24,6 +24,7 @@ import io.zyient.base.core.io.model.EFileState;
 import io.zyient.base.core.io.model.FileInode;
 import lombok.NonNull;
 
+import java.io.File;
 import java.io.IOException;
 
 public class MappedWriter extends LocalWriter {
@@ -33,6 +34,12 @@ public class MappedWriter extends LocalWriter {
                            @NonNull FileSystem fs,
                            boolean overwrite) throws IOException {
         super(inode, fs, overwrite);
+    }
+
+    protected MappedWriter(@NonNull FileInode inode,
+                           @NonNull FileSystem fs,
+                           @NonNull File temp) throws IOException {
+        super(inode, fs, temp);
     }
 
     /**

@@ -56,6 +56,18 @@ public class LocalWriter extends Writer {
         }
     }
 
+    protected LocalWriter(@NonNull FileInode inode,
+                          @NonNull FileSystem fs,
+                          @NonNull File temp) throws IOException {
+        super(inode, fs, temp);
+        if (inode.getPathInfo() == null) {
+            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
+            inode.setPathInfo(path);
+        } else {
+            path = (LocalPathInfo) inode.getPathInfo();
+        }
+    }
+
     /**
      * @param overwrite
      * @throws IOException
@@ -222,7 +234,7 @@ public class LocalWriter extends Writer {
                 outputStream.flush();
                 outputStream.close();
                 outputStream = null;
-                if (temp.exists()) {
+                if (delete && temp != null && temp.exists()) {
                     if (!temp.delete()) {
                         DefaultLogger.warn(
                                 String.format("Failed to delete temporary file. [path=%s]", temp.getAbsolutePath()));

@@ -22,6 +22,7 @@ import io.zyient.base.core.io.model.FileInode;
 import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.File;
 import java.io.IOException;
 
 public class SftpWriter extends RemoteWriter {
@@ -38,7 +39,17 @@ public class SftpWriter extends RemoteWriter {
             path.setPathInfo(pathInfo);
         }
     }
-
+    protected SftpWriter(@NonNull FileInode path,
+                         @NonNull RemoteFileSystem fs,
+                         @NonNull File temp) throws IOException {
+        super(path, fs, temp);
+        if (path.getPathInfo() != null) {
+            pathInfo = (SftpPathInfo) path.getPathInfo();
+        } else {
+            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getPath());
+            path.setPathInfo(pathInfo);
+        }
+    }
     @Override
     protected String getTmpPath() {
         String dir = FilenameUtils.getPath(pathInfo.path());

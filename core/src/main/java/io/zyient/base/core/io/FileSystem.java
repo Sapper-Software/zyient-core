@@ -852,6 +852,21 @@ public abstract class FileSystem implements Closeable {
         return writer((FileInode) node, overwrite);
     }
 
+    public final Writer writer(@NonNull PathInfo path,
+                               @NonNull File temp) throws IOException {
+        Inode node = getInode(path);
+        if (node == null) {
+            node = createInode(InodeType.File, path);
+        }
+        return writer((FileInode) node, temp);
+    }
+
+    public final Writer writer(@NonNull FileInode inode,
+                               @NonNull File temp) throws IOException {
+        Preconditions.checkState(state.isConnected());
+        return getWriter(inode, temp);
+    }
+
     public final Writer writer(@NonNull FileInode inode,
                                boolean overwrite) throws IOException {
         Preconditions.checkState(state.isConnected());
@@ -981,6 +996,9 @@ public abstract class FileSystem implements Closeable {
 
     protected abstract Writer getWriter(@NonNull FileInode inode,
                                         boolean overwrite) throws IOException;
+
+    protected abstract Writer getWriter(@NonNull FileInode inode,
+                                        @NonNull File temp) throws IOException;
 
     public FileInode copy(@NonNull FileInode source,
                           @NonNull PathInfo target) throws IOException {

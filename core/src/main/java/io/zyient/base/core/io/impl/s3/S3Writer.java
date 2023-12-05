@@ -23,6 +23,7 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.io.FilenameUtils;
 
+import java.io.File;
 import java.io.IOException;
 
 @Getter
@@ -34,6 +35,18 @@ public class S3Writer extends RemoteWriter {
                        @NonNull S3FileSystem fs,
                        boolean overwrite) throws IOException {
         super(path, fs, overwrite);
+        if (path.getPathInfo() != null) {
+            pathInfo = (S3PathInfo) path.getPathInfo();
+        } else {
+            pathInfo = (S3PathInfo) fs.parsePathInfo(path.getPath());
+            path.setPathInfo(pathInfo);
+        }
+    }
+
+    protected S3Writer(@NonNull FileInode path,
+                       @NonNull S3FileSystem fs,
+                       @NonNull File temp) throws IOException {
+        super(path, fs, temp);
         if (path.getPathInfo() != null) {
             pathInfo = (S3PathInfo) path.getPathInfo();
         } else {

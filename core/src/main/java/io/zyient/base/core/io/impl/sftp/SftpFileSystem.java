@@ -194,6 +194,17 @@ public class SftpFileSystem extends RemoteFileSystem {
     }
 
     @Override
+    protected Writer getWriter(@NonNull FileInode inode, @NonNull File temp) throws IOException {
+        SftpPathInfo pi = (SftpPathInfo) inode.getPathInfo();
+        if (pi == null) {
+            S3Container container = (S3Container) domainMap.get(inode.getDomain());
+            pi = new SftpPathInfo(this, inode);
+            inode.setPathInfo(pi);
+        }
+        return new SftpWriter(inode, this, temp).open();
+    }
+
+    @Override
     protected void doCopy(@NonNull FileInode source,
                           @NonNull FileInode target) throws IOException {
         SftpPathInfo spi = checkAndGetPath(source);
