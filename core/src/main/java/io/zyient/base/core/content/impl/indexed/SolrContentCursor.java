@@ -18,8 +18,8 @@ package io.zyient.base.core.content.impl.indexed;
 
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.content.ContentCursor;
-import io.zyient.base.core.content.model.Document;
-import io.zyient.base.core.content.model.DocumentId;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.impl.solr.SolrCursor;

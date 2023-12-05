@@ -16,9 +16,11 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.lucene.analysis.Analyzer;
@@ -140,5 +142,25 @@ public class EntityQueryBuilder extends QueryBuilder {
         return new LuceneQuery()
                 .query(query)
                 .where(query.toString());
+    }
+
+
+    public static AbstractDataStore.Q build(@NonNull Class<?> entityType,
+                                            @NonNull String key) throws Exception {
+        EntityQueryBuilder builder = new EntityQueryBuilder(entityType);
+        return builder.phraseQuery(SolrConstants.FIELD_SOLR_ID, key).build();
+    }
+
+    public static AbstractDataStore.Q build(@NonNull Class<?> entityType,
+                                            @NonNull IKey key) throws Exception {
+        return build(SolrConstants.FIELD_SOLR_ID, entityType, key);
+    }
+
+    public static AbstractDataStore.Q build(@NonNull String field,
+                                            @NonNull Class<?> entityType,
+                                            @NonNull IKey key) throws Exception {
+        EntityQueryBuilder builder = new EntityQueryBuilder(entityType);
+        return builder.phraseQuery(field, key.stringKey())
+                .build();
     }
 }

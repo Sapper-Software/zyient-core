@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.content.model;
+package io.zyient.base.core.stores.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Strings;

@@ -18,7 +18,7 @@ package io.zyient.base.core.content;
 
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.core.content.model.Document;
+import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.model.FileInode;

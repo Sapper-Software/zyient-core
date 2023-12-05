@@ -17,8 +17,8 @@
 package io.zyient.base.core.content;
 
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.content.model.Document;
-import io.zyient.base.core.content.model.DocumentId;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.stores.Cursor;
 
 public abstract class DocumentCursor<E extends Enum<?>, K extends IKey> extends Cursor<DocumentId, Document<E, K>> {

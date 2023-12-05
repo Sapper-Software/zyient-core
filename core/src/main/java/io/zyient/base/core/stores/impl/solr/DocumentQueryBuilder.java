@@ -16,7 +16,8 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
-import io.zyient.base.core.content.model.Document;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.NonNull;
 import org.apache.lucene.analysis.Analyzer;
@@ -44,5 +45,13 @@ public class DocumentQueryBuilder extends EntityQueryBuilder {
     public AbstractDataStore.Q build() {
         LuceneQuery q = (LuceneQuery) super.build();
         return q.collection(collection);
+    }
+
+    public static AbstractDataStore.Q build(@NonNull Class<? extends Document<?, ?>> entityType,
+                                            @NonNull String collection,
+                                            @NonNull DocumentId id) throws Exception {
+        DocumentQueryBuilder builder = new DocumentQueryBuilder(entityType, collection);
+        return builder.phraseQuery(SolrConstants.FIELD_SOLR_ID, id.getId()).build();
+
     }
 }

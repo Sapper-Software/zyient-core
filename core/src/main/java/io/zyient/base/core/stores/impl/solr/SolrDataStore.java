@@ -25,8 +25,8 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.content.model.Document;
-import io.zyient.base.core.content.model.DocumentId;
+import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.settings.solr.SolrDbSettings;
@@ -548,19 +548,22 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             String cname = getCollection(key, type);
             SolrClient client = connection.connect(cname);
             String k = null;
+            Q luceneQuery = null;
             if (key instanceof String) {
                 k = (String) key;
+                luceneQuery = EntityQueryBuilder.build(type, k);
             } else if (key instanceof DocumentId) {
                 k = ((DocumentId) key).getId();
+                luceneQuery = DocumentQueryBuilder.build((Class<? extends Document<?, ?>>) type,
+                        cname,
+                        (DocumentId) key);
             } else if (key instanceof IKey) {
                 k = ((IKey) key).stringKey();
+                luceneQuery = EntityQueryBuilder.build(type, (IKey) key);
             } else {
                 throw new DataStoreException(String.format("Key type not supported. [type=%s]",
                         key.getClass().getCanonicalName()));
             }
-            EntityQueryBuilder builder = new EntityQueryBuilder(type);
-            Q luceneQuery = builder.phraseQuery(SolrConstants.FIELD_SOLR_ID, k)
-                    .build();
             SolrQuery q = new SolrQuery(luceneQuery.where());
             if (ReflectionHelper.isSuperType(SolrEntity.class, type)) {
                 final QueryResponse response = client.query(q);
