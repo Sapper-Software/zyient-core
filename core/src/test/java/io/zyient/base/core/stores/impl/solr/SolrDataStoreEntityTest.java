@@ -21,7 +21,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.model.StringKey;
+import io.zyient.base.core.model.LongKey;
 import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.DemoDataStoreEnv;
 import org.apache.commons.configuration2.XMLConfiguration;
@@ -40,6 +40,7 @@ class SolrDataStoreEntityTest {
 
     private static XMLConfiguration xmlConfiguration = null;
     private static DemoDataStoreEnv env = new DemoDataStoreEnv();
+    private static long startValue = System.nanoTime();
 
     @BeforeAll
     public static void setup() throws Exception {
@@ -62,7 +63,7 @@ class SolrDataStoreEntityTest {
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
             for (int ii = 0; ii < 4; ii++) {
-                TestPOJO tp = new TestPOJO();
+                TestPOJO tp = new TestPOJO(startValue++);
                 tp.getState().setState(EEntityState.New);
                 tp = dataStore.create(tp, tp.getClass(), null);
                 assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
@@ -84,19 +85,19 @@ class SolrDataStoreEntityTest {
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
-            List<StringKey> keys = new ArrayList<>();
+            List<LongKey> keys = new ArrayList<>();
             for (int ii = 0; ii < 4; ii++) {
-                TestPOJO tp = new TestPOJO();
+                TestPOJO tp = new TestPOJO(startValue++);
                 tp.getState().setState(EEntityState.New);
                 tp = dataStore.create(tp, tp.getClass(), null);
                 assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
                 keys.add(tp.entityKey());
             }
-            for (StringKey key : keys) {
-                boolean r = dataStore.delete(key.stringKey(), TestPOJO.class, null);
+            for (LongKey key : keys) {
+                boolean r = dataStore.delete(key, TestPOJO.class, null);
                 assertTrue(r);
             }
-            for (StringKey key : keys) {
+            for (LongKey key : keys) {
                 TestPOJO tp = dataStore.find(key, TestPOJO.class, null);
                 assertNull(tp);
             }
@@ -113,15 +114,15 @@ class SolrDataStoreEntityTest {
             assertNotNull(manager);
             SolrDataStore dataStore = manager.getDataStore(__SOLR_DB_NAME, SolrDataStore.class);
             assertNotNull(dataStore);
-            List<StringKey> keys = new ArrayList<>();
+            List<LongKey> keys = new ArrayList<>();
             for (int ii = 0; ii < 4; ii++) {
-                TestPOJO tp = new TestPOJO();
+                TestPOJO tp = new TestPOJO(startValue++);
                 tp.getState().setState(EEntityState.New);
                 tp = dataStore.create(tp, tp.getClass(), null);
                 assertTrue(tp.getUpdatedTime() > tp.getCreatedTime());
                 keys.add(tp.entityKey());
             }
-            for (StringKey key : keys) {
+            for (LongKey key : keys) {
                 TestPOJO tp = dataStore.find(key, TestPOJO.class, null);
                 assertNotNull(tp);
             }

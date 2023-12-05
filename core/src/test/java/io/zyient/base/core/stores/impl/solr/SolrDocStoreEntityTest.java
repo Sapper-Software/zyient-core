@@ -72,7 +72,7 @@ class SolrDocStoreEntityTest {
         env.close();
     }
 
-    //@Test
+    @Test
     @SuppressWarnings("unchecked")
     void createEntity() {
         try {
@@ -101,7 +101,7 @@ class SolrDocStoreEntityTest {
         }
     }
 
-    //@Test
+    @Test
     @SuppressWarnings("unchecked")
     void findEntity() {
         try {

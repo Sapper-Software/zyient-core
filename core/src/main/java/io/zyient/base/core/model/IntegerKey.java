@@ -33,6 +33,11 @@ public class IntegerKey extends NativeKey<Integer> {
         super(Integer.class);
     }
 
+    public IntegerKey(int id) {
+        super(Integer.class);
+        setKey(id);
+    }
+
     /**
      * Compare the current key to the target.
      *

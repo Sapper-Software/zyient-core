@@ -16,11 +16,13 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.stores.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.QueryBuilder;
@@ -29,7 +31,7 @@ import javax.annotation.Nonnull;
 
 @Getter
 @Accessors(fluent = true)
-public class EntityQueryBuilder {
+public class EntityQueryBuilder extends QueryBuilder {
     public static final String FIELD_TEXT = "_text_";
 
     @Getter
@@ -41,16 +43,19 @@ public class EntityQueryBuilder {
     }
 
     private final Class<?> entityType;
-    private final Analyzer analyzer;
-
-    private final QueryBuilder builder;
     private Query query;
 
     public EntityQueryBuilder(@Nonnull Class<?> entityType,
                               @Nonnull Analyzer analyzer) {
+        super(analyzer);
         this.analyzer = analyzer;
         this.entityType = entityType;
-        builder = new QueryBuilder(analyzer);
+    }
+
+    public EntityQueryBuilder(@Nonnull Class<?> entityType) {
+        super(new KeywordAnalyzer());
+        this.entityType = entityType;
+        analyzer = new KeywordAnalyzer();
     }
 
     /**
@@ -62,8 +67,8 @@ public class EntityQueryBuilder {
      * @param queryText text to be passed to the analyzer
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder createBooleanQuery(String field, String queryText) throws Exception {
-        query = builder.createBooleanQuery(field, queryText);
+    public EntityQueryBuilder booleanQuery(String field, String queryText) throws Exception {
+        query = createBooleanQuery(field, queryText);
         return this;
     }
 
@@ -75,8 +80,8 @@ public class EntityQueryBuilder {
      * @param operator  operator used for clauses between analyzer tokens.
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder createBooleanQuery(String field, String queryText, BooleanClause.Occur operator) throws Exception {
-        query = builder.createBooleanQuery(field, queryText, operator);
+    public EntityQueryBuilder booleanQuery(String field, String queryText, BooleanClause.Occur operator) throws Exception {
+        query = createBooleanQuery(field, queryText, operator);
         return this;
     }
 
@@ -90,8 +95,8 @@ public class EntityQueryBuilder {
      * @return {@code TermQuery}, {@code BooleanQuery}, {@code PhraseQuery}, or {@code
      * MultiPhraseQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder createPhraseQuery(String field, String queryText) throws Exception {
-        query = builder.createPhraseQuery(field, queryText);
+    public EntityQueryBuilder phraseQuery(String field, String queryText) throws Exception {
+        query = createPhraseQuery(field, queryText);
         return this;
     }
 
@@ -104,8 +109,8 @@ public class EntityQueryBuilder {
      * @return {@code TermQuery}, {@code BooleanQuery}, {@code PhraseQuery}, or {@code
      * MultiPhraseQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder createPhraseQuery(String field, String queryText, int phraseSlop) throws Exception {
-        query = builder.createPhraseQuery(field, queryText, phraseSlop);
+    public EntityQueryBuilder phraseQuery(String field, String queryText, int phraseSlop) throws Exception {
+        query = createPhraseQuery(field, queryText, phraseSlop);
         return this;
     }
 
@@ -117,8 +122,17 @@ public class EntityQueryBuilder {
      * @param fraction  of query terms {@code [0..1]} that should match
      * @return {@code TermQuery} or {@code BooleanQuery}, based on the analysis of {@code queryText}
      */
-    public EntityQueryBuilder createMinShouldMatchQuery(String field, String queryText, float fraction) {
-        query = builder.createMinShouldMatchQuery(field, queryText, fraction);
+    public EntityQueryBuilder minShouldMatchQuery(String field, String queryText, float fraction) {
+        query = createMinShouldMatchQuery(field, queryText, fraction);
+        return this;
+    }
+
+    public EntityQueryBuilder createQuery(String field, Object value) throws Exception {
+        if (value instanceof String) {
+            return phraseQuery(field, (String) value);
+        } else if (ReflectionHelper.isNumericType(value.getClass())) {
+
+        }
         return this;
     }
 

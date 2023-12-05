@@ -21,7 +21,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.core.model.StringKey;
+import io.zyient.base.core.model.LongKey;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.solr.client.solrj.beans.Field;
@@ -34,8 +34,8 @@ import java.util.UUID;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @SolrCollection("test-solr")
-public class TestPOJO extends SolrEntity<StringKey> {
-    private StringKey key;
+public class TestPOJO extends SolrEntity<LongKey> {
+    private LongKey key;
     @Field("text")
     private String textValue;
     @Field("timestamp")
@@ -44,7 +44,11 @@ public class TestPOJO extends SolrEntity<StringKey> {
     private double doubleValue;
 
     public TestPOJO() {
-        key = new StringKey(UUID.randomUUID().toString());
+
+    }
+
+    public TestPOJO(long id) {
+        key = new LongKey(id);
         textValue = String.format("[%s] Random text....", UUID.randomUUID().toString());
         timestamp = System.nanoTime();
         Random rnd = new Random(System.nanoTime());
@@ -58,7 +62,7 @@ public class TestPOJO extends SolrEntity<StringKey> {
      * @return - Comparision.
      */
     @Override
-    public int compare(StringKey key) {
+    public int compare(LongKey key) {
         return this.key.compareTo(key);
     }
 
@@ -70,7 +74,7 @@ public class TestPOJO extends SolrEntity<StringKey> {
      * @throws CopyException
      */
     @Override
-    public IEntity<StringKey> clone(Context context) throws CopyException {
+    public IEntity<LongKey> clone(Context context) throws CopyException {
         return null;
     }
 
@@ -80,7 +84,7 @@ public class TestPOJO extends SolrEntity<StringKey> {
      * @return - Key
      */
     @Override
-    public StringKey entityKey() {
+    public LongKey entityKey() {
         return key;
     }
 

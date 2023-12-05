@@ -16,13 +16,14 @@
 
 package io.zyient.base.core.stores.impl.solr;
 
-import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.content.model.Document;
+import io.zyient.base.core.content.model.DocumentId;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
 import lombok.Getter;
@@ -36,8 +37,8 @@ import org.apache.solr.common.SolrDocumentList;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Accessors(fluent = true)
@@ -47,24 +48,26 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
     private final Class<? extends E> entityType;
     private final SolrDataStore dataStore;
     private final SolrClient client;
+    private final boolean fetchChildren;
 
     public SolrCursor(@NonNull Class<? extends E> entityType,
                       @NonNull SolrDataStore dataStore,
                       @NonNull SolrClient client,
                       @NonNull EntityQueryBuilder.LuceneQuery query,
-                      int batchSize) {
+                      int batchSize,
+                      boolean fetchChildren) {
         this.entityType = entityType;
         this.dataStore = dataStore;
         this.client = client;
         this.query = query;
         this.batchSize = batchSize;
+        this.fetchChildren = fetchChildren;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     protected List<E> next(int page) throws DataStoreException {
         try {
-
             SolrQuery query = new SolrQuery(this.query.where());
             query.setStart(page * batchSize);
             query.setRows(batchSize);
@@ -84,38 +87,11 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
                 if (documents != null && !documents.isEmpty()) {
                     List<E> entities = new ArrayList<>(documents.size());
                     for (SolrDocument doc : documents) {
-                        Object fv = doc.getFieldValue(SolrConstants.FIELD_SOLR_JSON_DATA);
-                        if (fv == null) {
-                            throw new DataStoreException(
-                                    String.format("Search returned NULL object for key. [type=%s]",
-                                            entityType.getCanonicalName()));
-                        }
-                        String json = null;
-                        if (fv instanceof String) {
-                            json = (String) fv;
-                        } else if (fv instanceof Collection<?>) {
-                            Collection<?> c = (Collection<?>) fv;
-                            if (c.isEmpty()) {
-                                throw new DataStoreException(
-                                        String.format("Search returned empty array for key. [type=%s]",
-                                                entityType.getCanonicalName()));
-                            }
-                            for (Object o : c) {
-                                if (o instanceof String) {
-                                    json = (String) o;
-                                }
-                            }
-                        }
-                        if (Strings.isNullOrEmpty(json)) {
-                            throw new DataStoreException(
-                                    String.format("Search returned empty json for key. [type=%s]",
-                                            entityType.getCanonicalName()));
-                        }
-                        Document<?, ?> entity = (Document<?, ?>) JSONUtils.read(json, entityType);
-                        if (entity.isSearchDocuments()) {
-                            dataStore.fetchChildren(entity);
-                        }
-                        entities.add((E) entity);
+                        Document<?, ?> document = dataStore().readDocument(doc,
+                                this.query.where(),
+                                (Class<? extends Document<?, ?>>) entityType,
+                                fetchChildren);
+                        entities.add((E) document);
                     }
                     return entities;
                 }
@@ -132,6 +108,16 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
             }
             return null;
         } catch (Exception ex) {
+            throw new DataStoreException(ex);
+        }
+    }
+
+    public Set<Document<?, ?>> fetchChildren(@NonNull DocumentId id,
+                                             @NonNull Class<? extends Document<?, ?>> type) throws DataStoreException {
+        try {
+            return dataStore.fetchChildren(id, type, fetchChildren);
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
         }
     }

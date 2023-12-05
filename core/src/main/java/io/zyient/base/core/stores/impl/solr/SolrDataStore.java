@@ -34,7 +34,6 @@ import io.zyient.base.core.stores.impl.solr.schema.SolrFieldTypes;
 import io.zyient.base.core.utils.FileUtils;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -559,9 +558,11 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 throw new DataStoreException(String.format("Key type not supported. [type=%s]",
                         key.getClass().getCanonicalName()));
             }
+            EntityQueryBuilder builder = new EntityQueryBuilder(type);
+            Q luceneQuery = builder.phraseQuery(SolrConstants.FIELD_SOLR_ID, k)
+                    .build();
+            SolrQuery q = new SolrQuery(luceneQuery.where());
             if (ReflectionHelper.isSuperType(SolrEntity.class, type)) {
-                SolrQuery q = new SolrQuery();
-                q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
                 final QueryResponse response = client.query(q);
                 List<E> entities = (List<E>) response.getBeans(type);
                 if (entities != null) {
@@ -577,8 +578,10 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                     }
                 }
             } else if (ReflectionHelper.isSuperType(Document.class, type)) {
-                SolrQuery q = new SolrQuery();
-                q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
+                boolean fetchChildren = true;
+                if (context instanceof SearchContext) {
+                    fetchChildren = ((SearchContext) context).fetchChildDocuments();
+                }
                 final QueryResponse response = client.query(q);
                 SolrDocumentList documents = response.getResults();
                 if (documents != null && !documents.isEmpty()) {
@@ -588,42 +591,13 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                         type.getCanonicalName(), k));
                     }
                     SolrDocument doc = documents.get(0);
-                    Object fv = doc.getFieldValue(SolrConstants.FIELD_SOLR_JSON_DATA);
-                    if (fv == null) {
-                        throw new DataStoreException(
-                                String.format("Search returned NULL object for key. [type=%s][key=%s]",
-                                        type.getCanonicalName(), k));
-                    }
-                    String json = null;
-                    if (fv instanceof String) {
-                        json = (String) fv;
-                    } else if (fv instanceof Collection<?>) {
-                        Collection<?> c = (Collection<?>) fv;
-                        if (c.isEmpty()) {
-                            throw new DataStoreException(
-                                    String.format("Search returned empty array for key. [type=%s][key=%s]",
-                                            type.getCanonicalName(), k));
-                        }
-                        for (Object o : c) {
-                            if (o instanceof String) {
-                                json = (String) o;
-                            }
-                        }
-                    }
-                    if (Strings.isNullOrEmpty(json)) {
-                        throw new DataStoreException(
-                                String.format("Search returned empty json for key. [type=%s][key=%s]",
-                                        type.getCanonicalName(), k));
-                    }
-                    Document<?, ?> document = (Document<?, ?>) JSONUtils.read(json, type);
-                    if (document.isSearchDocuments()) {
-                        fetchChildren(document);
-                    }
+                    Document<?, ?> document = readDocument(doc,
+                            k,
+                            (Class<? extends Document<?, ?>>) type,
+                            fetchChildren);
                     return (E) document;
                 }
             } else {
-                SolrQuery q = new SolrQuery();
-                q.set("q", getQueryString(SolrConstants.FIELD_SOLR_ID, k, String.class));
                 final QueryResponse response = client.query(q);
                 List<SolrJsonEntity> entities = (List<SolrJsonEntity>) response.getBeans(SolrJsonEntity.class);
                 if (entities != null) {
@@ -645,28 +619,84 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
+    public Document<?, ?> readDocument(@NonNull SolrDocument doc,
+                                       @NonNull String key,
+                                       @NonNull Class<? extends Document<?, ?>> type,
+                                       boolean fetchChildren) throws Exception {
+        Object fv = doc.getFieldValue(SolrConstants.FIELD_SOLR_JSON_DATA);
+        if (fv == null) {
+            throw new DataStoreException(
+                    String.format("Search returned NULL object for key. [type=%s][key=%s]",
+                            type.getCanonicalName(), key));
+        }
+        String json = null;
+        if (fv instanceof String) {
+            json = (String) fv;
+        } else if (fv instanceof Collection<?>) {
+            Collection<?> c = (Collection<?>) fv;
+            if (c.isEmpty()) {
+                throw new DataStoreException(
+                        String.format("Search returned empty array for key. [type=%s][key=%s]",
+                                type.getCanonicalName(), key));
+            }
+            for (Object o : c) {
+                if (o instanceof String) {
+                    json = (String) o;
+                }
+            }
+        }
+        if (Strings.isNullOrEmpty(json)) {
+            throw new DataStoreException(
+                    String.format("Search returned empty json for key. [type=%s][key=%s]",
+                            type.getCanonicalName(), key));
+        }
+        Document<?, ?> document = JSONUtils.read(json, type);
+        if (document.isSearchDocuments() && fetchChildren) {
+            fetchChildren(document, true);
+        }
+        return document;
+    }
+
     @SuppressWarnings("unchecked")
-    public void fetchChildren(@NonNull Document<?, ?> parent) throws Exception {
+    public void fetchChildren(@NonNull Document<?, ?> parent,
+                              boolean fetchChildren) throws Exception {
         if (!parent.isSearchDocuments()) return;
+        Set<Document<?, ?>> children = fetchChildren(parent.getId(),
+                (Class<? extends Document<?, ?>>) parent.getClass(),
+                fetchChildren);
+        if (children != null && !children.isEmpty()) {
+            for (Document<?, ?> document : children) {
+                parent.add(document);
+            }
+        }
+    }
+
+    public Set<Document<?, ?>> fetchChildren(@NonNull DocumentId parent,
+                                             @NonNull Class<? extends Document<?, ?>> type,
+                                             boolean fetchChildren) throws Exception {
         DocumentQueryBuilder builder = new DocumentQueryBuilder(Document.class,
-                new StandardAnalyzer(),
-                parent.getId().getCollection());
-        builder.createPhraseQuery(SolrConstants.FIELD_DOC_PARENT_ID, parent.getId().getId());
+                parent.getCollection());
+        builder.createPhraseQuery(SolrConstants.FIELD_DOC_PARENT_ID, parent.getId());
         try (Cursor<DocumentId, Document<?, ?>> cursor = search(builder.build(),
                 DocumentId.class,
-                parent.getClass(),
+                type,
                 null)) {
+            Set<Document<?, ?>> documents = new HashSet<>();
             while (true) {
                 List<Document<?, ?>> docs = cursor.nextPage();
                 if (docs == null || docs.isEmpty()) break;
                 for (Document<?, ?> doc : docs) {
-                    if (doc.isSearchDocuments()) {
-                        fetchChildren(doc);
+                    if (doc.isSearchDocuments() && fetchChildren) {
+                        fetchChildren(doc, true);
                     }
-                    parent.add(doc);
+                    documents.add(doc);
                 }
             }
+            if (!documents.isEmpty()) {
+                return documents;
+            }
         }
+        return null;
     }
 
     @Override
@@ -685,25 +715,17 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             if (Strings.isNullOrEmpty(cname)) {
                 cname = getCollection(type);
             }
+            boolean fetchChildren = true;
+            if (context instanceof SearchContext) {
+                fetchChildren = ((SearchContext) context).fetchChildDocuments();
+            }
             SolrClient client = connection.connect(cname);
             EntityQueryBuilder.LuceneQuery q = (EntityQueryBuilder.LuceneQuery) query;
-            return new SolrCursor<>(type, this, client, q, maxResults);
+            return new SolrCursor<>(type, this, client, q, maxResults, fetchChildren);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
         }
-    }
-
-
-    public static String getQueryString(@NonNull String field,
-                                        @NonNull Object value,
-                                        @NonNull Class<?> type) {
-        if (ReflectionHelper.isDecimal(type)) {
-            return String.format("%s:%f", field, (double) value);
-        } else if (ReflectionHelper.isNumericType(type)) {
-            return String.format("%s:%d", field, (long) value);
-        }
-        return String.format("%s:\"%s\"", field, value);
     }
 
     public static String getDocumentType(@NonNull File path) throws Exception {

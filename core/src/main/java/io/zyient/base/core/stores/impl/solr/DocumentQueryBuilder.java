@@ -31,8 +31,13 @@ public class DocumentQueryBuilder extends EntityQueryBuilder {
         this.collection = collection;
     }
 
+    public DocumentQueryBuilder(@NonNull Class<?> entityType, String collection) {
+        super(entityType);
+        this.collection = collection;
+    }
+
     public DocumentQueryBuilder matches(@NonNull String value) throws Exception {
-        return (DocumentQueryBuilder) createPhraseQuery(FIELD_TEXT, value);
+        return (DocumentQueryBuilder) phraseQuery(FIELD_TEXT, value);
     }
 
     @Override

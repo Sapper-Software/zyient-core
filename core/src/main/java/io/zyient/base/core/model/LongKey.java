@@ -33,6 +33,11 @@ public class LongKey extends NativeKey<Long> {
         super(Long.class);
     }
 
+    public LongKey(long id) {
+        super(Long.class);
+        setKey(id);
+    }
+
     /**
      * Compare the current key to the target.
      *

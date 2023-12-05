@@ -40,7 +40,12 @@ public class SolrContentCursor<E extends Enum<?>, K extends IKey> extends SolrCu
 
     public SolrContentCursor(@NonNull SolrCursor<DocumentId, Document<E, K>> cursor,
                              @NonNull FileSystem fileSystem) {
-        super(cursor.entityType(), cursor.dataStore(), cursor.client(), cursor.query(), cursor.batchSize());
+        super(cursor.entityType(),
+                cursor.dataStore(),
+                cursor.client(),
+                cursor.query(),
+                cursor.batchSize(),
+                cursor.fetchChildren());
         this.fileSystem = fileSystem;
     }
 
