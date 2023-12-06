@@ -150,7 +150,17 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
             DefaultLogger.stacktrace(error);
             inode.getState().error(error);
             updateInodeWithLock(inode);
+            for (PostOperationVisitor visitor : visitors()) {
+                visitor.visit(PostOperationVisitor.Operation.Upload,
+                        PostOperationVisitor.OperationState.Error,
+                        inode, error);
+            }
         } catch (Exception ex) {
+            for (PostOperationVisitor visitor : visitors()) {
+                visitor.visit(PostOperationVisitor.Operation.Upload,
+                        PostOperationVisitor.OperationState.Error,
+                        inode, ex);
+            }
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(LOG, ex.getLocalizedMessage());
             throw new RuntimeException(ex);

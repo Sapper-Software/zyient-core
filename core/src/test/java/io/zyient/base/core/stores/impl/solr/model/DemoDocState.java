@@ -25,6 +25,6 @@ import io.zyient.base.core.stores.model.DocumentState;
 public class DemoDocState extends DocumentState<EEntityState> {
 
     public DemoDocState() {
-        super(EEntityState.Error, EEntityState.New);
+        super(EEntityState.Error, EEntityState.New, EEntityState.Synced);
     }
 }

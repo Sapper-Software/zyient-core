@@ -35,6 +35,7 @@ import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.Writer;
 import io.zyient.base.core.io.impl.FileUploadCallback;
+import io.zyient.base.core.io.impl.PostOperationVisitor;
 import io.zyient.base.core.io.impl.RemoteFileSystem;
 import io.zyient.base.core.io.model.*;
 import io.zyient.base.core.keystore.KeyStore;
@@ -310,7 +311,17 @@ public class AzureFileSystem extends RemoteFileSystem {
                 fileUpdateLock(inode);
             }
             updateInodeWithLock(inode);
+            for (PostOperationVisitor visitor : visitors()) {
+                visitor.visit(PostOperationVisitor.Operation.Upload,
+                        PostOperationVisitor.OperationState.Completed,
+                        inode, null);
+            }
         } catch (Exception ex) {
+            for (PostOperationVisitor visitor : visitors()) {
+                visitor.visit(PostOperationVisitor.Operation.Upload,
+                        PostOperationVisitor.OperationState.Error,
+                        inode, ex);
+            }
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(LOG, ex.getLocalizedMessage());
             throw new RuntimeException(ex);

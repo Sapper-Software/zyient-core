@@ -19,12 +19,17 @@ package io.zyient.base.core.io.impl;
 import io.zyient.base.core.io.model.Inode;
 import lombok.NonNull;
 
-import java.io.IOException;
-
 public interface PostOperationVisitor {
-    void visit(@NonNull Operation op, @NonNull Inode inode) throws IOException;
+    void visit(@NonNull Operation op,
+               @NonNull OperationState state,
+               Inode inode,
+               Throwable error);
+
+    enum OperationState {
+        Completed, Error
+    }
 
     enum Operation {
-        Create, Update, Delete, Read;
+        Create, Update, Delete, Read, Upload, Download;
     }
 }

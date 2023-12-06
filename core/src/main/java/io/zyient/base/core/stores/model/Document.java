@@ -26,7 +26,6 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.content.impl.db.converters.DocumentStateConverter;
 import io.zyient.base.core.content.impl.db.converters.GenericJsonConverter;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.model.PropertyBag;
@@ -71,8 +70,6 @@ public abstract class Document<E extends Enum<?>, K extends IKey, T extends Docu
     @Column(name = "doc_name")
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
     private String name;
-    @Convert(converter = DocumentStateConverter.class)
-    @Column(name = "doc_state")
     private DocumentState<E> docState;
     @Column(name = "mime_type")
     @Field(SolrConstants.FIELD_SOLR_MIME_TYPE)
@@ -92,11 +89,7 @@ public abstract class Document<E extends Enum<?>, K extends IKey, T extends Docu
     @Transient
     @JsonIgnore
     private File path;
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumns({
-            @JoinColumn(name = "parent_doc_id", referencedColumnName = "doc_id"),
-            @JoinColumn(name = "collection", referencedColumnName = "collection")
-    })
+    @Transient
     @JsonIgnore
     private Set<T> documents;
     @Convert(converter = PropertiesConverter.class)

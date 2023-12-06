@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.StateException;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.IOUtils;
@@ -42,8 +43,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Accessors(fluent = true)
@@ -105,6 +105,7 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> create(@NonNull Document<E, K, T> document,
                                                                                                      @NonNull Context context) throws DataStoreException {
         try {
@@ -131,6 +132,15 @@ public abstract class ContentProvider implements Closeable {
                 document.validate();
 
                 document = createDoc(document, context);
+                if (document.getDocuments() != null && !document.getDocuments().isEmpty()) {
+                    Set<Document<E, K, T>> children = (Set<Document<E, K, T>>) document.getDocuments();
+                    for (Document<E, K, T> child : children) {
+                        child.setParentDocId(document.getId().getId());
+                        child.getId().setCollection(document.getId().getCollection());
+
+                        create(child, context);
+                    }
+                }
             }
             return document;
         } catch (Exception ex) {
@@ -139,10 +149,12 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
+    @SuppressWarnings("unchecked")
     public <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> update(@NonNull Document<E, K, T> document,
                                                                                                      @NonNull Context context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
+            Class<? extends Document<E, K, T>> type = (Class<? extends Document<E, K, T>>) document.getClass();
             if (!(context instanceof UserContext)) {
                 throw new DataStoreException(String.format("User context expected. [doc id=%s]",
                         document.getId().stringKey()));
@@ -157,17 +169,72 @@ public abstract class ContentProvider implements Closeable {
             }
             metrics.updateCounter().increment();
             try (Timer t = new Timer(metrics.updateTimer())) {
+                Set<Document<E, K, T>> children = null;
+                Document<E, K, T> currrent = null;
+                if (document.getDocuments() != null && !document.getDocuments().isEmpty()) {
+                    children = (Set<Document<E, K, T>>) document.getDocuments();
+                    currrent = find(document.getId(), type, context);
+                    if (currrent == null) {
+                        throw new Exception(String.format("Update failed: current instance not found. [id=%s]",
+                                document.getId().stringKey()));
+                    }
+                }
+
                 UserContext uc = (UserContext) context;
                 document.setModifiedBy(uc.user().getName());
                 document.setUpdatedTime(System.nanoTime());
-                document = updateDoc(document, context);
                 document.validate();
+                document = updateDoc(document, context);
+                if (currrent != null) {
+                    if (currrent.getDocuments() != null) {
+                        Set<Document<E, K, T>> deleted = getChildrenToDelete(document.getDocuments(), currrent.getDocuments());
+                        if (deleted != null && !deleted.isEmpty()) {
+                            for (Document<E, K, T> child : deleted) {
+                                if (!delete(child.getId(), type, context)) {
+                                    DefaultLogger.error(String.format("Failed to delete nested document. [id=%s]",
+                                            child.getId().stringKey()));
+                                }
+                            }
+                        }
+                    }
+                }
+                if (children != null) {
+                    for (Document<E, K, T> child : children) {
+                        if (child.getState().getState() == EEntityState.New) {
+                            create(child, context);
+                        } else {
+                            update(child, context);
+                        }
+                    }
+                }
             }
             return document;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
         }
+    }
+
+
+    private <E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> Set<Document<E, K, T>> getChildrenToDelete(Set<? extends Document<E, K, T>> updated,
+                                                                                                                        Set<? extends Document<E, K, T>> existing) {
+        if (existing != null && !existing.isEmpty()) {
+            Set<Document<E, K, T>> delete = new HashSet<>();
+            Map<String, Boolean> exists = new HashMap<>();
+            for (Document<E, K, T> doc : updated) {
+                exists.put(doc.getId().stringKey(), true);
+            }
+            for (Document<E, K, T> doc : existing) {
+                String key = doc.entityKey().stringKey();
+                if (!exists.containsKey(key)) {
+                    delete.add(doc);
+                }
+            }
+            if (!delete.isEmpty()) {
+                return delete;
+            }
+        }
+        return null;
     }
 
     @Override

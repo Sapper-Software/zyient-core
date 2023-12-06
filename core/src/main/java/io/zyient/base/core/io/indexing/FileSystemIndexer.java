@@ -322,8 +322,12 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
     }
 
     @Override
-    public void visit(@NonNull Operation op, @NonNull Inode inode) throws IOException {
+    public void visit(@NonNull Operation op,
+                      @NonNull OperationState state,
+                      @NonNull Inode inode,
+                      Throwable error) {
         try {
+            if (state == OperationState.Error) return;
             switch (op) {
                 case Create, Update -> {
                     if (inode instanceof FileInode)
@@ -332,7 +336,7 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
                 case Delete -> checkAndDelete(inode);
             }
         } catch (Exception ex) {
-            throw new IOException(ex);
+            throw new RuntimeException(ex);
         }
     }
 

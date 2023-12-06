@@ -329,16 +329,34 @@ public abstract class FileSystem implements Closeable {
             throw new IOException(String.format("Inode is stale: [path=%s]", inode.getZkPath()));
         }
         inode.setUpdateTimestamp(System.currentTimeMillis());
-        CuratorFramework client = zkConnection.client();
         try {
-            client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
-        } catch (Exception ex) {
-            throw new IOException(ex);
+            CuratorFramework client = zkConnection.client();
+            try {
+                client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
+            } catch (Exception ex) {
+                throw new IOException(ex);
+            }
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Update,
+                        PostOperationVisitor.OperationState.Completed,
+                        inode, null);
+            }
+            return inode;
+        } catch (IOException ex) {
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Update,
+                        PostOperationVisitor.OperationState.Error,
+                        inode, ex);
+            }
+            throw ex;
+        } catch (RuntimeException re) {
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Update,
+                        PostOperationVisitor.OperationState.Error,
+                        inode, re);
+            }
+            throw new IOException(re);
         }
-        for (PostOperationVisitor visitor : visitors) {
-            visitor.visit(PostOperationVisitor.Operation.Update, inode);
-        }
-        return inode;
     }
 
     public Inode updateInodeWithLock(@NonNull Inode inode) throws IOException {
@@ -388,12 +406,19 @@ public abstract class FileSystem implements Closeable {
                     client.delete().forPath(current.getZkPath());
                 }
                 for (PostOperationVisitor visitor : visitors) {
-                    visitor.visit(PostOperationVisitor.Operation.Delete, current);
+                    visitor.visit(PostOperationVisitor.Operation.Delete,
+                            PostOperationVisitor.OperationState.Completed,
+                            current, null);
                 }
             } finally {
                 lock.unlock();
             }
         } catch (Exception ex) {
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Delete,
+                        PostOperationVisitor.OperationState.Error,
+                        current, ex);
+            }
             throw new IOException(ex);
         }
         return true;
@@ -403,12 +428,31 @@ public abstract class FileSystem implements Closeable {
                               InodeType type,
                               String fpath) throws IOException {
         String[] parts = fpath.split("/");
-        CuratorFramework client = zkConnection.client();
-        Inode node = createInode(parent, type, parts, 0, client);
-        for (PostOperationVisitor visitor : visitors) {
-            visitor.visit(PostOperationVisitor.Operation.Create, node);
+        Inode node = null;
+        try {
+            CuratorFramework client = zkConnection.client();
+            node = createInode(parent, type, parts, 0, client);
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Create,
+                        PostOperationVisitor.OperationState.Completed,
+                        node, null);
+            }
+            return node;
+        } catch (IOException ex) {
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Create,
+                        PostOperationVisitor.OperationState.Error,
+                        node, ex);
+            }
+            throw ex;
+        } catch (RuntimeException re) {
+            for (PostOperationVisitor visitor : visitors) {
+                visitor.visit(PostOperationVisitor.Operation.Create,
+                        PostOperationVisitor.OperationState.Error,
+                        node, re);
+            }
+            throw new IOException(re);
         }
-        return node;
     }
 
     private Inode createInode(DirectoryInode parent,

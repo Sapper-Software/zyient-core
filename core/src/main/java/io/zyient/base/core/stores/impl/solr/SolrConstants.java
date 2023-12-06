@@ -31,4 +31,5 @@ public class SolrConstants {
     public static final String FIELD_DOC_PROPERTIES = "properties";
     public static final String FIELD_DOC_HAS_CHILDREN = "has_children";
     public static final String FIELD_DOC_PARENT_ID = "parent_doc_id";
+    public static final String FIELD_DOC_URI = "URI";
 }

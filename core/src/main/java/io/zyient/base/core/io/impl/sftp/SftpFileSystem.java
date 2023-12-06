@@ -25,6 +25,7 @@ import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.Writer;
 import io.zyient.base.core.io.impl.FileUploadCallback;
+import io.zyient.base.core.io.impl.PostOperationVisitor;
 import io.zyient.base.core.io.impl.RemoteFileSystem;
 import io.zyient.base.core.io.impl.s3.S3Container;
 import io.zyient.base.core.io.impl.s3.S3PathInfo;
@@ -348,7 +349,17 @@ public class SftpFileSystem extends RemoteFileSystem {
                 fileUpdateLock(inode);
             }
             updateInodeWithLock(inode);
+            for (PostOperationVisitor visitor : visitors()) {
+                visitor.visit(PostOperationVisitor.Operation.Upload,
+                        PostOperationVisitor.OperationState.Completed,
+                        inode, null);
+            }
         } catch (Exception ex) {
+            for (PostOperationVisitor visitor : visitors()) {
+                visitor.visit(PostOperationVisitor.Operation.Upload,
+                        PostOperationVisitor.OperationState.Error,
+                        inode, ex);
+            }
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(LOG, ex.getLocalizedMessage());
             throw new RuntimeException(ex);

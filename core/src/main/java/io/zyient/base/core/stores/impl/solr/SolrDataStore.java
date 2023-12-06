@@ -161,33 +161,12 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                     ((Document<?, ?, ?>) entity)
                             .setSearchReferenceId(((Document<?, ?, ?>) entity).getReferenceId().stringKey());
                 }
-                Set<? extends Document<?, ?, ?>> children = ((Document<?, ?, ?>) entity).getDocuments();
-                if (children != null && !children.isEmpty()) {
-                    ((Document<?, ?, ?>) entity).setSearchDocuments(true);
-                }
                 ContentStreamUpdateRequest ur = getContentUpdateRequest((Document<?, ?, ?>) entity);
                 NamedList<Object> request = client.request(ur);
                 if (DefaultLogger.isTraceEnabled()) {
                     for (Map.Entry<String, Object> entry : request) {
                         DefaultLogger.trace(String.format("Response [key=%s, value=%s]",
                                 entry.getKey(), entry.getValue()));
-                    }
-                }
-                if (children != null && !children.isEmpty()) {
-                    Set<Document<?, ?, ?>> delete = null;
-                    if (current != null) {
-                        delete = getChildrenToDelete(((Document<?, ?, ?>) entity).getDocuments(),
-                                ((Document<?, ?, ?>) current).getDocuments());
-                    }
-                    for (Document<?, ?, ?> child : children) {
-                        child.setParentDocId(((Document<?, ?, ?>) entity).getId().getId());
-                        child.getId().setCollection(((Document<?, ?, ?>) entity).getId().getCollection());
-                        child = (Document<?, ?, ?>) createEntity(child, type, context);
-                    }
-                    if (delete != null && !delete.isEmpty()) {
-                        for (Document<?, ?, ?> child : delete) {
-                            deleteEntity(child.entityKey(), type, context);
-                        }
                     }
                 }
                 ((Document<?, ?, ?>) entity).getState().setState(EEntityState.Synced);
@@ -284,27 +263,6 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             }
         }
         return current;
-    }
-
-    private Set<Document<?, ?, ?>> getChildrenToDelete(Set<? extends Document<?, ?, ?>> updated,
-                                                    Set<? extends Document<?, ?, ?>> existing) {
-        if (existing != null && !existing.isEmpty()) {
-            Set<Document<?, ?, ?>> delete = new HashSet<>();
-            Map<String, Boolean> exists = new HashMap<>();
-            for (Document<?, ?, ?> doc : updated) {
-                exists.put(doc.getId().stringKey(), true);
-            }
-            for (Document<?, ?, ?> doc : existing) {
-                String key = doc.entityKey().stringKey();
-                if (!exists.containsKey(key)) {
-                    delete.add(doc);
-                }
-            }
-            if (!delete.isEmpty()) {
-                return delete;
-            }
-        }
-        return null;
     }
 
     @Override
@@ -623,9 +581,9 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     }
 
     public Document<?, ?, ?> readDocument(@NonNull SolrDocument doc,
-                                       @NonNull String key,
-                                       @NonNull Class<? extends Document<?, ?, ?>> type,
-                                       boolean fetchChildren) throws Exception {
+                                          @NonNull String key,
+                                          @NonNull Class<? extends Document<?, ?, ?>> type,
+                                          boolean fetchChildren) throws Exception {
         Object fv = doc.getFieldValue(SolrConstants.FIELD_SOLR_JSON_DATA);
         if (fv == null) {
             throw new DataStoreException(
@@ -675,8 +633,8 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     }
 
     public Set<Document<?, ?, ?>> fetchChildren(@NonNull DocumentId parent,
-                                             @NonNull Class<? extends Document<?, ?, ?>> type,
-                                             boolean fetchChildren) throws Exception {
+                                                @NonNull Class<? extends Document<?, ?, ?>> type,
+                                                boolean fetchChildren) throws Exception {
         DocumentQueryBuilder builder = new DocumentQueryBuilder(Document.class,
                 parent.getCollection());
         builder.createPhraseQuery(SolrConstants.FIELD_DOC_PARENT_ID, parent.getId());

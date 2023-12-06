@@ -1,6 +1,6 @@
 DROP TABLE IF EXISTS `tb_documents`;
 
-CREATE TABLE <db>.`tb_documents`
+CREATE TABLE `tb_documents`
 (
     doc_id        VARCHAR(64)   NOT NULL,
     collection    VARCHAR(64)   NOT NULL,
@@ -13,6 +13,7 @@ CREATE TABLE <db>.`tb_documents`
     modified_by   VARCHAR(256)  NOT NULL,
     time_created  NUMERIC(11)   NOT NULL,
     time_updated  NUMERIC(11)   NOT NULL,
+    error         TEXT,
     properties    MEDIUMTEXT,
     --<reference_id> ...
     PRIMARY KEY (collection, doc_id),

@@ -25,8 +25,11 @@ import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.Writer;
+import io.zyient.base.core.io.impl.PostOperationVisitor;
 import io.zyient.base.core.io.model.FileInode;
+import io.zyient.base.core.io.model.Inode;
 import io.zyient.base.core.io.model.PathInfo;
+import io.zyient.base.core.model.UserContext;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.solr.SolrDataStore;
 import io.zyient.base.core.stores.model.Document;
@@ -37,16 +40,23 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.http.auth.BasicUserPrincipal;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class ManagedContentProvider<T> extends ContentProvider {
+public abstract class ManagedContentProvider<T> extends ContentProvider implements PostOperationVisitor {
+    public static class Constants {
+        public static final String ATTRIBUTE_DOC_ID = "document.ref.id";
+        public static final String ATTRIBUTE_DOC_TYPE = "document.class";
+    }
+
     private AbstractDataStore<T> dataStore;
     private FileSystem fileSystem;
 
@@ -77,6 +87,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
                 throw new ConfigurationException(String.format("FileSystem not found. [name=%s]",
                         settings.getFileSystem()));
             }
+            fileSystem.addVisitor(this);
             DefaultLogger.info(String.format("Using FileSystem [%s]: [type=%s]",
                     fileSystem.settings().getName(), fileSystem.getClass().getCanonicalName()));
         } catch (Exception ex) {
@@ -93,6 +104,10 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
             try (Writer writer = fileSystem.writer(fi, document.getPath())) {
                 writer.commit(true);
             }
+            String idJson = JSONUtils.asString(document.getId(), DocumentId.class);
+            fi.attribute(Constants.ATTRIBUTE_DOC_ID, idJson);
+            fi.attribute(Constants.ATTRIBUTE_DOC_TYPE, document.getClass().getCanonicalName());
+            fi = (FileInode) fileSystem.updateInode(fi);
             String uri = JSONUtils.asString(fi.getPath(), Map.class);
             document.setUri(uri);
             if (dataStore instanceof TransactionDataStore<?, ?>) {
@@ -130,6 +145,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
             FileInode fi = (FileInode) fileSystem.getInode(pi);
             if (fi == null) {
                 throw new DataStoreException(String.format("Document not found. [uri=%s]", document.getUri()));
+            }
+            DocumentId docId = JSONUtils.read(fi.attribute(Constants.ATTRIBUTE_DOC_ID), DocumentId.class);
+            if (docId.compareTo(document.getId()) != 0) {
+                throw new DataStoreException(String.format("Document mis-match: [FS ID=%s][DOC ID=%s]",
+                        docId.stringKey(), document.getId().stringKey()));
             }
             try (Writer writer = fileSystem.writer(fi, document.getPath())) {
                 writer.commit(true);
@@ -173,6 +193,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
                 if (fi == null) {
                     DefaultLogger.warn(String.format("Document not found. [uri=%s]", doc.getUri()));
                 } else {
+                    DocumentId docId = JSONUtils.read(fi.attribute(Constants.ATTRIBUTE_DOC_ID), DocumentId.class);
+                    if (docId.compareTo(id) != 0) {
+                        throw new DataStoreException(String.format("Document mis-match: [FS ID=%s][DOC ID=%s]",
+                                docId.stringKey(), id.stringKey()));
+                    }
                     if (!fileSystem.delete(fi.getPathInfo())) {
                         DefaultLogger.warn(String.format("Document delete returned false. [uri=%s]", doc.getUri()));
                     }
@@ -246,8 +271,56 @@ public abstract class ManagedContentProvider<T> extends ContentProvider {
         }
     }
 
+    protected abstract <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+                                                                                                                  @NonNull String collection,
+                                                                                                                  @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                  Context context) throws DataStoreException;
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public void visit(@NonNull Operation op, @NonNull OperationState state, Inode inode, Throwable error) {
+        try {
+            if (op != Operation.Upload) return;
+            if (inode instanceof FileInode fi) {
+                DocumentId docId = JSONUtils.read(fi.attribute(Constants.ATTRIBUTE_DOC_ID), DocumentId.class);
+                Class<? extends Document<?, ?, ?>> type =
+                        (Class<? extends Document<?, ?, ?>>) Class.forName(fi.attribute(Constants.ATTRIBUTE_DOC_TYPE));
+                Document<?, ?, ?> document = dataStore.find(docId, type, null);
+                if (document == null) {
+                    throw new Exception(String.format("Document entity not found. [id=%s]", docId.stringKey()));
+                }
+                if (state == OperationState.Error) {
+                    document.getDocState().error(error);
+                } else {
+                    document.getDocState().available();
+                }
+                update(document, new InternalUserContext(document));
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error("Visitor callback error", ex);
+            throw new RuntimeException(ex);
+        }
+    }
+
     @Override
     protected void doClose() throws IOException {
 
+    }
+
+    public static class InternalUserContext extends Context implements UserContext {
+        public InternalUserContext(@NonNull Document<?, ?, ?> document) {
+            user(new BasicUserPrincipal(document.getModifiedBy()));
+        }
+
+        @Override
+        public UserContext user(@NonNull Principal user) {
+            return (UserContext) put(UserContext.__DEFAULT_USER_KEY, user);
+        }
+
+        @Override
+        public Principal user() {
+            return (Principal) get(UserContext.__DEFAULT_USER_KEY);
+        }
     }
 }

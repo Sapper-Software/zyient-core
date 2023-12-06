@@ -23,6 +23,7 @@ import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
+import io.zyient.base.core.stores.impl.solr.DocumentQueryBuilder;
 import io.zyient.base.core.stores.impl.solr.SolrCursor;
 import io.zyient.base.core.stores.impl.solr.SolrDataStore;
 import io.zyient.base.core.stores.model.Document;
@@ -34,6 +35,9 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.solr.client.solrj.SolrClient;
+
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
@@ -49,6 +53,35 @@ public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
         if (!(dataStore() instanceof SolrDataStore)) {
             throw new ConfigurationException(String.format("Invalid Data Store type. [type=%s]",
                     dataStore().getClass().getCanonicalName()));
+        }
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+                                                                                                         @NonNull String collection,
+                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                         Context context) throws DataStoreException {
+        try {
+            AbstractDataStore.Q query = DocumentQueryBuilder.build(entityType, collection, uri);
+            SolrDataStore dataStore = (SolrDataStore) dataStore();
+            try (SolrCursor<DocumentId, Document<E, K, D>> cursor = (SolrCursor<DocumentId, Document<E, K, D>>) dataStore
+                    .search(query,
+                            8,
+                            DocumentId.class,
+                            entityType,
+                            context)) {
+                List<Document<E, K, D>> documents = cursor.nextPage();
+                if (documents != null && !documents.isEmpty()) {
+                    if (documents.size() > 1) {
+                        throw new DataStoreException(String.format("Multiple documents found for path. [uri=%s]", uri));
+                    }
+                    return documents.get(0);
+                }
+            }
+            return null;
+        } catch (Exception ex) {
+            throw new DataStoreException(ex);
         }
     }
 

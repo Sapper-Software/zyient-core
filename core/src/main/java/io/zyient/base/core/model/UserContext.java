@@ -21,6 +21,8 @@ import lombok.NonNull;
 import java.security.Principal;
 
 public interface UserContext {
+    String __DEFAULT_USER_KEY = "user.principal";
+
     UserContext user(@NonNull Principal user);
 
     Principal user();
