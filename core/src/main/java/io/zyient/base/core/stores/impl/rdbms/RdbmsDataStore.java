@@ -56,6 +56,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
             if (((BaseEntity) entity).getState().getState() != EEntityState.New) {
                 entity = (E) sessionManager.checkCache((BaseEntity<?>) entity);
             }
+            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
         IDGenerator.process(entity, this);
         session.persist(entity);
@@ -82,7 +83,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws
@@ -92,9 +93,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         if (entity instanceof BaseEntity) {
-            if (((BaseEntity) entity).getState().getState() != EEntityState.New) {
-                entity = (E) sessionManager.checkCache((BaseEntity<?>) entity);
-            }
+            entity = (E) sessionManager.checkCache((BaseEntity<?>) entity);
+            ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
         session.persist(entity);
         if (entity instanceof BaseEntity) {

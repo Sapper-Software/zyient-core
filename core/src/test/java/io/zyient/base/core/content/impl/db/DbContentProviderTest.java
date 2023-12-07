@@ -121,7 +121,7 @@ class DbContentProviderTest {
                 doc.setName(source);
                 doc.getDocState().setState(EEntityState.New);
                 doc.setPath(path);
-                doc.setPassword("test1234");
+                doc.setPassword("thisis@test");
                 doc.setUri(path.toURI().toString());
                 doc.setCreatedBy("DEMO");
                 doc.setModifiedBy("DEMO");
@@ -132,6 +132,7 @@ class DbContentProviderTest {
                     DemoTestDocument cd = new DemoTestDocument();
                     cd.setId(new DocumentId(__COLLECTION_NAME));
                     cd.setName(d);
+                    cd.getState().setState(EEntityState.New);
                     cd.getDocState().setState(EEntityState.New);
                     cd.setPath(cp);
                     cd.setUri(cp.toURI().toString());
@@ -143,9 +144,9 @@ class DbContentProviderTest {
                 assertNotNull(doc);
                 ids.add(doc.entityKey());
             }
-            Thread.sleep(10000);
+            Thread.sleep(60000);
             for (DocumentId id : ids) {
-                DemoTestDocument doc = (DemoTestDocument) contentProvider.find(id, DemoTestDocument.class, null);
+                DemoTestDocument doc = (DemoTestDocument) contentProvider.find(id, DemoTestDocument.class, userContext);
                 assertNotNull(doc);
                 assertEquals(DOCUMENTS.length, doc.getDocuments().size());
             }

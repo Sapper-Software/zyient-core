@@ -74,7 +74,7 @@ public class MappedWriter extends LocalWriter {
     }
 
     @Override
-    public void write(byte[] data, int offset, int length) throws IOException {
+    public void write(byte @NonNull [] data, int offset, int length) throws IOException {
         checkOpen();
         file.write(data, offset, length);
     }

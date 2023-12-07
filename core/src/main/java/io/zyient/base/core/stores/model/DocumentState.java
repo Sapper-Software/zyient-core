@@ -27,16 +27,19 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@Embeddable
+@MappedSuperclass
 public abstract class DocumentState<E extends Enum<?>> {
+    @Transient
     private final E errorState;
+    @Transient
     private final E newState;
+    @Transient
     private final E availableState;
     @Enumerated(EnumType.STRING)
     @Column(name = "doc_state")
     private E state;
-    @Convert(converter = GenericJsonConverter.class)
     @Column(name = "error")
+    @Convert(converter = GenericJsonConverter.class)
     private Throwable error;
 
     protected DocumentState(@NonNull E errorState,

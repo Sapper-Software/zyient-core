@@ -49,6 +49,7 @@ public abstract class Writer extends OutputStream implements Closeable {
     protected File temp;
     protected long dataSize;
     protected final boolean delete;
+    protected final boolean useExistingTemp;
 
     protected Writer(@NonNull FileInode inode,
                      @NonNull FileSystem fs,
@@ -59,6 +60,7 @@ public abstract class Writer extends OutputStream implements Closeable {
         this.metrics = fs.metrics();
         this.overwrite = overwrite;
         delete = true;
+        useExistingTemp = false;
     }
 
     protected Writer(@NonNull FileInode inode,
@@ -71,6 +73,7 @@ public abstract class Writer extends OutputStream implements Closeable {
         this.overwrite = false;
         this.temp = temp;
         delete = false;
+        useExistingTemp = true;
     }
 
     public Writer open(boolean overwrite) throws IOException, DistributedLock.LockError {
@@ -132,9 +135,17 @@ public abstract class Writer extends OutputStream implements Closeable {
 
     protected void checkLocalCopy(boolean overwrite) throws Exception {
         if (!Strings.isNullOrEmpty(inode.getLock().getLocalPath())) {
-            temp = new File(inode.getLock().getLocalPath());
+            if (!useExistingTemp)
+                temp = new File(inode.getLock().getLocalPath());
+            else if (temp == null || !temp.exists()) {
+                throw new IOException("Local copy not specified...");
+            }
         } else {
-            temp = fs.createTmpFile(null, inode.getName());
+            if (!useExistingTemp)
+                temp = fs.createTmpFile(null, inode.getName());
+            else if (temp == null || !temp.exists()) {
+                throw new IOException("Local copy not specified...");
+            }
         }
         if (overwrite) {
             if (temp.exists()) {

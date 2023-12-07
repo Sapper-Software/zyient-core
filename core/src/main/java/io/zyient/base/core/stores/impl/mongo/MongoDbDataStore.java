@@ -98,12 +98,13 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             if (entity instanceof MongoEntity<?>) {
                 ((MongoEntity<?>) entity).preSave();
                 checkReferences(entity, context);
-                entity = session.save(entity);
                 ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+                entity = session.save(entity);
             } else {
                 if (entity instanceof BaseEntity<?>) {
                     ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
                     ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
                 String json = JSONUtils.asString(entity, entity.getClass());
                 Document doc = Document.parse(json);
@@ -217,13 +218,14 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                         throw new DataStoreException(String.format("Multiple records found for key. [type=%s][key=%s]",
                                 type.getCanonicalName(), entity.entityKey().stringKey()));
                     }
-                    entity = session.save(entity);
                     ((MongoEntity<?>) entity).getState().setState(EEntityState.Synced);
+                    entity = session.save(entity);
                 }
             } else {
                 if (entity instanceof BaseEntity<?>) {
                     ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
                     ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
                 String json = JSONUtils.asString(entity, entity.getClass());
                 Document doc = Document.parse(json);
@@ -251,9 +253,6 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                     throw new DataStoreException(
                             String.format("Entity not found. [kaye=%s][type=%s]",
                                     entity.entityKey().stringKey(), type.getCanonicalName()));
-                }
-                if (entity instanceof BaseEntity<?>) {
-                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
             }
 

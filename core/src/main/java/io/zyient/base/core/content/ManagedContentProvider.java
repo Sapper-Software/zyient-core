@@ -17,6 +17,7 @@
 package io.zyient.base.core.content;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
@@ -283,16 +284,34 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                 DocumentId docId = JSONUtils.read(fi.attribute(Constants.ATTRIBUTE_DOC_ID), DocumentId.class);
                 Class<? extends Document<?, ?, ?>> type =
                         (Class<? extends Document<?, ?, ?>>) Class.forName(fi.attribute(Constants.ATTRIBUTE_DOC_TYPE));
-                Document<?, ?, ?> document = dataStore.find(docId, type, null);
-                if (document == null) {
-                    throw new Exception(String.format("Document entity not found. [id=%s]", docId.stringKey()));
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
                 }
-                if (state == OperationState.Error) {
-                    document.getDocState().error(error);
-                } else {
-                    document.getDocState().available();
+                try {
+                    Document<?, ?, ?> document = dataStore.find(docId, type, null);
+                    if (document == null) {
+                        throw new Exception(String.format("Document entity not found. [id=%s]", docId.stringKey()));
+                    }
+                    if (state == OperationState.Error) {
+                        document.getDocState().error(error);
+                    } else {
+                        document.getDocState().available();
+                    }
+                    document = dataStore.update(document, document.getClass(), new InternalUserContext(document));
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).commit();
+                    }
+                } catch (RuntimeException re) {
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                    }
+                    throw re;
+                } catch (Throwable t) {
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                    }
+                    throw t;
                 }
-                update(document, new InternalUserContext(document));
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

@@ -28,5 +28,6 @@ public class DemoDocState extends DocumentState<EEntityState> {
 
     public DemoDocState() {
         super(EEntityState.Error, EEntityState.New, EEntityState.Synced);
+        setState(getNewState());
     }
 }

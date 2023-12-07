@@ -124,6 +124,7 @@
                     <name>test-rdbms</name>
                     <type>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</type>
                 </dataStore>
+                <encryptionKey>db-encryption-key</encryptionKey>
             </contentManager>
         </demo>
         <config>

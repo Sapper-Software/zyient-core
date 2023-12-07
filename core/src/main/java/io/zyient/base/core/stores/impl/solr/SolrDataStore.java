@@ -161,6 +161,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                     ((Document<?, ?, ?>) entity)
                             .setSearchReferenceId(((Document<?, ?, ?>) entity).getReferenceId().stringKey());
                 }
+                ((Document<?, ?, ?>) entity).getState().setState(EEntityState.Synced);
                 ContentStreamUpdateRequest ur = getContentUpdateRequest((Document<?, ?, ?>) entity);
                 NamedList<Object> request = client.request(ur);
                 if (DefaultLogger.isTraceEnabled()) {
@@ -169,18 +170,17 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                 entry.getKey(), entry.getValue()));
                     }
                 }
-                ((Document<?, ?, ?>) entity).getState().setState(EEntityState.Synced);
             } else if (entity instanceof SolrEntity<?>) {
                 ((SolrEntity<?>) entity).setId(entity.entityKey().stringKey());
                 if (((SolrEntity<?>) entity).getCreatedTime() <= 0)
                     ((SolrEntity<?>) entity).setCreatedTime(System.nanoTime());
                 ((SolrEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
                 UpdateResponse ur = client.addBean(entity);
                 if (ur.getStatus() != 0) {
                     throw new DataStoreException(String.format("Insert failed [status=%d]. [type=%s][id=%s]",
                             ur.getStatus(), type.getCanonicalName(), entity.entityKey().stringKey()));
                 }
-                ((SolrEntity<?>) entity).getState().setState(EEntityState.Synced);
             } else {
                 long createdTimestamp = System.nanoTime();
                 long updatedTimestamp = System.nanoTime();
@@ -191,6 +191,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                         createdTimestamp = ((BaseEntity<?>) entity).getCreatedTime();
                     }
                     ((BaseEntity<?>) entity).setUpdatedTime(updatedTimestamp);
+                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
                 SolrJsonEntity je = new SolrJsonEntity();
                 je.setId(entity.entityKey().stringKey());
@@ -202,9 +203,6 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 if (ur.getStatus() != 0) {
                     throw new DataStoreException(String.format("Insert failed [status=%d]. [type=%s][id=%s]",
                             ur.getStatus(), type.getCanonicalName(), entity.entityKey().stringKey()));
-                }
-                if (entity instanceof BaseEntity<?>) {
-                    ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
             }
             client.commit();

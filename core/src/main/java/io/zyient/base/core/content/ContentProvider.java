@@ -43,6 +43,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import javax.crypto.SecretKey;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -67,6 +68,7 @@ public abstract class ContentProvider implements Closeable {
     private File baseDir;
     private BaseEnv<?> env;
     private ContentProviderMetrics metrics;
+    private SecretKey secretKey;
 
     protected ContentProvider(@NonNull Class<? extends ContentProviderSettings> settingsType) {
         this.settingsType = settingsType;
@@ -104,7 +106,8 @@ public abstract class ContentProvider implements Closeable {
                         throw new Exception(String.format("Encryption key not found. [key=%s]",
                                 settings.getEncryptionKey()));
                     }
-                    settings.setEncryptionKey(value);
+                    value = CypherUtils.checkPassword(value, ENCRYPTED_PREFIX);
+                    secretKey = keyStore.generate(value, KeyStore.CIPHER_TYPE);
                 }
                 doConfigure(reader.config());
                 state.setState(ProcessorState.EProcessorState.Running);
@@ -131,10 +134,6 @@ public abstract class ContentProvider implements Closeable {
                                                                                                               @NonNull DocumentContext context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
-            if (!(context instanceof UserContext)) {
-                throw new DataStoreException(String.format("User context expected. [doc id=%s]",
-                        document.getId().stringKey()));
-            }
             if (document.getPath() == null) {
                 throw new DataStoreException(String.format("Document local path missing. [doc id=%s]",
                         document.getId().stringKey()));
@@ -145,9 +144,8 @@ public abstract class ContentProvider implements Closeable {
             }
             metrics.createCounter().increment();
             try (Timer t = new Timer(metrics.createTimer())) {
-                UserContext uc = (UserContext) context;
-                document.setCreatedBy(uc.user().getName());
-                document.setModifiedBy(uc.user().getName());
+                document.setCreatedBy(context.user().getName());
+                document.setModifiedBy(context.user().getName());
                 document.setCreatedTime(System.nanoTime());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
@@ -159,6 +157,12 @@ public abstract class ContentProvider implements Closeable {
                     for (Document<E, K, T> child : children) {
                         child.setParentDocId(document.getId().getId());
                         child.getId().setCollection(document.getId().getCollection());
+                        child.setCreatedBy(context.user().getName());
+                        child.setModifiedBy(context.user().getName());
+                        child.setCreatedTime(System.nanoTime());
+                        child.setUpdatedTime(System.nanoTime());
+                        checkPassword(child);
+                        child.validate();
 
                         create(child, context);
                     }
@@ -171,6 +175,10 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
+    private String extractIV(Document<?, ?, ?> document) {
+        return document.getId().getId().substring(0, 16);
+    }
+
     private void checkPassword(Document<?, ?, ?> document) throws Exception {
         if (Strings.isNullOrEmpty(document.getPassword())) return;
         String password = document.getPassword();
@@ -181,8 +189,8 @@ public abstract class ContentProvider implements Closeable {
         KeyStore keyStore = env().keyStore();
         Preconditions.checkNotNull(keyStore);
         String encrypted = CypherUtils.encryptAsString(password,
-                settings.getEncryptionKey(),
-                document.getId().stringKey());
+                keyStore.extractValue(secretKey, KeyStore.CIPHER_TYPE),
+                extractIV(document));
         document.setPassword(String.format("%s=[%s]", ENCRYPTED_PREFIX, encrypted));
     }
 
@@ -209,10 +217,6 @@ public abstract class ContentProvider implements Closeable {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             Class<? extends Document<E, K, T>> type = (Class<? extends Document<E, K, T>>) document.getClass();
-            if (!(context instanceof UserContext)) {
-                throw new DataStoreException(String.format("User context expected. [doc id=%s]",
-                        document.getId().stringKey()));
-            }
             if (document.getPath() == null) {
                 throw new DataStoreException(String.format("Document local path missing. [doc id=%s]",
                         document.getId().stringKey()));
@@ -234,8 +238,7 @@ public abstract class ContentProvider implements Closeable {
                     }
                 }
 
-                UserContext uc = (UserContext) context;
-                document.setModifiedBy(uc.user().getName());
+                document.setModifiedBy(context.user().getName());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
                 document.validate();
