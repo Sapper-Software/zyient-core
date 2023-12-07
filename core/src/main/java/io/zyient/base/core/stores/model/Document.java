@@ -50,7 +50,8 @@ import java.util.Set;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @MappedSuperclass
-public abstract class Document<E extends Enum<?>, K extends IKey, T extends Document<E, K, T>> extends BaseEntity<DocumentId> implements PropertyBag {
+public abstract class Document<E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>>
+        extends BaseEntity<DocumentId> implements PropertyBag {
     @Transient
     @Field(SolrConstants.FIELD_SOLR_ID)
     private String searchId;
@@ -70,7 +71,8 @@ public abstract class Document<E extends Enum<?>, K extends IKey, T extends Docu
     @Column(name = "doc_name")
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
     private String name;
-    private DocumentState<E> docState;
+    @Embedded
+    private E docState;
     @Column(name = "mime_type")
     @Field(SolrConstants.FIELD_SOLR_MIME_TYPE)
     private String mimeType;
@@ -86,6 +88,8 @@ public abstract class Document<E extends Enum<?>, K extends IKey, T extends Docu
     @Column(name = "reference_id")
     @Convert(converter = GenericJsonConverter.class)
     private K referenceId;
+    @Column(name = "password")
+    private String password;
     @Transient
     @JsonIgnore
     private File path;
@@ -96,6 +100,10 @@ public abstract class Document<E extends Enum<?>, K extends IKey, T extends Docu
     @Field(SolrConstants.FIELD_DOC_PROPERTIES)
     @Column(name = "properties")
     private Map<String, Object> properties;
+
+    protected Document(@NonNull E docState) {
+        this.docState = docState;
+    }
 
     /**
      * Compare the entity key with the key specified.
@@ -197,7 +205,7 @@ public abstract class Document<E extends Enum<?>, K extends IKey, T extends Docu
                     .newInstance();
             doc.id = new DocumentId();
             clone(doc, EEntityState.New);
-            doc.docState = docState.create();
+            doc.docState = (E) docState.create();
             doc.name = name;
             doc.uri = uri;
             doc.mimeType = mimeType;

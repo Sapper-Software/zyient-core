@@ -22,8 +22,8 @@ import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.content.ContentProvider;
+import io.zyient.base.core.content.DocumentContext;
 import io.zyient.base.core.model.DemoPrincipal;
-import io.zyient.base.core.model.DemoUserContext;
 import io.zyient.base.core.stores.DemoDataStoreEnv;
 import io.zyient.base.core.stores.impl.solr.model.DemoDocState;
 import io.zyient.base.core.stores.impl.solr.model.DemoTestDocument;
@@ -59,7 +59,7 @@ class DbContentProviderTest {
     private static XMLConfiguration xmlConfiguration = null;
     private static DemoDataStoreEnv env = new DemoDataStoreEnv();
     private static DbContentProvider contentProvider;
-    private static final DemoUserContext userContext = new DemoUserContext();
+    private static final DocumentContext userContext = new DocumentContext();
 
     @BeforeAll
     @SuppressWarnings("unchecked")
@@ -119,9 +119,9 @@ class DbContentProviderTest {
                 DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__COLLECTION_NAME));
                 doc.setName(source);
-                doc.setDocState(new DemoDocState());
                 doc.getDocState().setState(EEntityState.New);
                 doc.setPath(path);
+                doc.setPassword("test1234");
                 doc.setUri(path.toURI().toString());
                 doc.setCreatedBy("DEMO");
                 doc.setModifiedBy("DEMO");
@@ -132,7 +132,6 @@ class DbContentProviderTest {
                     DemoTestDocument cd = new DemoTestDocument();
                     cd.setId(new DocumentId(__COLLECTION_NAME));
                     cd.setName(d);
-                    cd.setDocState(new DemoDocState());
                     cd.getDocState().setState(EEntityState.New);
                     cd.setPath(cp);
                     cd.setUri(cp.toURI().toString());

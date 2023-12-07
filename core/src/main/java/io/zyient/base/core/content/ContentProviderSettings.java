@@ -36,6 +36,8 @@ public abstract class ContentProviderSettings extends Settings {
     private boolean cleanOnExit = true;
     @Config(name = "batchSize", required = false, type = Integer.class)
     private int batchSize = 32;
+    @Config(name = "encryptionKey", required = false)
+    private String encryptionKey;
 
     public abstract void validate() throws ConfigurationException;
 }

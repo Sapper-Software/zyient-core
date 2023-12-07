@@ -17,7 +17,6 @@
 package io.zyient.base.core.content;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
@@ -29,11 +28,11 @@ import io.zyient.base.core.io.impl.PostOperationVisitor;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.Inode;
 import io.zyient.base.core.io.model.PathInfo;
-import io.zyient.base.core.model.UserContext;
 import io.zyient.base.core.stores.*;
 import io.zyient.base.core.stores.impl.solr.SolrDataStore;
 import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.base.core.stores.model.DocumentState;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -44,7 +43,6 @@ import org.apache.http.auth.BasicUserPrincipal;
 
 import java.io.File;
 import java.io.IOException;
-import java.security.Principal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,8 +95,8 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> createDoc(@NonNull Document<E, K, D> document,
-                                                                                                           @NonNull Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> createDoc(@NonNull Document<E, K, D> document,
+                                                                                                                    @NonNull DocumentContext context) throws DataStoreException {
         try {
             FileInode fi = fileSystem.create(document.getId().getCollection(), document.getId().getId());
             try (Writer writer = fileSystem.writer(fi, document.getPath())) {
@@ -137,8 +135,8 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> updateDoc(@NonNull Document<E, K, D> document,
-                                                                                                           @NonNull Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> updateDoc(@NonNull Document<E, K, D> document,
+                                                                                                                    @NonNull DocumentContext context) throws DataStoreException {
         try {
             Map<String, String> map = JSONUtils.read(document.getUri(), Map.class);
             PathInfo pi = fileSystem.parsePathInfo(map);
@@ -181,9 +179,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> boolean deleteDoc(@NonNull DocumentId id,
-                                                                                                 @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                 @NonNull Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> boolean deleteDoc(@NonNull DocumentId id,
+                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                          @NonNull DocumentContext context) throws DataStoreException {
         try {
             Document<?, ?, ?> doc = findDoc(id, entityType, context);
             if (doc != null) {
@@ -230,9 +228,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
     }
 
     @Override
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
-                                                                                                                   @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                   @NonNull Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Map<DocumentId, Boolean> deleteDocs(@NonNull List<DocumentId> ids,
+                                                                                                                            @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                            @NonNull DocumentContext context) throws DataStoreException {
         try {
             Map<DocumentId, Boolean> response = new HashMap<>();
             for (DocumentId id : ids) {
@@ -247,9 +245,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull DocumentId docId,
-                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                         Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull DocumentId docId,
+                                                                                                                  @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                  DocumentContext context) throws DataStoreException {
         try {
             Document<E, K, D> doc = dataStore.find(docId, entityType, context);
             if (doc != null) {
@@ -271,10 +269,10 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
         }
     }
 
-    protected abstract <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
-                                                                                                                  @NonNull String collection,
-                                                                                                                  @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                  Context context) throws DataStoreException;
+    protected abstract <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+                                                                                                                           @NonNull String collection,
+                                                                                                                           @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                           DocumentContext context) throws DataStoreException;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -308,19 +306,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
 
     }
 
-    public static class InternalUserContext extends Context implements UserContext {
+    public static class InternalUserContext extends DocumentContext {
         public InternalUserContext(@NonNull Document<?, ?, ?> document) {
             user(new BasicUserPrincipal(document.getModifiedBy()));
-        }
-
-        @Override
-        public UserContext user(@NonNull Principal user) {
-            return (UserContext) put(UserContext.__DEFAULT_USER_KEY, user);
-        }
-
-        @Override
-        public Principal user() {
-            return (Principal) get(UserContext.__DEFAULT_USER_KEY);
         }
     }
 }

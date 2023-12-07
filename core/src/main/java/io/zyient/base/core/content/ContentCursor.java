@@ -24,16 +24,17 @@ import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.PathInfo;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentState;
 import lombok.NonNull;
 
 import java.io.File;
 import java.util.Map;
 
-public interface ContentCursor<E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> {
+public interface ContentCursor<E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> {
 
     @SuppressWarnings("unchecked")
-    static <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> fetch(@NonNull Document<E, K, D> doc,
-                                                                                                    @NonNull FileSystem fileSystem) throws DataStoreException {
+    static <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> fetch(@NonNull Document<E, K, D> doc,
+                                                                                                             @NonNull FileSystem fileSystem) throws DataStoreException {
         try {
             Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
             PathInfo pi = fileSystem.parsePathInfo(map);

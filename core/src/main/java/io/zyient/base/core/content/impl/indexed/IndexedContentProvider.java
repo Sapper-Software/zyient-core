@@ -16,8 +16,8 @@
 
 package io.zyient.base.core.content.impl.indexed;
 
-import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.content.DocumentContext;
 import io.zyient.base.core.content.ManagedContentProvider;
 import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.stores.AbstractDataStore;
@@ -28,6 +28,7 @@ import io.zyient.base.core.stores.impl.solr.SolrCursor;
 import io.zyient.base.core.stores.impl.solr.SolrDataStore;
 import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.base.core.stores.model.DocumentState;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -58,10 +59,10 @@ public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
-                                                                                                         @NonNull String collection,
-                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                         Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+                                                                                                                  @NonNull String collection,
+                                                                                                                  @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                  DocumentContext context) throws DataStoreException {
         try {
             AbstractDataStore.Q query = DocumentQueryBuilder.build(entityType, collection, uri);
             SolrDataStore dataStore = (SolrDataStore) dataStore();
@@ -87,11 +88,11 @@ public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
-                                                                                                                                @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                                int batchSize,
-                                                                                                                                boolean download,
-                                                                                                                                Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
+                                                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                                         int batchSize,
+                                                                                                                                         boolean download,
+                                                                                                                                         DocumentContext context) throws DataStoreException {
         SolrDataStore dataStore = (SolrDataStore) dataStore();
         SolrCursor<DocumentId, Document<E, K, D>> cursor = (SolrCursor<DocumentId, Document<E, K, D>>) dataStore
                 .search(query,

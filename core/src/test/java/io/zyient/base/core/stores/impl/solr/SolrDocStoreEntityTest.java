@@ -24,7 +24,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreManager;
 import io.zyient.base.core.stores.DemoDataStoreEnv;
-import io.zyient.base.core.stores.impl.solr.model.DemoDocState;
 import io.zyient.base.core.stores.impl.solr.model.DemoTestDocument;
 import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.stores.model.DocumentId;
@@ -84,7 +83,6 @@ class SolrDocStoreEntityTest {
                 DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                 doc.setName(source);
-                doc.setDocState(new DemoDocState());
                 doc.getDocState().setState(EEntityState.New);
                 doc.setPath(path);
                 doc.setUri(path.toURI().toString());
@@ -114,7 +112,6 @@ class SolrDocStoreEntityTest {
                 DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                 doc.setName(source);
-                doc.setDocState(new DemoDocState());
                 doc.getDocState().setState(EEntityState.New);
                 doc.setPath(path);
                 doc.setUri(path.toURI().toString());
@@ -139,7 +136,6 @@ class SolrDocStoreEntityTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     void doSearch() {
         try {
             DataStoreManager manager = env.getDataStoreManager();
@@ -153,7 +149,6 @@ class SolrDocStoreEntityTest {
                 DemoTestDocument doc = new DemoTestDocument();
                 doc.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                 doc.setName(source);
-                doc.setDocState(new DemoDocState());
                 doc.getDocState().setState(EEntityState.New);
                 doc.setPath(path);
                 doc.setUri(path.toURI().toString());
@@ -165,7 +160,6 @@ class SolrDocStoreEntityTest {
                     DemoTestDocument cd = new DemoTestDocument();
                     cd.setId(new DocumentId(__SOLR_COLLECTION_NAME));
                     cd.setName(d);
-                    cd.setDocState(new DemoDocState());
                     cd.getDocState().setState(EEntityState.New);
                     cd.setPath(cp);
                     cd.setUri(cp.toURI().toString());

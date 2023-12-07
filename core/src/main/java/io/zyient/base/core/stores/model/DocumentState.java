@@ -17,8 +17,8 @@
 package io.zyient.base.core.stores.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
+import io.zyient.base.core.content.impl.db.converters.GenericJsonConverter;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -32,8 +32,10 @@ public abstract class DocumentState<E extends Enum<?>> {
     private final E errorState;
     private final E newState;
     private final E availableState;
+    @Enumerated(EnumType.STRING)
     @Column(name = "doc_state")
     private E state;
+    @Convert(converter = GenericJsonConverter.class)
     @Column(name = "error")
     private Throwable error;
 
@@ -43,6 +45,7 @@ public abstract class DocumentState<E extends Enum<?>> {
         this.errorState = errorState;
         this.newState = newState;
         this.availableState = availableState;
+        state = newState;
     }
 
     public DocumentState<E> error(@NonNull Throwable error) {

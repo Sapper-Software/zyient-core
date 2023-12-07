@@ -20,7 +20,8 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.base.core.stores.model.DocumentState;
 
-public abstract class DocumentCursor<E extends Enum<?>, K extends IKey, T extends Document<E, K, T>>
+public abstract class DocumentCursor<E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>>
         extends Cursor<DocumentId, Document<E, K, T>> {
 }

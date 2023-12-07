@@ -17,7 +17,6 @@
 package io.zyient.base.core.stores.impl.solr.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.core.stores.model.Document;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -26,6 +25,8 @@ import jakarta.persistence.Table;
         property = "@class")
 @Entity
 @Table(name = "tb_documents", schema = "test")
-public class DemoTestDocument extends Document<EEntityState, ReferenceKey, DemoTestDocument> {
-
+public class DemoTestDocument extends Document<DemoDocState, ReferenceKey, DemoTestDocument> {
+    public DemoTestDocument() {
+        super(new DemoDocState());
+    }
 }

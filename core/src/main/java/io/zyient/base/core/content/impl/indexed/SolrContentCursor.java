@@ -23,6 +23,7 @@ import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.impl.solr.SolrCursor;
 import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.base.core.stores.model.DocumentState;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -33,7 +34,7 @@ import java.util.List;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class SolrContentCursor<E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> extends SolrCursor<DocumentId, Document<E, K, D>>
+public class SolrContentCursor<E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> extends SolrCursor<DocumentId, Document<E, K, D>>
         implements ContentCursor<E, K, D> {
     private final FileSystem fileSystem;
     private boolean download = false;

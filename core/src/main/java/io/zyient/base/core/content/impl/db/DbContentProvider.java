@@ -16,9 +16,9 @@
 
 package io.zyient.base.core.content.impl.db;
 
-import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.core.content.DocumentContext;
 import io.zyient.base.core.content.ManagedContentProvider;
 import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.stores.AbstractDataStore;
@@ -28,6 +28,7 @@ import io.zyient.base.core.stores.impl.rdbms.HibernateCursor;
 import io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore;
 import io.zyient.base.core.stores.model.Document;
 import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.base.core.stores.model.DocumentState;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -53,10 +54,10 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
-                                                                                                         @NonNull String collection,
-                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                         Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+                                                                                                                  @NonNull String collection,
+                                                                                                                  @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                  DocumentContext context) throws DataStoreException {
         try {
             String json = JSONUtils.asString(uri, Map.class);
             String condition = "URI = :uri";
@@ -87,11 +88,11 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends Enum<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
-                                                                                                                                @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                                int batchSize,
-                                                                                                                                boolean download,
-                                                                                                                                Context context) throws DataStoreException {
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
+                                                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                                         int batchSize,
+                                                                                                                                         boolean download,
+                                                                                                                                         DocumentContext context) throws DataStoreException {
         RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
         HibernateCursor<DocumentId, Document<E, K, D>> cursor = (HibernateCursor<DocumentId, Document<E, K, D>>) dataStore
                 .search(query,
