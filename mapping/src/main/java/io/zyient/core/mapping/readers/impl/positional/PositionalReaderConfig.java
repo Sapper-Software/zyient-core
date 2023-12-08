@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.readers.impl.positional;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.core.content.SourceTypes;
+import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.mapping.model.Column;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.PositionalColumn;

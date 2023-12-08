@@ -17,7 +17,7 @@
 package io.zyient.base.core.stores.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.core.content.impl.db.converters.GenericJsonConverter;
+import io.zyient.base.core.stores.impl.rdbms.converters.GenericJsonConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;

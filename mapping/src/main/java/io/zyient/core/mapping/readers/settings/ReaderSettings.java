@@ -19,7 +19,7 @@ package io.zyient.core.mapping.readers.settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.base.core.content.SourceTypes;
+import io.zyient.base.core.utils.SourceTypes;
 import lombok.Getter;
 import lombok.Setter;
 

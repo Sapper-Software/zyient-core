@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.base.Strings;
 import io.zyient.base.common.GlobalConstants;
-import io.zyient.base.core.content.SourceTypes;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

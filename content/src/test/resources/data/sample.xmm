@@ -1,0 +1,16 @@
+<order>
+    <number>12345678</number>
+    <amount>100.10</amount>
+    <items>
+        <item>
+            <itemId>123</itemId>
+            <amount>100.0</amount>
+            <itemName>Item Name1</itemName>
+        </item>
+        <item>
+            <itemId>234</itemId>
+            <amount>200.00</amount>
+            <itemName>Item Name1</itemName>
+        </item>
+    </items>
+</order>

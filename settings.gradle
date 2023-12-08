@@ -8,9 +8,10 @@ pluginManagement {
 
 rootProject.name = 'zyient-core'
 include 'common'
-include 'entity'
 include 'core'
-include 'case-management'
 include 'mapping'
+include 'content'
+include 'case-management'
+include 'entity'
 include 'intake'
 

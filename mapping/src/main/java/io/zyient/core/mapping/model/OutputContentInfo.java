@@ -16,8 +16,8 @@
 
 package io.zyient.core.mapping.model;
 
-import io.zyient.base.core.content.SourceTypes;
 import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.base.core.utils.SourceTypes;
 import lombok.NonNull;
 
 import java.io.File;

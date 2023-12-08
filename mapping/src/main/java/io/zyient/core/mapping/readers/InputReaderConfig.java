@@ -19,7 +19,7 @@ package io.zyient.core.mapping.readers;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.content.SourceTypes;
+import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.Getter;
