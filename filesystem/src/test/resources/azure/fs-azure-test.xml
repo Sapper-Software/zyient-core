@@ -20,14 +20,14 @@
         <name>TEST</name>
         <module>TEST-ENV</module>
         <instance>Test</instance>
-        <source>demo</source>
+        <source>filesystem</source>
         <paths>
             <connections>config</connections>
             <registry>/test/cdc-core/registry</registry>
             <root>/test/cdc-core</root>
         </paths>
-        <demo>
-        </demo>
+        <filesystem>
+        </filesystem>
         <keystore>
             <class>io.zyient.base.core.keystore.JavaKeyStore</class>
             <path>src/test/resources/azure/azure-keystore.ks</path>

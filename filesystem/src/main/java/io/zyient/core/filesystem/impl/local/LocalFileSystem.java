@@ -129,6 +129,7 @@ public class LocalFileSystem extends FileSystem {
         path = getAbsolutePath(path, module);
         LocalPathInfo pi = new LocalPathInfo(this, path, module);
         Inode node = createInode(InodeType.Directory, pi);
+        pi = (LocalPathInfo) node.getPathInfo();
         if (!pi.file().exists()) {
             if (!pi.file().mkdirs()) {
                 throw new IOException(
@@ -154,6 +155,7 @@ public class LocalFileSystem extends FileSystem {
         Preconditions.checkArgument(pathInfo instanceof LocalPathInfo);
         LocalPathInfo pi = (LocalPathInfo) pathInfo;
         Inode node = createInode(InodeType.File, pi);
+        pi = (LocalPathInfo) node.getPathInfo();
         File dir = pi.file().getParentFile();
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
