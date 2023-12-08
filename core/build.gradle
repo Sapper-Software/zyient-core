@@ -57,13 +57,7 @@ dependencies {
     implementation 'com.azure:azure-messaging-servicebus:7.14.3'
     implementation 'io.netty:netty-tcnative:2.0.59.Final'
 
-    implementation 'io.prometheus:simpleclient:0.16.0'
-    implementation 'io.prometheus:simpleclient_log4j2:0.16.0'
-    implementation 'io.prometheus:simpleclient_hotspot:0.16.0'
-    implementation 'io.prometheus:simpleclient_httpserver:0.16.0'
-    implementation 'io.prometheus:simpleclient_pushgateway:0.16.0'
 
-    implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
 
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
     implementation 'net.openhft:chronicle-queue:5.24ea23'
@@ -81,10 +75,7 @@ dependencies {
     implementation 'org.apache.tika:tika-parsers-standard-package:2.9.1'
     implementation 'net.lingala.zip4j:zip4j:2.11.5'
     implementation 'org.apache.pdfbox:pdfbox:3.0.0'
-    implementation 'org.apache.poi:poi:5.2.4'
-    implementation 'org.apache.poi:poi-ooxml-lite:5.2.4'
 
-    implementation 'org.apache.commons:commons-csv:1.10.0'
     implementation 'org.apache.lucene:lucene-core:9.7.0'
     implementation 'org.apache.lucene:lucene-analysis-common:9.7.0'
     implementation 'org.apache.solr:solr-solrj:9.4.0'
@@ -94,10 +85,6 @@ dependencies {
     implementation 'dev.morphia.morphia:morphia-core:2.4.8-SNAPSHOT'
 
     implementation 'org.apache.commons:commons-vfs2:2.9.0'
-    // https://mvnrepository.com/artifact/org.springframework/spring-expression
-    implementation 'org.springframework:spring-expression:6.1.0'
-    implementation 'org.kie:kie-ci:9.44.0.Final'
-    implementation 'org.drools:drools-decisiontables:9.44.0.Final'
 
     implementation 'org.eclipse.jgit:org.eclipse.jgit:6.7.0.202309050840-r'
     implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.7.0.202309050840-r'

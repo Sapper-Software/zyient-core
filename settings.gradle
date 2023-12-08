@@ -10,6 +10,7 @@ rootProject.name = 'zyient-core'
 include 'common'
 include 'entity'
 include 'core'
-include 'intake'
 include 'case-management'
+include 'mapping'
+include 'intake'
 

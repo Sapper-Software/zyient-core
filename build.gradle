@@ -189,6 +189,13 @@ subprojects {
         implementation 'org.apache.curator:curator-framework:5.4.0'
         implementation 'org.apache.curator:curator-client:5.4.0'
 
+        implementation 'io.prometheus:simpleclient:0.16.0'
+        implementation 'io.prometheus:simpleclient_log4j2:0.16.0'
+        implementation 'io.prometheus:simpleclient_hotspot:0.16.0'
+        implementation 'io.prometheus:simpleclient_httpserver:0.16.0'
+        implementation 'io.prometheus:simpleclient_pushgateway:0.16.0'
+        implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
+
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
     }

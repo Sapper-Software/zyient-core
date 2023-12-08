@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <env>
+        <name>DEV</name>
+        <module>TEST-MAPPINGS-ENV</module>
+        <instance>test-mappings</instance>
+        <source>mappings</source>
+
+        <paths>
+            <connections>config</connections>
+            <registry>/test/mappings/registry</registry>
+            <root>/test/mappings</root>
+            <dataStores>mapping.dataStores</dataStores>
+        </paths>
+        <managers>
+            <state>
+                <stateManagerClass>io.zyient.core.mapping.env.DemoStateManager</stateManagerClass>
+                <basePath>demo</basePath>
+                <connection>test-zk</connection>
+                <fileState>true</fileState>
+            </state>
+        </managers>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/mappings/registry</path>
+        </locks>
+        <enableHeartbeat>false</enableHeartbeat>
+        <keystore>
+            <name>test-zk-keystore</name>
+            <class>io.zyient.base.core.keystore.ZkKeyStore</class>
+            <path>/io/zyient/test/keystore</path>
+            <iv>e68250d0-a406-40c6-8b23-cfbffcbd4502</iv>
+            <connection>
+                <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                <zookeeper>
+                    <name>test-zk</name>
+                    <connectionString>192.168.2.16:2181</connectionString>
+                    <retry>
+                        <interval>1500</interval>
+                        <retries>5</retries>
+                    </retry>
+                    <connectionTimeout>10000</connectionTimeout>
+                </zookeeper>
+            </connection>
+        </keystore>
+        <mapping>
+            <dataStores>
+                <zk>
+                    <connection>test-zk</connection>
+                    <path>/test/mappings/registry</path>
+                </zk>
+                <store>
+                    <settings>
+                        <class>io.zyient.base.core.stores.impl.settings.rdbms.RdbmsStoreSettings</class>
+                    </settings>
+                    <class>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</class>
+                    <connection>
+                        <name>test-hibernate</name>
+                        <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
+                    </connection>
+                    <name>test-rdbms</name>
+                </store>
+            </dataStores>
+        </mapping>
+        <errors>
+            <loader type="io.zyient.base.common.errors.impl.XmlErrorsReader">
+                <reader>
+                    <baseDir>src/test/resources/mapping/errors</baseDir>
+                </reader>
+            </loader>
+        </errors>
+        <config>
+            <connections>
+                <shared>
+                    <connection>test-zk</connection>
+                    <path>/test/mappings/env</path>
+                </shared>
+                <connection>
+                    <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                    <zookeeper>
+                        <name>test-zk</name>
+                        <!--connectionString>192.168.0.5:2181,192.168.0.4:2181</connectionString -->
+                        <connectionString>192.168.2.16:2181,192.168.2.17:2181,192.168.2.18:2181</connectionString>
+                        <retry>
+                            <interval>1500</interval>
+                            <retries>5</retries>
+                        </retry>
+                        <connectionTimeout>10000</connectionTimeout>
+                    </zookeeper>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
+                    <hibernate>
+                        <name>test-hibernate</name>
+                        <url>jdbc:mariadb://192.168.2.19:3306/test</url>
+                        <username>debezium</username>
+                        <password>mongodb-password</password>
+                        <driver>org.mariadb.jdbc.Driver</driver>
+                        <dialect>MySQL</dialect>
+                        <model>
+                            <packages>io.zyient.base.core.stores.impl.rdbms.model, io.zyient.core.mapping.model</packages>
+                        </model>
+                    </hibernate>
+                </connection>
+            </connections>
+        </config>
+    </env>
+</configuration>
