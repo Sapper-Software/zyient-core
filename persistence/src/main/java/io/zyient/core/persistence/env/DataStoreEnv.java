@@ -23,6 +23,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.env.BaseEnvSettings;
+import io.zyient.core.filesystem.env.FileSystemEnv;
 import io.zyient.core.persistence.DataStoreManager;
 import io.zyient.core.persistence.DataStoreProvider;
 import lombok.NonNull;
@@ -30,7 +31,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public class DataStoreEnv<T extends Enum<?>> extends BaseEnv<T> implements DataStoreProvider {
+public class DataStoreEnv<T extends Enum<?>> extends FileSystemEnv<T> implements DataStoreProvider {
     private DataStoreManager dataStoreManager;
 
     public DataStoreEnv(@NonNull String name) {

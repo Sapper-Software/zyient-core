@@ -19,9 +19,9 @@ package io.zyient.core.persistence.impl.rdbms;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
 import org.hibernate.ScrollableResults;
 

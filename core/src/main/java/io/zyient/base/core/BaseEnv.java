@@ -32,7 +32,6 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.env.BaseEnvSettings;
-import io.zyient.base.core.io.FileSystemManager;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.ModuleInstance;
 import io.zyient.base.core.processing.Processor;
@@ -80,7 +79,6 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     private final String name;
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
-    private FileSystemManager fileSystemManager;
     private String zkBasePath;
     private Processor<?, ?> processor;
     private final Map<String, ManagedThread> managedThreads = new HashMap<>();
@@ -156,10 +154,6 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                 stateManager
                         .init(managersConfig,
                                 this);
-            }
-            if (ConfigReader.checkIfNodeExists(baseConfig, FileSystemManager.__CONFIG_PATH)) {
-                fileSystemManager = new FileSystemManager();
-                fileSystemManager.init(baseConfig, this);
             }
             if (ConfigReader.checkIfNodeExists(baseConfig, Errors.__CONFIG_PATH)) {
                 Errors.create(baseConfig.configurationAt(Errors.__CONFIG_PATH));

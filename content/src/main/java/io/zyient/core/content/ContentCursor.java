@@ -18,10 +18,10 @@ package io.zyient.core.content;
 
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.core.io.FileSystem;
-import io.zyient.base.core.io.Reader;
-import io.zyient.base.core.io.model.FileInode;
-import io.zyient.base.core.io.model.PathInfo;
+import io.zyient.core.filesystem.FileSystem;
+import io.zyient.core.filesystem.Reader;
+import io.zyient.core.filesystem.model.FileInode;
+import io.zyient.core.filesystem.model.PathInfo;
 import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentState;

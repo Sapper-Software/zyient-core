@@ -23,7 +23,7 @@ import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.DataStoreManager;
-import io.zyient.base.core.stores.DemoDataStoreEnv;
+import io.zyient.core.persistence.env.DemoDataStoreEnv;
 import io.zyient.core.persistence.impl.solr.model.DemoTestDocument;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;

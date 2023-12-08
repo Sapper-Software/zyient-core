@@ -23,8 +23,8 @@ import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.base.core.model.StringKey;
+import io.zyient.core.persistence.model.BaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 

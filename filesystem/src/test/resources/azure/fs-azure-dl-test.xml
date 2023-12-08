@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <env>
+        <name>TEST</name>
+        <module>TEST-ENV</module>
+        <instance>Test</instance>
+        <source>demo</source>
+        <paths>
+            <connections>config</connections>
+            <registry>/test/cdc-core/registry</registry>
+            <root>/test/cdc-core</root>
+        </paths>
+        <demo>
+        </demo>
+        <keystore>
+            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
+            <path>src/test/resources/azure/azure-keystore.ks</path>
+        </keystore>
+        <fs>
+            <zkPath>/test/filesystem/admin</zkPath>
+            <zkConnection>test-zk</zkConnection>
+            <autoSave>true</autoSave>
+            <overwrite>true</overwrite>
+            <fileSystems>
+                <fileSystem>
+                    <type>io.zyient.core.filesystem.impl.azure.AzureFileSystem</type>
+                    <name>azure-dl-1</name>
+                    <tmp>
+                        <path>/tmp/test/fs</path>
+                        <clean>true</clean>
+                    </tmp>
+                    <compressed>true</compressed>
+                    <hierarchical>true</hierarchical>
+                    <client>
+                        <endpointUrl>https://cdcdlstore.blob.core.windows.net/</endpointUrl>
+                        <authClass>io.zyient.core.filesystem.impl.azure.SharedKeyAuth</authClass>
+                        <account>cdcdlstore</account>
+                        <auth>
+                            <authKey>azureDLKey</authKey>
+                        </auth>
+                    </client>
+                    <cache>
+                        <enabled>true</enabled>
+                    </cache>
+                    <containers>
+                        <container>
+                            <domain>azure-demo-1</domain>
+                            <path>/test/fs/</path>
+                            <container>demo</container>
+                        </container>
+                        <default>azure-demo-1</default>
+                    </containers>
+                </fileSystem>
+            </fileSystems>
+        </fs>
+        <config>
+            <connections>
+                <shared>
+                    <connection>test-zk</connection>
+                </shared>
+                <connection>
+                    <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                    <zookeeper>
+                        <name>test-zk</name>
+                        <connectionString>192.168.2.16:2181</connectionString>
+                        <retry>
+                            <interval>1500</interval>
+                            <retries>5</retries>
+                        </retry>
+                        <connectionTimeout>10000</connectionTimeout>
+                    </zookeeper>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.connections.ws.WebServiceConnection</class>
+                    <rest>
+                        <name>test-ws</name>
+                        <endpoint>https://howtodoinjava.com/</endpoint>
+                        <paths>
+                            <jersey>jersey</jersey>
+                            <other>jersey/jersey-restful-client-examples/</other>
+                        </paths>
+                    </rest>
+                </connection>
+            </connections>
+        </config>
+    </env>
+</configuration>

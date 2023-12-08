@@ -23,7 +23,7 @@ import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.model.LongKey;
 import io.zyient.core.persistence.DataStoreManager;
-import io.zyient.base.core.stores.DemoDataStoreEnv;
+import io.zyient.core.persistence.env.DemoDataStoreEnv;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;

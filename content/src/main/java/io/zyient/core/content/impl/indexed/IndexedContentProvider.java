@@ -17,6 +17,9 @@
 package io.zyient.core.content.impl.indexed;
 
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.core.content.DocumentContext;
+import io.zyient.core.content.ManagedContentProvider;
+import io.zyient.core.content.settings.ManagedProviderSettings;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.DataStoreException;
@@ -26,9 +29,6 @@ import io.zyient.core.persistence.impl.solr.SolrDataStore;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
-import io.zyient.core.content.DocumentContext;
-import io.zyient.core.content.ManagedContentProvider;
-import io.zyient.core.content.settings.ManagedProviderSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

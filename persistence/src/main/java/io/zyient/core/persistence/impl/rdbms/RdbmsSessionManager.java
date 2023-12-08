@@ -18,9 +18,9 @@ package io.zyient.core.persistence.impl.rdbms;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.StoreSessionManager;
+import io.zyient.core.persistence.model.BaseEntity;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

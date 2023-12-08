@@ -17,13 +17,13 @@
 package io.zyient.core.content.impl.indexed;
 
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.io.FileSystem;
+import io.zyient.core.content.ContentCursor;
+import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.impl.solr.SolrCursor;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
-import io.zyient.core.content.ContentCursor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

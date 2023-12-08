@@ -22,19 +22,20 @@ import io.zyient.base.common.utils.DateTimeUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
-import io.zyient.base.core.io.FileSystem;
-import io.zyient.base.core.io.Reader;
-import io.zyient.base.core.io.Writer;
-import io.zyient.base.core.io.impl.PostOperationVisitor;
-import io.zyient.base.core.io.model.FileInode;
-import io.zyient.base.core.io.model.Inode;
-import io.zyient.base.core.io.model.PathInfo;
+import io.zyient.core.content.settings.ManagedProviderSettings;
+import io.zyient.core.filesystem.FileSystem;
+import io.zyient.core.filesystem.Reader;
+import io.zyient.core.filesystem.Writer;
+import io.zyient.core.filesystem.env.FileSystemEnv;
+import io.zyient.core.filesystem.impl.PostOperationVisitor;
+import io.zyient.core.filesystem.model.FileInode;
+import io.zyient.core.filesystem.model.Inode;
+import io.zyient.core.filesystem.model.PathInfo;
 import io.zyient.core.persistence.*;
 import io.zyient.core.persistence.impl.solr.SolrDataStore;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
-import io.zyient.core.content.settings.ManagedProviderSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -80,6 +81,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                         String.format("Environment does not initialize DataStore manager. [type=%s]",
                                 env().getClass().getCanonicalName()));
             }
+            if (!(env() instanceof FileSystemEnv<?>)) {
+                throw new ConfigurationException(
+                        String.format("Environment does not provide filesystem(s). [type=%s]",
+                                env().getClass().getCanonicalName()));
+            }
             DataStoreManager dataStoreManager = ((DataStoreProvider) env()).getDataStoreManager();
             Preconditions.checkNotNull(dataStoreManager);
             dataStore = (AbstractDataStore<T>) dataStoreManager.getDataStore(settings.getDataStore(), settings.getDataStoreType());
@@ -87,7 +93,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                 throw new ConfigurationException(String.format("DataStore not found. [name=%s][type=%s]",
                         settings.getDataStore(), SolrDataStore.class.getCanonicalName()));
             }
-            fileSystem = env().fileSystemManager().get(settings.getFileSystem());
+            fileSystem = ((FileSystemEnv<?>) env()).fileSystemManager().get(settings.getFileSystem());
             if (fileSystem == null) {
                 throw new ConfigurationException(String.format("FileSystem not found. [name=%s]",
                         settings.getFileSystem()));
