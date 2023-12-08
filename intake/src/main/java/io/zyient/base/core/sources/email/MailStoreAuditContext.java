@@ -16,7 +16,7 @@
 
 package io.zyient.base.core.sources.email;
 
-import io.zyient.base.core.stores.impl.DataStoreAuditContext;
+import io.zyient.core.persistence.impl.DataStoreAuditContext;
 import lombok.Getter;
 import lombok.Setter;
 

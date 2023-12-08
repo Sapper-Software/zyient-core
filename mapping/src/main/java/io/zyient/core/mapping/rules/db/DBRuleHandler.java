@@ -18,10 +18,10 @@ package io.zyient.core.mapping.rules.db;
 
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.stores.Cursor;
 import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
 import io.zyient.core.mapping.rules.RuleValidationError;
+import io.zyient.core.persistence.Cursor;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 

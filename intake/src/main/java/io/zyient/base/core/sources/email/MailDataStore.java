@@ -31,7 +31,7 @@ import io.zyient.base.core.sources.email.settings.MailDataSourceSettings;
 import io.zyient.base.core.stores.BaseSearchResult;
 import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.base.core.stores.EntitySearchResult;
-import io.zyient.base.core.stores.impl.DataStoreAuditContext;
+import io.zyient.core.persistence.impl.DataStoreAuditContext;
 import io.zyient.intake.model.AbstractMailMessage;
 import io.zyient.intake.model.EmailMessage;
 import io.zyient.intake.model.MessageWrapper;

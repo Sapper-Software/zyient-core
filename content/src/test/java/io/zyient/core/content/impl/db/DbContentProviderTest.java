@@ -21,7 +21,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.content.env.DemoDataStoreEnv;

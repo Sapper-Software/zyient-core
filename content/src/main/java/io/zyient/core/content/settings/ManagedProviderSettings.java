@@ -18,7 +18,7 @@ package io.zyient.core.content.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.core.persistence.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.configuration2.ex.ConfigurationException;

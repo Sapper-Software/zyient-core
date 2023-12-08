@@ -18,11 +18,11 @@ package io.zyient.core.content.impl.indexed;
 
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.io.FileSystem;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.impl.solr.SolrCursor;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
-import io.zyient.base.core.stores.model.DocumentState;
+import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.impl.solr.SolrCursor;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentId;
+import io.zyient.core.persistence.model.DocumentState;
 import io.zyient.core.content.ContentCursor;
 import lombok.Getter;
 import lombok.NonNull;

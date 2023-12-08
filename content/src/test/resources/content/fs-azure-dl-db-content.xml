@@ -102,12 +102,12 @@
                 </zk>
                 <store>
                     <settings>
-                        <class>io.zyient.base.core.stores.impl.settings.rdbms.RdbmsStoreSettings</class>
+                        <class>io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings</class>
                     </settings>
-                    <class>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</class>
+                    <class>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</class>
                     <connection>
                         <name>test-hibernate</name>
-                        <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
+                        <class>io.zyient.core.persistence.impl.rdbms.HibernateConnection</class>
                     </connection>
                     <name>test-rdbms</name>
                 </store>
@@ -122,7 +122,7 @@
                 </fileSystem>
                 <dataStore>
                     <name>test-rdbms</name>
-                    <type>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</type>
+                    <type>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</type>
                 </dataStore>
                 <encryptionKey>db-encryption-key</encryptionKey>
             </contentManager>
@@ -145,7 +145,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
+                    <class>io.zyient.core.persistence.impl.rdbms.HibernateConnection</class>
                     <hibernate>
                         <name>test-hibernate</name>
                         <url>jdbc:mariadb://192.168.2.19:3306/test</url>
@@ -155,8 +155,8 @@
                         <dialect>MySQL</dialect>
                         <model>
                             <packages>
-                                io.zyient.base.core.stores.impl.rdbms.model,
-                                io.zyient.base.core.stores.impl.solr.model,
+                                io.zyient.core.persistence.impl.rdbms.model,
+                                io.zyient.core.persistence.impl.solr.model,
                                 io.zyient.core.content.model
                             </packages>
                         </model>

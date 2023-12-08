@@ -19,14 +19,14 @@ package io.zyient.core.content.impl.mongo;
 import dev.morphia.transactions.MorphiaSession;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.core.stores.AbstractDataStore;
-import io.zyient.base.core.stores.Cursor;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.impl.mongo.MongoDbCursor;
-import io.zyient.base.core.stores.impl.mongo.MongoDbDataStore;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
-import io.zyient.base.core.stores.model.DocumentState;
+import io.zyient.core.persistence.AbstractDataStore;
+import io.zyient.core.persistence.Cursor;
+import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.impl.mongo.MongoDbCursor;
+import io.zyient.core.persistence.impl.mongo.MongoDbDataStore;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentId;
+import io.zyient.core.persistence.model.DocumentState;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.content.ManagedContentProvider;
 import io.zyient.core.content.settings.ManagedProviderSettings;
@@ -87,10 +87,10 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
     @Override
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
-                                                                                                                                               @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                                               int batchSize,
-                                                                                                                                               boolean download,
-                                                                                                                                               DocumentContext context) throws DataStoreException {
+                                                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                                         int batchSize,
+                                                                                                                                         boolean download,
+                                                                                                                                         DocumentContext context) throws DataStoreException {
         MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
         MongoDbCursor<DocumentId, Document<E, K, D>> cursor = (MongoDbCursor<DocumentId, Document<E, K, D>>) dataStore
                 .doSearch(query,

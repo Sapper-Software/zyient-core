@@ -22,9 +22,9 @@ import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.PathInfo;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentState;
+import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentState;
 import lombok.NonNull;
 
 import java.io.File;

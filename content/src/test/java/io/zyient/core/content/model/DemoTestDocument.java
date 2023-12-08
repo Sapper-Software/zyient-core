@@ -18,8 +18,8 @@ package io.zyient.core.content.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 

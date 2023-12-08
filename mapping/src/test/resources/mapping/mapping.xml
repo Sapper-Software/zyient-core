@@ -46,7 +46,7 @@
                 <saveValidationErrors>false</saveValidationErrors>
                 <dataStore>
                     <name>test-rdbms</name>
-                    <type>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</type>
+                    <type>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</type>
                 </dataStore>
             </pipeline>
         </pipelines>

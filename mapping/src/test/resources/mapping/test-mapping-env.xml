@@ -67,12 +67,12 @@
                 </zk>
                 <store>
                     <settings>
-                        <class>io.zyient.base.core.stores.impl.settings.rdbms.RdbmsStoreSettings</class>
+                        <class>io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings</class>
                     </settings>
-                    <class>io.zyient.base.core.stores.impl.rdbms.RdbmsDataStore</class>
+                    <class>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</class>
                     <connection>
                         <name>test-hibernate</name>
-                        <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
+                        <class>io.zyient.core.persistence.impl.rdbms.HibernateConnection</class>
                     </connection>
                     <name>test-rdbms</name>
                 </store>
@@ -105,7 +105,7 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>io.zyient.base.core.stores.impl.rdbms.HibernateConnection</class>
+                    <class>io.zyient.core.persistence.impl.rdbms.HibernateConnection</class>
                     <hibernate>
                         <name>test-hibernate</name>
                         <url>jdbc:mariadb://192.168.2.19:3306/test</url>
@@ -114,7 +114,7 @@
                         <driver>org.mariadb.jdbc.Driver</driver>
                         <dialect>MySQL</dialect>
                         <model>
-                            <packages>io.zyient.base.core.stores.impl.rdbms.model, io.zyient.core.mapping.model</packages>
+                            <packages>io.zyient.core.persistence.impl.rdbms.model, io.zyient.core.mapping.model</packages>
                         </model>
                     </hibernate>
                 </connection>

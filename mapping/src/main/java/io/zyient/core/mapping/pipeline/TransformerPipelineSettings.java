@@ -21,7 +21,7 @@ import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.stores.AbstractDataStore;
+import io.zyient.core.persistence.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
 

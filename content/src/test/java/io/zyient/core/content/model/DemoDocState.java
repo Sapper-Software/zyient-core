@@ -18,7 +18,7 @@ package io.zyient.core.content.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.base.core.stores.model.DocumentState;
+import io.zyient.core.persistence.model.DocumentState;
 import jakarta.persistence.Embeddable;
 
 @Embeddable

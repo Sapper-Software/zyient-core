@@ -29,11 +29,11 @@ import io.zyient.base.core.io.impl.PostOperationVisitor;
 import io.zyient.base.core.io.model.FileInode;
 import io.zyient.base.core.io.model.Inode;
 import io.zyient.base.core.io.model.PathInfo;
-import io.zyient.base.core.stores.*;
-import io.zyient.base.core.stores.impl.solr.SolrDataStore;
-import io.zyient.base.core.stores.model.Document;
-import io.zyient.base.core.stores.model.DocumentId;
-import io.zyient.base.core.stores.model.DocumentState;
+import io.zyient.core.persistence.*;
+import io.zyient.core.persistence.impl.solr.SolrDataStore;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentId;
+import io.zyient.core.persistence.model.DocumentState;
 import io.zyient.core.content.settings.ManagedProviderSettings;
 import lombok.Getter;
 import lombok.NonNull;
@@ -114,7 +114,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
             String uri = JSONUtils.asString(fi.getPath(), Map.class);
             document.setUri(uri);
             document.validate();
-            if (dataStore instanceof TransactionDataStore<?, ?>) {
+            if (dataStore instanceof TransactionDataStore<?,?>) {
                 ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }
             try {
