@@ -1,0 +1,30 @@
+configurations.all {
+    exclude module: "logback-classic"
+    exclude module: "log4j-to-slf4j"
+    resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+        if (details.requested.name == 'log4j') {
+            details.useTarget "org.apache.logging.log4j:log4j-slf4j18-impl:2.18.0"
+        }
+        if (details.requested.name == 'avro') {
+            details.useTarget "org.apache.avro:avro:1.11.0"
+        }
+        if (details.requested.name == 'commons-codec') {
+            details.useTarget 'commons-codec:commons-codec:1.16.0'
+        }
+    }
+}
+
+dependencies {
+    implementation project(':common')
+    implementation project(':core')
+
+    implementation 'org.apache.kafka:kafka-clients:3.4.0'
+
+    implementation 'software.amazon.awssdk:sqs:2.20.140'
+
+    implementation 'com.azure:azure-identity:1.10.0'
+    implementation 'com.azure:azure-messaging-servicebus:7.14.3'
+
+    implementation 'net.openhft:chronicle-bytes:2.24ea15'
+    implementation 'net.openhft:chronicle-queue:5.24ea23'
+}

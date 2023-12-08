@@ -71,16 +71,16 @@
         <demo>
             <producer>
                 <builder>
-                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoProducerBuilder</type>
-                    <settingsType>io.zyient.base.core.messaging.builders.MessageSenderSettings</settingsType>
+                    <type>io.zyient.core.messaging.chronicle.builders.DemoProducerBuilder</type>
+                    <settingsType>io.zyient.core.messaging.builders.MessageSenderSettings</settingsType>
                 </builder>
                 <type>chronicle</type>
                 <connection>test-queue-producer</connection>
             </producer>
             <consumer>
                 <builder>
-                    <type>io.zyient.base.core.messaging.chronicle.builder.DemoConsumerBuilder</type>
-                    <settingsType>io.zyient.base.core.messaging.builders.MessageReceiverSettings</settingsType>
+                    <type>io.zyient.core.messaging.chronicle.builders.DemoConsumerBuilder</type>
+                    <settingsType>io.zyient.core.messaging.builders.MessageReceiverSettings</settingsType>
                 </builder>
                 <type>chronicle</type>
                 <connection>test-queue-consumer</connection>

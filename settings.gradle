@@ -16,4 +16,5 @@ include 'case-management'
 include 'entity'
 include 'intake'
 include 'filesystem'
+include 'messaging'
 

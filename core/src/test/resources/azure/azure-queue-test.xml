@@ -34,7 +34,7 @@
                 <offsets>
                     <offsetManager>
                         <name>AzureQueueOffset</name>
-                        <type>io.zyient.base.core.messaging.azure.AzureMessagingStateManager</type>
+                        <type>io.zyient.core.messaging.azure.AzureMessagingStateManager</type>
                         <connection>test-zk</connection>
                         <basePath>chronicle</basePath>
                     </offsetManager>
@@ -48,16 +48,16 @@
         <demo>
             <producer>
                 <builder>
-                    <type>io.zyient.base.core.messaging.azure.builder.DemoAzureMessageProducerBuilder</type>
-                    <settingsType>io.zyient.base.core.messaging.builders.MessageSenderSettings</settingsType>
+                    <type>io.zyient.core.messaging.azure.builders.DemoAzureMessageProducerBuilder</type>
+                    <settingsType>io.zyient.core.messaging.builders.MessageSenderSettings</settingsType>
                 </builder>
                 <type>serviceBus</type>
                 <connection>test-queue-producer</connection>
             </producer>
             <consumer>
                 <builder>
-                    <type>io.zyient.base.core.messaging.azure.builder.DemoAzureMessageConsumerBuilder</type>
-                    <settingsType>io.zyient.base.core.messaging.azure.builders.AzureMessageConsumerSettings
+                    <type>io.zyient.core.messaging.azure.builders.DemoAzureMessageConsumerBuilder</type>
+                    <settingsType>io.zyient.core.messaging.azure.builders.AzureMessageConsumerSettings
                     </settingsType>
                 </builder>
                 <type>serviceBus</type>

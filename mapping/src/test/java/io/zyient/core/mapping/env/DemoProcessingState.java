@@ -17,8 +17,8 @@
 package io.zyient.core.mapping.env;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.core.messaging.chronicle.ChronicleOffset;
 import io.zyient.base.core.processing.ProcessingState;
+import io.zyient.core.messaging.chronicle.ChronicleOffset;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

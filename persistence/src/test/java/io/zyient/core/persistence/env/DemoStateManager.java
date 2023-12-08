@@ -17,12 +17,12 @@
 package io.zyient.core.persistence.env;
 
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.messaging.chronicle.ChronicleOffset;
 import io.zyient.base.core.model.Heartbeat;
 import io.zyient.base.core.processing.ProcessStateManager;
 import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.base.core.state.BaseStateManagerSettings;
 import io.zyient.base.core.state.StateManagerError;
+import io.zyient.core.messaging.chronicle.ChronicleOffset;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
