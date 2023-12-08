@@ -19,6 +19,7 @@ package io.zyient.base.core.stores.impl.solr;
 public class SolrConstants {
     public static final String FIELD_SOLR_ID = "id";
     public static final String FIELD_SOLR_DOC_NAME = "name";
+    public static final String FIELD_SOLR_DOC_SOURCE_PATH = "source_path";
     public static final String FIELD_SOLR_TYPE = "class";
     public static final String FIELD_SOLR_MIME_TYPE = "mime_type";
     public static final String FIELD_SOLR_CREATED_BY = "created_by";

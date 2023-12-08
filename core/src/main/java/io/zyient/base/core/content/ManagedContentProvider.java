@@ -17,10 +17,11 @@
 package io.zyient.base.core.content;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.DateTimeUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.content.settings.ManagedProviderSettings;
 import io.zyient.base.core.io.FileSystem;
 import io.zyient.base.core.io.Reader;
@@ -63,6 +64,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
         super(settingsType);
     }
 
+    private String getPath(DocumentId id) {
+        ManagedProviderSettings settings = (ManagedProviderSettings) settings();
+        String dir = DateTimeUtils.formatTimestamp(settings.getPathFormat());
+        return PathUtils.formatPath(String.format("%s/%s/%s", id.getCollection(), dir, id.getId()));
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -94,15 +100,13 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
         }
     }
 
+
     @Override
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> createDoc(@NonNull Document<E, K, D> document,
                                                                                                                     @NonNull DocumentContext context) throws DataStoreException {
         try {
-            FileInode fi = fileSystem.create(document.getId().getCollection(), document.getId().getId());
-            try (Writer writer = fileSystem.writer(fi, document.getPath())) {
-                writer.commit(true);
-            }
+            FileInode fi = fileSystem.create(document.getId().getCollection(), getPath(document.getId()));
             String idJson = JSONUtils.asString(document.getId(), DocumentId.class);
             fi.attribute(Constants.ATTRIBUTE_DOC_ID, idJson);
             fi.attribute(Constants.ATTRIBUTE_DOC_TYPE, document.getClass().getCanonicalName());
@@ -116,6 +120,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                 document = dataStore.create(document, document.getClass(), context);
                 if (dataStore instanceof TransactionDataStore<?, ?>) {
                     ((TransactionDataStore<?, ?>) dataStore).commit();
+                }
+                try (Writer writer = fileSystem.writer(fi, document.getPath())) {
+                    writer.commit(true);
                 }
                 return document;
             } catch (RuntimeException re) {
@@ -150,9 +157,6 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                 throw new DataStoreException(String.format("Document mis-match: [FS ID=%s][DOC ID=%s]",
                         docId.stringKey(), document.getId().stringKey()));
             }
-            try (Writer writer = fileSystem.writer(fi, document.getPath())) {
-                writer.commit(true);
-            }
             if (dataStore instanceof TransactionDataStore<?, ?>) {
                 ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }
@@ -160,6 +164,9 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                 document = dataStore.update(document, document.getClass(), context);
                 if (dataStore instanceof TransactionDataStore<?, ?>) {
                     ((TransactionDataStore<?, ?>) dataStore).commit();
+                }
+                try (Writer writer = fileSystem.writer(fi, document.getPath())) {
+                    writer.commit(true);
                 }
                 return document;
             } catch (RuntimeException re) {

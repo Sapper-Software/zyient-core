@@ -27,7 +27,8 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.IOUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.keystore.KeyStore;
-import io.zyient.base.core.model.UserContext;
+import io.zyient.base.core.mapping.SourceTypes;
+import io.zyient.base.core.mapping.readers.FileTypeDetector;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.stores.AbstractDataStore;
 import io.zyient.base.core.stores.Cursor;
@@ -144,6 +145,17 @@ public abstract class ContentProvider implements Closeable {
             }
             metrics.createCounter().increment();
             try (Timer t = new Timer(metrics.createTimer())) {
+                if (Strings.isNullOrEmpty(document.getName())) {
+                    String name = document.getPath().getName();
+                    document.setName(name);
+                }
+                if (Strings.isNullOrEmpty(document.getMimeType())) {
+                    FileTypeDetector detector = new FileTypeDetector(document.getPath());
+                    SourceTypes type = detector.detect();
+                    if (type != null) {
+                        document.setMimeType(type.name());
+                    }
+                }
                 document.setCreatedBy(context.user().getName());
                 document.setModifiedBy(context.user().getName());
                 document.setCreatedTime(System.nanoTime());
@@ -157,11 +169,6 @@ public abstract class ContentProvider implements Closeable {
                     for (Document<E, K, T> child : children) {
                         child.setParentDocId(document.getId().getId());
                         child.getId().setCollection(document.getId().getCollection());
-                        child.setCreatedBy(context.user().getName());
-                        child.setModifiedBy(context.user().getName());
-                        child.setCreatedTime(System.nanoTime());
-                        child.setUpdatedTime(System.nanoTime());
-                        checkPassword(child);
                         child.validate();
 
                         create(child, context);

@@ -32,6 +32,8 @@ public class ManagedProviderSettings extends ContentProviderFsSettings {
     private String dataStore;
     @Config(name = "dataStore.type", type = Class.class)
     private Class<? extends AbstractDataStore<?>> dataStoreType;
+    @Config(name = "pathFormat", required = false)
+    private String pathFormat = "YYYY/MMM/dd/HH";
 
     @Override
     public void validate() throws ConfigurationException {

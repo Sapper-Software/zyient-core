@@ -43,7 +43,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     }
 
     @Override
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public <E extends IEntity<?>> E createEntity(@NonNull E entity,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws
@@ -53,16 +52,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         if (entity instanceof BaseEntity) {
-            if (((BaseEntity) entity).getState().getState() != EEntityState.New) {
-                entity = (E) sessionManager.checkCache((BaseEntity<?>) entity);
-            }
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
         IDGenerator.process(entity, this);
         session.persist(entity);
-        if (entity instanceof BaseEntity) {
-            entity = (E) sessionManager.updateCache((BaseEntity<?>) entity, EEntityState.Synced);
-        }
         return entity;
     }
 
@@ -83,7 +76,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
 
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public <E extends IEntity<?>> E updateEntity(@NonNull E entity,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws
@@ -93,18 +85,13 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         if (entity instanceof BaseEntity) {
-            entity = (E) sessionManager.checkCache((BaseEntity<?>) entity);
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
         session.persist(entity);
-        if (entity instanceof BaseEntity) {
-            entity = (E) sessionManager.updateCache((BaseEntity<?>) entity, EEntityState.Synced);
-        }
         return entity;
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
                                                        @NonNull Class<? extends E> type,
                                                        Context context) throws
@@ -116,9 +103,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         E entity = findEntity(key, type, context);
         if (entity != null) {
             session.remove(entity);
-            if (entity instanceof BaseEntity) {
-                entity = (E) sessionManager.updateCache((BaseEntity<?>) entity, EEntityState.Deleted);
-            }
             return true;
         }
         return false;

@@ -26,7 +26,6 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.content.impl.db.converters.GenericJsonConverter;
 import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.model.UserContext;
@@ -71,6 +70,9 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     @Column(name = "doc_name")
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
     private String name;
+    @Column(name = "doc_source_path")
+    @Field(SolrConstants.FIELD_SOLR_DOC_SOURCE_PATH)
+    private String sourcePath;
     @Embedded
     private E docState;
     @Column(name = "mime_type")
@@ -85,8 +87,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     @Column(name = "modified_by")
     @Field(SolrConstants.FIELD_SOLR_MODIFIED_BY)
     private String modifiedBy;
-    @Column(name = "reference_id")
-    @Convert(converter = GenericJsonConverter.class)
+    @Embedded
     private K referenceId;
     @Column(name = "password")
     private String password;
@@ -177,6 +178,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         Document<E, K, T> doc = (Document<E, K, T>) source;
         this.docState = doc.docState;
         this.name = doc.name;
+        this.sourcePath = doc.sourcePath;
         this.uri = doc.uri;
         this.mimeType = doc.mimeType;
         this.createdBy = doc.createdBy;
@@ -207,6 +209,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
             clone(doc, EEntityState.New);
             doc.docState = (E) docState.create();
             doc.name = name;
+            doc.sourcePath = sourcePath;
             doc.uri = uri;
             doc.mimeType = mimeType;
             doc.parentDocId = parentDocId;

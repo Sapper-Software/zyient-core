@@ -16,8 +16,10 @@
 
 package io.zyient.base.core.stores.impl.rdbms;
 
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.model.BaseEntity;
 import io.zyient.base.core.stores.Cursor;
 import io.zyient.base.core.stores.DataStoreException;
 import lombok.NonNull;
@@ -48,6 +50,9 @@ public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Curso
         int count = pageSize();
         while (count > 0) {
             E entity = results.get();
+            if (entity instanceof BaseEntity<?>) {
+                ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
+            }
             batch.add(entity);
             if (!results.next()) {
                 break;

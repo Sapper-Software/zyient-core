@@ -18,16 +18,26 @@ package io.zyient.base.core.stores.impl.solr.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.IKey;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.UUID;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
+@Embeddable
 public class ReferenceKey implements IKey {
+    @Column(name = "reference_id")
     private String key;
+
+    public ReferenceKey() {
+        key = UUID.randomUUID().toString();
+    }
 
     /**
      * Get the String representation of the key.

@@ -2,26 +2,29 @@ DROP TABLE IF EXISTS `tb_documents`;
 
 CREATE TABLE `tb_documents`
 (
-    doc_id        VARCHAR(64)   NOT NULL,
-    collection    VARCHAR(64)   NOT NULL,
-    parent_doc_id VARCHAR(64),
-    doc_name      VARCHAR(1024) NOT NULL,
-    doc_state     VARCHAR(32)   NOT NULL,
-    mime_type     VARCHAR(256),
-    URI           VARCHAR(2048) NOT NULL,
-    created_by    VARCHAR(256)  NOT NULL,
-    modified_by   VARCHAR(256)  NOT NULL,
-    time_created  NUMERIC(11)   NOT NULL,
-    time_updated  NUMERIC(11)   NOT NULL,
-    password      VARCHAR(256),
-    error         TEXT,
-    properties    MEDIUMTEXT,
-    --<reference_id> ...
+    doc_id          VARCHAR(64)   NOT NULL,
+    collection      VARCHAR(64)   NOT NULL,
+    parent_doc_id   VARCHAR(64),
+    doc_name        VARCHAR(256)  NOT NULL,
+    doc_source_path VARCHAR(1024) NOT NULL,
+    doc_state       VARCHAR(32)   NOT NULL,
+    mime_type       VARCHAR(256),
+    URI             VARCHAR(2048) NOT NULL,
+    created_by      VARCHAR(256)  NOT NULL,
+    modified_by     VARCHAR(256)  NOT NULL,
+    time_created    NUMERIC(18)   NOT NULL,
+    time_updated    NUMERIC(18)   NOT NULL,
+    password        VARCHAR(256),
+    error           TEXT,
+    properties      MEDIUMTEXT,
+    reference_id    VARCHAR(256)  NOT NULL,
     PRIMARY KEY (collection, doc_id),
-    FULLTEXT(properties)
-) ENGINE=Aria;
+    FULLTEXT (properties)
+) ENGINE = Aria;
 
-CREATE INDEX index_p_documents ON `tb_documents` (`parent_doc_id`);
+CREATE INDEX index_p_documents ON `tb_documents` (`parent_doc_id`, `doc_id`);
+CREATE INDEX index_source_name ON `tb_documents` (`doc_name`, `doc_id`);
+
 
 
 

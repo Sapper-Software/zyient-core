@@ -46,16 +46,17 @@ public class FileTypeDetector {
         this.file = file;
     }
 
-    public void detect() throws Exception {
+    public SourceTypes detect() throws Exception {
         String ext = FilenameUtils.getExtension(file.getAbsolutePath());
         type = SourceTypes.fromExtension(ext);
-        if (type != SourceTypes.UNKNOWN) return;
+        if (type != SourceTypes.UNKNOWN) return type;
         String mimeType = FileUtils.detectMimeType(file);
         type = from(mimeType);
-        if (type != SourceTypes.UNKNOWN) return;
+        if (type != SourceTypes.UNKNOWN) return type;
         if (FileUtils.MIME_TYPE_TEXT.compareToIgnoreCase(mimeType) == 0) {
             checkTextFile();
         }
+        return type;
     }
 
     private void checkTextFile() throws Exception {
@@ -155,6 +156,8 @@ public class FileTypeDetector {
             return SourceTypes.HTML;
         } else if (FileUtils.MIME_TYPE_JSON.compareToIgnoreCase(mimeType) == 0) {
             return SourceTypes.JSON;
+        } else if (FileUtils.isArchiveType(mimeType)) {
+            return SourceTypes.COMPRESSED;
         }
         return SourceTypes.UNKNOWN;
     }

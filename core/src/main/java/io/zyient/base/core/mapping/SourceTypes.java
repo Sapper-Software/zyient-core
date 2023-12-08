@@ -32,7 +32,11 @@ public enum SourceTypes {
     JSON(FileUtils.MIME_TYPE_JSON, new String[]{"json"}),
     POSITIONAL("text/pos", new String[]{"pos"}),
     EXCEL("application/ms-excel", new String[]{"xls", "xlsx"}),
-    HTML(FileUtils.MIME_TYPE_HTML, new String[]{"html", "dhtml"});
+    HTML(FileUtils.MIME_TYPE_HTML, new String[]{"html", "dhtml"}),
+    PDF(FileUtils.MIME_TYPE_PDF, new String[]{"pdf"}),
+    WORD("application/ms-word", new String[]{"doc", "docx"}),
+    PPT("application/ms-powerpoint", new String[]{"ppt"}),
+    COMPRESSED(FileUtils.MIME_TYPE_ZIP, new String[]{"zip", "bzip", "bzip2", "tar", "gz", "7z", "rar"});
 
     private final String mimeType;
     private final String[] extensions;
