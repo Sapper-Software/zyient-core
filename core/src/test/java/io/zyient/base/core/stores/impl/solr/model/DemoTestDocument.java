@@ -17,7 +17,9 @@
 package io.zyient.base.core.stores.impl.solr.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.core.stores.model.Document;
+import io.zyient.base.core.stores.model.DocumentId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
@@ -28,5 +30,18 @@ import jakarta.persistence.Table;
 public class DemoTestDocument extends Document<DemoDocState, ReferenceKey, DemoTestDocument> {
     public DemoTestDocument() {
         super(new DemoDocState());
+    }
+
+    @Override
+    public Document<DemoDocState, ReferenceKey, DemoTestDocument> createInstance() throws Exception {
+        DemoTestDocument doc = new DemoTestDocument();
+        DocumentId id = new DocumentId(getId().getCollection());
+        doc.setId(id);
+        doc.setReferenceId(getReferenceId());
+        doc.setDocState(new DemoDocState());
+        doc.getDocState().setState(EEntityState.New);
+        doc.getState().setState(EEntityState.New);
+        doc.setProperties(getProperties());
+        return doc;
     }
 }

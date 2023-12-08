@@ -287,7 +287,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                         type.getCanonicalName(), k));
             }
             if (current instanceof Document<?, ?, ?>) {
-                if (((Document<?, ?, ?>) current).isSearchDocuments()) {
+                if (((Document<?, ?, ?>) current).getDocumentCount() > 0) {
                     Set<? extends Document<?, ?, ?>> children = ((Document<?, ?, ?>) current).getDocuments();
                     if (children != null && !children.isEmpty()) {
                         for (Document<?, ?, ?> child : children) {
@@ -610,7 +610,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                             type.getCanonicalName(), key));
         }
         Document<?, ?, ?> document = JSONUtils.read(json, type);
-        if (document.isSearchDocuments() && fetchChildren) {
+        if (document.getDocumentCount() > 0 && fetchChildren) {
             fetchChildren(document, true);
         }
         return document;
@@ -619,7 +619,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     @SuppressWarnings("unchecked")
     public void fetchChildren(@NonNull Document<?, ?, ?> parent,
                               boolean fetchChildren) throws Exception {
-        if (!parent.isSearchDocuments()) return;
+        if (parent.getDocumentCount() <= 0) return;
         Set<Document<?, ?, ?>> children = fetchChildren(parent.getId(),
                 (Class<? extends Document<?, ?, ?>>) parent.getClass(),
                 fetchChildren);
@@ -645,7 +645,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 List<Document<?, ?, ?>> docs = cursor.nextPage();
                 if (docs == null || docs.isEmpty()) break;
                 for (Document<?, ?, ?> doc : docs) {
-                    if (doc.isSearchDocuments() && fetchChildren) {
+                    if (doc.getDocumentCount() > 0 && fetchChildren) {
                         fetchChildren(doc, true);
                     }
                     documents.add(doc);

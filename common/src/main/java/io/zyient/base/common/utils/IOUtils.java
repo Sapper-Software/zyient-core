@@ -26,7 +26,6 @@ import java.io.*;
 import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.util.Collection;
-import java.util.UUID;
 
 /**
  * Utility methods to perform IO.
@@ -132,50 +131,6 @@ public class IOUtils {
         input = input.replaceAll("[\\s=.]", "_");
 
         return input;
-    }
-
-    /**
-     * Get a temporary folder path with the appended sub-path.
-     * Directory path will be created if it doesn't exist.
-     *
-     * @param subpath - Sub-path to append.
-     * @return - Absolute path.
-     */
-    public static String getTempDirectory(String subpath) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(subpath));
-        String path = String.format("%s/%s/%s", System.getProperty("java.io.tmpdir"),
-                DEFAULT_TEMP_DIR_NAME,
-                subpath);
-        File file = new File(path);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        return file.getAbsolutePath();
-    }
-
-    /**
-     * Get a temporary folder path.
-     * Directory path will be created if it doesn't exist.
-     *
-     * @return - Absolute path.
-     */
-    public static String getTempDirectory() {
-        String path = String.format("%s/%s", System.getProperty("java.io.tmpdir"), DEFAULT_TEMP_DIR_NAME);
-        File file = new File(path);
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-        return file.getAbsolutePath();
-    }
-
-    /**
-     * Get a new temporary file path.
-     *
-     * @return - Temp file path.
-     */
-    public static String getTempFile() {
-        return String.format("%s/%s", getTempDirectory(),
-                UUID.randomUUID().toString());
     }
 
     /**

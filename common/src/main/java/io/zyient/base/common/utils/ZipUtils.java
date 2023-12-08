@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.intake.utils;
+package io.zyient.base.common.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -127,7 +127,8 @@ public class ZipUtils {
         }
     }
 
-    public static void unzip(@Nonnull String zipFilePath, @Nonnull String destDir,
+    public static void unzip(@Nonnull String zipFilePath,
+                             @Nonnull String destDir,
                              @Nonnull String password) throws ZipException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(zipFilePath));
         Preconditions.checkArgument(!Strings.isNullOrEmpty(destDir));

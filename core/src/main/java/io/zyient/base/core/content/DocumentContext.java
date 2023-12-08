@@ -27,6 +27,11 @@ public class DocumentContext extends Context implements UserContext {
     public static final String KEY_DOC_UNPACK = "document.unpack";
     public static final String KEY_DOC_DECRYPT = "document.decrypt";
 
+    public DocumentContext() {
+        unpack(true);
+        decrypt(false);
+    }
+
     @Override
     public UserContext user(@NonNull Principal user) {
         return (UserContext) put(KEY_USER_PRINCIPAL, user);

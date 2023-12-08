@@ -22,9 +22,7 @@ import io.zyient.base.common.StateException;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.CypherUtils;
-import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.IOUtils;
+import io.zyient.base.common.utils.*;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.mapping.SourceTypes;
@@ -60,6 +58,7 @@ public abstract class ContentProvider implements Closeable {
     public static final String ENCRYPTED_REGEX = String.format("%s=\\[(.+)\\]", ENCRYPTED_PREFIX);
     public static final String KEY_ENGINE = "ContentProvider";
     public static final String __CONFIG_PATH = "contentManager";
+    public static final String CONTENT_TEMP_PATH = "content/temp";
 
     private static final Pattern ENCRYPTED = Pattern.compile(ENCRYPTED_REGEX);
     private final ProcessorState state = new ProcessorState();
@@ -149,11 +148,17 @@ public abstract class ContentProvider implements Closeable {
                     String name = document.getPath().getName();
                     document.setName(name);
                 }
+                SourceTypes type = SourceTypes.UNKNOWN;
                 if (Strings.isNullOrEmpty(document.getMimeType())) {
                     FileTypeDetector detector = new FileTypeDetector(document.getPath());
-                    SourceTypes type = detector.detect();
+                    type = detector.detect();
                     if (type != null) {
                         document.setMimeType(type.name());
+                    }
+                }
+                if (type == SourceTypes.COMPRESSED && context.unpack()) {
+                    if (settings.isUncompress()) {
+                        uncompress(document);
                     }
                 }
                 document.setCreatedBy(context.user().getName());
@@ -161,7 +166,6 @@ public abstract class ContentProvider implements Closeable {
                 document.setCreatedTime(System.nanoTime());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
-                document.validate();
 
                 document = createDoc(document, context);
                 if (document.getDocuments() != null && !document.getDocuments().isEmpty()) {
@@ -169,7 +173,6 @@ public abstract class ContentProvider implements Closeable {
                     for (Document<E, K, T> child : children) {
                         child.setParentDocId(document.getId().getId());
                         child.getId().setCollection(document.getId().getCollection());
-                        child.validate();
 
                         create(child, context);
                     }
@@ -179,6 +182,29 @@ public abstract class ContentProvider implements Closeable {
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
+        }
+    }
+
+    private <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> void uncompress(Document<E, K, T> document) throws Exception {
+        File dir = PathUtils.getTempDir(String.format("%s/%s", CONTENT_TEMP_PATH, document.getId().getId()));
+        if (Strings.isNullOrEmpty(document.getPassword())) {
+            ZipUtils.unzip(document.getPath().getAbsolutePath(), dir.getAbsolutePath());
+        } else {
+            String password = getPassword(document);
+            ZipUtils.unzip(document.getPath().getAbsolutePath(), dir.getAbsolutePath(), password);
+        }
+        List<File> extracted = PathUtils.directoryList(dir, false);
+        if (extracted != null && !extracted.isEmpty()) {
+            for (File file : extracted) {
+                Document<E, K, T> doc = document.createInstance();
+                Preconditions.checkNotNull(doc.getId());
+                Preconditions.checkNotNull(doc.getDocState());
+                doc.setPath(file);
+                doc.setName(file.getName());
+                doc.setSourcePath(document.getSourcePath());
+                doc.setParentDocId(document.getId().getId());
+                document.add(doc);
+            }
         }
     }
 
@@ -248,7 +274,6 @@ public abstract class ContentProvider implements Closeable {
                 document.setModifiedBy(context.user().getName());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
-                document.validate();
                 document = updateDoc(document, context);
                 if (currrent != null) {
                     if (currrent.getDocuments() != null) {
@@ -336,7 +361,21 @@ public abstract class ContentProvider implements Closeable {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.readCounter().increment();
             try (Timer t = new Timer(metrics.readTimer())) {
-                return findDoc(id, entityType, context);
+                Document<E, K, T> document = findDoc(id, entityType, context);
+                if (document != null && document.getDocumentCount() > 0) {
+                    if (document.getDocuments() == null) {
+                        try (Cursor<DocumentId, Document<E, K, T>> cursor
+                                     = findChildDocs(document.getId(), entityType, context)) {
+                            while (true) {
+                                List<Document<E, K, T>> docs = cursor.nextPage();
+                                if (docs == null || docs.isEmpty()) break;
+                                document.addAll(docs);
+                            }
+                        }
+                    }
+                    document.validate();
+                }
+                return document;
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -392,6 +431,10 @@ public abstract class ContentProvider implements Closeable {
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> findDoc(@NonNull DocumentId docId,
                                                                                                                            @NonNull Class<? extends Document<E, K, T>> entityType,
                                                                                                                            DocumentContext context) throws DataStoreException;
+
+    protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> findChildDocs(@NonNull DocumentId docId,
+                                                                                                                                                     @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                                                     DocumentContext context) throws DataStoreException;
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> searchDocs(@NonNull AbstractDataStore.Q query,
                                                                                                                                                   @NonNull Class<? extends Document<E, K, T>> entityType,

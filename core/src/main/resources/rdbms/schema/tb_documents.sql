@@ -10,6 +10,7 @@ CREATE TABLE `tb_documents`
     doc_state       VARCHAR(32)   NOT NULL,
     mime_type       VARCHAR(256),
     URI             VARCHAR(2048) NOT NULL,
+    document_count  NUMERIC(8)    NOT NULL DEFAULT 0,
     created_by      VARCHAR(256)  NOT NULL,
     modified_by     VARCHAR(256)  NOT NULL,
     time_created    NUMERIC(18)   NOT NULL,

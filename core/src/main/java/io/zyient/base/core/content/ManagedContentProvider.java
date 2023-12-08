@@ -113,6 +113,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
             fi = (FileInode) fileSystem.updateInode(fi);
             String uri = JSONUtils.asString(fi.getPath(), Map.class);
             document.setUri(uri);
+            document.validate();
             if (dataStore instanceof TransactionDataStore<?, ?>) {
                 ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }
@@ -157,6 +158,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                 throw new DataStoreException(String.format("Document mis-match: [FS ID=%s][DOC ID=%s]",
                         docId.stringKey(), document.getId().stringKey()));
             }
+            document.validate();
             if (dataStore instanceof TransactionDataStore<?, ?>) {
                 ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }
@@ -275,6 +277,16 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
+    }
+
+    @Override
+    protected <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> findChildDocs(@NonNull DocumentId docId,
+                                                                                                                                            @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                                            DocumentContext context) throws DataStoreException {
+        String q = String.format("parentDocId = '%s'", docId.getId());
+        AbstractDataStore.Q query = new AbstractDataStore.Q()
+                .where(q);
+        return search(query, entityType, context);
     }
 
     protected abstract <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,

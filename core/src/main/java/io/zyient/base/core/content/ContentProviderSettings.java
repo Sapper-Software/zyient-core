@@ -38,6 +38,8 @@ public abstract class ContentProviderSettings extends Settings {
     private int batchSize = 32;
     @Config(name = "encryptionKey", required = false)
     private String encryptionKey;
+    @Config(name = "uncompress", required = false, type = Boolean.class)
+    private boolean uncompress = true;
 
     public abstract void validate() throws ConfigurationException;
 }

@@ -18,6 +18,7 @@ package io.zyient.base.common.utils;
 
 import com.google.common.base.Strings;
 import lombok.NonNull;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import java.io.*;
@@ -28,6 +29,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -193,6 +195,26 @@ public class PathUtils {
             }
         }
         return path;
+    }
+
+    public static List<File> directoryList(File dir, boolean includeDir) throws IOException {
+        if (dir.isDirectory()) {
+            Collection<File> files = FileUtils.listFiles(dir, null, true);
+            if (files != null && !files.isEmpty()) {
+                if (includeDir) {
+                    return new ArrayList<>(files);
+                } else {
+                    List<File> result = new ArrayList<>();
+                    for (File file : files) {
+                        if (file.isFile()) {
+                            result.add(file);
+                        }
+                    }
+                    return result;
+                }
+            }
+        }
+        return null;
     }
 
     public static File getTempFileWithExt(@NonNull String ext) throws IOException {

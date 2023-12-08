@@ -39,10 +39,7 @@ import org.apache.solr.client.solrj.beans.Field;
 
 import java.io.File;
 import java.security.Principal;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 @Setter
@@ -57,10 +54,6 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     @Transient
     @Field(SolrConstants.FIELD_REFERENCE_ID)
     private String searchReferenceId;
-    @Transient
-    @Field(SolrConstants.FIELD_DOC_HAS_CHILDREN)
-    private boolean searchDocuments = false;
-
 
     @EmbeddedId
     private DocumentId id;
@@ -97,6 +90,9 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     @Transient
     @JsonIgnore
     private Set<T> documents;
+    @Column(name = "document_count")
+    @Field(SolrConstants.FIELD_DOCUMENT_COUNT)
+    private int documentCount = 0;
     @Convert(converter = PropertiesConverter.class)
     @Field(SolrConstants.FIELD_DOC_PROPERTIES)
     @Column(name = "properties")
@@ -123,6 +119,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
             documents = new HashSet<>();
         }
         documents.add((T) doc);
+        documentCount++;
         return this;
     }
 
@@ -131,7 +128,17 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         if (documents != null) {
             return documents.remove((T) doc);
         }
+        documentCount--;
         return false;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Document<E, K, T> addAll(@NonNull Collection<Document<E, K, T>> docs) {
+        if (documents == null) {
+            documents = new HashSet<>();
+        }
+        documents.addAll((Collection<? extends T>) docs);
+        return this;
     }
 
     @SuppressWarnings("unchecked")
@@ -259,7 +266,19 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
             errors = ValidationExceptions.add(new ValidationException("Missing required field: [uri]"), errors);
         }
         if (Strings.isNullOrEmpty(createdBy) || Strings.isNullOrEmpty(modifiedBy)) {
-            errors = ValidationExceptions.add(new ValidationException("Missing required field(s) : [createdBy/modifiedBy]"), errors);
+            errors = ValidationExceptions
+                    .add(new ValidationException("Missing required field(s) : [createdBy/modifiedBy]"), errors);
+        }
+        if (documentCount > 0) {
+            if (documents == null) {
+                errors = ValidationExceptions
+                        .add(new ValidationException(String.format("No nested documents. [expected count=%d]",
+                                documentCount)), errors);
+            } else if (documents.size() != documentCount) {
+                errors = ValidationExceptions
+                        .add(new ValidationException(String.format("No nested documents. [expected count=%d][actual=%d]",
+                                documentCount, documents.size())), errors);
+            }
         }
         if (referenceId != null) {
             Class<? extends IKey> type = referenceId.getClass();
@@ -296,4 +315,6 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         properties.put(name, value);
         return this;
     }
+
+    public abstract Document<E, K, T> createInstance() throws Exception;
 }
