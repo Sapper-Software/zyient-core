@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow.model;
+package io.zyient.core.caseflow;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.MappedSuperclass;
-import lombok.Getter;
-import lombok.Setter;
-
-import java.security.Principal;
-
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-@MappedSuperclass
-public abstract class UserOrRole {
-    private String name;
-    private EUserOrRole type;
-
-    public abstract Principal asPrincipal() throws Exception;
+public enum ECaseAction {
+    Create,
+    Update,
+    Close,
+    UpdateState,
+    Delete,
+    Comment,
+    CommentRespond,
+    CommentClose,
+    AddArtefact,
+    UpdateArtefact,
+    DeleteArtefact,
+    AssignTo,
+    RemoveAssignment
 }

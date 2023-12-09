@@ -42,7 +42,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
             @AttributeOverride(name = "type", column = @Column(name = "commented_by_type")),
             @AttributeOverride(name = "timestamp", column = @Column(name = "comment_timestamp"))
     })
-    private UserOrRole commentedBy;
+    private Actor commentedBy;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "case_id", column = @Column(name = "parent_comment_case_id")),

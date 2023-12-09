@@ -8,6 +8,8 @@ dependencies {
     implementation project(':common')
     implementation project(':core')
     implementation project(':persistence')
+    implementation project(':filesystem')
+    implementation project(':content')
 
 
     // https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client

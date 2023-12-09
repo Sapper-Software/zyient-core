@@ -22,6 +22,7 @@ import io.zyient.core.caseflow.errors.CaseModelException;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.core.persistence.model.DocumentId;
+import io.zyient.core.persistence.model.DocumentState;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -37,25 +38,35 @@ import java.util.Set;
 @MappedSuperclass
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> implements PropertyBag {
+public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
+        extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
+    @Column(name = "description")
+    private String description;
     @Embedded
-    private S state;
+    private S caseState;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "created_by")),
+            @AttributeOverride(name = "type", column = @Column(name = "created_by_type")),
+            @AttributeOverride(name = "timestamp", column = @Column(name = "time_created"))
+    })
+    private Actor createdBy;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "assigned_to")),
             @AttributeOverride(name = "type", column = @Column(name = "assigned_to_type")),
             @AttributeOverride(name = "timestamp", column = @Column(name = "assigned_timestamp"))
     })
-    private UserOrRole assignedTo;
+    private Actor assignedTo;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "closed_by")),
             @AttributeOverride(name = "type", column = @Column(name = "closed_by_type")),
             @AttributeOverride(name = "timestamp", column = @Column(name = "closed_timestamp"))
     })
-    private UserOrRole closedBy;
+    private Actor closedBy;
     @OneToMany
     @JoinColumn(name = "case_id")
     private Set<CaseComment> comments;
@@ -68,18 +79,18 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
     })
     private CaseId parentId;
     @Transient
-    private Set<CaseDocument<?, ?>> artefacts;
+    private Set<CaseDocument<E, T>> artefacts;
     @Column(name = "properties")
     @Convert(converter = PropertiesConverter.class)
     private Map<String, Object> properties;
     @Transient
-    private Set<ArtefactReference> deleted;
+    private Set<CaseDocument<E, T>> deleted;
 
     public Case() {
         id = new CaseId();
     }
 
-    public Case<S> addArtefact(@NonNull CaseDocument<?, ?> artefact) {
+    public Case<S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
         ArtefactReferenceId refId = new ArtefactReferenceId();
         refId.setCaseId(id);
         refId.setDocumentId(artefact.getId());
@@ -106,9 +117,8 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
             if (deleted == null) {
                 deleted = new HashSet<>();
             }
-            deleted.add(delete);
-            CaseDocument<?, ?> deleteDoc = null;
-            for (CaseDocument<?, ?> document : artefacts) {
+            CaseDocument<E, T> deleteDoc = null;
+            for (CaseDocument<E, T> document : artefacts) {
                 if (document.getId().compareTo(delete.getId().getDocumentId()) == 0) {
                     deleteDoc = document;
                     break;
@@ -116,15 +126,16 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
             }
             if (deleteDoc != null) {
                 artefacts.remove(deleteDoc);
+                deleted.add(deleteDoc);
             }
             return true;
         }
         return false;
     }
 
-    public CaseDocument<?, ?> findArtefact(@NonNull DocumentId documentId) {
+    public CaseDocument<E, T> findArtefact(@NonNull DocumentId documentId) {
         if (artefacts != null) {
-            for (CaseDocument<?, ?> document : artefacts) {
+            for (CaseDocument<E, T> document : artefacts) {
                 if (document.getId().compareTo(documentId) == 0) {
                     return document;
                 }
@@ -138,14 +149,14 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
                                   @NonNull String comment,
                                   Long responseTo,
                                   DocumentId documentId) throws CaseModelException {
-        UserOrRole ur = new UserOrRole();
+        Actor ur = new Actor();
         ur.setName(userOrRole);
         ur.setType(type);
         ur.setTimestamp(System.currentTimeMillis());
         return addComment(ur, comment, responseTo, documentId);
     }
 
-    public CaseComment addComment(@NonNull UserOrRole commentor,
+    public CaseComment addComment(@NonNull UserOrRole actor,
                                   @NonNull String comment,
                                   Long responseTo,
                                   DocumentId docId) throws CaseModelException {
@@ -157,16 +168,22 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
                         id.stringKey(), responseTo));
             }
         }
-        commentor.setTimestamp(System.currentTimeMillis());
+        Actor a = null;
+        if (actor instanceof Actor) {
+            a = (Actor) actor;
+        } else {
+            a = new Actor(actor);
+        }
+        a.setTimestamp(System.currentTimeMillis());
         CaseCommentId id = new CaseCommentId();
         id.setCaseId(this.id.getId());
         CaseComment c = new CaseComment();
         c.setId(id);
-        c.setCommentedBy(commentor);
+        c.setCommentedBy(a);
         c.setComment(comment);
         c.setState(ECaseCommentState.New);
         if (docId != null) {
-            CaseDocument<?, ?> artefact = findArtefact(docId);
+            CaseDocument<E, T> artefact = findArtefact(docId);
             if (artefact == null) {
                 throw new CaseModelException(String.format("Artefact not found. [case=%s][artefact id=%s]",
                         id.getCaseId(), docId.stringKey()));

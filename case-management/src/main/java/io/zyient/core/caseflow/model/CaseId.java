@@ -41,6 +41,10 @@ public class CaseId implements IKey {
         id = UUID.randomUUID().toString();
     }
 
+    public CaseId(@NonNull String id) {
+        this.id = id;
+    }
+
     /**
      * Get the String representation of the key.
      *

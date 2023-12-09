@@ -32,6 +32,10 @@ public class DocumentContext extends Context implements UserContext {
         decrypt(false);
     }
 
+    public DocumentContext(@NonNull Context context) {
+        super(context);
+    }
+
     @Override
     public UserContext user(@NonNull Principal user) {
         return (UserContext) put(KEY_USER_PRINCIPAL, user);

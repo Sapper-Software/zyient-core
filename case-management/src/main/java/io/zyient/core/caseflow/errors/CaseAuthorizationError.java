@@ -14,23 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow.model;
+package io.zyient.core.caseflow.errors;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.MappedSuperclass;
-import lombok.Getter;
-import lombok.Setter;
+public class CaseAuthorizationError extends Exception {
+    private static final String __PREFIX = "Not Authorized : %s";
 
-import java.security.Principal;
+    public CaseAuthorizationError(String message) {
+        super(String.format(__PREFIX, message));
+    }
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-@MappedSuperclass
-public abstract class UserOrRole {
-    private String name;
-    private EUserOrRole type;
+    public CaseAuthorizationError(String message, Throwable cause) {
+        super(String.format(__PREFIX, message), cause);
+    }
 
-    public abstract Principal asPrincipal() throws Exception;
+    public CaseAuthorizationError(Throwable cause) {
+        super(String.format(__PREFIX, cause.getLocalizedMessage()), cause);
+    }
 }

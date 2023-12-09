@@ -47,9 +47,10 @@ DROP TABLE IF EXISTS `cm_cases`;
 
 CREATE TABLE `cm_cases`
 (
-    case_id            VARCHAR(64) NOT NULL,
-    case_state         VARCHAR(64) NOT NULL,
+    case_id            VARCHAR(64)   NOT NULL,
+    case_state         VARCHAR(64)   NOT NULL,
     error              TEXT,
+    description        VARCHAR(2048) NOT NULL,
     assigned_to        VARCHAR(128),
     assigned_to_type   VARCHAR(8),
     assigned_timestamp NUMERIC(18),
@@ -58,6 +59,8 @@ CREATE TABLE `cm_cases`
     closed_timestamp   NUMERIC(18),
     parent_case_id     VARCHAR(64),
     properties         MEDIUMTEXT,
+    created_by         VARCHAR(128),
+    created_by_type    VARCHAR(8),
     time_created       NUMERIC(18),
     time_updated       NUMERIC(18),
     PRIMARY KEY (case_id)

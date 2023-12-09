@@ -17,20 +17,25 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Embeddable;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
-
-import java.security.Principal;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@MappedSuperclass
-public abstract class UserOrRole {
-    private String name;
-    private EUserOrRole type;
+@Embeddable
+public class Actor extends UserOrRole {
+    private long timestamp;
 
-    public abstract Principal asPrincipal() throws Exception;
+    public Actor() {
+    }
+
+    public Actor(@NonNull UserOrRole user) {
+        setName(user.getName());
+        setType(user.getType());
+        timestamp = System.currentTimeMillis();
+    }
 }

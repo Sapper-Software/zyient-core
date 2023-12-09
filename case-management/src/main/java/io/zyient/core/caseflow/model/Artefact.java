@@ -16,21 +16,18 @@
 
 package io.zyient.core.caseflow.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
-import java.security.Principal;
+import java.io.File;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-@MappedSuperclass
-public abstract class UserOrRole {
+@Accessors(fluent = true)
+public class Artefact {
     private String name;
-    private EUserOrRole type;
-
-    public abstract Principal asPrincipal() throws Exception;
+    private File file;
+    private String password;
+    private String mimeType;
 }
