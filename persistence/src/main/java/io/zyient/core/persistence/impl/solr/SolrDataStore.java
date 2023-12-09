@@ -608,7 +608,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                                 boolean fetchChildren) throws Exception {
         DocumentQueryBuilder builder = new DocumentQueryBuilder(Document.class,
                 parent.getCollection());
-        builder.createPhraseQuery(SolrConstants.FIELD_DOC_PARENT_ID, parent.getId());
+        builder.phraseQuery(SolrConstants.FIELD_DOC_PARENT_ID, parent.getId());
         try (Cursor<DocumentId, Document<?, ?, ?>> cursor = search(builder.build(),
                 DocumentId.class,
                 type,
