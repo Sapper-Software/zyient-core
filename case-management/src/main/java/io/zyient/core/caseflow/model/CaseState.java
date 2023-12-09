@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.core.persistence.model;
+package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.core.persistence.impl.rdbms.converters.GenericJsonConverter;
+import io.zyient.core.persistence.model.DocumentState;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -25,54 +26,66 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@MappedSuperclass
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@MappedSuperclass
-public abstract class DocumentState<E extends Enum<?>> {
+public abstract class CaseState<E extends Enum<?>> {
     @Transient
     private final E errorState;
     @Transient
     private final E newState;
     @Transient
-    private final E availableState;
+    private final E deletedState;
+    @Transient
+    private final E closedState;
+
     @Enumerated(EnumType.STRING)
-    @Column(name = "doc_state")
+    @Column(name = "case_state")
     private E state;
     @Column(name = "error")
     @Convert(converter = GenericJsonConverter.class)
     private Throwable error;
 
-    protected DocumentState(@NonNull E errorState,
-                            @NonNull E newState,
-                            @NonNull E availableState) {
+    protected CaseState(@NonNull E errorState,
+                        @NonNull E newState,
+                        @NonNull E deletedState,
+                        @NonNull E closedState) {
         this.errorState = errorState;
         this.newState = newState;
-        this.availableState = availableState;
-        state = newState;
+        this.deletedState = deletedState;
+        this.closedState = closedState;
     }
 
-    public DocumentState<E> error(@NonNull Throwable error) {
+    public CaseState<E> error(@NonNull Throwable error) {
         this.state = errorState;
         this.error = error;
         return this;
     }
 
     @SuppressWarnings("unchecked")
-    public DocumentState<E> create() throws Exception {
-        DocumentState<E> state = getClass().getDeclaredConstructor()
+    public CaseState<E> createInstance() throws Exception {
+        CaseState<E> state = getClass().getDeclaredConstructor()
                 .newInstance();
         state.setState(newState);
         return state;
     }
 
-    public DocumentState<E> available() {
-        state = availableState;
+    public CaseState<E> delete() {
+        state = deletedState;
         return this;
+    }
+
+    public boolean caseDeleted() {
+        return state == deletedState;
+    }
+
+    public boolean caseClosed() {
+        return state == closedState;
     }
 
     public boolean hasError() {
         return state == errorState;
     }
 
-    public abstract boolean clearError();
+    public abstract CaseState<E> clearError();
 }

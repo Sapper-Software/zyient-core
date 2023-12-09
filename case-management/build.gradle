@@ -7,6 +7,7 @@ idea {
 dependencies {
     implementation project(':common')
     implementation project(':core')
+    implementation project(':persistence')
 
 
     // https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client

@@ -274,6 +274,10 @@ public abstract class ContentProvider implements Closeable {
                 document.setModifiedBy(context.user().getName());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
+
+                E state = document.getDocState();
+                if (state.hasError()) state.clearError();
+
                 document = updateDoc(document, context);
                 if (currrent != null) {
                     if (currrent.getDocuments() != null) {
