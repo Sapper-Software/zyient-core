@@ -18,10 +18,9 @@ package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.core.model.PropertyBag;
-import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.caseflow.errors.CaseModelException;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.core.persistence.model.BaseEntity;
-import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -46,16 +45,30 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "assigned_to")),
-            @AttributeOverride(name = "type", column = @Column(name = "assigned_type")),
+            @AttributeOverride(name = "type", column = @Column(name = "assigned_to_type")),
             @AttributeOverride(name = "timestamp", column = @Column(name = "assigned_timestamp"))
     })
     private UserOrRole assignedTo;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "closed_by")),
+            @AttributeOverride(name = "type", column = @Column(name = "closed_by_type")),
+            @AttributeOverride(name = "timestamp", column = @Column(name = "closed_timestamp"))
+    })
+    private UserOrRole closedBy;
     @OneToMany
+    @JoinColumn(name = "case_id")
     private Set<CaseComment> comments;
     @OneToMany
+    @JoinColumn(name = "case_id")
     private Set<ArtefactReference> artefactReferences;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "id", column = @Column(name = "parent_case_id"))
+    })
+    private CaseId parentId;
     @Transient
-    private Set<Document<?, ?, ?>> artefacts;
+    private Set<CaseDocument<?, ?>> artefacts;
     @Column(name = "properties")
     @Convert(converter = PropertiesConverter.class)
     private Map<String, Object> properties;
@@ -66,7 +79,7 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
         id = new CaseId();
     }
 
-    public Case<S> addArtefact(@NonNull Document<?, ?, ?> artefact) {
+    public Case<S> addArtefact(@NonNull CaseDocument<?, ?> artefact) {
         ArtefactReferenceId refId = new ArtefactReferenceId();
         refId.setCaseId(id);
         refId.setDocumentId(artefact.getId());
@@ -74,6 +87,7 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
         reference.setId(refId);
         reference.setArtefactType(artefact.getClass().getCanonicalName());
         artefactReferences.add(reference);
+        artefact.setReferenceId(id);
         artefacts.add(artefact);
 
         return this;
@@ -93,8 +107,8 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
                 deleted = new HashSet<>();
             }
             deleted.add(delete);
-            Document<?, ?, ?> deleteDoc = null;
-            for (Document<?, ?, ?> document : artefacts) {
+            CaseDocument<?, ?> deleteDoc = null;
+            for (CaseDocument<?, ?> document : artefacts) {
                 if (document.getId().compareTo(delete.getId().getDocumentId()) == 0) {
                     deleteDoc = document;
                     break;
@@ -108,12 +122,73 @@ public abstract class Case<S extends CaseState<?>> extends BaseEntity<CaseId> im
         return false;
     }
 
-    public Case<S> addComment(@NonNull UserOrRole commentor,
-                              @NonNull String comment,
-                              Long responseTo) throws DataStoreException {
-
-        return this;
+    public CaseDocument<?, ?> findArtefact(@NonNull DocumentId documentId) {
+        if (artefacts != null) {
+            for (CaseDocument<?, ?> document : artefacts) {
+                if (document.getId().compareTo(documentId) == 0) {
+                    return document;
+                }
+            }
+        }
+        return null;
     }
+
+    public CaseComment addComment(@NonNull String userOrRole,
+                                  @NonNull EUserOrRole type,
+                                  @NonNull String comment,
+                                  Long responseTo,
+                                  DocumentId documentId) throws CaseModelException {
+        UserOrRole ur = new UserOrRole();
+        ur.setName(userOrRole);
+        ur.setType(type);
+        ur.setTimestamp(System.currentTimeMillis());
+        return addComment(ur, comment, responseTo, documentId);
+    }
+
+    public CaseComment addComment(@NonNull UserOrRole commentor,
+                                  @NonNull String comment,
+                                  Long responseTo,
+                                  DocumentId docId) throws CaseModelException {
+        CaseComment parent = null;
+        if (responseTo != null) {
+            parent = findParent(responseTo);
+            if (parent == null) {
+                throw new CaseModelException(String.format("Parent comment not found. [case=%s][comment id=%d]",
+                        id.stringKey(), responseTo));
+            }
+        }
+        commentor.setTimestamp(System.currentTimeMillis());
+        CaseCommentId id = new CaseCommentId();
+        id.setCaseId(this.id.getId());
+        CaseComment c = new CaseComment();
+        c.setId(id);
+        c.setCommentedBy(commentor);
+        c.setComment(comment);
+        c.setState(ECaseCommentState.New);
+        if (docId != null) {
+            CaseDocument<?, ?> artefact = findArtefact(docId);
+            if (artefact == null) {
+                throw new CaseModelException(String.format("Artefact not found. [case=%s][artefact id=%s]",
+                        id.getCaseId(), docId.stringKey()));
+            }
+            c.setArtefactId(docId);
+        }
+        comments.add(c);
+
+        return c;
+    }
+
+    private CaseComment findParent(long parentId) {
+        if (comments != null) {
+            for (CaseComment comment : comments) {
+                if (comment.getId().getCommentId() == parentId) {
+                    return comment;
+                }
+            }
+        }
+        return null;
+    }
+
     @Override
     public boolean hasProperty(@NonNull String name) {
         if (properties != null) {

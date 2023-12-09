@@ -17,17 +17,20 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.Embeddable;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentState;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@Embeddable
-public class UserOrRole {
-    private String name;
-    private EUserOrRole type;
-    private long timestamp;
+@MappedSuperclass
+public abstract class CaseDocument<E extends DocumentState<?>, T extends Document<E, CaseId, T>> extends Document<E, CaseId, T> {
+    protected CaseDocument(@NonNull E docState) {
+        super(docState);
+    }
 }

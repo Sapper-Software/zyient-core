@@ -17,7 +17,6 @@
 package io.zyient.core.persistence.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
 import jakarta.persistence.Column;

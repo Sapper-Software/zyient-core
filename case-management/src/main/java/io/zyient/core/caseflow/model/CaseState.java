@@ -18,7 +18,6 @@ package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.core.persistence.impl.rdbms.converters.GenericJsonConverter;
-import io.zyient.core.persistence.model.DocumentState;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;

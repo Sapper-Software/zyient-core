@@ -39,13 +39,13 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "commented_by")),
-            @AttributeOverride(name = "type", column = @Column(name = "commentor_type")),
+            @AttributeOverride(name = "type", column = @Column(name = "commented_by_type")),
             @AttributeOverride(name = "timestamp", column = @Column(name = "comment_timestamp"))
     })
     private UserOrRole commentedBy;
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "case_id", column = @Column(name = "parent_case_id")),
+            @AttributeOverride(name = "case_id", column = @Column(name = "parent_comment_case_id")),
             @AttributeOverride(name = "comment_id", column = @Column(name = "parent_comment_id"))
     })
     private CaseCommentId parent;
@@ -58,6 +58,8 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
             @AttributeOverride(name = "id", column = @Column(name = "artefact_id"))
     })
     private DocumentId artefactId;
+    @Column(name = "comment")
+    private String comment;
 
     /**
      * Compare the entity key with the key specified.
