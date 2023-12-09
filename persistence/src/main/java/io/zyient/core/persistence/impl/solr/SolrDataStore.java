@@ -156,7 +156,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                     String mimeType = getDocumentType(((Document<?, ?, ?>) entity).getPath());
                     ((Document<?, ?, ?>) entity).setMimeType(mimeType);
                 }
-                ((Document<?, ?, ?>) entity).setSearchId(((Document<?, ?, ?>) entity).getId().stringKey());
+                ((Document<?, ?, ?>) entity).setSearchId(((Document<?, ?, ?>) entity).getId().getId());
                 if (((Document<?, ?, ?>) entity).getReferenceId() != null) {
                     ((Document<?, ?, ?>) entity)
                             .setSearchReferenceId(((Document<?, ?, ?>) entity).getReferenceId().stringKey());

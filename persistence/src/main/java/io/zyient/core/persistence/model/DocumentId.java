@@ -19,6 +19,7 @@ package io.zyient.core.persistence.model;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.JSONUtils;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
@@ -65,7 +66,11 @@ public class DocumentId implements IKey {
      */
     @Override
     public String stringKey() {
-        return String.format("%s" + __DEFAULT_SEPARATOR + "%s", collection, id);
+        try {
+            return JSONUtils.asString(this, getClass());
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     /**
@@ -94,15 +99,9 @@ public class DocumentId implements IKey {
      */
     @Override
     public IKey fromString(@NonNull String value) throws Exception {
-        String[] parts = value.split(__DEFAULT_SEPARATOR);
-        if (parts.length != 2) {
-            throw new Exception(String.format("Invalid Document ID: [id=%s]", value));
-        }
-        String collection = parts[0].trim();
-        String id = parts[1].trim();
-        if (Strings.isNullOrEmpty(collection) || Strings.isNullOrEmpty(id)) {
-            throw new Exception(String.format("Invalid Document ID: [id=%s]", value));
-        }
+        DocumentId id = JSONUtils.read(value, getClass());
+        this.collection = id.collection;
+        this.id = id.id;
         return this;
     }
 

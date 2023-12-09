@@ -20,20 +20,19 @@
         <name>DEV</name>
         <module>TEST-SOLR-ENV</module>
         <instance>test-solr</instance>
-        <source>demo</source>
+        <source>persistence</source>
 
         <paths>
             <connections>config</connections>
             <registry>/test/registry</registry>
             <root>/test</root>
-            <dataStores>demo.dataStores</dataStores>
+            <dataStores>persistence.dataStores</dataStores>
         </paths>
         <managers>
             <state>
-                <stateManagerClass>io.zyient.base.core.state.DemoStateManager</stateManagerClass>
-                <basePath>demo</basePath>
+                <stateManagerClass>io.zyient.core.persistence.env.DemoStateManager</stateManagerClass>
+                <basePath>persistence</basePath>
                 <connection>test-zk</connection>
-                <fileState>true</fileState>
             </state>
         </managers>
         <locks>
@@ -59,7 +58,7 @@
             </connection>
         </keystore>
         <enableHeartbeat>false</enableHeartbeat>
-        <demo>
+        <persistence>
             <dataStores>
                 <zk>
                     <connection>test-zk</connection>
@@ -77,7 +76,7 @@
                     <name>test-solr</name>
                 </store>
             </dataStores>
-        </demo>
+        </persistence>
         <config>
             <connections>
                 <shared>

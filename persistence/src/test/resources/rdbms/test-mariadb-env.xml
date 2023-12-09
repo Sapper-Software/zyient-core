@@ -18,22 +18,21 @@
 <configuration>
     <env>
         <name>DEV</name>
-        <module>TEST-SOLR-ENV</module>
-        <instance>test-solr</instance>
-        <source>demo</source>
+        <module>TEST-MARIADB-ENV</module>
+        <instance>test-mariadb</instance>
+        <source>persistence</source>
 
         <paths>
             <connections>config</connections>
             <registry>/test/registry</registry>
             <root>/test</root>
-            <dataStores>demo.dataStores</dataStores>
+            <dataStores>persistence.dataStores</dataStores>
         </paths>
         <managers>
             <state>
-                <stateManagerClass>io.zyient.base.core.state.DemoStateManager</stateManagerClass>
-                <basePath>demo</basePath>
+                <stateManagerClass>io.zyient.core.persistence.env.DemoStateManager</stateManagerClass>
+                <basePath>persistence</basePath>
                 <connection>test-zk</connection>
-                <fileState>true</fileState>
             </state>
         </managers>
         <locks>
@@ -59,7 +58,7 @@
                 </zookeeper>
             </connection>
         </keystore>
-        <demo>
+        <persistence>
             <dataStores>
                 <zk>
                     <connection>test-zk</connection>
@@ -77,7 +76,7 @@
                     <name>test-rdbms</name>
                 </store>
             </dataStores>
-        </demo>
+        </persistence>
         <config>
             <connections>
                 <shared>

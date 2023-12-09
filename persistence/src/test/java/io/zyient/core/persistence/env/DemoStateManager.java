@@ -16,35 +16,36 @@
 
 package io.zyient.core.persistence.env;
 
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.model.Heartbeat;
-import io.zyient.base.core.processing.ProcessStateManager;
 import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.base.core.state.BaseStateManagerSettings;
 import io.zyient.base.core.state.StateManagerError;
-import io.zyient.core.messaging.chronicle.ChronicleOffset;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public class DemoStateManager extends ProcessStateManager<EDemoProcessingState, ChronicleOffset> {
-    public DemoStateManager() {
-        super(DemoProcessingState.class);
-    }
+@Getter
+@Accessors(fluent = true)
+public class DemoStateManager extends BaseStateManager {
+    private final DemoState state = new DemoState();
 
     @Override
-    public BaseStateManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig, @NonNull BaseEnv<?> env) throws StateManagerError {
+    public BaseStateManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                 @NonNull BaseEnv<?> env) throws StateManagerError {
         try {
             super.init(xmlConfig,
                     BaseStateManagerSettings.__CONFIG_PATH,
                     env,
                     BaseStateManagerSettings.class);
-            processingState().setState(EDemoProcessingState.Running);
-            update(processingState());
+            state.setState(EDemoState.Available);
             return this;
         } catch (Exception ex) {
-            if (processingState() != null)
-                processingState().error(ex);
+            DefaultLogger.stacktrace(ex);
+            state.error(ex);
             throw new StateManagerError(ex);
         }
     }
@@ -52,7 +53,7 @@ public class DemoStateManager extends ProcessStateManager<EDemoProcessingState, 
     @Override
     public Heartbeat heartbeat(@NonNull String instance) throws StateManagerError {
         try {
-            return heartbeat(instance, getClass(), processingState());
+            return heartbeat(instance, getClass(), state);
         } catch (Exception ex) {
             throw new StateManagerError(ex);
         }

@@ -56,7 +56,7 @@ public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> 
         }
     }
 
-    public static final String __CONFIG_PATH = "content";
+    public static final String __CONFIG_PATH = "persistence";
     private static final String CONFIG_CONNECTIONS = "connections.path";
     private static final String TEST_PASSWD = "test1234";
 

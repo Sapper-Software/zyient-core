@@ -17,9 +17,9 @@
 package io.zyient.cdc.entity.utils;
 
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.io.FileSystem;
-import io.zyient.base.core.io.Writer;
 import io.zyient.cdc.entity.schema.SchemaEntity;
+import io.zyient.core.filesystem.FileSystem;
+import io.zyient.core.filesystem.Writer;
 import io.zyient.core.filesystem.model.DirectoryInode;
 import io.zyient.core.filesystem.model.FileInode;
 import lombok.Getter;

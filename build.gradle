@@ -27,14 +27,6 @@ configurations.all {
         if (details.requested.name == 'commons-codec') {
             details.useTarget 'commons-codec:commons-codec:1.16.0'
         }
-        /*
-        if (details.requested.name == "antlr4-runtime") {
-            details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
-        }
-        if (details.requested.name == "antlr-runtime") {
-            details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
-        }
-         */
     }
 }
 

@@ -26,11 +26,15 @@ import io.zyient.base.core.env.BaseEnvSettings;
 import io.zyient.core.filesystem.env.FileSystemEnv;
 import io.zyient.core.persistence.DataStoreManager;
 import io.zyient.core.persistence.DataStoreProvider;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+@Getter
+@Accessors(fluent = true)
 public class DataStoreEnv<T extends Enum<?>> extends FileSystemEnv<T> implements DataStoreProvider {
     private DataStoreManager dataStoreManager;
 
