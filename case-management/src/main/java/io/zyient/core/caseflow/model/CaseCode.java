@@ -25,10 +25,7 @@ import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
-import jakarta.persistence.Column;
-import jakarta.persistence.EmbeddedId;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -38,15 +35,18 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @Entity
-@Table(name = "cm_case_actions")
-public class CaseAction implements IEntity<StringKey> {
+@Table(name = "cm_case_codes")
+public class CaseCode implements IEntity<StringKey> {
     public static final int __START_INDEX = 1000;
     public static final int __KEY_SIZE = 16;
     public static final String __KEY_FORMAT = "%" + __KEY_SIZE + "d";
 
     @EmbeddedId
     private StringKey key;
-    @Column(name = "action")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "code_type")
+    private ECaseCodeType type;
+    @Column(name = "name")
     private String name;
     @Column(name = "description")
     private String description;
@@ -80,11 +80,10 @@ public class CaseAction implements IEntity<StringKey> {
      * @throws CopyException
      */
     @Override
-    public IEntity<StringKey> copyChanges(IEntity<StringKey> source,
-                                          Context context) throws CopyException {
-        if (source instanceof CaseAction) {
-            description = ((CaseAction) source).description;
-            name = ((CaseAction) source).name;
+    public IEntity<StringKey> copyChanges(IEntity<StringKey> source, Context context) throws CopyException {
+        if (source instanceof CaseCode) {
+            description = ((CaseCode) source).description;
+            name = ((CaseCode) source).name;
         } else {
             throw new CopyException(String.format("Invalid source object. [type=%s]",
                     source.getClass().getCanonicalName()));
@@ -151,7 +150,8 @@ public class CaseAction implements IEntity<StringKey> {
         }
     }
 
-    public static String formatActionId(int id) {
+
+    public static String formatCodeId(int id) {
         Preconditions.checkArgument(id > 0);
         return String.format(__KEY_FORMAT, id);
     }

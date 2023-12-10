@@ -17,12 +17,9 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import lombok.Getter;
@@ -31,15 +28,14 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Embeddable
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class CaseCommentId implements IKey {
+public class CaseHistoryId implements IKey {
     @Column(name = "case_id")
     private String caseId;
-    @Column(name = "comment_id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer commentId;
+    @Column(name = "sequence")
+    private int sequence;
 
     /**
      * Get the String representation of the key.
@@ -66,10 +62,10 @@ public class CaseCommentId implements IKey {
         if (key == null) {
             return Short.MAX_VALUE;
         }
-        if (key instanceof CaseCommentId) {
-            int ret = caseId.compareTo(((CaseCommentId) key).caseId);
+        if (key instanceof CaseHistoryId) {
+            int ret = caseId.compareTo(((CaseHistoryId) key).caseId);
             if (ret == 0) {
-                ret = commentId - ((CaseCommentId) key).commentId;
+                ret = sequence - ((CaseHistoryId) key).sequence;
             }
             return ret;
         }
@@ -85,10 +81,9 @@ public class CaseCommentId implements IKey {
      */
     @Override
     public IKey fromString(@NonNull String value) throws Exception {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
-        CaseCommentId id = JSONUtils.read(value, getClass());
-        this.caseId = id.caseId;
-        this.commentId = id.commentId;
+        CaseHistoryId id = JSONUtils.read(value, getClass());
+        caseId = id.caseId;
+        sequence = id.sequence;
         return this;
     }
 }

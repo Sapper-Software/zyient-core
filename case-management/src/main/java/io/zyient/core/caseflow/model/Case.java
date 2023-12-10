@@ -147,6 +147,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
     public CaseComment addComment(@NonNull String userOrRole,
                                   @NonNull EUserOrRole type,
                                   @NonNull String comment,
+                                  @NonNull CaseCode reason,
                                   Long responseTo,
                                   ECommentState responseState,
                                   DocumentId documentId) throws CaseModelException {
@@ -154,11 +155,12 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         ur.setName(userOrRole);
         ur.setType(type);
         ur.setTimestamp(System.currentTimeMillis());
-        return addComment(ur, comment, responseTo, responseState, documentId);
+        return addComment(ur, comment, reason, responseTo, responseState, documentId);
     }
 
     public CaseComment addComment(@NonNull UserOrRole actor,
                                   @NonNull String comment,
+                                  @NonNull CaseCode reason,
                                   Long responseTo,
                                   ECommentState responseState,
                                   DocumentId docId) throws CaseModelException {
@@ -184,6 +186,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         c.setId(id);
         c.setCommentedBy(a);
         c.setComment(comment);
+        c.setReasonCode(reason.getKey().getKey());
         if (parent != null)
             c.setParent(parent.getId());
         c.setCommentState(ECommentState.New);

@@ -13,6 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+DROP TABLE IF EXISTS `cm_case_actions`;
+
+CREATE TABLE `cm_case_actions`
+(
+    id          VARCHAR(24)   NOT NULL,
+    action      VARCHAR(62)   NOT NULL,
+    description VARCHAR(1024) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE = Aria;
+
+DROP TABLE IF EXISTS `cm_case_codes`;
+
+CREATE TABLE `cm_case_codes`
+(
+    id          VARCHAR(24)   NOT NULL,
+    name        VARCHAR(62)   NOT NULL,
+    description VARCHAR(1024) NOT NULL,
+    PRIMARY KEY (id)
+) ENGINE = Aria;
 
 DROP TABLE IF EXISTS `cm_case_comments`;
 
@@ -29,8 +48,11 @@ CREATE TABLE `cm_case_comments`
     artefact_collection    VARCHAR(64),
     artefact_id            VARCHAR(64),
     comment                MEDIUMTEXT,
+    reason_code            VARCHAR(24)  NOT NULL,
     PRIMARY KEY (case_id, comment_id)
 ) ENGINE = Aria;
+CREATE INDEX index_comments_by ON `cm_case_comments` (commented_by, case_id);
+CREATE INDEX index_comments_parent ON `cm_case_comments` (parent_comment_case_id, parent_comment_id, case_id, comment_id);
 
 DROP TABLE IF EXISTS `cm_artefact_reference`;
 
@@ -59,9 +81,30 @@ CREATE TABLE `cm_cases`
     closed_timestamp   NUMERIC(18),
     parent_case_id     VARCHAR(64),
     properties         MEDIUMTEXT,
-    created_by         VARCHAR(128),
-    created_by_type    VARCHAR(8),
-    time_created       NUMERIC(18),
-    time_updated       NUMERIC(18),
+    created_by         VARCHAR(128)  NOT NULL,
+    created_by_type    VARCHAR(8)    NOT NULL,
+    time_created       NUMERIC(18)   NOT NULL,
+    time_updated       NUMERIC(18)   NOT NULL,
     PRIMARY KEY (case_id)
 ) ENGINE = Aria;
+CREATE INDEX index_cases_state ON `cm_cases` (case_state, case_id);
+CREATE INDEX index_cases_assigned_to ON `cm_cases` (assigned_to, case_id);
+CREATE INDEX index_cases_parent_case ON `cm_cases` (parent_case_id, case_id);
+
+DROP TABLE IF EXISTS `cm_case_history`;
+
+CREATE TABLE `cm_case_history`
+(
+    case_id         VARCHAR(64) NOT NULL,
+    sequence        NUMERIC(11) NOT NULL,
+    action_id       VARCHAR(24) NOT NULL,
+    code_id         VARCHAR(24) NOT NULL,
+    comment         VARCHAR(2048),
+    change_json     MEDIUMTEXT,
+    created_by      VARCHAR(128),
+    created_by_type VARCHAR(8)  NOT NULL,
+    time_created    NUMERIC(18) NOT NULL,
+    time_updated    NUMERIC(18) NOT NULL,
+    PRIMARY KEY (case_id, sequence)
+) ENGINE = Aria;
+CREATE INDEX index_case_history_by ON `cm_case_history` (created_by, case_id);

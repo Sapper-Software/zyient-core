@@ -17,13 +17,13 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
-import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.core.persistence.model.BaseEntity;
-import io.zyient.core.persistence.model.DocumentId;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -33,36 +33,25 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 @Entity
-@Table(name = "cm_case_comments")
-public class CaseComment extends BaseEntity<CaseCommentId> {
+@Table(name = "cm_case_history")
+public class CaseHistory extends BaseEntity<CaseHistoryId> {
     @EmbeddedId
-    private CaseCommentId id;
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "name", column = @Column(name = "commented_by")),
-            @AttributeOverride(name = "type", column = @Column(name = "commented_by_type")),
-            @AttributeOverride(name = "timestamp", column = @Column(name = "comment_timestamp"))
-    })
-    private Actor commentedBy;
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "case_id", column = @Column(name = "parent_comment_case_id")),
-            @AttributeOverride(name = "comment_id", column = @Column(name = "parent_comment_id"))
-    })
-    private CaseCommentId parent;
-    @Enumerated(EnumType.STRING)
-    @Column(name = "comment_state")
-    private ECommentState commentState;
-    @Embedded
-    @AttributeOverrides({
-            @AttributeOverride(name = "collection", column = @Column(name = "artefact_collection")),
-            @AttributeOverride(name = "id", column = @Column(name = "artefact_id"))
-    })
-    private DocumentId artefactId;
+    private CaseHistoryId id;
+    @Column(name = "action_id")
+    private String action;
+    @Column(name = "case_code")
+    private String caseCode;
     @Column(name = "comment")
     private String comment;
-    @Column(name = "reason_code")
-    private String reasonCode;
+    @Column(name = "change_json")
+    private String change;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "created_by")),
+            @AttributeOverride(name = "type", column = @Column(name = "created_by_type")),
+            @AttributeOverride(name = "timestamp", column = @Column(name = "time_created"))
+    })
+    private Actor actor;
 
     /**
      * Compare the entity key with the key specified.
@@ -71,10 +60,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      * @return - Comparision.
      */
     @Override
-    public int compare(CaseCommentId key) {
-        if (key == null) {
-            return Short.MAX_VALUE;
-        }
+    public int compare(CaseHistoryId key) {
         return id.compareTo(key);
     }
 
@@ -86,18 +72,8 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      * @throws CopyException
      */
     @Override
-    public IEntity<CaseCommentId> clone(Context context) throws CopyException {
-        CaseCommentId cid = new CaseCommentId();
-        cid.setCaseId(id.getCaseId());
-        CaseComment c = new CaseComment();
-        c.id = cid;
-        c.comment = comment;
-        c.artefactId = artefactId;
-        c.commentedBy = commentedBy;
-        c.parent = parent;
-        c.commentState = commentState;
-        c.getState().setState(EEntityState.New);
-        return c;
+    public IEntity<CaseHistoryId> clone(Context context) throws CopyException {
+        throw new CopyException("Not implemented...");
     }
 
     /**
@@ -106,7 +82,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      * @return - Key
      */
     @Override
-    public CaseCommentId entityKey() {
+    public CaseHistoryId entityKey() {
         return id;
     }
 
@@ -118,6 +94,15 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      */
     @Override
     public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
+        if (Strings.isNullOrEmpty(action)) {
+            errors = ValidationExceptions.add(new ValidationException("Action code is NULL/empty"), errors);
+        }
+        if (Strings.isNullOrEmpty(caseCode)) {
+            errors = ValidationExceptions.add(new ValidationException("Case code is NULL/empty"), errors);
+        }
+        if (Strings.isNullOrEmpty(comment)) {
+            errors = ValidationExceptions.add(new ValidationException("Comment is NULL/empty."), errors);
+        }
         return errors;
     }
 }

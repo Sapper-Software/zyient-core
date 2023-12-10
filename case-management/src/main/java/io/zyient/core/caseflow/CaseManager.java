@@ -22,14 +22,15 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.caseflow.errors.CaseActionException;
 import io.zyient.core.caseflow.errors.CaseAuthorizationError;
 import io.zyient.core.caseflow.model.*;
 import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
-import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;
+import io.zyient.core.persistence.TransactionDataStore;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
@@ -48,7 +49,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends CaseManagerSettings> settingsType;
 
-    private AbstractDataStore<?> dataStore;
+    private TransactionDataStore<?, ?> dataStore;
     private ContentProvider contentProvider;
     private CaseManagerSettings settings;
     private ActionAuthorization<S> authorization;
@@ -72,7 +73,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             if (dataStoreManager == null) {
                 throw new Exception(String.format("Data Store manager not specified. [env=%s]", env.name()));
             }
-            dataStore = dataStoreManager.getDataStore(settings.getDataStore(),
+            dataStore = (TransactionDataStore<?, ?>) dataStoreManager.getDataStore(settings.getDataStore(),
                     settings.getDataStoreType());
             if (dataStore == null) {
                 throw new Exception(String.format("Data Store not found. [name=%s][type=%s]",
@@ -105,16 +106,44 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         }
     }
 
+    private void addCaseHistory(CaseId caseId,
+                                CaseAction action,
+                                CaseCode code,
+                                String comment,
+                                Object change,
+                                UserOrRole actor) throws Exception {
+        String json = null;
+        if (change != null) {
+            json = JSONUtils.asString(change, change.getClass());
+        }
+        CaseHistoryId id = new CaseHistoryId();
+        id.setCaseId(caseId.getId());
+        CaseHistory history = new CaseHistory();
+        history.setId(id);
+        history.setAction(action.getKey().getKey());
+        history.setCaseCode(code.getKey().getKey());
+        if (Strings.isNullOrEmpty(comment)) {
+            history.setComment(code.getDescription());
+        } else {
+            history.setComment(comment);
+        }
+        history.setChange(json);
+        history.setActor(new Actor(actor));
+        history = dataStore.create(history, history.getClass(), null);
+    }
+
     @SuppressWarnings("unchecked")
     public Case<S, E, T> create(@NonNull String description,
                                 List<Artefact> artefacts,
                                 @NonNull UserOrRole creator,
+                                @NonNull CaseCode caseCode,
+                                @NonNull String notes,
                                 Context context) throws CaseActionException,
             CaseAuthorizationError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(description));
         checkState();
         try {
-            authorization.authorize(null, ECaseAction.Create.action(), creator, context);
+            authorization.authorize(null, EStandardAction.Create.action(), creator, context);
             Case<S, E, T> caseObject = createInstance();
             if (caseObject.getCaseState() == null) {
                 throw new Exception(String.format("Invalid case instance: state is null. [type=%s]",
@@ -151,11 +180,24 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 }
             }
             validateCase(caseObject);
-
-            return save(caseObject, creator, context);
+            dataStore.beingTransaction();
+            try {
+                caseObject = save(caseObject, creator, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.Create.action(),
+                        caseCode,
+                        notes,
+                        caseObject,
+                        creator);
+                dataStore.commit();
+                return caseObject;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
@@ -164,8 +206,10 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     @SuppressWarnings("unchecked")
     public Case<S, E, T> assignTo(@NonNull String caseId,
                                   UserOrRole assignTo,
+                                  @NonNull String notes,
                                   @NonNull UserOrRole assigner,
                                   Context context) throws CaseActionException, CaseAuthorizationError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
         checkState();
         try {
             CaseId id = new CaseId(caseId);
@@ -176,20 +220,34 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             }
             Actor current = caseObject.getAssignedTo();
             if (assignTo != null) {
-                authorization.authorize(caseObject, ECaseAction.AssignTo.action(), assigner, context);
+                authorization.authorize(caseObject, EStandardAction.AssignTo.action(), assigner, context);
                 authorization.checkAssignment(caseObject, assignTo, context);
             } else
-                authorization.authorize(caseObject, ECaseAction.RemoveAssignment.action(), assigner, context);
+                authorization.authorize(caseObject, EStandardAction.RemoveAssignment.action(), assigner, context);
             if (assignTo != null)
                 caseObject.setAssignedTo(new Actor(assignTo));
             else
                 caseObject.setAssignedTo(null);
             validateAssignment(current, caseObject);
             caseObject.getState().setState(EEntityState.Updated);
-            return save(caseObject, assigner, context);
+            dataStore.beingTransaction();
+            try {
+                caseObject = save(caseObject, assigner, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.AssignTo.action(),
+                        EStandardCode.ActionAssignTo.code(),
+                        notes,
+                        assignTo,
+                        assigner);
+                dataStore.commit();
+                return caseObject;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
@@ -230,10 +288,24 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             }
             document = validateArtefact(document);
             caseObject.addArtefact(document);
-            return save(caseObject, modifier, context);
+            dataStore.beingTransaction();
+            try {
+                caseObject = save(caseObject, modifier, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.AddArtefact.action(),
+                        EStandardCode.ActionAddArtefact.code(),
+                        null,
+                        document,
+                        modifier);
+                dataStore.commit();
+                return caseObject;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
@@ -252,16 +324,30 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.DeleteArtefact.action(), modifier, context);
+            authorization.authorize(caseObject, EStandardAction.DeleteArtefact.action(), modifier, context);
             DocumentId docId = new DocumentId(settings.getContentCollection(), artefactId);
             if (!caseObject.deleteArtefact(docId)) {
                 throw new Exception(String.format("Artefact not found. [case id=%s][document id=%s]",
                         caseId, artefactId));
             }
-            return save(caseObject, modifier, context);
+            dataStore.beingTransaction();
+            try {
+                caseObject = save(caseObject, modifier, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.DeleteArtefact.action(),
+                        EStandardCode.ActionRemoveArtefact.code(),
+                        null,
+                        docId,
+                        modifier);
+                dataStore.commit();
+                return caseObject;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
@@ -281,7 +367,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.UpdateArtefact.action(), modifier, context);
+            authorization.authorize(caseObject, EStandardAction.UpdateArtefact.action(), modifier, context);
             DocumentId docId = new DocumentId(settings.getContentCollection(), artefactId);
             CaseDocument<E, T> document = caseObject.findArtefact(docId);
             if (document == null) {
@@ -296,7 +382,21 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 docCtx = new DocumentContext();
             }
             docCtx.user(modifier.asPrincipal());
-            return (CaseDocument<E, T>) contentProvider.update(document, docCtx);
+            dataStore.beingTransaction();
+            try {
+                document = (CaseDocument<E, T>) contentProvider.update(document, docCtx);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.UpdateArtefact.action(),
+                        EStandardCode.ActionUpdateArtefactState.code(),
+                        null,
+                        document,
+                        modifier);
+                dataStore.commit();
+                return document;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
         } catch (Exception ex) {
@@ -308,6 +408,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     @SuppressWarnings("unchecked")
     public CaseComment comment(@NonNull String caseId,
                                @NonNull String comment,
+                               @NonNull CaseCode reason,
                                @NonNull UserOrRole commentBy,
                                Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
@@ -318,13 +419,26 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.Comment.action(), commentBy, context);
-            CaseComment c = caseObject.addComment(commentBy, comment, null, null, null);
-            save(caseObject, commentBy, context);
-            return c;
+            authorization.authorize(caseObject, EStandardAction.Comment.action(), commentBy, context);
+            CaseComment c = caseObject.addComment(commentBy, comment, reason, null, null, null);
+            dataStore.beingTransaction();
+            try {
+                save(caseObject, commentBy, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.Comment.action(),
+                        reason,
+                        null,
+                        c,
+                        commentBy);
+                dataStore.commit();
+                return c;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
@@ -334,6 +448,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     public CaseComment commentOn(@NonNull String caseId,
                                  @NonNull String documentId,
                                  @NonNull String comment,
+                                 @NonNull CaseCode reason,
                                  @NonNull UserOrRole commentBy,
                                  Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
@@ -344,11 +459,24 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.Comment.action(), commentBy, context);
+            authorization.authorize(caseObject, EStandardAction.Comment.action(), commentBy, context);
             DocumentId docId = new DocumentId(settings.getContentCollection(), documentId);
-            CaseComment c = caseObject.addComment(commentBy, comment, null, null, docId);
-            save(caseObject, commentBy, context);
-            return c;
+            CaseComment c = caseObject.addComment(commentBy, comment, reason, null, null, docId);
+            dataStore.beingTransaction();
+            try {
+                save(caseObject, commentBy, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.Comment.action(),
+                        reason,
+                        null,
+                        c,
+                        commentBy);
+                dataStore.commit();
+                return c;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
         } catch (Exception ex) {
@@ -361,6 +489,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     public CaseComment respondTo(@NonNull String caseId,
                                  @NonNull Long commentId,
                                  @NonNull String comment,
+                                 @NonNull CaseCode reason,
                                  @NonNull ECommentState responseState,
                                  @NonNull UserOrRole commentBy,
                                  Context context) throws CaseAuthorizationError, CaseActionException {
@@ -373,15 +502,60 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                         caseId, settings.getCaseType().getCanonicalName()));
             }
             if (responseState != ECommentState.Closed)
-                authorization.authorize(caseObject, ECaseAction.CommentRespond.action(), commentBy, context);
+                authorization.authorize(caseObject, EStandardAction.CommentRespond.action(), commentBy, context);
             else
-                authorization.authorize(caseObject, ECaseAction.CommentClose.action(), commentBy, context);
-            CaseComment c = caseObject.addComment(commentBy, comment, commentId, responseState, null);
-            save(caseObject, commentBy, context);
-            return c;
+                authorization.authorize(caseObject, EStandardAction.CommentClose.action(), commentBy, context);
+            CaseComment c = caseObject.addComment(commentBy, comment, reason, commentId, responseState, null);
+            dataStore.beingTransaction();
+            try {
+                save(caseObject, commentBy, context);
+                addCaseHistory(caseObject.getId(),
+                        EStandardAction.Comment.action(),
+                        reason,
+                        null,
+                        c,
+                        commentBy);
+                dataStore.commit();
+                return c;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
         } catch (CaseAuthorizationError ae) {
             throw ae;
         } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new CaseActionException(ex);
+        }
+    }
+
+    protected Case<S, E, T> update(@NonNull Case<S, E, T> caseObject,
+                                   @NonNull CaseAction action,
+                                   @NonNull CaseCode code,
+                                   @NonNull String notes,
+                                   @NonNull UserOrRole modifier,
+                                   Context context) throws CaseActionException, CaseAuthorizationError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
+        checkState();
+        try {
+            authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
+            dataStore.beingTransaction();
+            try {
+                caseObject = save(caseObject, modifier, context);
+                addCaseHistory(caseObject.getId(),
+                        action,
+                        code,
+                        notes,
+                        caseObject,
+                        modifier);
+                return caseObject;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
+        } catch (CaseAuthorizationError ae) {
+            throw ae;
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
