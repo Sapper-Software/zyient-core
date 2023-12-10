@@ -52,7 +52,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
     private CaseCommentId parent;
     @Enumerated(EnumType.STRING)
     @Column(name = "comment_state")
-    private ECaseCommentState commentState;
+    private ECommentState commentState;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "collection", column = @Column(name = "artefact_collection")),

@@ -148,7 +148,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
                                   @NonNull EUserOrRole type,
                                   @NonNull String comment,
                                   Long responseTo,
-                                  ECaseCommentState responseState,
+                                  ECommentState responseState,
                                   DocumentId documentId) throws CaseModelException {
         Actor ur = new Actor();
         ur.setName(userOrRole);
@@ -160,7 +160,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
     public CaseComment addComment(@NonNull UserOrRole actor,
                                   @NonNull String comment,
                                   Long responseTo,
-                                  ECaseCommentState responseState,
+                                  ECommentState responseState,
                                   DocumentId docId) throws CaseModelException {
         CaseComment parent = null;
         if (responseTo != null) {
@@ -186,7 +186,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         c.setComment(comment);
         if (parent != null)
             c.setParent(parent.getId());
-        c.setCommentState(ECaseCommentState.New);
+        c.setCommentState(ECommentState.New);
         if (docId != null) {
             CaseDocument<E, T> artefact = findArtefact(docId);
             if (artefact == null) {

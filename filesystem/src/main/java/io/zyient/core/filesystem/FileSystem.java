@@ -286,14 +286,7 @@ public abstract class FileSystem implements Closeable {
         if (dnode == null) {
             throw new IOException(String.format("Domain directory node not found. [domain=%s]", path.domain()));
         }
-        String fpath = path.path().trim();
-        if (fpath.startsWith(dnode.getAbsolutePath())) {
-            int index = dnode.getAbsolutePath().length();
-            fpath = fpath.substring(index);
-        }
-        if (fpath.startsWith("/")) {
-            fpath = fpath.substring(1);
-        }
+        String fpath = formatZkPath(dnode.getAbsolutePath(), path.path());
         return createInode(dnode, type, fpath);
     }
 
@@ -302,14 +295,7 @@ public abstract class FileSystem implements Closeable {
                                 @NonNull InodeType type) throws IOException {
         Preconditions.checkState(state.isConnected());
         PathInfo path = parsePathInfo(dnode, name, type);
-        String fpath = path.path().trim();
-        if (fpath.startsWith(dnode.getAbsolutePath())) {
-            int index = dnode.getAbsolutePath().length();
-            fpath = fpath.substring(index);
-        }
-        if (fpath.startsWith("/")) {
-            fpath = fpath.substring(1);
-        }
+        String fpath = formatZkPath(dnode.getAbsolutePath(), path.path());
         return createInode(dnode, type, fpath);
     }
 
@@ -580,20 +566,28 @@ public abstract class FileSystem implements Closeable {
         return getInode(path.domain(), path.path());
     }
 
+    private String formatZkPath(String parent, String path) {
+        path = path.trim();
+        if (!Strings.isNullOrEmpty(parent)) {
+            if (path.startsWith(parent)) {
+                int index = parent.length();
+                path = path.substring(index);
+            }
+            if (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+        }
+        return new PathUtils.ZkPathBuilder(path)
+                .build();
+    }
+
     public Inode getInode(@NonNull String domain, @NonNull String path) throws IOException {
         Preconditions.checkState(state.isConnected());
         DirectoryInode dnode = domains.get(domain);
         if (dnode == null) {
             throw new IOException(String.format("Domain directory node not found. [domain=%s]", domain));
         }
-        String fpath = path.trim();
-        if (fpath.startsWith(dnode.getAbsolutePath())) {
-            int index = dnode.getAbsolutePath().length();
-            fpath = fpath.substring(index);
-        }
-        if (fpath.startsWith("/")) {
-            fpath = fpath.substring(1);
-        }
+        String fpath = formatZkPath(dnode.getAbsolutePath(), path);
         try {
             String zpath = getInodeZkPath(dnode, fpath);
             CuratorFramework client = zkConnection.client();
@@ -649,9 +643,7 @@ public abstract class FileSystem implements Closeable {
     }
 
     protected String getInodeZkPath(@NonNull DirectoryInode mnode, @NonNull String path) {
-        if (path.startsWith(mnode.getAbsolutePath())) {
-            path = path.substring(mnode.getAbsolutePath().length());
-        }
+        path = formatZkPath(mnode.getAbsolutePath(), path);
         return new PathUtils.ZkPathBuilder(mnode.getZkPath())
                 .withPath(path)
                 .build();

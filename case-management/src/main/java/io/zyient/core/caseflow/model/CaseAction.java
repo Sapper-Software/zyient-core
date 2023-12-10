@@ -17,6 +17,7 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
@@ -26,6 +27,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
@@ -35,6 +37,10 @@ import lombok.Setter;
 @Entity
 @Table(name = "cm_case_actions")
 public class CaseAction implements IEntity<StringKey> {
+    public static final int __START_INDEX = 1000;
+    public static final int __KEY_SIZE = 16;
+    public static final String __KEY_FORMAT = "%" + __KEY_SIZE + "d";
+
     @EmbeddedId
     private StringKey key;
     @Column(name = "description")
@@ -113,11 +119,35 @@ public class CaseAction implements IEntity<StringKey> {
         if (key == null || Strings.isNullOrEmpty(key.getKey())) {
             errors = ValidationExceptions.add(new ValidationException("Key is NULL/Empty."), errors);
         }
+        try {
+            int ii = extractIntId(key.getKey());
+            if (ii <= __START_INDEX) {
+                errors = ValidationExceptions.add(
+                        new ValidationException(String.format("Invalid key index: must be greater than %d. [index=%d]",
+                                __START_INDEX, ii)), errors);
+            } else if (key.getKey().length() < __KEY_SIZE) {
+                errors = ValidationExceptions.add(
+                        new ValidationException(String.format("Invalid Key size. [size=%d]",
+                                key.getKey().length())), errors);
+            }
+        } catch (NumberFormatException nfe) {
+            errors = ValidationExceptions.add(
+                    new ValidationException(String.format("Invalid key format. [key=%s]", key.getKey())), errors);
+        }
         if (Strings.isNullOrEmpty(description)) {
             errors = ValidationExceptions.add(new ValidationException("Description is NULL/Empty."), errors);
         }
         if (errors != null) {
             throw errors;
         }
+    }
+
+    public static String formatActionId(int id) {
+        Preconditions.checkArgument(id > 0);
+        return String.format(__KEY_FORMAT, id);
+    }
+
+    public static int extractIntId(@NonNull String id) {
+        return Integer.parseInt(id);
     }
 }

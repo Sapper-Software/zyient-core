@@ -322,6 +322,10 @@ public class S3FileSystem extends RemoteFileSystem {
                                @NonNull String path,
                                @NonNull InodeType type) {
         Preconditions.checkArgument(container instanceof S3Container);
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        path = PathUtils.formatPath(path);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         return new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path, type);
     }

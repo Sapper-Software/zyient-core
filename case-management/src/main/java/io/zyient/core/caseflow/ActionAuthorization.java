@@ -18,9 +18,7 @@ package io.zyient.core.caseflow;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.core.caseflow.errors.CaseAuthorizationError;
-import io.zyient.core.caseflow.model.Case;
-import io.zyient.core.caseflow.model.CaseState;
-import io.zyient.core.caseflow.model.UserOrRole;
+import io.zyient.core.caseflow.model.*;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -30,7 +28,7 @@ public interface ActionAuthorization<S extends CaseState<?>> {
     void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     void authorize(Case<S, ?, ?> caseObject,
-                   @NonNull ECaseAction action,
+                   @NonNull CaseAction action,
                    @NonNull UserOrRole actor,
                    Context context) throws CaseAuthorizationError;
 

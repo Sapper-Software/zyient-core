@@ -16,5 +16,90 @@
 
 package io.zyient.core.caseflow.model;
 
-public class CaseCodes {
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.core.model.StringKey;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+@Entity
+@Table(name = "cm_case_codes")
+public class CaseCodes implements IEntity<StringKey> {
+    @EmbeddedId
+    private StringKey key;
+
+    /**
+     * Compare the entity key with the key specified.
+     *
+     * @param key - Target Key.
+     * @return - Comparision.
+     */
+    @Override
+    public int compare(StringKey key) {
+        return this.key.compareTo(key);
+    }
+
+    /**
+     * Copy the changes from the specified source entity
+     * to this instance.
+     * <p>
+     * All properties other than the Key will be copied.
+     * Copy Type:
+     * Primitive - Copy
+     * String - Copy
+     * Enum - Copy
+     * Nested Entity - Copy Recursive
+     * Other Objects - Copy Reference.
+     *
+     * @param source  - Source instance to Copy from.
+     * @param context - Execution context.
+     * @return - Copied Entity instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<StringKey> copyChanges(IEntity<StringKey> source, Context context) throws CopyException {
+        return null;
+    }
+
+    /**
+     * Clone this instance of Entity.
+     *
+     * @param context - Clone Context.
+     * @return - Cloned Instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<StringKey> clone(Context context) throws CopyException {
+        return null;
+    }
+
+    /**
+     * Get the object instance Key.
+     *
+     * @return - Key
+     */
+    @Override
+    public StringKey entityKey() {
+        return null;
+    }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    @Override
+    public void validate() throws ValidationExceptions {
+
+    }
 }

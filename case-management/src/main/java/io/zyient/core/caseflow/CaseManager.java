@@ -30,7 +30,6 @@ import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;
-import io.zyient.core.persistence.EConnectionState;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
@@ -115,7 +114,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         Preconditions.checkArgument(!Strings.isNullOrEmpty(description));
         checkState();
         try {
-            authorization.authorize(null, ECaseAction.Create, creator, context);
+            authorization.authorize(null, ECaseAction.Create.action(), creator, context);
             Case<S, E, T> caseObject = createInstance();
             if (caseObject.getCaseState() == null) {
                 throw new Exception(String.format("Invalid case instance: state is null. [type=%s]",
@@ -177,10 +176,10 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             }
             Actor current = caseObject.getAssignedTo();
             if (assignTo != null) {
-                authorization.authorize(caseObject, ECaseAction.AssignTo, assigner, context);
+                authorization.authorize(caseObject, ECaseAction.AssignTo.action(), assigner, context);
                 authorization.checkAssignment(caseObject, assignTo, context);
             } else
-                authorization.authorize(caseObject, ECaseAction.RemoveAssignment, assigner, context);
+                authorization.authorize(caseObject, ECaseAction.RemoveAssignment.action(), assigner, context);
             if (assignTo != null)
                 caseObject.setAssignedTo(new Actor(assignTo));
             else
@@ -253,7 +252,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.DeleteArtefact, modifier, context);
+            authorization.authorize(caseObject, ECaseAction.DeleteArtefact.action(), modifier, context);
             DocumentId docId = new DocumentId(settings.getContentCollection(), artefactId);
             if (!caseObject.deleteArtefact(docId)) {
                 throw new Exception(String.format("Artefact not found. [case id=%s][document id=%s]",
@@ -282,7 +281,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.UpdateArtefact, modifier, context);
+            authorization.authorize(caseObject, ECaseAction.UpdateArtefact.action(), modifier, context);
             DocumentId docId = new DocumentId(settings.getContentCollection(), artefactId);
             CaseDocument<E, T> document = caseObject.findArtefact(docId);
             if (document == null) {
@@ -319,7 +318,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.Comment, commentBy, context);
+            authorization.authorize(caseObject, ECaseAction.Comment.action(), commentBy, context);
             CaseComment c = caseObject.addComment(commentBy, comment, null, null, null);
             save(caseObject, commentBy, context);
             return c;
@@ -345,7 +344,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.Comment, commentBy, context);
+            authorization.authorize(caseObject, ECaseAction.Comment.action(), commentBy, context);
             DocumentId docId = new DocumentId(settings.getContentCollection(), documentId);
             CaseComment c = caseObject.addComment(commentBy, comment, null, null, docId);
             save(caseObject, commentBy, context);
@@ -362,7 +361,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     public CaseComment respondTo(@NonNull String caseId,
                                  @NonNull Long commentId,
                                  @NonNull String comment,
-                                 @NonNull ECaseCommentState responseState,
+                                 @NonNull ECommentState responseState,
                                  @NonNull UserOrRole commentBy,
                                  Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
@@ -373,7 +372,10 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
-            authorization.authorize(caseObject, ECaseAction.Comment, commentBy, context);
+            if (responseState != ECommentState.Closed)
+                authorization.authorize(caseObject, ECaseAction.CommentRespond.action(), commentBy, context);
+            else
+                authorization.authorize(caseObject, ECaseAction.CommentClose.action(), commentBy, context);
             CaseComment c = caseObject.addComment(commentBy, comment, commentId, responseState, null);
             save(caseObject, commentBy, context);
             return c;

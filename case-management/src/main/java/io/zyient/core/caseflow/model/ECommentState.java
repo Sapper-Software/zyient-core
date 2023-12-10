@@ -14,20 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow;
+package io.zyient.core.caseflow.model;
 
-public enum ECaseAction {
-    Create,
-    Update,
-    Close,
-    UpdateState,
-    Delete,
-    Comment,
-    CommentRespond,
-    CommentClose,
-    AddArtefact,
-    UpdateArtefact,
-    DeleteArtefact,
-    AssignTo,
-    RemoveAssignment
+public enum ECommentState {
+    New, Responded, Acknowledged, Closed, Deleted
 }
