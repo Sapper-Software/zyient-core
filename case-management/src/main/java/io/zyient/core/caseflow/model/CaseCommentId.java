@@ -38,7 +38,7 @@ public class CaseCommentId implements IKey {
     @Column(name = "case_id")
     private String caseId;
     @Column(name = "comment_id")
-    @GeneratedValue(strategy= GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long commentId;
 
     /**

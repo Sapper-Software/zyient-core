@@ -14,25 +14,51 @@
  * limitations under the License.
  */
 
-package io.zyient.core.content.model;
+package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.core.persistence.model.DocumentState;
+import io.zyient.base.common.model.entity.IKey;
 import jakarta.persistence.Embeddable;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
+@Getter
+@Setter
 @Embeddable
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class DemoDocState extends DocumentState<EEntityState> {
-
-    public DemoDocState() {
-        super(EEntityState.Error, EEntityState.New, EEntityState.Synced);
-        setState(getNewState());
+public class CaseCodeId implements IKey {
+    /**
+     * Get the String representation of the key.
+     *
+     * @return - Key String
+     */
+    @Override
+    public String stringKey() {
+        return null;
     }
 
+    /**
+     * Compare the current key to the target.
+     *
+     * @param key - Key to compare to
+     * @return - == 0, < -x, > +x
+     */
     @Override
-    public boolean clearError() {
-        return false;
+    public int compareTo(IKey key) {
+        return 0;
+    }
+
+    /**
+     * Parse this key type from the input string.
+     *
+     * @param value - Input key string.
+     * @return - this
+     * @throws Exception
+     */
+    @Override
+    public IKey fromString(@NonNull String value) throws Exception {
+        return null;
     }
 }

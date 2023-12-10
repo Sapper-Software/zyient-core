@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.core.persistence.model.DocumentId;
@@ -51,7 +52,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
     private CaseCommentId parent;
     @Enumerated(EnumType.STRING)
     @Column(name = "comment_state")
-    private ECaseCommentState state;
+    private ECaseCommentState commentState;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "collection", column = @Column(name = "artefact_collection")),
@@ -69,7 +70,10 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      */
     @Override
     public int compare(CaseCommentId key) {
-        return 0;
+        if (key == null) {
+            return Short.MAX_VALUE;
+        }
+        return id.compareTo(key);
     }
 
     /**
@@ -81,7 +85,17 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      */
     @Override
     public IEntity<CaseCommentId> clone(Context context) throws CopyException {
-        return null;
+        CaseCommentId cid = new CaseCommentId();
+        cid.setCaseId(id.getCaseId());
+        CaseComment c = new CaseComment();
+        c.id = cid;
+        c.comment = comment;
+        c.artefactId = artefactId;
+        c.commentedBy = commentedBy;
+        c.parent = parent;
+        c.commentState = commentState;
+        c.getState().setState(EEntityState.New);
+        return c;
     }
 
     /**
@@ -91,7 +105,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      */
     @Override
     public CaseCommentId entityKey() {
-        return null;
+        return id;
     }
 
     /**
@@ -102,6 +116,6 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
      */
     @Override
     public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
-        return null;
+        return errors;
     }
 }

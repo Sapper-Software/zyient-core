@@ -205,8 +205,8 @@ public class S3FileSystem extends RemoteFileSystem {
             }
             try {
                 HeadObjectRequest request = HeadObjectRequest.builder()
-                        .key(((S3PathInfo) path).bucket())
-                        .bucket(getAbsolutePath(path.path(), path.domain()))
+                        .bucket(((S3PathInfo) path).bucket())
+                        .key(getAbsolutePath(path.path(), path.domain()))
                         .build();
                 HeadObjectResponse response = client.headObject(request);
                 return (response != null);

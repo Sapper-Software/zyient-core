@@ -30,6 +30,7 @@ import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;
+import io.zyient.core.persistence.EConnectionState;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
@@ -120,9 +121,6 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 throw new Exception(String.format("Invalid case instance: state is null. [type=%s]",
                         caseObject.getClass().getCanonicalName()));
             }
-            if (caseObject.getCaseState().getState() != caseObject.getCaseState().getNewState()) {
-                caseObject.getCaseState().setState(caseObject.getCaseState().getNewState());
-            }
             caseObject.getState().setState(EEntityState.New);
             if (caseObject.getId() == null) {
                 caseObject.setId(new CaseId());
@@ -180,7 +178,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             Actor current = caseObject.getAssignedTo();
             if (assignTo != null) {
                 authorization.authorize(caseObject, ECaseAction.AssignTo, assigner, context);
-                authorization.canAssign(caseObject, assignTo, context);
+                authorization.checkAssignment(caseObject, assignTo, context);
             } else
                 authorization.authorize(caseObject, ECaseAction.RemoveAssignment, assigner, context);
             if (assignTo != null)
@@ -197,6 +195,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             throw new CaseActionException(ex);
         }
     }
+
 
     @SuppressWarnings("unchecked")
     public Case<S, E, T> addArtefact(@NonNull String caseId,
@@ -308,10 +307,10 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     }
 
     @SuppressWarnings("unchecked")
-    public CaseComment addComment(@NonNull String caseId,
-                                  @NonNull String comment,
-                                  @NonNull UserOrRole commentBy,
-                                  Context context) throws CaseAuthorizationError, CaseActionException {
+    public CaseComment comment(@NonNull String caseId,
+                               @NonNull String comment,
+                               @NonNull UserOrRole commentBy,
+                               Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
             CaseId id = new CaseId(caseId);
@@ -321,7 +320,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                         caseId, settings.getCaseType().getCanonicalName()));
             }
             authorization.authorize(caseObject, ECaseAction.Comment, commentBy, context);
-            CaseComment c = caseObject.addComment(commentBy, comment, null, null);
+            CaseComment c = caseObject.addComment(commentBy, comment, null, null, null);
             save(caseObject, commentBy, context);
             return c;
         } catch (CaseAuthorizationError ae) {
@@ -333,7 +332,8 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     }
 
     @SuppressWarnings("unchecked")
-    public CaseComment respondTo(@NonNull String caseId,
+    public CaseComment commentOn(@NonNull String caseId,
+                                 @NonNull String documentId,
                                  @NonNull String comment,
                                  @NonNull UserOrRole commentBy,
                                  Context context) throws CaseAuthorizationError, CaseActionException {
@@ -346,7 +346,35 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                         caseId, settings.getCaseType().getCanonicalName()));
             }
             authorization.authorize(caseObject, ECaseAction.Comment, commentBy, context);
-            CaseComment c = caseObject.addComment(commentBy, comment, null, null);
+            DocumentId docId = new DocumentId(settings.getContentCollection(), documentId);
+            CaseComment c = caseObject.addComment(commentBy, comment, null, null, docId);
+            save(caseObject, commentBy, context);
+            return c;
+        } catch (CaseAuthorizationError ae) {
+            throw ae;
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new CaseActionException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public CaseComment respondTo(@NonNull String caseId,
+                                 @NonNull Long commentId,
+                                 @NonNull String comment,
+                                 @NonNull ECaseCommentState responseState,
+                                 @NonNull UserOrRole commentBy,
+                                 Context context) throws CaseAuthorizationError, CaseActionException {
+        checkState();
+        try {
+            CaseId id = new CaseId(caseId);
+            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            if (caseObject == null) {
+                throw new Exception(String.format("Case not found. [id=%s][type=%s]",
+                        caseId, settings.getCaseType().getCanonicalName()));
+            }
+            authorization.authorize(caseObject, ECaseAction.Comment, commentBy, context);
+            CaseComment c = caseObject.addComment(commentBy, comment, commentId, responseState, null);
             save(caseObject, commentBy, context);
             return c;
         } catch (CaseAuthorizationError ae) {

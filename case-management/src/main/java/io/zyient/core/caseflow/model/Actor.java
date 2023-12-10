@@ -21,6 +21,9 @@ import jakarta.persistence.Embeddable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.apache.http.auth.BasicUserPrincipal;
+
+import java.security.Principal;
 
 @Getter
 @Setter
@@ -37,5 +40,10 @@ public class Actor extends UserOrRole {
         setName(user.getName());
         setType(user.getType());
         timestamp = System.currentTimeMillis();
+    }
+
+    @Override
+    public Principal asPrincipal() throws Exception {
+        return new BasicUserPrincipal(String.format("%s:[%s]", getType().name(), getName()));
     }
 }

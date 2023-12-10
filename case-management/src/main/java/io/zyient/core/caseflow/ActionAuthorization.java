@@ -34,7 +34,7 @@ public interface ActionAuthorization<S extends CaseState<?>> {
                    @NonNull UserOrRole actor,
                    Context context) throws CaseAuthorizationError;
 
-    void canAssign(@NonNull Case<S, ?, ?> caseObject,
-                   @NonNull UserOrRole assignTo,
-                   Context context) throws CaseAuthorizationError;
+    void checkAssignment(@NonNull Case<S, ?, ?> caseObject,
+                         @NonNull UserOrRole assignTo,
+                         Context context) throws CaseAuthorizationError;
 }

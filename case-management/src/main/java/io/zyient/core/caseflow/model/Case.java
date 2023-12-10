@@ -148,17 +148,19 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
                                   @NonNull EUserOrRole type,
                                   @NonNull String comment,
                                   Long responseTo,
+                                  ECaseCommentState responseState,
                                   DocumentId documentId) throws CaseModelException {
         Actor ur = new Actor();
         ur.setName(userOrRole);
         ur.setType(type);
         ur.setTimestamp(System.currentTimeMillis());
-        return addComment(ur, comment, responseTo, documentId);
+        return addComment(ur, comment, responseTo, responseState, documentId);
     }
 
     public CaseComment addComment(@NonNull UserOrRole actor,
                                   @NonNull String comment,
                                   Long responseTo,
+                                  ECaseCommentState responseState,
                                   DocumentId docId) throws CaseModelException {
         CaseComment parent = null;
         if (responseTo != null) {
@@ -167,6 +169,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
                 throw new CaseModelException(String.format("Parent comment not found. [case=%s][comment id=%d]",
                         id.stringKey(), responseTo));
             }
+            parent.setCommentState(responseState);
         }
         Actor a = null;
         if (actor instanceof Actor) {
@@ -181,7 +184,9 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         c.setId(id);
         c.setCommentedBy(a);
         c.setComment(comment);
-        c.setState(ECaseCommentState.New);
+        if (parent != null)
+            c.setParent(parent.getId());
+        c.setCommentState(ECaseCommentState.New);
         if (docId != null) {
             CaseDocument<E, T> artefact = findArtefact(docId);
             if (artefact == null) {
