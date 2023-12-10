@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.s3;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.utils.PathUtils;
 import io.zyient.core.filesystem.Archiver;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.model.ArchivePathInfo;
@@ -33,12 +34,15 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class S3Container extends Container {
+    private static final String __PATH_ROOT = "root";
+
     @Config(name = "bucket")
     private String bucket;
 
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
-        return new S3PathInfo(fs, getDomain(), getBucket(), getPath(), InodeType.Directory);
+        String path = PathUtils.formatPath(String.format("%s/%s", __PATH_ROOT, getPath()));
+        return new S3PathInfo(fs, getDomain(), getBucket(), path, InodeType.Directory);
     }
 
     @Override

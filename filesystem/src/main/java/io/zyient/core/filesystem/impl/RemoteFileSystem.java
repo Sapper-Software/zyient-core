@@ -103,7 +103,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
         if (container == null) {
             throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
         }
-
+        path = PathUtils.formatPath(path);
         PathInfo pi = createPath(domain, container, path, InodeType.Directory);
         Inode node = createInode(InodeType.Directory, pi);
 
@@ -119,6 +119,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
         path = getAbsolutePath(path, domain);
         Container container = domainMap.get(domain);
+        path = PathUtils.formatPath(path);
         PathInfo pi = createPath(domain, container, path, InodeType.File);
         return create(pi);
     }
