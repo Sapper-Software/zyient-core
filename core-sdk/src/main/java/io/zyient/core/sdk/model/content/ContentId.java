@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow.model;
+package io.zyient.core.sdk.model.content;
 
-public enum EUserOrRole {
-    User, Role
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class ContentId {
+    private String collection;
+    private String id;
 }

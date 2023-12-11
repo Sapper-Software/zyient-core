@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core;
+package io.zyient.base.core.connections.ws;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -22,9 +22,9 @@ import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.ConnectionManager;
-import io.zyient.base.core.connections.ws.WebServiceConnection;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.MediaType;
@@ -38,7 +38,11 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.http.HttpStatus;
 import org.glassfish.jersey.client.JerseyWebTarget;
+import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -153,12 +157,77 @@ public class WebServiceClient {
         }
     }
 
+    public <R, T> T multipart(@NonNull String service,
+                              @NonNull Class<T> type,
+                              @NonNull R request,
+                              List<String> params,
+                              @NonNull String fileVar,
+                              @NonNull String entityVar,
+                              @NonNull File file) throws ConnectionError {
+        Preconditions.checkNotNull(this.connection);
+        WebServiceConnection connection = this.connection.multipartConnection();
+        String path = settings.pathMap.get(service);
+        if (Strings.isNullOrEmpty(path)) {
+            throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
+        }
+        JerseyWebTarget target = connection.connect(path);
+        if (params != null && !params.isEmpty()) {
+            for (String param : params) {
+                target = target.path(param);
+            }
+        }
+        if (!file.exists()) {
+            throw new ConnectionError(String.format("Invalid source file. [path=%s]", file.getAbsolutePath()));
+        }
+        try {
+            FileDataBodyPart filePart = new FileDataBodyPart(fileVar, file);
+            // UPDATE: just tested again, and the below code is not needed.
+            // It's redundant. Using the FileDataBodyPart already sets the
+            // Content-Disposition information
+            filePart.setContentDisposition(
+                    FormDataContentDisposition.name(fileVar)
+                            .fileName(file.getName()).build());
+            String json = JSONUtils.asString(request, request.getClass());
+            try (FormDataMultiPart multipartEntity = (FormDataMultiPart) new FormDataMultiPart()
+                    .field(entityVar, json, MediaType.APPLICATION_JSON_TYPE)
+                    .bodyPart(filePart)) {
+                int count = 0;
+                boolean handle = true;
+                while (true) {
+                    try (Response response = target.request().post(
+                            Entity.entity(multipartEntity, multipartEntity.getMediaType()))) {
+                        if (response != null) {
+                            if (response.getStatus() != HttpStatus.SC_OK) {
+                                handle = false;
+                                throw new ConnectionError(String.format("Service returned status = [%d]", response.getStatus()));
+                            }
+                            return response.readEntity(type);
+                        }
+                        throw new ConnectionError(
+                                String.format("Service response was null. [service=%s]", target.getUri().toString()));
+                    } catch (Throwable t) {
+                        if (handle && count < settings().retryCount) {
+                            count++;
+                            DefaultLogger.error(
+                                    String.format("Error calling web service. [tries=%d][service=%s]",
+                                            count, target.getUri().toString()), t);
+                        } else {
+                            throw t;
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new ConnectionError(ex);
+        }
+    }
+
     public <R, T> T post(@NonNull String service,
                          @NonNull Class<T> type,
                          @NonNull R request,
                          List<String> params,
                          String mediaType) throws ConnectionError {
-        Preconditions.checkNotNull(connection);
+        Preconditions.checkNotNull(this.connection);
         String path = settings.pathMap.get(service);
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));

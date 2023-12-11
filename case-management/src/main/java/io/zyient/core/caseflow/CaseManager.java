@@ -23,6 +23,8 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.core.model.Actor;
+import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.caseflow.errors.CaseActionException;
 import io.zyient.core.caseflow.errors.CaseAuthorizationError;

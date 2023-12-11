@@ -17,11 +17,11 @@
 package io.zyient.core.caseflow;
 
 import io.zyient.base.common.model.Context;
+import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.caseflow.errors.CaseAuthorizationError;
 import io.zyient.core.caseflow.model.Case;
 import io.zyient.core.caseflow.model.CaseAction;
 import io.zyient.core.caseflow.model.CaseState;
-import io.zyient.core.caseflow.model.UserOrRole;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;

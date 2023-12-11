@@ -40,6 +40,7 @@ import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.client.JerseyWebTarget;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -58,6 +59,8 @@ public class WebServiceConnection implements Connection {
     private String name;
     private WebServiceConnectionSettings settings;
     private WebServiceAuthHandler handler;
+    private boolean enableMultiPart = false;
+    private BaseEnv<?> env;
 
     public WebServiceConnection() {
     }
@@ -131,6 +134,8 @@ public class WebServiceConnection implements Connection {
             if (state.isConnected()) return this;
             try {
                 this.settings = (WebServiceConnectionSettings) settings;
+                if (!enableMultiPart)
+                    enableMultiPart = this.settings.isEnableMultiPart();
                 JerseyClientBuilder builder = builder();
                 if (this.settings.getAuthHandler() != null) {
                     handler = this.settings.getAuthHandler().getDeclaredConstructor()
@@ -142,6 +147,7 @@ public class WebServiceConnection implements Connection {
                 name = this.settings.getName();
                 endpoint = new URL(this.settings.getEndpoint());
 
+                this.env = env;
                 state.setState(EConnectionState.Initialized);
                 return this;
             } catch (Exception ex) {
@@ -155,6 +161,9 @@ public class WebServiceConnection implements Connection {
         JerseyClientBuilder builder = (JerseyClientBuilder) new JerseyClientBuilder()
                 .connectTimeout(this.settings.getConnectionTimeout().normalized(), TimeUnit.MILLISECONDS)
                 .readTimeout(this.settings.getReadTimeout().normalized(), TimeUnit.MILLISECONDS);
+        if (enableMultiPart) {
+            builder.register(MultiPartFeature.class);
+        }
         if (this.settings.isUseSSL()) {
             builder.sslContext(SSLContext.getDefault());
         }
@@ -172,6 +181,16 @@ public class WebServiceConnection implements Connection {
         state.check(EConnectionState.Initialized);
         state.setState(EConnectionState.Connected);
         return this;
+    }
+
+    public WebServiceConnection multipartConnection() throws ConnectionError {
+        if (enableMultiPart) {
+            return this;
+        } else {
+            WebServiceConnection connection = new WebServiceConnection();
+            connection.enableMultiPart = true;
+            return (WebServiceConnection) connection.setup(settings, env);
+        }
     }
 
     public JerseyWebTarget connect(@NonNull String path) throws ConnectionError {

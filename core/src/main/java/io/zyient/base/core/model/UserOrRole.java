@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow.model;
+package io.zyient.base.core.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import jakarta.persistence.Embeddable;
+import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-import org.apache.http.auth.BasicUserPrincipal;
 
 import java.security.Principal;
 
@@ -29,21 +27,10 @@ import java.security.Principal;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@Embeddable
-public class Actor extends UserOrRole {
-    private long timestamp;
+@MappedSuperclass
+public abstract class UserOrRole {
+    private String name;
+    private EUserOrRole type;
 
-    public Actor() {
-    }
-
-    public Actor(@NonNull UserOrRole user) {
-        setName(user.getName());
-        setType(user.getType());
-        timestamp = System.currentTimeMillis();
-    }
-
-    @Override
-    public Principal asPrincipal() throws Exception {
-        return new BasicUserPrincipal(String.format("%s:[%s]", getType().name(), getName()));
-    }
+    public abstract Principal asPrincipal() throws Exception;
 }

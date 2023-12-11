@@ -13,20 +13,13 @@ configurations.all {
         }
     }
 }
-
 dependencies {
     implementation project(':common')
     implementation project(':core')
-    implementation project(':filesystem')
-    implementation project(':persistence')
-    implementation project(':core-sdk')
-
-    implementation 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final'
-    implementation 'org.hibernate:hibernate-core:6.2.7.Final'
-
-    implementation 'org.apache.lucene:lucene-core:9.7.0'
-    implementation 'org.apache.lucene:lucene-analysis-common:9.7.0'
-    implementation 'org.apache.solr:solr-solrj:9.4.0'
-
-    implementation 'dev.morphia.morphia:morphia-core:2.4.8-SNAPSHOT'
+    // https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client
+    implementation 'org.glassfish.jersey.core:jersey-client:2.35'
+    // https://mvnrepository.com/artifact/org.glassfish.jersey.inject/jersey-hk2
+    implementation 'org.glassfish.jersey.inject:jersey-hk2:2.35'
+    // https://mvnrepository.com/artifact/org.glassfish.jersey.media/jersey-media-json-binding
+    implementation 'org.glassfish.jersey.media:jersey-media-json-binding:2.35'
 }

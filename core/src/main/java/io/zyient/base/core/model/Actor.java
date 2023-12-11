@@ -14,25 +14,42 @@
  * limitations under the License.
  */
 
-package io.zyient.core.persistence.impl.solr.model;
+package io.zyient.base.core.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.core.persistence.model.DocumentState;
 import jakarta.persistence.Embeddable;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
+import org.apache.http.auth.BasicUserPrincipal;
 
-@Embeddable
+import java.security.Principal;
+
+@Getter
+@Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class DemoDocState extends DocumentState<EEntityState> {
+@Embeddable
+public class Actor extends UserOrRole {
+    private long timestamp;
 
-    public DemoDocState() {
-        super(EEntityState.Error, EEntityState.New, EEntityState.Synced);
-        setState(getNewState());
+    public Actor() {
+    }
+
+    public Actor(@NonNull String name, @NonNull EUserOrRole type) {
+        setName(name);
+        setType(type);
+        timestamp = System.currentTimeMillis();
+    }
+
+    public Actor(@NonNull UserOrRole user) {
+        setName(user.getName());
+        setType(user.getType());
+        timestamp = System.currentTimeMillis();
     }
 
     @Override
-    public boolean clearError() {
-        return false;
+    public Principal asPrincipal() throws Exception {
+        return new BasicUserPrincipal(String.format("%s:[%s]", getType().name(), getName()));
     }
 }

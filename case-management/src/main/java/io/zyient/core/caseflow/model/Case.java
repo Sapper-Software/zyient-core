@@ -17,7 +17,10 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.core.model.Actor;
+import io.zyient.base.core.model.EUserOrRole;
 import io.zyient.base.core.model.PropertyBag;
+import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.caseflow.errors.CaseModelException;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.core.persistence.model.BaseEntity;

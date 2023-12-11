@@ -22,6 +22,7 @@ import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.core.model.Actor;
 import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.core.persistence.model.DocumentId;
 import jakarta.persistence.*;

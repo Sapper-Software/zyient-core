@@ -60,6 +60,7 @@ public class WebServiceConnectionSettings extends ConnectionSettings {
 
         public static final String CONFIG_URL = "endpoint";
         public static final String CONFIG_USE_SSL = "useSSL";
+        public static final String CONFIG_ENABLE_MULTIPART = "enableMultiPart";
         public static final String CONFIG_READ_TIMEOUT = "timeout.read";
         public static final String CONFIG_CONN_TIMEOUT = "timeout.connection";
         public static final String CONFIG_AUTH_CLASS = "auth.class";
@@ -70,12 +71,14 @@ public class WebServiceConnectionSettings extends ConnectionSettings {
     private String endpoint;
     @Config(name = Constants.CONFIG_USE_SSL, required = false, type = Boolean.class)
     private boolean useSSL = false;
+    @Config(name = Constants.CONFIG_ENABLE_MULTIPART, required = false, type = Boolean.class)
+    private boolean enableMultiPart = false;
     @Config(name = Constants.CONFIG_READ_TIMEOUT, required = false, parser = TimeValueParser.class)
     private TimeUnitValue readTimeout = new TimeUnitValue(Constants.DEFAULT_READ_TIMEOUT, TimeUnit.MILLISECONDS);
     @Config(name = Constants.CONFIG_CONN_TIMEOUT, required = false, parser = TimeValueParser.class)
     private TimeUnitValue connectionTimeout = new TimeUnitValue(Constants.DEFAULT_CONN_TIMEOUT, TimeUnit.MILLISECONDS);
     @Config(name = Constants.CONFIG_AUTH_CLASS, required = false, type = Class.class)
-    private  Class<? extends WebServiceAuthHandler> authHandler;
+    private Class<? extends WebServiceAuthHandler> authHandler;
     private WebServiceAuthSettings authSettings;
 
     public WebServiceConnectionSettings() {
