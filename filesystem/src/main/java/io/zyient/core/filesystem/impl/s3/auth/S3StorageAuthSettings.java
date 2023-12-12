@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.azure;
+package io.zyient.core.filesystem.impl.s3.auth;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.core.filesystem.impl.azure.auth.AzureStorageAuthSettings;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -27,14 +25,6 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class AzureFsClientSettings extends Settings {
-    public static final String __CONFIG_PATH = "client";
-
-    @Config(name = "endpointUrl")
-    private String endpointUrl;
-    @Config(name = "authClass")
-    private String authClass;
-    @Config(name = "account")
-    private String authAccount;
-    private AzureStorageAuthSettings authSettings;
+public abstract class S3StorageAuthSettings extends Settings {
+    public static final String __CONFIG_PATH = "auth";
 }

@@ -14,26 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.azure;
+package io.zyient.core.filesystem.impl.s3.auth;
 
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import io.zyient.base.core.keystore.KeyStore;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 
 import java.io.IOException;
 
-public interface AzureStorageAuth {
-    AzureStorageAuth withAccount(@NonNull String account);
+public interface S3StorageAuth {
+    S3StorageAuth init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                       @NonNull KeyStore keyStore) throws IOException;
 
-    AzureStorageAuth init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                          @NonNull KeyStore keyStore) throws IOException;
+    S3StorageAuth init(@NonNull S3StorageAuthSettings setting,
+                       @NonNull KeyStore keyStore) throws IOException;
 
-    AzureStorageAuth init(@NonNull AzureStorageAuthSettings setting,
-                          @NonNull KeyStore keyStore) throws IOException;
+    S3StorageAuthSettings settings();
 
-    AzureStorageAuthSettings settings();
-
-    BlobServiceClientBuilder credentials(@NonNull BlobServiceClientBuilder builder) throws Exception;
+    AwsCredentialsProvider credentials() throws Exception;
 }

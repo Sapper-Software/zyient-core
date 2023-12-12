@@ -16,7 +16,7 @@
 
 package io.zyient.core.sdk.response;
 
-import io.zyient.core.sdk.request.ContentCreateRequest;
+import io.zyient.core.sdk.request.ContentUpdateRequest;
 
-public class ContentCreateResponse extends ContentResponse<ContentCreateRequest> {
+public class ContentUpdateResponse extends ContentResponse<ContentUpdateRequest> {
 }

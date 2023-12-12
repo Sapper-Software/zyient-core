@@ -67,7 +67,10 @@ import lombok.Setter;
 @Setter
 public  class S3FileSystemSettings extends RemoteFileSystemSettings {
     public static final String CONFIG_REGION = "region";
+    public static final String CONFIG_URL = "endpoint";
 
+    @Config(name = CONFIG_URL, required = false)
+    private String endpoint;
     @Config(name = CONFIG_REGION)
     private String region;
 

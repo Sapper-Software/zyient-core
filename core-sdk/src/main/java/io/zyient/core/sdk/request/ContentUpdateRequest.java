@@ -18,6 +18,7 @@ package io.zyient.core.sdk.request;
 
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.core.model.UserOrRole;
+import io.zyient.core.sdk.model.content.ContentId;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,21 +26,22 @@ import java.util.UUID;
 
 @Getter
 @Setter
-public class ContentCreateRequest {
+public class ContentUpdateRequest {
     private String requestId;
-    private String name;
-    private String sourcePath;
-    private String mimeType;
-    private UserOrRole creator;
+    private ContentId contentId;
+    private String contentState;
+    private UserOrRole requester;
 
-    public ContentCreateRequest() {
+    public ContentUpdateRequest() {
         requestId = UUID.randomUUID().toString();
     }
 
     public void validate() throws ValidationException {
         ValidationException.check(this, "requestId");
-        ValidationException.check(this, "name");
-        ValidationException.check(this, "sourcePath");
-        ValidationException.check(this, "creator");
+        ValidationException.check(this, "contentId");
+        ValidationException.check(contentId, "collection");
+        ValidationException.check(contentId, "id");
+        ValidationException.check(this, "contentState");
+        ValidationException.check(this, "requester");
     }
 }

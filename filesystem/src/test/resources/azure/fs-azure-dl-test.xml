@@ -20,17 +20,31 @@
         <name>TEST</name>
         <module>TEST-ENV</module>
         <instance>Test</instance>
-        <source>demo</source>
+        <source>filesystem</source>
         <paths>
             <connections>config</connections>
             <registry>/test/cdc-core/registry</registry>
             <root>/test/cdc-core</root>
         </paths>
-        <demo>
-        </demo>
+        <filesystem>
+        </filesystem>
         <keystore>
-            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
-            <path>src/test/resources/azure/azure-keystore.ks</path>
+            <name>test-zk-keystore</name>
+            <class>io.zyient.base.core.keystore.ZkKeyStore</class>
+            <path>/io/zyient/test/keystore</path>
+            <iv>e68250d0-a406-40c6-8b23-cfbffcbd4502</iv>
+            <connection>
+                <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                <zookeeper>
+                    <name>test-zk</name>
+                    <connectionString>192.168.2.16:2181</connectionString>
+                    <retry>
+                        <interval>1500</interval>
+                        <retries>5</retries>
+                    </retry>
+                    <connectionTimeout>10000</connectionTimeout>
+                </zookeeper>
+            </connection>
         </keystore>
         <fs>
             <zkPath>/test/filesystem/admin</zkPath>
@@ -49,7 +63,7 @@
                     <hierarchical>true</hierarchical>
                     <client>
                         <endpointUrl>https://cdcdlstore.blob.core.windows.net/</endpointUrl>
-                        <authClass>io.zyient.core.filesystem.impl.azure.SharedKeyAuth</authClass>
+                        <authClass>io.zyient.core.filesystem.impl.azure.auth.SharedKeyAuth</authClass>
                         <account>cdcdlstore</account>
                         <auth>
                             <authKey>azureDLKey</authKey>

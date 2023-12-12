@@ -16,7 +16,14 @@
 
 package io.zyient.core.sdk.response;
 
-import io.zyient.core.sdk.request.ContentCreateRequest;
+import io.zyient.core.sdk.model.content.Content;
+import lombok.Getter;
+import lombok.Setter;
 
-public class ContentCreateResponse extends ContentResponse<ContentCreateRequest> {
+@Getter
+@Setter
+public abstract class ContentResponse<T> {
+    private T request;
+    private Content content;
+    private Exception error;
 }

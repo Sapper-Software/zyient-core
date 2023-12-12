@@ -19,18 +19,32 @@
     <env>
         <name>TEST</name>
         <module>TEST-ENV</module>
-        <instance>Test</instance>
-        <source>demo</source>
+        <instance>S3</instance>
+        <source>filesystem</source>
         <paths>
             <connections>config</connections>
-            <registry>/test/cdc-core/registry</registry>
-            <root>/test/cdc-core</root>
+            <registry>/test/filesystem/registry</registry>
+            <root>/test/filesystem</root>
         </paths>
-        <demo>
-        </demo>
+        <filesystem>
+        </filesystem>
         <keystore>
-            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
-            <path>src/test/resources/azure/azure-keystore.ks</path>
+            <name>test-zk-keystore</name>
+            <class>io.zyient.base.core.keystore.ZkKeyStore</class>
+            <path>/io/zyient/test/keystore</path>
+            <iv>e68250d0-a406-40c6-8b23-cfbffcbd4502</iv>
+            <connection>
+                <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                <zookeeper>
+                    <name>test-zk</name>
+                    <connectionString>192.168.2.16:2181</connectionString>
+                    <retry>
+                        <interval>1500</interval>
+                        <retries>5</retries>
+                    </retry>
+                    <connectionTimeout>10000</connectionTimeout>
+                </zookeeper>
+            </connection>
         </keystore>
         <fs>
             <zkPath>/test/filesystem/admin</zkPath>
@@ -39,56 +53,34 @@
             <overwrite>true</overwrite>
             <fileSystems>
                 <fileSystem>
-                    <type>io.zyient.core.filesystem.impl.azure.AzureFileSystem</type>
-                    <name>azure-test-1</name>
+                    <type>io.zyient.core.filesystem.impl.s3.S3FileSystem</type>
+                    <name>s3-demo-1</name>
                     <tmp>
                         <path>/tmp/test/fs</path>
                         <clean>true</clean>
                     </tmp>
                     <compressed>true</compressed>
-                    <client>
-                        <endpointUrl>https://cdcdevblob01.blob.core.windows.net/</endpointUrl>
-                        <authClass>io.zyient.core.filesystem.impl.azure.auth.SharedKeyAuth</authClass>
-                        <account>cdcdevblob01</account>
-                        <auth>
-                            <authKey>azureDemoKey</authKey>
-                        </auth>
-                    </client>
+                    <hierarchical>true</hierarchical>
+                    <endpoint>http://127.0.0.1:9000</endpoint>
+                    <region>US_WEST_2</region>
+                    <auth type="io.zyient.core.filesystem.impl.s3.auth.BasicStorageAuth">
+                        <accessKey>root</accessKey>
+                        <passKey>mongodb-password</passKey>
+                    </auth>
                     <cache>
                         <enabled>true</enabled>
                     </cache>
                     <containers>
                         <container>
-                            <domain>azure-demo-1</domain>
+                            <domain>s3-demo-1</domain>
                             <path>/test/fs/</path>
-                            <container>demo</container>
+                            <bucket>s3-test-1</bucket>
                         </container>
-                        <default>azure-demo-1</default>
+                        <default>s3-demo-1</default>
                     </containers>
                 </fileSystem>
             </fileSystems>
         </fs>
-        <demo>
-            <producer>
-                <builder>
-                    <type>io.zyient.core.messaging.chronicle.builders.DemoProducerBuilder</type>
-                    <settingsType>io.zyient.core.messaging.builders.MessageSenderSettings</settingsType>
-                </builder>
-                <type>chronicle</type>
-                <connection>test-queue-producer</connection>
-            </producer>
-            <consumer>
-                <builder>
-                    <type>io.zyient.core.messaging.chronicle.builders.DemoConsumerBuilder</type>
-                    <settingsType>io.zyient.core.messaging.builders.MessageReceiverSettings</settingsType>
-                </builder>
-                <type>chronicle</type>
-                <connection>test-queue-consumer</connection>
-                <offset>
-                    <manager>TestChronicleOffset</manager>
-                </offset>
-            </consumer>
-        </demo>
         <config>
             <connections>
                 <shared>
@@ -105,13 +97,6 @@
                         </retry>
                         <connectionTimeout>10000</connectionTimeout>
                     </zookeeper>
-                </connection>
-                <connection>
-                    <class>io.zyient.base.core.connections.azure.ServiceBusConsumerConnection</class>
-                </connection>
-                <connection>
-                    <class>io.zyient.base.core.connections.azure.ServiceBusProducerConnection</class>
-                    <connectionString></connectionString>
                 </connection>
                 <connection>
                     <class>io.zyient.base.core.connections.ws.WebServiceConnection</class>

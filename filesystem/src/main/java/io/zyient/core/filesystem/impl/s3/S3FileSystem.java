@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.s3;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
@@ -27,6 +28,8 @@ import io.zyient.core.filesystem.Writer;
 import io.zyient.core.filesystem.impl.FileUploadCallback;
 import io.zyient.core.filesystem.impl.PostOperationVisitor;
 import io.zyient.core.filesystem.impl.RemoteFileSystem;
+import io.zyient.core.filesystem.impl.s3.auth.S3StorageAuth;
+import io.zyient.core.filesystem.impl.s3.auth.S3StorageAuthSettings;
 import io.zyient.core.filesystem.model.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,12 +42,14 @@ import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -83,13 +88,7 @@ public class S3FileSystem extends RemoteFileSystem {
         try {
             super.init(config, env, new S3FileSystemConfigReader(config));
             S3FileSystemSettings settings = (S3FileSystemSettings) configReader().settings();
-            if (client == null) {
-                Region region = Region.of(settings.getRegion());
-                client = S3Client.builder()
-                        .region(region)
-                        .build();
-            }
-            return postInit();
+            return init(settings, env);
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             DefaultLogger.error(LOG, "Error initializing Local FileSystem.", t);
@@ -99,16 +98,32 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public FileSystem init(@NonNull FileSystemSettings settings, @NonNull BaseEnv<?> env) throws IOException {
         Preconditions.checkArgument(settings instanceof S3FileSystemSettings);
         super.init(settings, env);
         try {
             S3FileSystemSettings s3settings = (S3FileSystemSettings) this.settings;
             if (client == null) {
+                S3StorageAuth auth = null;
+                if (ConfigReader.checkIfNodeExists(configReader().config(), S3StorageAuthSettings.__CONFIG_PATH)) {
+                    HierarchicalConfiguration<ImmutableNode> ac =
+                            configReader().config().configurationAt(S3StorageAuthSettings.__CONFIG_PATH);
+                    Class<? extends S3StorageAuth> clazz = (Class<? extends S3StorageAuth>) ConfigReader.readType(ac);
+                    auth = clazz.getDeclaredConstructor()
+                            .newInstance();
+                    auth.init(configReader().config(), env.keyStore());
+                }
                 Region region = Region.of(s3settings.getRegion());
-                client = S3Client.builder()
-                        .region(region)
-                        .build();
+                S3ClientBuilder builder = S3Client.builder()
+                        .region(region);
+                if (!Strings.isNullOrEmpty(((S3FileSystemSettings) settings).getEndpoint())) {
+                    builder.endpointOverride(new URI(((S3FileSystemSettings) settings).getEndpoint()));
+                }
+                if (auth != null) {
+                    builder.credentialsProvider(auth.credentials());
+                }
+                client = builder.build();
             }
             return postInit();
         } catch (Throwable t) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.azure;
+package io.zyient.core.filesystem.impl.azure.auth;
 
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.common.StorageSharedKeyCredential;
@@ -49,13 +49,7 @@ public class SharedKeyAuth implements AzureStorageAuth {
                     AzureStorageAuthSettings.__CONFIG_PATH,
                     SharedKeyAuthSettings.class);
             reader.read();
-            settings = (SharedKeyAuthSettings) reader.settings();
-            String accountKey = keyStore.read(settings.getAuthKey());
-            if (Strings.isNullOrEmpty(accountKey)) {
-                throw new IOException(String.format("Storage Account Key not found. [key=%s]", settings.getAuthKey()));
-            }
-            credential = new StorageSharedKeyCredential(account, accountKey);
-            return this;
+            return init((AzureStorageAuthSettings) reader.settings(), keyStore);
         } catch (Exception ex) {
             throw new IOException(ex);
         }

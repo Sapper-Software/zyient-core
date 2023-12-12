@@ -22,6 +22,7 @@ import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.core.filesystem.impl.azure.auth.AzureStorageAuth;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
