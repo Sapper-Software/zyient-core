@@ -14,27 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.request;
+package io.zyient.core.sdk.request.content;
 
 import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.sdk.model.content.ContentId;
+import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
-
 @Getter
 @Setter
-public class ContentUpdateRequest {
-    private String requestId;
+public class ContentUpdateRequest extends Request {
     private ContentId contentId;
     private String contentState;
-    private UserOrRole requester;
-
-    public ContentUpdateRequest() {
-        requestId = UUID.randomUUID().toString();
-    }
 
     public void validate() throws ValidationException {
         ValidationException.check(this, "requestId");
@@ -42,6 +34,5 @@ public class ContentUpdateRequest {
         ValidationException.check(contentId, "collection");
         ValidationException.check(contentId, "id");
         ValidationException.check(this, "contentState");
-        ValidationException.check(this, "requester");
     }
 }

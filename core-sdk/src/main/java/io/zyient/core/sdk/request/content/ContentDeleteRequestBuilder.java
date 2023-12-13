@@ -14,55 +14,50 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.request;
+package io.zyient.core.sdk.request.content;
 
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileUtils;
-import io.zyient.core.sdk.model.content.Content;
+import io.zyient.core.sdk.model.DeleteResponse;
 import io.zyient.core.sdk.model.content.ContentId;
-import io.zyient.core.sdk.response.ContentUpdateResponse;
+import io.zyient.core.sdk.response.content.ContentDeleteResponse;
 import lombok.NonNull;
 
 import java.util.List;
 
-public class ContentUpdateRequestBuilder<E extends Enum<?>> {
-    public static final String SERVICE_CONTENT_CREATE = "/update/state";
+public class ContentDeleteRequestBuilder {
+    public static final String SERVICE_CONTENT_DELETE = "/delete";
 
     private final WebServiceClient client;
-    private final ContentUpdateRequest request = new ContentUpdateRequest();
+    private final ContentDeleteRequest request = new ContentDeleteRequest();
 
-    public ContentUpdateRequestBuilder(@NonNull WebServiceClient client) {
+    public ContentDeleteRequestBuilder(@NonNull WebServiceClient client) {
         this.client = client;
     }
 
-    public ContentUpdateRequestBuilder<E> setContentId(@NonNull ContentId contentId) {
+    public ContentDeleteRequestBuilder withRequester(UserOrRole user) {
+        request.setUser(user);
+        return this;
+    }
+
+    public ContentDeleteRequestBuilder withContentId(ContentId contentId) {
         request.setContentId(contentId);
         return this;
     }
 
-    public ContentUpdateRequestBuilder<E> setContentState(@NonNull E state) {
-        request.setContentState(state.name());
-        return this;
-    }
-
-    public ContentUpdateRequestBuilder<E> setRequester(@NonNull UserOrRole requester) {
-        request.setRequester(requester);
-        return this;
-    }
-
-    public ContentUpdateResponse execute(List<String> params) throws Exception {
-        ContentUpdateResponse response = new ContentUpdateResponse();
+    public ContentDeleteResponse execute(List<String> params) throws Exception {
+        ContentDeleteResponse response = new ContentDeleteResponse();
         response.setRequest(request);
         try {
             request.validate();
-            Content content = client.post(SERVICE_CONTENT_CREATE,
-                    Content.class,
+            DeleteResponse r = client.post(SERVICE_CONTENT_DELETE,
+                    DeleteResponse.class,
                     request,
                     params,
                     FileUtils.MIME_TYPE_JSON);
-            response.setContent(content);
+            response.setResponse(r);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             response.setError(ex);

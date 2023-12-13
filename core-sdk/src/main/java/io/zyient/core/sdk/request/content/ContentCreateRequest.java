@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.content;
+package io.zyient.core.sdk.request.content;
 
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-public class ContentId {
-    private String collection;
-    private String id;
+public class ContentCreateRequest extends Request {
+    private String name;
+    private String sourcePath;
+    private String mimeType;
+
+
+    public void validate() throws ValidationException {
+        super.validate();
+        ValidationException.check(this, "name");
+        ValidationException.check(this, "sourcePath");
+    }
 }

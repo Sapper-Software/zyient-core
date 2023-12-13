@@ -14,16 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.response;
+package io.zyient.core.sdk.model;
 
-import io.zyient.core.sdk.model.content.Content;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public abstract class ContentResponse<T> {
-    private T request;
-    private Content content;
-    private Exception error;
+public class DeleteResponse {
+    private String path;
+    private boolean deleted;
+    private int count;
 }

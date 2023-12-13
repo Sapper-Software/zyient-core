@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.response;
+package io.zyient.core.sdk.response.content;
 
-import io.zyient.core.sdk.request.ContentUpdateRequest;
+import io.zyient.core.sdk.request.content.ContentUpdateRequest;
 
 public class ContentUpdateResponse extends ContentResponse<ContentUpdateRequest> {
 }

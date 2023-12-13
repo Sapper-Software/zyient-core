@@ -14,16 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.content;
+package io.zyient.core.sdk.request.content;
 
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.core.sdk.model.content.ContentId;
+import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-public class ContentId {
-    private String collection;
-    private String id;
+public class ContentGetRequest extends Request {
+    private ContentId contentId;
+    private boolean computeCheckSum = false;
+
+    public void validate() throws ValidationException {
+        super.validate();
+        ValidationException.check(this, "contentId");
+        ValidationException.check(contentId, "collection");
+        ValidationException.check(contentId, "id");
+    }
 }

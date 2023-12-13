@@ -14,9 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.response;
+package io.zyient.core.sdk.model.fs;
 
-import io.zyient.core.sdk.request.ContentCreateRequest;
+import lombok.Getter;
+import lombok.Setter;
 
-public class ContentCreateResponse extends ContentResponse<ContentCreateRequest> {
+import java.util.Map;
+
+@Getter
+@Setter
+public class FileHandle {
+    private String fileId;
+    private String path;
+    private long size;
+    private boolean directory;
+    private long createTime;
+    private long updateTime;
+    private Map<String, String> URI;
 }

@@ -25,21 +25,18 @@ import java.util.UUID;
 
 @Getter
 @Setter
-public class ContentCreateRequest {
+public abstract class Request {
     private String requestId;
-    private String name;
-    private String sourcePath;
-    private String mimeType;
-    private UserOrRole creator;
+    private UserOrRole user;
+    private long requestTimestamp;
 
-    public ContentCreateRequest() {
+    protected Request() {
         requestId = UUID.randomUUID().toString();
     }
 
     public void validate() throws ValidationException {
         ValidationException.check(this, "requestId");
-        ValidationException.check(this, "name");
-        ValidationException.check(this, "sourcePath");
-        ValidationException.check(this, "creator");
+        ValidationException.check(this, "user");
+        requestTimestamp = System.currentTimeMillis();
     }
 }

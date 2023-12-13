@@ -134,16 +134,23 @@ public class WebServiceClient {
         boolean handle = true;
         while (true) {
             try {
-                Response response = builder.get();
-                if (response != null) {
-                    if (response.getStatus() != HttpStatus.SC_OK) {
-                        handle = false;
-                        throw new ConnectionError(String.format("Service returned status = [%d]", response.getStatus()));
+                try (Response response = builder.get()) {
+                    if (response != null) {
+                        int rc = response.getStatus();
+                        if (rc != HttpStatus.SC_OK) {
+                            if (rc >= 200 && rc < 300) {
+                                handle = false;
+                            }
+                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                                    response.getStatus(), target.getUri().toString()));
+                        }
+                        if (response.hasEntity())
+                            return response.readEntity(type);
                     }
-                    return response.readEntity(type);
+                    handle = false;
+                    throw new ConnectionError(
+                            String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }
-                throw new ConnectionError(
-                        String.format("Service response was null. [service=%s]", target.getUri().toString()));
             } catch (Throwable t) {
                 if (handle && count < settings().retryCount) {
                     count++;
@@ -248,12 +255,18 @@ public class WebServiceClient {
             try {
                 try (Response response = builder.post(Entity.entity(request, mediaType))) {
                     if (response != null) {
-                        if (response.getStatus() != HttpStatus.SC_OK) {
-                            handle = false;
-                            throw new ConnectionError(String.format("Service returned status = [%d]", response.getStatus()));
+                        int rc = response.getStatus();
+                        if (rc != HttpStatus.SC_OK) {
+                            if (rc >= 200 && rc < 300) {
+                                handle = false;
+                            }
+                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                                    response.getStatus(), target.getUri().toString()));
                         }
-                        return response.readEntity(type);
+                        if (response.hasEntity())
+                            return response.readEntity(type);
                     }
+                    handle = false;
                     throw new ConnectionError(
                             String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }
@@ -296,12 +309,18 @@ public class WebServiceClient {
             try {
                 try (Response response = builder.put(Entity.entity(request, mediaType))) {
                     if (response != null) {
-                        if (response.getStatus() != HttpStatus.SC_OK) {
-                            handle = false;
-                            throw new ConnectionError(String.format("Service returned status = [%d]", response.getStatus()));
+                        int rc = response.getStatus();
+                        if (rc != HttpStatus.SC_OK) {
+                            if (rc >= 200 && rc < 300) {
+                                handle = false;
+                            }
+                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                                    response.getStatus(), target.getUri().toString()));
                         }
-                        return response.readEntity(type);
+                        if (response.hasEntity())
+                            return response.readEntity(type);
                     }
+                    handle = false;
                     throw new ConnectionError(
                             String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }
@@ -343,12 +362,18 @@ public class WebServiceClient {
             try {
                 try (Response response = builder.delete()) {
                     if (response != null) {
-                        if (response.getStatus() != HttpStatus.SC_OK) {
-                            handle = false;
-                            throw new ConnectionError(String.format("Service returned status = [%d]", response.getStatus()));
+                        int rc = response.getStatus();
+                        if (rc != HttpStatus.SC_OK) {
+                            if (rc >= 200 && rc < 300) {
+                                handle = false;
+                            }
+                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                                    response.getStatus(), target.getUri().toString()));
                         }
-                        return response.readEntity(type);
+                        if (response.hasEntity())
+                            return response.readEntity(type);
                     }
+                    handle = false;
                     throw new ConnectionError(
                             String.format("Service response was null. [service=%s]", target.getUri().toString()));
                 }

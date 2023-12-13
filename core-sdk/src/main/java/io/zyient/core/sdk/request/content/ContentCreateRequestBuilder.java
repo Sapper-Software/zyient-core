@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.request;
+package io.zyient.core.sdk.request.content;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -27,7 +27,7 @@ import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileTypeDetector;
 import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.sdk.model.content.Content;
-import io.zyient.core.sdk.response.ContentCreateResponse;
+import io.zyient.core.sdk.response.content.ContentCreateResponse;
 import lombok.NonNull;
 
 import java.io.File;
@@ -65,13 +65,13 @@ public class ContentCreateRequestBuilder {
     }
 
     public ContentCreateRequestBuilder withCreator(@NonNull UserOrRole creator) {
-        request.setCreator(creator);
+        request.setUser(creator);
         return this;
     }
 
     public ContentCreateRequestBuilder withCreator(@NonNull String name, @NonNull EUserOrRole type) {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        request.setCreator(new Actor(name, type));
+        request.setUser(new Actor(name, type));
         return this;
     }
 

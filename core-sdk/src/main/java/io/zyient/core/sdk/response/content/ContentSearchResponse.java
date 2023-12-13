@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.content;
+package io.zyient.core.sdk.response.content;
 
+import io.zyient.core.sdk.model.content.Content;
+import io.zyient.core.sdk.request.content.ContentSearchRequest;
+import io.zyient.core.sdk.response.Response;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
+
+import java.util.List;
 
 @Getter
 @Setter
-@ToString
-public class ContentId {
-    private String collection;
-    private String id;
+public class ContentSearchResponse extends Response<ContentSearchRequest> {
+    private int count;
+    private List<Content> records;
 }

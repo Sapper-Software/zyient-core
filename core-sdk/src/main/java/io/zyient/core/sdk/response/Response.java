@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.content;
+package io.zyient.core.sdk.response;
 
+import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-public class ContentId {
-    private String collection;
-    private String id;
+public abstract class Response<T extends Request> {
+    private T request;
+    private long responseTimestamp;
+    private String errorCode;
+    private Exception error;
 }

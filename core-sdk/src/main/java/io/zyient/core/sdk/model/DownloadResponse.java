@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.content;
+package io.zyient.core.sdk.model;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-public class ContentId {
-    private String collection;
+public class DownloadResponse {
     private String id;
+    private String downloadUrl;
+    private String mimeType;
+    private String checkSum;
 }

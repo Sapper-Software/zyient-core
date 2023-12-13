@@ -14,16 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.content;
+package io.zyient.core.sdk.request.fs;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-
-@Getter
-@Setter
-@ToString
-public class ContentId {
-    private String collection;
-    private String id;
+public class FileCreateRequest {
 }

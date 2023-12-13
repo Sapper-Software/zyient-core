@@ -14,32 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.request;
+package io.zyient.core.sdk.request.content;
 
 import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.sdk.model.content.ContentId;
+import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
-
 @Getter
 @Setter
-public class ContentDeleteRequest {
-    private String requestId;
+public class ContentDeleteRequest extends Request {
     private ContentId contentId;
-    private UserOrRole requester;
-
-    public ContentDeleteRequest() {
-        requestId = UUID.randomUUID().toString();
-    }
 
     public void validate() throws ValidationException {
-        ValidationException.check(this, "requestId");
+        super.validate();
         ValidationException.check(this, "contentId");
         ValidationException.check(contentId, "collection");
         ValidationException.check(contentId, "id");
-        ValidationException.check(this, "requester");
     }
 }
