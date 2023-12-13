@@ -34,14 +34,13 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class S3Container extends Container {
-    private static final String __PATH_ROOT = "root";
 
     @Config(name = "bucket")
     private String bucket;
 
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
-        String path = PathUtils.formatPath(String.format("%s/%s", __PATH_ROOT, getPath()));
+        String path = PathUtils.formatPath(getDomain());
         return new S3PathInfo(fs, getDomain(), getBucket(), path, InodeType.Directory);
     }
 
@@ -49,4 +48,5 @@ public class S3Container extends Container {
     public ArchivePathInfo pathInfo(@NonNull Archiver archiver) {
         return null;
     }
+
 }

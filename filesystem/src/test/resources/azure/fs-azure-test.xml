@@ -23,24 +23,41 @@
         <source>filesystem</source>
         <paths>
             <connections>config</connections>
-            <registry>/test/cdc-core/registry</registry>
-            <root>/test/cdc-core</root>
+            <registry>/test/filesystem/azure/registry</registry>
+            <root>/test/filesystem/azure</root>
         </paths>
         <filesystem>
         </filesystem>
         <keystore>
-            <class>io.zyient.base.core.keystore.JavaKeyStore</class>
-            <path>src/test/resources/azure/azure-keystore.ks</path>
+            <name>test-zk-keystore</name>
+            <class>io.zyient.base.core.keystore.ZkKeyStore</class>
+            <path>/io/zyient/test/keystore</path>
+            <iv>e68250d0-a406-40c6-8b23-cfbffcbd4502</iv>
+            <connection>
+                <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
+                <zookeeper>
+                    <name>test-zk</name>
+                    <connectionString>192.168.2.16:2181</connectionString>
+                    <retry>
+                        <interval>1500</interval>
+                        <retries>5</retries>
+                    </retry>
+                    <connectionTimeout>10000</connectionTimeout>
+                </zookeeper>
+            </connection>
         </keystore>
         <fs>
-            <zkPath>/test/filesystem/admin</zkPath>
-            <zkConnection>test-zk</zkConnection>
+            <zk>
+                <path>/test/filesystem/azure/admin</path>
+                <connection>test-zk</connection>
+            </zk>
             <autoSave>true</autoSave>
             <overwrite>true</overwrite>
             <fileSystems>
                 <fileSystem>
                     <type>io.zyient.core.filesystem.impl.azure.AzureFileSystem</type>
                     <name>azure-test-1</name>
+                    <basePath>/</basePath>
                     <tmp>
                         <path>/tmp/test/fs</path>
                         <clean>true</clean>
@@ -60,7 +77,6 @@
                     <containers>
                         <container>
                             <domain>azure-demo-1</domain>
-                            <path>/test/fs/</path>
                             <container>demo</container>
                         </container>
                         <default>azure-demo-1</default>

@@ -78,23 +78,22 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
+    protected boolean createDomainDir(DirectoryInode dir) throws IOException {
+        File d = new File(dir.getFsPath());
+        if (!d.exists()) {
+            return d.mkdirs();
+        }
+        return true;
+    }
+
+    @Override
     public PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException {
         return new LocalPathInfo(this, values);
     }
 
     @Override
-    protected String getAbsolutePath(@NonNull String path,
-                                     @NonNull String domain) throws IOException {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        Container container = domainMap.get(domain);
-        if (!(container instanceof LocalContainer)) {
-            throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
-        }
-        String pp = ((LocalContainer) container).getPath();
-
-        return PathUtils.formatPath(String.format("/%s/%s",
-                pp, path));
+    public PathInfo parsePathInfo(@NonNull String domain, @NonNull String path) throws IOException {
+        return new LocalPathInfo(this, path, domain);
     }
 
     @Override
@@ -103,7 +102,7 @@ public class LocalFileSystem extends FileSystem {
         if (name.indexOf('/') >= 0) {
             throw new IOException(String.format("Invalid directory name: recursive directory creation not supported. [name=%s]", name));
         }
-        String path = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), name));
+        String path = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), name));
         LocalPathInfo pd = checkAndGetPath(parent);
         if (!pd.file().exists()) {
             throw new IOException(String.format("Parent directory not found. [path=%s]", pd.file().getAbsolutePath()));
@@ -116,8 +115,8 @@ public class LocalFileSystem extends FileSystem {
                         String.format("Error creating directory. [path=%s]", pi.file().getAbsolutePath()));
             }
         }
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (DirectoryInode) updateInodeWithLock(node);
@@ -126,7 +125,6 @@ public class LocalFileSystem extends FileSystem {
     @Override
     public DirectoryInode mkdirs(@NonNull String module, @NonNull String path) throws IOException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        path = getAbsolutePath(path, module);
         LocalPathInfo pi = new LocalPathInfo(this, path, module);
         Inode node = createInode(InodeType.Directory, pi);
         pi = (LocalPathInfo) node.getPathInfo();
@@ -136,8 +134,8 @@ public class LocalFileSystem extends FileSystem {
                         String.format("Error creating directory. [path=%s]", pi.file().getAbsolutePath()));
             }
         }
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (DirectoryInode) updateInodeWithLock(node);
@@ -145,7 +143,6 @@ public class LocalFileSystem extends FileSystem {
 
     @Override
     public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
-        path = getAbsolutePath(path, domain);
         LocalPathInfo pi = new LocalPathInfo(this, path, domain);
         return create(pi);
     }
@@ -163,8 +160,8 @@ public class LocalFileSystem extends FileSystem {
                         String.format("Error creating directory. [path=%s]", dir.getAbsolutePath()));
             }
         }
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         if (node.isFile() && !pathInfo.exists())
@@ -181,11 +178,11 @@ public class LocalFileSystem extends FileSystem {
         if (!pdir.exists()) {
             if (!pdir.mkdirs()) {
                 throw new IOException(
-                        String.format("Error creating directory. [path=%s]", dir.getAbsolutePath()));
+                        String.format("Error creating directory. [path=%s]", dir.getPath()));
             }
         }
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         if (node.isFile())
@@ -218,7 +215,7 @@ public class LocalFileSystem extends FileSystem {
     protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
                                      @NonNull String path,
                                      @NonNull InodeType type) {
-        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));
         return new LocalPathInfo(this, p, parent.getDomain());
     }
 
@@ -226,7 +223,7 @@ public class LocalFileSystem extends FileSystem {
     public boolean exists(@NonNull PathInfo path) throws IOException {
         Inode node = getInode(path);
         if (node != null) {
-            LocalPathInfo pi = (LocalPathInfo) parsePathInfo(node.getPath());
+            LocalPathInfo pi = (LocalPathInfo) parsePathInfo(node.getURI());
             return pi.file.exists();
         }
         return false;
@@ -236,7 +233,7 @@ public class LocalFileSystem extends FileSystem {
     protected Reader getReader(@NonNull FileInode inode) throws IOException {
         LocalPathInfo pi = checkAndGetPath(inode);
         if (!pi.exists()) {
-            throw new IOException(String.format("Local file not found. [path=%s]", inode.getAbsolutePath()));
+            throw new IOException(String.format("Local file not found. [path=%s]", inode.getPath()));
         }
         return new LocalReader(inode, this).open();
     }
@@ -323,7 +320,7 @@ public class LocalFileSystem extends FileSystem {
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             DefaultLogger.error(
-                    String.format("Upload failed. [domain=%s][path=%s]", inode.getDomain(), inode.getPath()));
+                    String.format("Upload failed. [domain=%s][path=%s]", inode.getDomain(), inode.getURI()));
             throw new IOException(ex);
         }
     }

@@ -115,8 +115,19 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
+    protected boolean createDomainDir(DirectoryInode dir) throws IOException {
+        return true;
+    }
+
+    @Override
     public PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException {
         return new AzurePathInfo(this, values);
+    }
+
+    @Override
+    public PathInfo parsePathInfo(@NonNull String domain, @NonNull String path) throws IOException {
+        AzureContainer container = (AzureContainer) domainMap.get(domain);
+        return new AzurePathInfo(this, domain, container.getContainer(), path, InodeType.Directory);
     }
 
     @Override
@@ -130,8 +141,8 @@ public class AzureFileSystem extends RemoteFileSystem {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
         AzurePathInfo pi = checkAndGetPath(node);
         Preconditions.checkNotNull(pi);
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (FileInode) updateInodeWithLock(node);
@@ -160,16 +171,13 @@ public class AzureFileSystem extends RemoteFileSystem {
                     }
                 } else {
                     ListBlobsOptions options = new ListBlobsOptions()
-                            .setPrefix(path.path());
+                            .setPrefix(path.fsPath());
                     Iterable<BlobItem> blobs = cc.listBlobsByHierarchy(DELIMITER, options, null);
                     for (BlobItem bi : blobs) {
                         String name = bi.getName();
-                        if (!name.startsWith(DELIMITER)) {
-                            name = String.format("%s%s", DELIMITER, name);
-                        }
                         if (bi.isDeleted()) continue;
                         if (!recursive) {
-                            if (name.compareTo(pi.path()) != 0) {
+                            if (name.compareTo(pi.fsPath()) != 0) {
                                 continue;
                             }
                         } else if (bi.isPrefix()) {
@@ -193,7 +201,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
                                      @NonNull String path,
                                      @NonNull InodeType type) throws IOException {
-        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));
         AzurePathInfo pi = checkAndGetPath(parent);
         return new AzurePathInfo(this, pi.domain(), pi.container(), p, type);
     }
@@ -211,10 +219,7 @@ public class AzureFileSystem extends RemoteFileSystem {
             BlobContainerClient cc = client.getContainer(pi.container());
             if (cc != null && cc.exists()) {
                 AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
-                String name = pi.path();
-                if (!settings.isUseHierarchical()) {
-                    name = getBlobName(pi);
-                }
+                String name = getBlobName(pi);
                 return cc.getBlobClient(name).exists();
             }
         }
@@ -224,7 +229,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     private String getBlobName(AzurePathInfo pathInfo) {
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
         if (settings.isUseHierarchical()) {
-            return pathInfo.path();
+            return pathInfo.fsPath();
         }
         return String.format("%s.blob", pathInfo.uuid());
     }
@@ -379,17 +384,13 @@ public class AzureFileSystem extends RemoteFileSystem {
             if (!checkInodeAvailable(inode, timeout)) {
                 throw new IOException(
                         String.format("Download operation timeout: File not available for download. [path=%s]",
-                                inode.getPath()));
+                                inode.getURI()));
             }
             BlobContainerClient cc = client.getContainer(path.container());
             if (cc != null && cc.exists()) {
-                AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
-                String name = path.path();
-                if (!settings.isUseHierarchical()) {
-                    name = getBlobName(path);
-                }
+                String name = getBlobName(path);
                 BlobClient bc = cc.getBlobClient(name);
-                if (bc != null && bc.exists()) {
+                if (bc.exists()) {
                     try (FileOutputStream fos = new FileOutputStream(path.temp())) {
                         bc.downloadStream(fos);
                     }
@@ -402,13 +403,8 @@ public class AzureFileSystem extends RemoteFileSystem {
 
     @Override
     public long size(@NonNull PathInfo path) throws IOException {
-        if (path instanceof AzurePathInfo) {
-            AzurePathInfo ap = (AzurePathInfo) path;
-            String name = path.path();
-            AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
-            if (!settings.isUseHierarchical()) {
-                name = getBlobName(ap);
-            }
+        if (path instanceof AzurePathInfo ap) {
+            String name = getBlobName(ap);
             BlobClient c = client.getContainer(ap.container()).getBlobClient(name);
             if (c.exists())
                 return c.getProperties().getBlobSize();

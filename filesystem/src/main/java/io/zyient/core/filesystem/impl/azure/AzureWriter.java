@@ -38,7 +38,7 @@ public class AzureWriter extends RemoteWriter {
         if (path.getPathInfo() != null) {
             pathInfo = (AzurePathInfo) path.getPathInfo();
         } else {
-            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getURI());
             path.setPathInfo(pathInfo);
         }
     }
@@ -50,7 +50,7 @@ public class AzureWriter extends RemoteWriter {
         if (path.getPathInfo() != null) {
             pathInfo = (AzurePathInfo) path.getPathInfo();
         } else {
-            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (AzurePathInfo) fs.parsePathInfo(path.getURI());
             path.setPathInfo(pathInfo);
         }
     }

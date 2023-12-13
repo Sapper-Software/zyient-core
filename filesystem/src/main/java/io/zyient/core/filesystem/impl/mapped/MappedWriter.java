@@ -66,7 +66,7 @@ public class MappedWriter extends LocalWriter {
                 lock.unlock();
             }
         } catch (DistributedLock.LockError le) {
-            String err = String.format("[%s][%s] %s", inode.getDomain(), inode.getAbsolutePath(), le.getLocalizedMessage());
+            String err = String.format("[%s][%s] %s", inode.getDomain(), inode.getPath(), le.getLocalizedMessage());
             throw new DistributedLock.LockError(err);
         } catch (Exception ex) {
             throw new IOException(ex);

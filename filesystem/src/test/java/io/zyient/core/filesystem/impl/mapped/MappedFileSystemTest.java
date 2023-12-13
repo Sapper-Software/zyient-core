@@ -40,8 +40,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MappedFileSystemTest {
     private static final String __CONFIG_FILE = "src/test/resources/mapped/fs-mapped-test.xml";
-    private static final String FS_DEMO = "local-test-1";
-    private static final String FS_DEMO_DOMAIN = "local-demo-1";
+    private static final String FS_DEMO = "mapped-test-1";
+    private static final String FS_DEMO_DOMAIN = "mapped-demo-1";
 
     private static XMLConfiguration xmlConfiguration = null;
     private static FileSystemManager manager;
@@ -69,14 +69,14 @@ class MappedFileSystemTest {
             String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getPath()));
+            File d = new File(di.getFsPath());
             assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
-            d = new File(fi.getAbsolutePath());
+            d = new File(fi.getFsPath());
             assertTrue(d.exists() && d.isFile());
             long written = 0;
             try (Writer writer = fs.writer(fi)) {
@@ -116,14 +116,14 @@ class MappedFileSystemTest {
             String dir = String.format("demo/local/%s", UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
-            File d = new File(di.getAbsolutePath());
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getPath()));
+            File d = new File(di.getFsPath());
             assertTrue(d.exists() && d.isDirectory());
             FileInode fi = fs.create(di.getDomain(), String.format("test/%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
             assertNotNull(fi);
-            d = new File(fi.getAbsolutePath());
+            d = new File(fi.getFsPath());
             assertTrue(d.exists() && d.isFile());
             long written = 0;
             try (Writer writer = fs.writer(fi)) {

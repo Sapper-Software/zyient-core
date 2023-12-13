@@ -23,8 +23,8 @@
         <source>filesystem</source>
         <paths>
             <connections>config</connections>
-            <registry>/test/filesystem/registry</registry>
-            <root>/test/filesystem</root>
+            <registry>/test/filesystem/local/registry</registry>
+            <root>/test/filesystem/local</root>
         </paths>
         <filesystem>
         </filesystem>
@@ -37,14 +37,17 @@
             <path>/test/env</path>
         </locks>
         <fs>
-            <zkPath>/test/filesystem/admin</zkPath>
-            <zkConnection>test-zk</zkConnection>
+            <zk>
+                <path>/test/filesystem/local/admin</path>
+                <connection>test-zk</connection>
+            </zk>
             <autoSave>true</autoSave>
             <overwrite>true</overwrite>
             <fileSystems>
                 <fileSystem>
                     <type>io.zyient.core.filesystem.impl.local.LocalFileSystem</type>
                     <name>local-test-1</name>
+                    <basePath>/home/subhagho/temp/local</basePath>
                     <tmp>
                         <path>/tmp/test/fs</path>
                         <clean>true</clean>
@@ -52,12 +55,11 @@
                     <compressed>true</compressed>
                     <zk>
                         <connection>test-zk</connection>
-                        <path>/test/filesystem/demo/</path>
+                        <path>/test/filesystem/local/demo/</path>
                     </zk>
                     <containers>
                         <container>
                             <domain>local-demo-1</domain>
-                            <path>/home/subhagho/temp</path>
                         </container>
                         <default>local-demo-1</default>
                     </containers>

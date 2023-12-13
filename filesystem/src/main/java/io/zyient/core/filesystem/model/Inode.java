@@ -40,10 +40,10 @@ public abstract class Inode {
     private String uuid;
     @Indexed(name = InodeIndexConstants.NAME_DOMAIN)
     private String domain;
-    @Indexed(name = InodeIndexConstants.NAME_PATH, indexer = JsonIndexer.class)
-    private Map<String, String> path;
-    @Indexed(name = InodeIndexConstants.NAME_ABSOLUTE_PATH)
-    private String absolutePath;
+    @Indexed(name = InodeIndexConstants.NAME_URI, indexer = JsonIndexer.class)
+    private Map<String, String> URI;
+    @Indexed(name = InodeIndexConstants.NAME_PATH)
+    private String path;
     @Indexed(name = InodeIndexConstants.NAME_CREATE_DATE)
     private long createTimestamp = 0;
     @Indexed(name = InodeIndexConstants.NAME_MODIFIED_DATE)
@@ -104,7 +104,7 @@ public abstract class Inode {
     }
 
     public long size() throws IOException {
-        return path.size();
+        return URI.size();
     }
 
     public Inode attribute(@NonNull String key, @NonNull String value) {
@@ -139,6 +139,6 @@ public abstract class Inode {
 
     @Override
     public String toString() {
-        return String.format("[ID=%s][DOMAIN=%s][PATH=%s]", uuid, domain, path);
+        return String.format("[ID=%s][DOMAIN=%s][PATH=%s]", uuid, domain, URI);
     }
 }

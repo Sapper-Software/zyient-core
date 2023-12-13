@@ -78,7 +78,7 @@ public class FileIndexFilter {
     }
 
     public Query absolutePath(@NonNull String path) throws Exception {
-        return and(InodeIndexConstants.InodeQuery.ABSOLUTE_PATH, path);
+        return and(InodeIndexConstants.InodeQuery.PATH, path);
     }
 
 
@@ -141,7 +141,7 @@ public class FileIndexFilter {
         Term t;
         Query q = null;
         switch (term) {
-            case NAME, PATH, FS_PATH, DOMAIN, ZK_PATH, ABSOLUTE_PATH -> {
+            case NAME, PATH, FS_PATH, DOMAIN, ZK_PATH -> {
                 if (!(value instanceof String v)) {
                     throw new Exception(String.format("Invalid query term. [term=%s][value=%s]", term.name(), value));
                 }

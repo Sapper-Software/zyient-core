@@ -84,8 +84,18 @@ public class SftpFileSystem extends RemoteFileSystem {
     }
 
     @Override
+    protected boolean createDomainDir(DirectoryInode dir) throws IOException {
+        return true;
+    }
+
+    @Override
     public PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException {
         return new SftpPathInfo(this, values);
+    }
+
+    @Override
+    public PathInfo parsePathInfo(@NonNull String domain, @NonNull String path) throws IOException {
+        return new SftpPathInfo(this, path, domain);
     }
 
 
@@ -100,13 +110,13 @@ public class SftpFileSystem extends RemoteFileSystem {
                             @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
         if (node.getPathInfo() == null) {
-            PathInfo pi = parsePathInfo(node.getPath());
+            PathInfo pi = parsePathInfo(node.getURI());
             node.setPathInfo(pi);
         }
         SftpPathInfo pi = (SftpPathInfo) node.getPathInfo();
         Preconditions.checkNotNull(pi);
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (FileInode) updateInodeWithLock(node);
@@ -151,7 +161,7 @@ public class SftpFileSystem extends RemoteFileSystem {
     protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
                                      @NonNull String path,
                                      @NonNull InodeType type) throws IOException {
-        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));
         return new SftpPathInfo(this, p, parent.getDomain());
     }
 
@@ -177,7 +187,7 @@ public class SftpFileSystem extends RemoteFileSystem {
             inode.setPathInfo(pi);
         }
         if (!pi.exists()) {
-            throw new IOException(String.format("Local file not found. [path=%s]", inode.getAbsolutePath()));
+            throw new IOException(String.format("Local file not found. [path=%s]", inode.getPath()));
         }
         return new SftpReader(inode, this).open();
     }
@@ -283,14 +293,14 @@ public class SftpFileSystem extends RemoteFileSystem {
             if (!checkInodeAvailable(inode, timeout)) {
                 throw new IOException(
                         String.format("Download operation timeout: File not available for download. [path=%s]",
-                                inode.getPath()));
+                                inode.getURI()));
             }
             try {
                 // Create local file object. Change location if necessary for new downloadFilePath
                 FileObject fileLocal = manager.resolveFile(path.temp().toURI());
 
                 // Create remote file object
-                FileObject fileRemote = manager.resolveFile(getConnectionString(path.path()), createDefaultOptions());
+                FileObject fileRemote = manager.resolveFile(getConnectionString(path.fsPath()), createDefaultOptions());
 
                 // Copy local file to sftp server
                 fileLocal.copyFrom(fileRemote, Selectors.SELECT_SELF);
@@ -452,7 +462,7 @@ public class SftpFileSystem extends RemoteFileSystem {
 
             // Create remote file object
             FileObject fileRemote = manager
-                    .resolveFile(fs.getConnectionString(pi.path()), createDefaultOptions());
+                    .resolveFile(fs.getConnectionString(pi.fsPath()), createDefaultOptions());
             /*
              * use createDefaultOptions() in place of fsOptions for all default
              * options - Ashok.

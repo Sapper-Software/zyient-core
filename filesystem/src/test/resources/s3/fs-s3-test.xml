@@ -47,14 +47,17 @@
             </connection>
         </keystore>
         <fs>
-            <zkPath>/test/filesystem/admin</zkPath>
-            <zkConnection>test-zk</zkConnection>
+            <zk>
+                <path>/test/filesystem/s3/admin</path>
+                <connection>test-zk</connection>
+            </zk>
             <autoSave>true</autoSave>
             <overwrite>true</overwrite>
             <fileSystems>
                 <fileSystem>
                     <type>io.zyient.core.filesystem.impl.s3.S3FileSystem</type>
-                    <name>s3-demo-1</name>
+                    <name>s3-test-1</name>
+                    <basePath>root/fs/test</basePath>
                     <tmp>
                         <path>/tmp/test/fs</path>
                         <clean>true</clean>
@@ -62,7 +65,7 @@
                     <compressed>true</compressed>
                     <hierarchical>true</hierarchical>
                     <endpoint>http://127.0.0.1:9000</endpoint>
-                    <region>US_WEST_2</region>
+                    <region>us-east-1</region>
                     <auth type="io.zyient.core.filesystem.impl.s3.auth.BasicStorageAuth">
                         <accessKey>root</accessKey>
                         <passKey>mongodb-password</passKey>
@@ -73,7 +76,6 @@
                     <containers>
                         <container>
                             <domain>s3-demo-1</domain>
-                            <path>/test/fs/</path>
                             <bucket>s3-test-1</bucket>
                         </container>
                         <default>s3-demo-1</default>

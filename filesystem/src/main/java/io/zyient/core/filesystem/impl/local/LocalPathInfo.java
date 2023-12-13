@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.local;
 
 import com.google.common.base.Preconditions;
 import io.zyient.core.filesystem.FileSystem;
+import io.zyient.core.filesystem.PathsBuilder;
 import io.zyient.core.filesystem.model.Inode;
 import io.zyient.core.filesystem.model.PathInfo;
 import lombok.Getter;
@@ -40,16 +41,18 @@ public class LocalPathInfo extends PathInfo {
                          @NonNull Inode node) {
         super(fs, node);
         file = new File(path());
-        if (file.exists()) {
+        if (!file.exists()) {
             directory = file.isDirectory();
         }
     }
 
     public LocalPathInfo(@NonNull FileSystem fs,
-                            @NonNull String path,
-                            @NonNull String domain) {
+                         @NonNull String path,
+                         @NonNull String domain) {
         super(fs, path, domain);
-        file = new File(path);
+        PathsBuilder builder = fs.pathsBuilders().get(domain);
+        String fsPath = builder.buildFsPath(path);
+        file = new File(fsPath);
         if (file.exists()) {
             directory = file.isDirectory();
         }
@@ -58,7 +61,9 @@ public class LocalPathInfo extends PathInfo {
     public LocalPathInfo(@NonNull FileSystem fs,
                          @NonNull Map<String, String> config) {
         super(fs, config);
-        file = new File(path());
+        PathsBuilder builder = fs.pathsBuilders().get(domain());
+        String fsPath = builder.buildFsPath(path());
+        file = new File(fsPath);
         if (file.exists()) {
             directory = file.isDirectory();
         }
@@ -68,6 +73,9 @@ public class LocalPathInfo extends PathInfo {
                             @NonNull File file,
                             @NonNull String domain) {
         super(fs, file.getAbsolutePath(), domain);
+        PathsBuilder builder = fs.pathsBuilders().get(domain());
+        String path = builder.relativeFsPath(file.getAbsolutePath());
+        path(path);
         this.file = file;
         if (file.exists()) {
             directory = file.isDirectory();

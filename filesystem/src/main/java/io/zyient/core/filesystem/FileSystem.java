@@ -77,6 +77,7 @@ public abstract class FileSystem implements Closeable {
     private final List<PostOperationVisitor> visitors = new ArrayList<>();
     private FileSystemMetrics metrics;
     private FileSystemIndexer indexer = null;
+    protected final Map<String, PathsBuilder> pathsBuilders = new HashMap<>();
 
     protected FileSystem withZkConnection(@NonNull ZookeeperConnection connection) {
         this.zkConnection = connection;
@@ -167,22 +168,7 @@ public abstract class FileSystem implements Closeable {
             client.create().creatingParentContainersIfNeeded().forPath(zkPath);
             client.setData().forPath(zkPath, null);
         }
-        try {
-            Collection<Container> domains = domainMap.getDomains();
-            try (DistributedLock lock = getRootLock(client)) {
-                lock.lock();
-                try {
-                    for (Container domain : domains) {
-                        registerDomain(domain, client);
-                    }
-                } finally {
-                    lock.unlock();
-                }
-            }
-        } catch (Exception ex) {
-            state.error(ex);
-            throw new IOException(ex);
-        }
+        state.setState(Connection.EConnectionState.Connected);
         tmpDir = new File(settings.getTempDir());
         if (!tmpDir.exists()) {
             if (!tmpDir.mkdirs()) {
@@ -196,8 +182,24 @@ public abstract class FileSystem implements Closeable {
         metrics = new FileSystemMetrics(getClass().getSimpleName(), settings.getName(), "FILESYSTEM", env);
     }
 
+    protected PathsBuilder getPathsBuilder(@NonNull Container container) {
+        return new PathsBuilder(container, zkPath, settings.getBasePath());
+    }
+
     protected FileSystem postInit() throws IOException {
         try {
+            CuratorFramework client = zkConnection.client();
+            Collection<Container> domains = domainMap.getDomains();
+            try (DistributedLock lock = getRootLock(client)) {
+                lock.lock();
+                try {
+                    for (Container domain : domains) {
+                        registerDomain(domain, client);
+                    }
+                } finally {
+                    lock.unlock();
+                }
+            }
             if (settings.isCleanTmp()) {
                 dirCleaner = new DirectoryCleaner(tmpDir.getAbsolutePath(),
                         true,
@@ -206,9 +208,9 @@ public abstract class FileSystem implements Closeable {
                 cleanerThread = new Thread(dirCleaner, "TMP-CLEANER-THREAD");
                 cleanerThread.start();
             }
-            state.setState(Connection.EConnectionState.Connected);
             return this;
         } catch (Exception ex) {
+            state.error(ex);
             throw new IOException(ex);
         }
     }
@@ -251,33 +253,48 @@ public abstract class FileSystem implements Closeable {
     }
 
     private void registerDomain(Container container, CuratorFramework client) throws Exception {
-        String path = new PathUtils.ZkPathBuilder(zkPath)
-                .withPath(container.getDomain())
-                .build();
+        PathsBuilder builder = getPathsBuilder(container);
+        Preconditions.checkNotNull(builder);
+        pathsBuilders.put(container.getDomain(), builder);
+        String path = builder.buildDomainZkPath();
+        DirectoryInode di = null;
         if (client.checkExists().forPath(path) != null) {
             byte[] data = client.getData().forPath(path);
             if (data != null && data.length > 0) {
-                DirectoryInode di = JSONUtils.read(data, DirectoryInode.class);
+                di = JSONUtils.read(data, DirectoryInode.class);
                 domains.put(container.getDomain(), di);
             }
         } else {
             client.create().creatingParentContainersIfNeeded().forPath(path);
-            DirectoryInode di = new DirectoryInode(container.getDomain(), "/", "root");
+            di = new DirectoryInode(container.getDomain(),
+                    builder.buildDomainFsPath(),
+                    "/");
             di.setParent(null);
-            di.setPath(container.pathInfo(this).pathConfig());
+            di.setURI(container.pathInfo(this).pathConfig());
             di.setUuid(UUID.randomUUID().toString());
             di.setCreateTimestamp(System.currentTimeMillis());
             di.setUpdateTimestamp(System.currentTimeMillis());
             di.setSynced(true);
             di.setZkPath(path);
-            di.setAbsolutePath(container.getPath());
+            di.setPath("/");
 
             client.setData().forPath(path, JSONUtils.asBytes(di, DirectoryInode.class));
             domains.put(container.getDomain(), di);
         }
+        Preconditions.checkNotNull(di);
+        PathInfo pi = checkAndGetPath(di);
+        if (!exists(pi)) {
+            if (!createDomainDir(di)) {
+                throw new IOException(String.format("Failed to create domain directory. [path=%s]", di.getFsPath()));
+            }
+        }
     }
 
+    protected abstract boolean createDomainDir(DirectoryInode dir) throws IOException;
+
     public abstract PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException;
+
+    public abstract PathInfo parsePathInfo(@NonNull String domain, @NonNull String path) throws IOException;
 
     protected Inode createInode(@NonNull InodeType type,
                                 @NonNull PathInfo path) throws IOException {
@@ -286,8 +303,7 @@ public abstract class FileSystem implements Closeable {
         if (dnode == null) {
             throw new IOException(String.format("Domain directory node not found. [domain=%s]", path.domain()));
         }
-        String fpath = formatZkPath(dnode.getAbsolutePath(), path.path());
-        return createInode(dnode, type, fpath);
+        return createInode(dnode, type, path.path());
     }
 
     protected Inode createInode(@NonNull DirectoryInode dnode,
@@ -295,13 +311,12 @@ public abstract class FileSystem implements Closeable {
                                 @NonNull InodeType type) throws IOException {
         Preconditions.checkState(state.isConnected());
         PathInfo path = parsePathInfo(dnode, name, type);
-        String fpath = formatZkPath(dnode.getAbsolutePath(), path.path());
-        return createInode(dnode, type, fpath);
+        return createInode(type, path);
     }
 
     public Inode updateInode(@NonNull Inode inode) throws IOException {
         Preconditions.checkState(state.isConnected());
-        PathInfo path = parsePathInfo(inode.getPath());
+        PathInfo path = parsePathInfo(inode.getURI());
         Inode current = getInode(path);
         if (current == null) {
             throw new IOException(String.format("Inode not found: [path=%s]", inode.getZkPath()));
@@ -412,8 +427,12 @@ public abstract class FileSystem implements Closeable {
 
     private Inode createInode(DirectoryInode parent,
                               InodeType type,
-                              String fpath) throws IOException {
-        String[] parts = fpath.split("/");
+                              String zPath) throws IOException {
+        zPath = zPath.trim();
+        if (zPath.startsWith("/")) {
+            zPath = zPath.substring(1);
+        }
+        String[] parts = zPath.split("/");
         Inode node = null;
         try {
             CuratorFramework client = zkConnection.client();
@@ -468,12 +487,11 @@ public abstract class FileSystem implements Closeable {
                                 }
                             } else {
                                 client.create().forPath(zpath);
-                                String fsp = PathUtils.formatPath(String.format("%s/%s", parent.getFsPath(), parts[index]));
                                 PathInfo pi = parsePathInfo(parent, parts[index], InodeType.Directory);
-                                DirectoryInode di = new DirectoryInode(parent.getDomain(), fsp, parts[index]);
+                                DirectoryInode di = new DirectoryInode(parent.getDomain(), pi.fsPath(), parts[index]);
                                 di.setParent(parent);
-                                di.setPath(pi.pathConfig());
-                                di.setAbsolutePath(pi.path());
+                                di.setURI(pi.pathConfig());
+                                di.setPath(pi.path());
                                 di.setUuid(pi.uuid());
                                 di.setCreateTimestamp(System.currentTimeMillis());
                                 di.setUpdateTimestamp(System.currentTimeMillis());
@@ -487,11 +505,10 @@ public abstract class FileSystem implements Closeable {
                         } else {
                             client.create().forPath(zpath);
                             PathInfo pi = parsePathInfo(parent, parts[index], InodeType.File);
-                            String fsp = PathUtils.formatPath(String.format("%s/%s", parent.getFsPath(), parts[index]));
-                            FileInode fi = new FileInode(parent.getDomain(), fsp, parts[index]);
+                            FileInode fi = new FileInode(parent.getDomain(), pi.fsPath(), parts[index]);
                             fi.setParent(parent);
-                            fi.setPath(pi.pathConfig());
-                            fi.setAbsolutePath(pi.path());
+                            fi.setURI(pi.pathConfig());
+                            fi.setPath(pi.path());
                             fi.setUuid(pi.uuid());
                             fi.setCreateTimestamp(System.currentTimeMillis());
                             fi.setUpdateTimestamp(System.currentTimeMillis());
@@ -522,11 +539,10 @@ public abstract class FileSystem implements Closeable {
                         try {
                             client.create().forPath(zpath);
                             PathInfo pi = parsePathInfo(parent, parts[index], InodeType.Directory);
-                            String fsp = PathUtils.formatPath(String.format("%s/%s", parent.getFsPath(), parts[index]));
-                            dnode = new DirectoryInode(parent.getDomain(), fsp, parts[index]);
+                            dnode = new DirectoryInode(parent.getDomain(), pi.fsPath(), parts[index]);
                             dnode.setParent(parent);
-                            dnode.setPath(pi.pathConfig());
-                            dnode.setAbsolutePath(pi.path());
+                            dnode.setURI(pi.pathConfig());
+                            dnode.setPath(pi.path());
                             dnode.setUuid(pi.uuid());
                             dnode.setCreateTimestamp(System.currentTimeMillis());
                             dnode.setUpdateTimestamp(System.currentTimeMillis());
@@ -553,8 +569,9 @@ public abstract class FileSystem implements Closeable {
         if (dnode == null) {
             throw new IOException(String.format("Domain directory node not found. [domain=%s]", path.domain()));
         }
+        PathsBuilder builder = pathsBuilders.get(path.domain());
         try {
-            String zpath = getInodeZkPath(dnode, path.path());
+            String zpath = builder.buildZkPath(path.path());
             CuratorFramework client = zkConnection.client();
             return client.checkExists().forPath(zpath) != null;
         } catch (Exception ex) {
@@ -563,44 +580,26 @@ public abstract class FileSystem implements Closeable {
     }
 
     public Inode getInode(@NonNull PathInfo path) throws IOException {
-        return getInode(path.domain(), path.path());
-    }
-
-    private String formatZkPath(String parent, String path) {
-        path = path.trim();
-        if (!Strings.isNullOrEmpty(parent)) {
-            if (path.startsWith(parent)) {
-                int index = parent.length();
-                path = path.substring(index);
-            }
-            if (path.startsWith("/")) {
-                path = path.substring(1);
-            }
-        }
-        return new PathUtils.ZkPathBuilder(path)
-                .build();
-    }
-
-    public Inode getInode(@NonNull String domain, @NonNull String path) throws IOException {
         Preconditions.checkState(state.isConnected());
-        DirectoryInode dnode = domains.get(domain);
-        if (dnode == null) {
-            throw new IOException(String.format("Domain directory node not found. [domain=%s]", domain));
-        }
-        String fpath = formatZkPath(dnode.getAbsolutePath(), path);
         try {
-            String zpath = getInodeZkPath(dnode, fpath);
             CuratorFramework client = zkConnection.client();
-            if (client.checkExists().forPath(zpath) != null) {
-                DefaultLogger.trace(String.format("Path found. [domain=%s][path=%s]", domain, fpath));
-                return getInode(zpath, Inode.class, client);
+            if (client.checkExists().forPath(path.zkPath()) != null) {
+                DefaultLogger.trace(String.format("Path found. [domain=%s][path=%s]", path.domain(), path.path()));
+                return getInode(path.zkPath(), Inode.class, client);
             } else {
-                DefaultLogger.trace(String.format("Path not found. [domain=%s][path=%s]", domain, fpath));
+                DefaultLogger.trace(String.format("Path not found. [domain=%s][path=%s]", path.domain(), path.path()));
             }
             return null;
         } catch (Exception ex) {
             throw new IOException(ex);
         }
+    }
+
+
+    public Inode getInode(@NonNull String domain, @NonNull String path) throws IOException {
+        Preconditions.checkState(state.isConnected());
+        PathInfo pi = parsePathInfo(domain, path);
+        return getInode(pi);
     }
 
     public File createTmpDir(@NonNull String path) throws IOException {
@@ -642,13 +641,6 @@ public abstract class FileSystem implements Closeable {
         return file;
     }
 
-    protected String getInodeZkPath(@NonNull DirectoryInode mnode, @NonNull String path) {
-        path = formatZkPath(mnode.getAbsolutePath(), path);
-        return new PathUtils.ZkPathBuilder(mnode.getZkPath())
-                .withPath(path)
-                .build();
-    }
-
     public Inode fileLock(@NonNull FileInode node) throws Exception {
         Preconditions.checkArgument(node.getPathInfo() != null);
         FileInode current = (FileInode) getInode(node.getPathInfo());
@@ -683,7 +675,7 @@ public abstract class FileSystem implements Closeable {
         if (current.getLock() == null) {
             throw new Exception(
                     String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
-                            settings.getName(), node.getDomain(), node.getAbsolutePath()));
+                            settings.getName(), node.getDomain(), node.getPath()));
         }
         if (id.compareTo(current.getLock().getClientId()) != 0) {
             throw new DistributedLock.LockError(
@@ -700,7 +692,7 @@ public abstract class FileSystem implements Closeable {
         if (current.getLock() == null) {
             throw new Exception(
                     String.format("[FS: %s] File not locked. [domain=%s][path=%s]",
-                            settings.getName(), node.getDomain(), node.getAbsolutePath()));
+                            settings.getName(), node.getDomain(), node.getPath()));
         }
         if (id.compareTo(current.getLock().getClientId()) != 0) {
             throw new DistributedLock.LockError(
@@ -723,9 +715,6 @@ public abstract class FileSystem implements Closeable {
         }
         return id.compareTo(current.getLock().getClientId()) == 0;
     }
-
-    protected abstract String getAbsolutePath(@NonNull String path,
-                                              @NonNull String domain) throws IOException;
 
     public abstract DirectoryInode mkdir(@NonNull DirectoryInode path, @NonNull String name) throws IOException;
 
@@ -803,7 +792,10 @@ public abstract class FileSystem implements Closeable {
         byte[] data = client.getData().forPath(path);
         if (data != null && data.length > 0) {
             T node = JSONUtils.read(data, type);
-            node.setPathInfo(parsePathInfo(node.getPath()));
+            if (node == null) {
+                throw new Exception(String.format("Failed to read inode data. [path=%s]", path));
+            }
+            node.setPathInfo(parsePathInfo(node.getURI()));
             if (!Strings.isNullOrEmpty(node.getParentZkPath())) {
                 Inode parent = getParent(node.getParentZkPath(), client);
                 if (parent == null) {
@@ -820,7 +812,7 @@ public abstract class FileSystem implements Closeable {
         byte[] data = client.getData().forPath(path);
         if (data != null && data.length > 0) {
             Inode node = JSONUtils.read(data, Inode.class);
-            node.setPathInfo(parsePathInfo(node.getPath()));
+            node.setPathInfo(parsePathInfo(node.getURI()));
             return node;
         }
         return null;
@@ -841,7 +833,7 @@ public abstract class FileSystem implements Closeable {
             for (Inode node : inodes) {
                 if (node.isFile()) {
                     if (dp != null) {
-                        Matcher dm = dp.matcher(node.getParent().getAbsolutePath());
+                        Matcher dm = dp.matcher(node.getParent().getPath());
                         if (!dm.matches()) {
                             continue;
                         }
@@ -1051,7 +1043,7 @@ public abstract class FileSystem implements Closeable {
             tf = create(target);
         }
         if (tf.getPathInfo() == null) {
-            tf.setPathInfo(parsePathInfo(tf.getPath()));
+            tf.setPathInfo(parsePathInfo(tf.getURI()));
         }
         try {
             doCopy(source, tf);
@@ -1071,7 +1063,7 @@ public abstract class FileSystem implements Closeable {
             tf = create(target);
         }
         if (tf.getPathInfo() == null) {
-            tf.setPathInfo(parsePathInfo(tf.getPath()));
+            tf.setPathInfo(parsePathInfo(tf.getURI()));
         }
         try {
             doMove(source, tf);
@@ -1097,7 +1089,7 @@ public abstract class FileSystem implements Closeable {
     public <T extends PathInfo> T checkAndGetPath(@NonNull Inode inode) throws IOException {
         T pi = (T) inode.getPathInfo();
         if (pi == null) {
-            pi = (T) parsePathInfo(inode.getPath());
+            pi = (T) parsePathInfo(inode.getURI());
             inode.setPathInfo(pi);
         }
         return pi;
