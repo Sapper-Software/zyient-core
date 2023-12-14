@@ -31,7 +31,7 @@ import lombok.NonNull;
 import java.util.List;
 
 public class ContentSearchRequestBuilder {
-    public static final String SERVICE_CONTENT_DELETE = "/search";
+    public static final String SERVICE_CONTENT_SEARCH = "/search";
 
     private final WebServiceClient client;
 
@@ -67,7 +67,8 @@ public class ContentSearchRequestBuilder {
         ContentSearchResponse response = new ContentSearchResponse();
         response.setRequest(request);
         try {
-            List<Content> contents = client.post(SERVICE_CONTENT_DELETE,
+            request.validate();
+            List<Content> contents = client.post(SERVICE_CONTENT_SEARCH,
                     List.class,
                     request,
                     params,

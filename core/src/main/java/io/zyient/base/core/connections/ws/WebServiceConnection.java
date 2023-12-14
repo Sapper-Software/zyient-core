@@ -17,6 +17,7 @@
 package io.zyient.base.core.connections.ws;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ZkConfigReader;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
@@ -36,10 +37,10 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
-import org.codehaus.jackson.jaxrs.JacksonJaxbJsonProvider;
 import org.glassfish.jersey.client.JerseyClient;
 import org.glassfish.jersey.client.JerseyClientBuilder;
 import org.glassfish.jersey.client.JerseyWebTarget;
+import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 
 import javax.net.ssl.SSLContext;
@@ -167,7 +168,9 @@ public class WebServiceConnection implements Connection {
         if (this.settings.isUseSSL()) {
             builder.sslContext(SSLContext.getDefault());
         }
-        builder.register(JacksonJaxbJsonProvider.class);
+        builder.register(GlobalConstants.getJsonMapper())
+                .register(JacksonFeature.class);
+        //builder.register(JacksonJaxbJsonProvider.class);
 
         return builder;
     }
@@ -233,7 +236,7 @@ public class WebServiceConnection implements Connection {
      */
     @Override
     public boolean isConnected() {
-        return state.getState() == EConnectionState.Initialized;
+        return state.getState() == EConnectionState.Connected;
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package io.zyient.core.sdk.response.content;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.core.sdk.model.DeleteResponse;
 import io.zyient.core.sdk.request.content.ContentDeleteRequest;
 import io.zyient.core.sdk.response.Response;
@@ -24,6 +25,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class ContentDeleteResponse extends Response<ContentDeleteRequest> {
     private DeleteResponse response = new DeleteResponse();
 }

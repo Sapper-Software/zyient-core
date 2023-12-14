@@ -16,12 +16,15 @@
 
 package io.zyient.core.sdk.response;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public abstract class Response<T extends Request> {
     private T request;
     private long responseTimestamp;

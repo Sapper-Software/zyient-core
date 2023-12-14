@@ -16,6 +16,7 @@
 
 package io.zyient.core.sdk.model.content;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,6 +24,8 @@ import java.util.Map;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class Content {
     private ContentId id;
     private String name;

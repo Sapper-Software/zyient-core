@@ -16,6 +16,7 @@
 
 package io.zyient.core.sdk.request.content;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.core.sdk.request.Request;
 import lombok.Getter;
@@ -23,6 +24,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class ContentSearchRequest extends Request {
     private String query;
     private int pageNo;

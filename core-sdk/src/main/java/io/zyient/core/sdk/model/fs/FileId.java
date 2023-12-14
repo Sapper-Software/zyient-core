@@ -14,30 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.model.services;
+package io.zyient.core.sdk.model.fs;
 
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 
 @Getter
 @Setter
 @ToString
-public class BasicResponse<T> {
-    private EResponseState state;
-    private Throwable error;
-    private T response;
-
-    public BasicResponse() {}
-
-    public BasicResponse(@NonNull EResponseState state, T response) {
-        this.state = state;
-        this.response = response;
-    }
-
-    public BasicResponse<T> withError(@NonNull Throwable error) {
-        this.error = error;
-        return this;
-    }
+public class FileId {
+    private String id;
+    private String path;
 }

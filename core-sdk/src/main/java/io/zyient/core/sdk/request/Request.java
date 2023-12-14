@@ -16,6 +16,7 @@
 
 package io.zyient.core.sdk.request;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.core.model.UserOrRole;
 import lombok.Getter;
@@ -25,6 +26,8 @@ import java.util.UUID;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public abstract class Request {
     private String requestId;
     private UserOrRole user;

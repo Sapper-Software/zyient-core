@@ -16,6 +16,7 @@
 
 package io.zyient.core.sdk.response.content;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Strings;
 import io.zyient.core.sdk.model.DownloadResponse;
 import io.zyient.core.sdk.request.content.ContentGetRequest;
@@ -26,6 +27,8 @@ import java.net.URL;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class ContentGetResponse extends ContentResponse<ContentGetRequest> {
     private DownloadResponse response = new DownloadResponse();
 

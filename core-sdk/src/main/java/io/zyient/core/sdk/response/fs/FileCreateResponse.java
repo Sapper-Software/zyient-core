@@ -14,26 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.request.content;
+package io.zyient.core.sdk.response.fs;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.ValidationException;
-import io.zyient.core.sdk.model.content.ContentId;
-import io.zyient.core.sdk.request.Request;
+import io.zyient.core.sdk.request.fs.FileCreateRequest;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ContentDeleteRequest extends Request {
-    private ContentId contentId;
-
-    public void validate() throws ValidationException {
-        super.validate();
-        ValidationException.check(this, "contentId");
-        ValidationException.check(contentId, "collection");
-        ValidationException.check(contentId, "id");
-    }
+public class FileCreateResponse extends FileResponse<FileCreateRequest> {
 }

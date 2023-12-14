@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.response.content;
+package io.zyient.base.common.model.services;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.core.sdk.model.content.Content;
-import io.zyient.core.sdk.request.content.ContentSearchRequest;
-import io.zyient.core.sdk.response.Response;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.base.common.AbstractState;
 
-import java.util.List;
+public class ServiceResponseState extends AbstractState<EResponseState> {
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ContentSearchResponse extends Response<ContentSearchRequest> {
-    private int count;
-    private List<Content> records;
+    public ServiceResponseState() {
+        super(EResponseState.Error, EResponseState.Unknown);
+    }
 }

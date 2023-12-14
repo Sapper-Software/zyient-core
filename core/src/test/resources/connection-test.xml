@@ -22,6 +22,7 @@
         <instance>Test</instance>
         <paths>
             <connections>config</connections>
+            <registry>/test/env/connections/registry</registry>
         </paths>
         <demo>
         </demo>
@@ -35,7 +36,7 @@
                     <connection>test-zk</connection>
                     <path>/test/env/connections</path>
                 </shared>
-                <connection>
+                <!--connection>
                     <class>io.zyient.base.core.connections.hadoop.HdfsConnection</class>
                     <hdfs>
                         <name>test-hdfs</name>
@@ -64,7 +65,7 @@
                         </security>
                         <enableAdmin>true</enableAdmin>
                     </hdfs-ha>
-                </connection>
+                </connection -->
                 <connection>
                     <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
                     <zookeeper>
@@ -88,7 +89,7 @@
                         </paths>
                     </rest>
                 </connection>
-                <connection>
+                <!--connection>
                     <class>io.zyient.base.core.connections.kafka.BasicKafkaProducerConnection</class>
                     <kafka>
                         <name>test-kafka-producer</name>
@@ -137,7 +138,7 @@
                         <passwordKey>s2-test-password</passwordKey>
                         <db>cdc</db>
                     </mongodb>
-                </connection>
+                </connection-->
             </connections>
         </config>
     </env>

@@ -18,9 +18,15 @@ package io.zyient.base.core.connections.ws;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.github.resilience4j.core.IntervalFunction;
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
+import io.github.resilience4j.retry.RetryRegistry;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.config.units.TimeUnitValue;
+import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.connections.ConnectionError;
@@ -43,15 +49,26 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Getter
 @Accessors(fluent = true)
 public class WebServiceClient {
+    private static final int RETRY_INITIAL_INTERVAL = 200;
+    private static final int RETRY_MULTIPLIER = 5;
+
     private WebServiceConnection connection;
     private WebServiceClientConfig config;
     private WebServiceClientSettings settings;
+    private IntervalFunction intervalFn;
+
+    private RetryConfig retryConfig;
+    private RetryRegistry registry;
 
     public WebServiceClient() {
     }
@@ -73,7 +90,20 @@ public class WebServiceClient {
                         String.format("Connection not found. [name=%s][type=%s]",
                                 settings.connection, WebServiceConnection.class.getCanonicalName()));
             }
-
+            if (!connection.isConnected()) {
+                connection.connect();
+            }
+            intervalFn =
+                    IntervalFunction.ofExponentialBackoff(RETRY_INITIAL_INTERVAL, RETRY_MULTIPLIER);
+            retryConfig = RetryConfig.custom()
+                    .maxAttempts(settings.retryCount)
+                    .intervalFunction(intervalFn)
+                    .failAfterMaxAttempts(true)
+                    .retryExceptions(IOException.class, TimeoutException.class)
+                    .retryOnResult(response -> ((Response) response).getStatus() < 200 || ((Response) response).getStatus() >= 300)
+                    .writableStackTraceEnabled(true)
+                    .build();
+            registry = RetryRegistry.of(retryConfig);
             return this;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
@@ -89,13 +119,13 @@ public class WebServiceClient {
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
-        return getUrl(path, type, params, mediaType);
+        return getWithPath(path, type, params, mediaType);
     }
 
-    public <T> T getUrl(@NonNull String path,
-                        @NonNull Class<T> type,
-                        Map<String, String> query,
-                        String mediaType) throws ConnectionError {
+    public <T> T get(@NonNull String path,
+                     @NonNull Class<T> type,
+                     Map<String, String> query,
+                     String mediaType) throws ConnectionError {
         Preconditions.checkNotNull(connection);
         JerseyWebTarget target = connection.connect(path);
         if (query != null && !query.isEmpty()) {
@@ -104,16 +134,13 @@ public class WebServiceClient {
             }
         }
 
-        if (Strings.isNullOrEmpty(mediaType)) {
-            mediaType = MediaType.APPLICATION_JSON;
-        }
-        return getUrl(target, type, mediaType);
+        return getWithPath(target, type, mediaType);
     }
 
-    public <T> T getUrl(@NonNull String path,
-                        @NonNull Class<T> type,
-                        List<String> params,
-                        String mediaType) throws ConnectionError {
+    public <T> T getWithPath(@NonNull String path,
+                             @NonNull Class<T> type,
+                             List<String> params,
+                             String mediaType) throws ConnectionError {
         Preconditions.checkNotNull(connection);
         JerseyWebTarget target = connection.connect(path);
         if (params != null && !params.isEmpty()) {
@@ -122,45 +149,27 @@ public class WebServiceClient {
             }
         }
 
-        if (Strings.isNullOrEmpty(mediaType)) {
-            mediaType = MediaType.APPLICATION_JSON;
-        }
-        return getUrl(target, type, mediaType);
+        return getWithPath(target, type, mediaType);
     }
 
-    private <T> T getUrl(JerseyWebTarget target, Class<T> type, String mediaType) throws ConnectionError {
-        Invocation.Builder builder = target.request(mediaType);
-        int count = 0;
-        boolean handle = true;
-        while (true) {
-            try {
-                try (Response response = builder.get()) {
-                    if (response != null) {
-                        int rc = response.getStatus();
-                        if (rc != HttpStatus.SC_OK) {
-                            if (rc >= 200 && rc < 300) {
-                                handle = false;
-                            }
-                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
-                                    response.getStatus(), target.getUri().toString()));
-                        }
-                        if (response.hasEntity())
-                            return response.readEntity(type);
-                    }
-                    handle = false;
-                    throw new ConnectionError(
-                            String.format("Service response was null. [service=%s]", target.getUri().toString()));
+    private <T> T getWithPath(JerseyWebTarget target, Class<T> type, String mediaType) throws ConnectionError {
+        try {
+            Retry retry = registry.retry(target.getUri().toString());
+            GetCallable callable = new GetCallable(this, target, mediaType);
+            try (Response response = retry.executeCallable(callable)) {
+                int rc = response.getStatus();
+                if (rc != HttpStatus.SC_OK) {
+                    throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                            response.getStatus(), target.getUri().toString()));
                 }
-            } catch (Throwable t) {
-                if (handle && count < settings().retryCount) {
-                    count++;
-                    DefaultLogger.error(
-                            String.format("Error calling web service. [tries=%d][service=%s]",
-                                    count, target.getUri().toString()), t);
-                } else {
-                    throw t;
-                }
+                if (response.hasEntity())
+                    return response.readEntity(type);
+                throw new ConnectionError(
+                        String.format("Service response entity was null. [service=%s]", target.getUri().toString()));
             }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new ConnectionError(ex);
         }
     }
 
@@ -239,47 +248,32 @@ public class WebServiceClient {
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
-        JerseyWebTarget target = connection.connect(path);
-        if (params != null && !params.isEmpty()) {
-            for (String param : params) {
-                target = target.path(param);
-            }
-        }
-        if (Strings.isNullOrEmpty(mediaType)) {
-            mediaType = MediaType.APPLICATION_JSON;
-        }
-        Invocation.Builder builder = connection.build(target, mediaType);
-        int count = 0;
-        boolean handle = true;
-        while (true) {
-            try {
-                try (Response response = builder.post(Entity.entity(request, mediaType))) {
-                    if (response != null) {
-                        int rc = response.getStatus();
-                        if (rc != HttpStatus.SC_OK) {
-                            if (rc >= 200 && rc < 300) {
-                                handle = false;
-                            }
-                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
-                                    response.getStatus(), target.getUri().toString()));
-                        }
-                        if (response.hasEntity())
-                            return response.readEntity(type);
-                    }
-                    handle = false;
-                    throw new ConnectionError(
-                            String.format("Service response was null. [service=%s]", target.getUri().toString()));
-                }
-            } catch (Throwable t) {
-                if (handle && count < settings().retryCount) {
-                    count++;
-                    DefaultLogger.error(
-                            String.format("Error calling web service. [tries=%d][service=%s]",
-                                    count, target.getUri().toString()), t);
-                } else {
-                    throw t;
+        try {
+            JerseyWebTarget target = connection.connect(path);
+            if (params != null && !params.isEmpty()) {
+                for (String param : params) {
+                    target = target.path(param);
                 }
             }
+            if (Strings.isNullOrEmpty(mediaType)) {
+                mediaType = MediaType.APPLICATION_JSON;
+            }
+            Retry retry = registry.retry(target.getUri().toString());
+            PostCallable<R> callable = new PostCallable<>(this, target, request, mediaType);
+            try (Response response = retry.executeCallable(callable)) {
+                int rc = response.getStatus();
+                if (rc != HttpStatus.SC_OK) {
+                    throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                            response.getStatus(), target.getUri().toString()));
+                }
+                if (response.hasEntity())
+                    return response.readEntity(type);
+                throw new ConnectionError(
+                        String.format("Service response entity was null. [service=%s]", target.getUri().toString()));
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new ConnectionError(ex);
         }
     }
 
@@ -293,47 +287,32 @@ public class WebServiceClient {
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
-        JerseyWebTarget target = connection.connect(path);
-        if (params != null && !params.isEmpty()) {
-            for (String param : params) {
-                target = target.path(param);
-            }
-        }
-        if (Strings.isNullOrEmpty(mediaType)) {
-            mediaType = MediaType.APPLICATION_JSON;
-        }
-        Invocation.Builder builder = target.request(mediaType);
-        int count = 0;
-        boolean handle = true;
-        while (true) {
-            try {
-                try (Response response = builder.put(Entity.entity(request, mediaType))) {
-                    if (response != null) {
-                        int rc = response.getStatus();
-                        if (rc != HttpStatus.SC_OK) {
-                            if (rc >= 200 && rc < 300) {
-                                handle = false;
-                            }
-                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
-                                    response.getStatus(), target.getUri().toString()));
-                        }
-                        if (response.hasEntity())
-                            return response.readEntity(type);
-                    }
-                    handle = false;
-                    throw new ConnectionError(
-                            String.format("Service response was null. [service=%s]", target.getUri().toString()));
-                }
-            } catch (Throwable t) {
-                if (handle && count < settings().retryCount) {
-                    count++;
-                    DefaultLogger.error(
-                            String.format("Error calling web service. [tries=%d][service=%s]",
-                                    count, target.getUri().toString()), t);
-                } else {
-                    throw t;
+        try {
+            JerseyWebTarget target = connection.connect(path);
+            if (params != null && !params.isEmpty()) {
+                for (String param : params) {
+                    target = target.path(param);
                 }
             }
+            if (Strings.isNullOrEmpty(mediaType)) {
+                mediaType = MediaType.APPLICATION_JSON;
+            }
+            Retry retry = registry.retry(target.getUri().toString());
+            PutCallable<R> callable = new PutCallable<>(this, target, request, mediaType);
+            try (Response response = retry.executeCallable(callable)) {
+                int rc = response.getStatus();
+                if (rc != HttpStatus.SC_OK) {
+                    throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                            response.getStatus(), target.getUri().toString()));
+                }
+                if (response.hasEntity())
+                    return response.readEntity(type);
+                throw new ConnectionError(
+                        String.format("Service response entity was null. [service=%s]", target.getUri().toString()));
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new ConnectionError(ex);
         }
     }
 
@@ -391,6 +370,76 @@ public class WebServiceClient {
     }
 
     @Getter
+    @Accessors(fluent = true)
+    public static class PutCallable<R> implements Callable<Response> {
+        private final WebServiceClient client;
+        private final JerseyWebTarget target;
+        private final String mediaType;
+        private final R request;
+
+        public PutCallable(WebServiceClient client,
+                           JerseyWebTarget target,
+                           R request,
+                           String mediaType) {
+            this.client = client;
+            this.target = target;
+            this.request = request;
+            this.mediaType = mediaType;
+        }
+
+        @Override
+        public Response call() throws Exception {
+            Invocation.Builder builder = client.connection.build(target, mediaType);
+            return builder.put(Entity.entity(request, mediaType));
+        }
+    }
+
+    @Getter
+    @Accessors(fluent = true)
+    public static class PostCallable<R> implements Callable<Response> {
+        private final WebServiceClient client;
+        private final JerseyWebTarget target;
+        private final String mediaType;
+        private final R request;
+
+        public PostCallable(WebServiceClient client,
+                            JerseyWebTarget target,
+                            R request,
+                            String mediaType) {
+            this.client = client;
+            this.target = target;
+            this.request = request;
+            this.mediaType = mediaType;
+        }
+
+        @Override
+        public Response call() throws Exception {
+            Invocation.Builder builder = client.connection.build(target, mediaType);
+            return builder.post(Entity.entity(request, mediaType));
+        }
+    }
+
+    @Getter
+    @Accessors(fluent = true)
+    public static class GetCallable implements Callable<Response> {
+        private final WebServiceClient client;
+        private final JerseyWebTarget target;
+        private final String mediaType;
+
+        public GetCallable(WebServiceClient client, JerseyWebTarget target, String mediaType) {
+            this.client = client;
+            this.target = target;
+            this.mediaType = mediaType;
+        }
+
+        @Override
+        public Response call() throws Exception {
+            Invocation.Builder builder = target.request(mediaType);
+            return builder.get();
+        }
+    }
+
+    @Getter
     @Setter
     public static class WebServiceClientSettings extends Settings {
         public static class Constants {
@@ -398,6 +447,7 @@ public class WebServiceClient {
             public static final String CONFIG_CONNECTION = "connection";
             public static final String CONFIG_PATH_MAP = "paths";
             public static final String CONFIG_RETRIES = "retryCount";
+            public static final String CONFIG_WAIT_TIME = "waitTime";
         }
 
         @Config(name = Constants.CONFIG_NAME)
@@ -408,6 +458,8 @@ public class WebServiceClient {
         private Map<String, String> pathMap;
         @Config(name = Constants.CONFIG_RETRIES, required = false, type = Integer.class)
         private int retryCount = 0;
+        @Config(name = Constants.CONFIG_WAIT_TIME, required = false, parser = TimeValueParser.class)
+        private TimeUnitValue waitTime = new TimeUnitValue(3, TimeUnit.SECONDS);
     }
 
     public static class WebServiceClientConfig extends ConfigReader {

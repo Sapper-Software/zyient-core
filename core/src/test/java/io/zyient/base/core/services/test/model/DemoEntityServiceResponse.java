@@ -14,26 +14,28 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.request.content;
+package io.zyient.base.core.services.test.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.ValidationException;
-import io.zyient.core.sdk.model.content.ContentId;
-import io.zyient.core.sdk.request.Request;
+import io.zyient.base.common.model.services.EResponseState;
+import io.zyient.base.common.model.services.ServiceResponse;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ContentDeleteRequest extends Request {
-    private ContentId contentId;
+public class DemoEntityServiceResponse extends ServiceResponse<DemoEntity> {
+    public DemoEntityServiceResponse() {
+    }
 
-    public void validate() throws ValidationException {
-        super.validate();
-        ValidationException.check(this, "contentId");
-        ValidationException.check(contentId, "collection");
-        ValidationException.check(contentId, "id");
+    public DemoEntityServiceResponse(@NonNull Throwable error) {
+        super(error);
+    }
+
+    public DemoEntityServiceResponse(@NonNull EResponseState state, DemoEntity entity) throws Exception {
+        super(state, entity);
     }
 }

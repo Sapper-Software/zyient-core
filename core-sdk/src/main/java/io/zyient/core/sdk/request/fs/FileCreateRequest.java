@@ -16,5 +16,32 @@
 
 package io.zyient.core.sdk.request.fs;
 
-public class FileCreateRequest {
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.core.sdk.model.fs.FileType;
+import io.zyient.core.sdk.request.Request;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Map;
+
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class FileCreateRequest extends Request {
+    private String domain;
+    private String parentId;
+    private String path;
+    private FileType type;
+    private Map<String, String> attributes;
+
+
+    @Override
+    public void validate() throws ValidationException {
+        super.validate();
+        ValidationException.check(this, "domain");
+        ValidationException.check(this, "path");
+        ValidationException.check(this, "type");
+    }
 }

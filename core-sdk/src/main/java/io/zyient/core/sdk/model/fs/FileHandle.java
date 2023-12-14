@@ -16,6 +16,8 @@
 
 package io.zyient.core.sdk.model.fs;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.core.model.UserOrRole;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -23,12 +25,17 @@ import java.util.Map;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class FileHandle {
     private String fileId;
     private String path;
     private long size;
-    private boolean directory;
+    private FileType type;
+    private UserOrRole createdBy;
+    private UserOrRole modifiedBy;
     private long createTime;
     private long updateTime;
     private Map<String, String> URI;
+    private Map<String, String> attributes;
 }

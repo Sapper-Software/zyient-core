@@ -16,6 +16,7 @@
 
 package io.zyient.core.sdk.request.content;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.core.sdk.model.content.ContentId;
 import io.zyient.core.sdk.request.Request;
@@ -24,6 +25,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class ContentUpdateRequest extends Request {
     private ContentId contentId;
     private String contentState;

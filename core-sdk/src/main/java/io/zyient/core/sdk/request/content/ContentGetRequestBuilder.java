@@ -32,7 +32,7 @@ import lombok.NonNull;
 import java.util.List;
 
 public class ContentGetRequestBuilder {
-    public static final String SERVICE_CONTENT_DELETE = "/get";
+    public static final String SERVICE_CONTENT_GET = "/get";
 
     private final WebServiceClient client;
     private final ContentGetRequest request = new ContentGetRequest();
@@ -62,7 +62,7 @@ public class ContentGetRequestBuilder {
         response.setRequest(request);
         try {
             request.validate();
-            DownloadResponse r = client.post(SERVICE_CONTENT_DELETE,
+            DownloadResponse r = client.post(SERVICE_CONTENT_GET,
                     DownloadResponse.class,
                     request,
                     params,
