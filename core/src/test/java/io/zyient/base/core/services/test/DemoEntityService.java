@@ -16,19 +16,14 @@
 
 package io.zyient.base.core.services.test;
 
+import io.zyient.base.common.model.services.BooleanServiceResponse;
 import io.zyient.base.common.model.services.EResponseState;
-import io.zyient.base.common.model.services.ServiceResponse;
 import io.zyient.base.core.services.test.model.DemoEntity;
 import io.zyient.base.core.services.test.model.DemoEntityServiceResponse;
 import jakarta.ws.rs.NotFoundException;
-import jakarta.ws.rs.PathParam;
-import jakarta.ws.rs.QueryParam;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -61,20 +56,20 @@ public class DemoEntityService {
     }
 
     @RequestMapping(value = "/test/demo/delete/{key}", method = RequestMethod.DELETE)
-    public ResponseEntity<ServiceResponse<Boolean>> delete(@PathParam("key") String key) {
+    public ResponseEntity<BooleanServiceResponse> delete(@PathVariable("key") String key) {
         try {
             if (!cache.containsKey(key)) {
-                return new ResponseEntity<>(new ServiceResponse<>(EResponseState.Success, false), HttpStatus.OK);
+                return new ResponseEntity<>(new BooleanServiceResponse(EResponseState.Success, false), HttpStatus.OK);
             }
             cache.remove(key);
-            return new ResponseEntity<>(new ServiceResponse<>(EResponseState.Success, true), HttpStatus.OK);
+            return new ResponseEntity<>(new BooleanServiceResponse(EResponseState.Success, true), HttpStatus.OK);
         } catch (Throwable t) {
-            return new ResponseEntity<>(new ServiceResponse<>(t), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>(new BooleanServiceResponse(t), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @RequestMapping(value = "/test/demo/find", method = RequestMethod.GET)
-    public ResponseEntity<DemoEntityServiceResponse> find(@QueryParam("key") String key) {
+    public ResponseEntity<DemoEntityServiceResponse> find(@RequestParam("key") String key) {
         try {
             if (!cache.containsKey(key)) {
                 throw new NotFoundException(String.format("Entity not found. [key=%s]", key));

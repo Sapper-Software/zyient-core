@@ -133,7 +133,6 @@ public class WebServiceClient {
                 target = target.queryParam(q, query.get(q));
             }
         }
-
         return getWithPath(target, type, mediaType);
     }
 
@@ -148,12 +147,14 @@ public class WebServiceClient {
                 target = target.path(param);
             }
         }
-
         return getWithPath(target, type, mediaType);
     }
 
     private <T> T getWithPath(JerseyWebTarget target, Class<T> type, String mediaType) throws ConnectionError {
         try {
+            if (Strings.isNullOrEmpty(mediaType)) {
+                mediaType = MediaType.APPLICATION_JSON;
+            }
             Retry retry = registry.retry(target.getUri().toString());
             GetCallable callable = new GetCallable(this, target, mediaType);
             try (Response response = retry.executeCallable(callable)) {
@@ -325,47 +326,32 @@ public class WebServiceClient {
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
         }
-        JerseyWebTarget target = connection.connect(path);
-        if (params != null && !params.isEmpty()) {
-            for (String param : params) {
-                target = target.path(param);
-            }
-        }
-        if (Strings.isNullOrEmpty(mediaType)) {
-            mediaType = MediaType.APPLICATION_JSON;
-        }
-        Invocation.Builder builder = target.request(mediaType);
-        int count = 0;
-        boolean handle = true;
-        while (true) {
-            try {
-                try (Response response = builder.delete()) {
-                    if (response != null) {
-                        int rc = response.getStatus();
-                        if (rc != HttpStatus.SC_OK) {
-                            if (rc >= 200 && rc < 300) {
-                                handle = false;
-                            }
-                            throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
-                                    response.getStatus(), target.getUri().toString()));
-                        }
-                        if (response.hasEntity())
-                            return response.readEntity(type);
-                    }
-                    handle = false;
-                    throw new ConnectionError(
-                            String.format("Service response was null. [service=%s]", target.getUri().toString()));
-                }
-            } catch (Throwable t) {
-                if (handle && count < settings().retryCount) {
-                    count++;
-                    DefaultLogger.error(
-                            String.format("Error calling web service. [tries=%d][service=%s]",
-                                    count, target.getUri().toString()), t);
-                } else {
-                    throw t;
+        try {
+            JerseyWebTarget target = connection.connect(path);
+            if (params != null && !params.isEmpty()) {
+                for (String param : params) {
+                    target = target.path(param);
                 }
             }
+            if (Strings.isNullOrEmpty(mediaType)) {
+                mediaType = MediaType.APPLICATION_JSON;
+            }
+            Retry retry = registry.retry(target.getUri().toString());
+            DeleteCallable callable = new DeleteCallable(this, target, mediaType);
+            try (Response response = retry.executeCallable(callable)) {
+                int rc = response.getStatus();
+                if (rc != HttpStatus.SC_OK) {
+                    throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                            response.getStatus(), target.getUri().toString()));
+                }
+                if (response.hasEntity())
+                    return response.readEntity(type);
+                throw new ConnectionError(
+                        String.format("Service response entity was null. [service=%s]", target.getUri().toString()));
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new ConnectionError(ex);
         }
     }
 
@@ -416,6 +402,26 @@ public class WebServiceClient {
         public Response call() throws Exception {
             Invocation.Builder builder = client.connection.build(target, mediaType);
             return builder.post(Entity.entity(request, mediaType));
+        }
+    }
+
+    @Getter
+    @Accessors(fluent = true)
+    public static class DeleteCallable implements Callable<Response> {
+        private final WebServiceClient client;
+        private final JerseyWebTarget target;
+        private final String mediaType;
+
+        public DeleteCallable(WebServiceClient client, JerseyWebTarget target, String mediaType) {
+            this.client = client;
+            this.target = target;
+            this.mediaType = mediaType;
+        }
+
+        @Override
+        public Response call() throws Exception {
+            Invocation.Builder builder = target.request(mediaType);
+            return builder.delete();
         }
     }
 

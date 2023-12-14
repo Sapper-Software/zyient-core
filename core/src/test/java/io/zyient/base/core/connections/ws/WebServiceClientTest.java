@@ -17,6 +17,7 @@
 package io.zyient.base.core.connections.ws;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.services.BooleanServiceResponse;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.TestUtils;
 import io.zyient.base.core.services.test.WSTestEnv;
@@ -27,7 +28,9 @@ import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -71,7 +74,7 @@ class WebServiceClientTest {
             response = client.get(SERVICE_GET,
                     DemoEntityServiceResponse.class,
                     params,
-                    null);
+                    FileUtils.MIME_TYPE_JSON);
             assertNotNull(response);
             assertNotNull(response.getEntity());
             entity = response.getEntity();
@@ -135,5 +138,36 @@ class WebServiceClientTest {
 
     @Test
     void delete() {
+        try {
+            WebServiceClient client = env.serviceClient();
+            DemoEntity entity = new DemoEntity();
+            DemoEntityServiceResponse response = client.put(SERVICE_CREATE,
+                    DemoEntityServiceResponse.class,
+                    entity,
+                    null,
+                    FileUtils.MIME_TYPE_JSON);
+            assertNotNull(response);
+            assertNotNull(response.getEntity());
+            entity = response.getEntity();
+            List<String> params = List.of(entity.entityKey().getKey());
+            BooleanServiceResponse r = client.delete(SERVICE_DELETE,
+                    BooleanServiceResponse.class,
+                    params,
+                    FileUtils.MIME_TYPE_JSON);
+            assertNotNull(response);
+            assertNotNull(response.getEntity());
+            Boolean result = r.getEntity();
+            assertTrue(result);
+            params = List.of(UUID.randomUUID().toString());
+            r = client.delete(SERVICE_DELETE,
+                    BooleanServiceResponse.class,
+                    params,
+                    FileUtils.MIME_TYPE_JSON);
+            result = r.getEntity();
+            assertFalse(result);
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            fail(ex);
+        }
     }
 }

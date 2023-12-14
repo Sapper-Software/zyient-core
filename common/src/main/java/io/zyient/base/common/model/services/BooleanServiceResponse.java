@@ -25,30 +25,15 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ServiceResponse<T> {
-    private ServiceResponseState state = new ServiceResponseState();
-    private T entity;
-
-    public ServiceResponse() {
+public class BooleanServiceResponse extends ServiceResponse<Boolean> {
+    public BooleanServiceResponse() {
     }
 
-    public ServiceResponse(@NonNull Throwable error) {
-        withError(error);
+    public BooleanServiceResponse(@NonNull Throwable error) {
+        super(error);
     }
 
-    public ServiceResponse(@NonNull EResponseState state,
-                           T entity) throws Exception {
-        this.state.setState(state);
-        if (state == EResponseState.Success) {
-            if (entity == null) {
-                throw new Exception("Entity not specified for success call.");
-            }
-        }
-        this.entity = entity;
-    }
-
-    public ServiceResponse<T> withError(@NonNull Throwable error) {
-        state.error(error);
-        return this;
+    public BooleanServiceResponse(@NonNull EResponseState state, Boolean entity) throws Exception {
+        super(state, entity);
     }
 }
