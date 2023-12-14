@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors.settings;
+package io.zyient.base.core.errors.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;

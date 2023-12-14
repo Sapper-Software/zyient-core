@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors;
+package io.zyient.base.core.errors;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -39,7 +40,8 @@ public class Errors {
     private final Map<String, Map<Integer, Error>> errors = new HashMap<>();
 
     @SuppressWarnings("unchecked")
-    public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                          @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH_LOADER);
             Class<? extends ErrorsReader> type = (Class<? extends ErrorsReader>) ConfigReader.readType(config);
@@ -49,7 +51,7 @@ public class Errors {
             ErrorsReader r = type.getDeclaredConstructor()
                     .newInstance()
                     .withLoader(this)
-                    .configure(config);
+                    .configure(config, env);
             List<Error> result = r.read();
             if (result != null && !result.isEmpty()) {
                 for (Error error : result) {
@@ -78,11 +80,12 @@ public class Errors {
         return __instance;
     }
 
-    public static Errors create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public static Errors create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                @NonNull BaseEnv<?> env) throws ConfigurationException {
         if (__instance == null) {
             try {
                 __instance = new Errors();
-                __instance.configure(xmlConfig);
+                __instance.configure(xmlConfig, env);
             } catch (ConfigurationException ex) {
                 __instance = null;
                 throw ex;

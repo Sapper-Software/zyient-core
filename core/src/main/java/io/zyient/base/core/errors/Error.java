@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors.settings;
+package io.zyient.base.core.errors;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class XmlErrorsReaderSettings extends FileErrorsReaderSettings {
-    @Config(name = "xpath.root", required = false)
-    private String xPath = "errors";
-    @Config(name = "xpath.node", required = false)
-    private String xPathError = "error";
+public class Error {
+    private String type;
+    private int errorCode;
+    private String message;
 }

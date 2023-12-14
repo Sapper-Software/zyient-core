@@ -35,6 +35,7 @@ import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RuleValidationError;
+import io.zyient.core.mapping.rules.RulesEvaluationStatus;
 import io.zyient.core.mapping.rules.RulesExecutor;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;
@@ -120,35 +121,41 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         while (true) {
             try {
                 if (committed) {
-                    if (dataStore instanceof TransactionDataStore<?,?>) {
-                        ((TransactionDataStore<?,?>) dataStore).beingTransaction();
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
                     }
                     committed = false;
                 }
                 Map<String, Object> data = cursor.next();
                 if (data == null) break;
+                RulesEvaluationStatus ret = null;
                 MappedResponse<E> r = mapping.read(data, context);
-                if (postProcessor != null) {
-                    postProcessor.evaluate(r, settings().isTerminateOnValidationError());
+                ret = r.status();
+                if (ret == RulesEvaluationStatus.Success && postProcessor != null) {
+                    ret = postProcessor.evaluate(r, settings().isTerminateOnValidationError());
                 }
-                E entity = dataStore.create(r.entity(), entityType, context);
-                if (DefaultLogger.isTraceEnabled()) {
-                    String json = JSONUtils.asString(entity, entityType);
-                    DefaultLogger.trace(json);
-                }
-                if (r.errors() != null) {
-                    ValidationExceptions errors = r.errors();
-                    if (settings().isSaveValidationErrors()) {
-                        for (ValidationException error : errors) {
-                            if (error instanceof RuleValidationError) {
-                                EntityValidationError ve = new EntityValidationError(entity.entityKey().stringKey(),
-                                        (Class<? extends IEntity<?>>) entity.getClass(),
-                                        (RuleValidationError) error);
-                                dataStore.create(ve, ve.getClass(), context);
+                if (ret != RulesEvaluationStatus.IgnoreRecord) {
+                    E entity = dataStore.create(r.entity(), entityType, context);
+                    if (DefaultLogger.isTraceEnabled()) {
+                        String json = JSONUtils.asString(entity, entityType);
+                        DefaultLogger.trace(json);
+                    }
+                    if (r.errors() != null) {
+                        ValidationExceptions errors = r.errors();
+                        if (settings().isSaveValidationErrors()) {
+                            for (ValidationException error : errors) {
+                                if (error instanceof RuleValidationError) {
+                                    EntityValidationError ve = new EntityValidationError(entity.entityKey().stringKey(),
+                                            (Class<? extends IEntity<?>>) entity.getClass(),
+                                            (RuleValidationError) error);
+                                    dataStore.create(ve, ve.getClass(), context);
+                                }
                             }
                         }
+                        throw errors;
                     }
-                    throw errors;
+                } else if (DefaultLogger.isTraceEnabled()) {
+                    DefaultLogger.trace("RECORD IGNORED", data);
                 }
                 count++;
                 if (commitCount >= settings.getCommitBatchSize()) {
@@ -198,7 +205,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     }
 
     private void rollback() throws Exception {
-        if (dataStore instanceof TransactionDataStore<?,?>) {
+        if (dataStore instanceof TransactionDataStore<?, ?>) {
             if (((TransactionDataStore<?, ?>) dataStore).isInTransaction()) {
                 ((TransactionDataStore<?, ?>) dataStore).rollback(true);
             }
@@ -206,7 +213,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     }
 
     private void commit() throws Exception {
-        if (dataStore instanceof TransactionDataStore<?,?>) {
+        if (dataStore instanceof TransactionDataStore<?, ?>) {
             if (((TransactionDataStore<?, ?>) dataStore).isInTransaction()) {
                 ((TransactionDataStore<?, ?>) dataStore).commit();
             } else {

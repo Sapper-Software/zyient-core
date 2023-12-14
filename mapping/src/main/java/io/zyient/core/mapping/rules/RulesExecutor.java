@@ -54,20 +54,36 @@ public class RulesExecutor<T> {
         return this;
     }
 
-    public void evaluate(@NonNull MappedResponse<T> input,
-                         boolean terminateOnValidationError) throws Exception {
+    public RulesEvaluationStatus evaluate(@NonNull MappedResponse<T> input,
+                                          boolean terminateOnValidationError) throws Exception {
         try {
             for (Rule<T> rule : rules) {
-                rule.evaluate(input);
+                Object r = rule.evaluate(input);
+                if (rule.getRuleType() == RuleType.Validation) {
+                    if (rule.ignoreRecordOnCondition()) {
+                        if (!(r instanceof Boolean)) {
+                            throw new Exception(String.format("Invalid Rule response. [rule=%s][type=%s]",
+                                    rule.name(), r.getClass().getCanonicalName()));
+                        }
+                        boolean ret = (boolean) r;
+                        if (ret) return RulesEvaluationStatus.IgnoreRecord;
+                    }
+                }
             }
+            if (input.errors() != null) {
+                return RulesEvaluationStatus.ValidationFailed;
+            }
+            return RulesEvaluationStatus.Success;
         } catch (ValidationException ex) {
             if (terminateOnValidationError)
                 throw ex;
             input.errors(ValidationExceptions.add(ex, input.errors()));
+            return RulesEvaluationStatus.ValidationFailed;
         } catch (ValidationExceptions ex) {
             if (terminateOnValidationError)
                 throw ex;
             input.errors(ex);
+            return RulesEvaluationStatus.ValidationFailed;
         }
     }
 }

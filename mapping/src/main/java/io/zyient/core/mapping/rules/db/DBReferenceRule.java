@@ -17,12 +17,12 @@
 package io.zyient.core.mapping.rules.db;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.errors.Errors;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.MappingExecutor;
 import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.*;

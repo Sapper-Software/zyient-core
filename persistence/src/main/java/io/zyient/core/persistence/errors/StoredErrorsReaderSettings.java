@@ -14,15 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors;
+package io.zyient.core.persistence.errors;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.Settings;
+import io.zyient.core.persistence.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class Error {
-    private String type;
-    private int errorCode;
-    private String message;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class StoredErrorsReaderSettings extends Settings {
+    @Config(name = "dataStore.name")
+    private String dataStore;
+    @Config(name = "dataStore.type", type = Class.class)
+    private Class<? extends AbstractDataStore<?>> dataStoreTyp;
 }

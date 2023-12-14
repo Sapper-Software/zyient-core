@@ -14,29 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.rules;
+package io.zyient.base.core.errors.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.configuration2.ex.ConfigurationException;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class RuleConfig extends Settings {
-    @Config(name = "name")
-    private String name;
-    @Config(name = "ruleType", required = false, type = RuleType.class)
-    private RuleType type = RuleType.Transformation;
-    @Config(name = "ignoreRecordOnCondition", required = false, type = Boolean.class)
-    private boolean ignoreRecordOnCondition = false;
-
-    public abstract void validate() throws ConfigurationException;
-
-    public abstract <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception;
+public class XmlErrorsReaderSettings extends FileErrorsReaderSettings {
+    @Config(name = "xpath.root", required = false)
+    private String xPath = "errors";
+    @Config(name = "xpath.node", required = false)
+    private String xPathError = "error";
 }

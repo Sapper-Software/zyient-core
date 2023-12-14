@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors;
+package io.zyient.base.core.errors;
 
+import io.zyient.base.core.BaseEnv;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -28,7 +29,8 @@ public interface ErrorsReader {
 
     ErrorsReader withLoader(@NonNull Errors loader);
 
-    ErrorsReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+    ErrorsReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                           @NonNull BaseEnv<?> env) throws ConfigurationException;
 
     List<Error> read() throws Exception;
 }

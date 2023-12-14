@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.rules;
 
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.errors.Errors;
+import io.zyient.base.core.errors.Errors;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

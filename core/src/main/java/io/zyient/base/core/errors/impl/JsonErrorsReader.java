@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors.impl;
+package io.zyient.base.core.errors.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.errors.Error;
-import io.zyient.base.common.errors.Errors;
-import io.zyient.base.common.errors.ErrorsReader;
-import io.zyient.base.common.errors.settings.JsonErrorsReaderSettings;
 import io.zyient.base.common.utils.PathUtils;
+import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.errors.Error;
+import io.zyient.base.core.errors.Errors;
+import io.zyient.base.core.errors.ErrorsReader;
+import io.zyient.base.core.errors.settings.JsonErrorsReaderSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -49,7 +50,8 @@ public class JsonErrorsReader implements ErrorsReader {
     }
 
     @Override
-    public ErrorsReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public ErrorsReader configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                  @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             Preconditions.checkNotNull(parent);
             ConfigReader r = new ConfigReader(xmlConfig, __CONFIG_PATH, JsonErrorsReaderSettings.class);

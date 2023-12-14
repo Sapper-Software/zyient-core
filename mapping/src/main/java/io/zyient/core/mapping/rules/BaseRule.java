@@ -37,6 +37,7 @@ public abstract class BaseRule<T> implements Rule<T> {
     private String name;
     private String expression;
     private RuleType ruleType = RuleType.Transformation;
+    private boolean ignoreRecordOnCondition = false;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
     private int errorCode;
@@ -78,6 +79,7 @@ public abstract class BaseRule<T> implements Rule<T> {
                 errorCode = config.getErrorCode();
             if (config.getValidationErrorCode() != null)
                 validationErrorCode = config.getValidationErrorCode();
+            ignoreRecordOnCondition = cfg.isIgnoreRecordOnCondition();
             setup(config);
             this.config = config;
             return this;

@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.errors.settings;
+package io.zyient.core.mapping.rules;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class FileErrorsReaderSettings extends Settings {
-    @Config(name = "baseDir")
-    private String baseDir;
-    @Config(name = "filename", required = false)
-    private String filename = "errors.xml";
+public enum RulesEvaluationStatus {
+    Failed, ValidationFailed, IgnoreRecord, Success
 }

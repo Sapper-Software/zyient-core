@@ -42,6 +42,7 @@ import java.util.List;
 public class DroolsRule<T> implements Rule<T> {
     private File contentDir;
     private DroolsConfig config;
+    private boolean ignoreRecordOnCondition = false;
     private Class<? extends T> entityType;
     private final KieServices services = KieServices.Factory.get();
     private KieContainer container;
@@ -67,6 +68,7 @@ public class DroolsRule<T> implements Rule<T> {
     @Override
     public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof DroolsConfig);
+        ignoreRecordOnCondition = config.isIgnoreRecordOnCondition();
         this.config = (DroolsConfig) config;
         createContainer();
         return this;
