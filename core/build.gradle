@@ -77,14 +77,14 @@ dependencies {
     implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.7.0.202309050840-r'
     implementation 'org.eclipse.jgit:org.eclipse.jgit.gpg.bc:6.7.0.202309050840-r'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-jetty:3.2.0'
-    testImplementation('org.springframework.boot:spring-boot-starter-web:3.2.0') {
+    implementation 'org.springframework.boot:spring-boot-starter-jetty:3.2.0'
+    implementation('org.springframework.boot:spring-boot-starter-web:3.2.0') {
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
         exclude group: 'ch.qos.logback', module: 'logback-classic'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
     }
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-log4j2
-    testImplementation 'org.springframework.boot:spring-boot-starter-log4j2:3.2.0'
-    testImplementation 'org.springframework.boot:spring-boot-starter-actuator:3.2.0'
-    testImplementation 'org.springframework.boot:spring-boot-starter-json:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-json:3.2.0'
 }

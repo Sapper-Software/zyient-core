@@ -49,7 +49,7 @@ class WebServiceClientTest {
         xmlConfiguration = TestUtils.readFile(__CONFIG_FILE);
         Preconditions.checkState(xmlConfiguration != null);
         env = new WSTestEnv();
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
         Preconditions.checkNotNull(env.serviceClient());
     }
 
@@ -82,10 +82,6 @@ class WebServiceClientTest {
             DefaultLogger.stacktrace(ex);
             fail(ex);
         }
-    }
-
-    @Test
-    void multipart() {
     }
 
     @Test

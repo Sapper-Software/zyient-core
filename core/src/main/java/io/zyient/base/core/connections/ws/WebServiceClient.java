@@ -29,8 +29,11 @@ import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.ConnectionManager;
+import io.zyient.base.core.utils.FileTypeDetector;
+import io.zyient.base.core.utils.SourceTypes;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.core.MediaType;
@@ -49,9 +52,12 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -174,15 +180,18 @@ public class WebServiceClient {
         }
     }
 
-    public <R, T> T multipart(@NonNull String service,
-                              @NonNull Class<T> type,
-                              @NonNull R request,
-                              List<String> params,
-                              @NonNull String fileVar,
-                              @NonNull String entityVar,
-                              @NonNull File file) throws ConnectionError {
+    public <R, T> T upload(@NonNull String service,
+                           @NonNull Class<T> type,
+                           @NonNull R request,
+                           List<String> params,
+                           @NonNull String fileVar,
+                           @NonNull String entityVar,
+                           @NonNull File file) throws ConnectionError {
         Preconditions.checkNotNull(this.connection);
         WebServiceConnection connection = this.connection.multipartConnection();
+        if (!connection.isConnected()) {
+            connection.connect();
+        }
         String path = settings.pathMap.get(service);
         if (Strings.isNullOrEmpty(path)) {
             throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
@@ -197,6 +206,8 @@ public class WebServiceClient {
             throw new ConnectionError(String.format("Invalid source file. [path=%s]", file.getAbsolutePath()));
         }
         try {
+            FileTypeDetector detector = new FileTypeDetector(file);
+            SourceTypes st = detector.detect();
             FileDataBodyPart filePart = new FileDataBodyPart(fileVar, file);
             // UPDATE: just tested again, and the below code is not needed.
             // It's redundant. Using the FileDataBodyPart already sets the
@@ -204,39 +215,88 @@ public class WebServiceClient {
             filePart.setContentDisposition(
                     FormDataContentDisposition.name(fileVar)
                             .fileName(file.getName()).build());
+            filePart.setMediaType(FileTypeDetector.as(st));
             String json = JSONUtils.asString(request, request.getClass());
             try (FormDataMultiPart multipartEntity = (FormDataMultiPart) new FormDataMultiPart()
                     .field(entityVar, json, MediaType.APPLICATION_JSON_TYPE)
                     .bodyPart(filePart)) {
-                int count = 0;
-                boolean handle = true;
-                while (true) {
-                    try (Response response = target.request().post(
-                            Entity.entity(multipartEntity, multipartEntity.getMediaType()))) {
-                        if (response != null) {
-                            if (response.getStatus() != HttpStatus.SC_OK) {
-                                handle = false;
-                                throw new ConnectionError(String.format("Service returned status = [%d]", response.getStatus()));
-                            }
-                            return response.readEntity(type);
-                        }
-                        throw new ConnectionError(
-                                String.format("Service response was null. [service=%s]", target.getUri().toString()));
-                    } catch (Throwable t) {
-                        if (handle && count < settings().retryCount) {
-                            count++;
-                            DefaultLogger.error(
-                                    String.format("Error calling web service. [tries=%d][service=%s]",
-                                            count, target.getUri().toString()), t);
-                        } else {
-                            throw t;
-                        }
+                Retry retry = registry.retry(target.getUri().toString());
+                UploadCallable callable = new UploadCallable(this, target, multipartEntity);
+                try (Response response = retry.executeCallable(callable)) {
+                    int rc = response.getStatus();
+                    if (rc != HttpStatus.SC_OK) {
+                        throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                                response.getStatus(), target.getUri().toString()));
                     }
+                    if (response.hasEntity())
+                        return response.readEntity(type);
+                    throw new ConnectionError(
+                            String.format("Service response entity was null. [service=%s]", target.getUri().toString()));
                 }
             }
         } catch (Exception ex) {
             throw new ConnectionError(ex);
         }
+    }
+
+    public File download(@NonNull String service,
+                         List<String> params,
+                         Map<String, String> queryParams,
+                         @NonNull String mediaType) throws Exception {
+        Preconditions.checkNotNull(this.connection);
+        WebServiceConnection connection = this.connection.multipartConnection();
+        String path = settings.pathMap.get(service);
+        if (Strings.isNullOrEmpty(path)) {
+            throw new ConnectionError(String.format("No service registered with name. [name=%s]", service));
+        }
+        JerseyWebTarget target = connection.connect(path);
+        if (params != null && !params.isEmpty()) {
+            for (String param : params) {
+                target = target.path(param);
+            }
+        }
+        if (queryParams != null && !queryParams.isEmpty()) {
+            for (String q : queryParams.keySet()) {
+                target = target.queryParam(q, queryParams.get(q));
+            }
+        }
+        Retry retry = registry.retry(target.getUri().toString());
+        GetCallable callable = new GetCallable(this, target, mediaType);
+        try (Response response = retry.executeCallable(callable)) {
+            int rc = response.getStatus();
+            if (rc != HttpStatus.SC_OK) {
+                throw new ConnectionError(String.format("Service returned status = [%d][url=%s]",
+                        response.getStatus(), target.getUri().toString()));
+            }
+            if (response.hasEntity()) {
+                MediaType mt = response.getMediaType();
+                try (InputStream stream = response.readEntity(InputStream.class)) {
+                    if (stream != null) {
+                        return createDownloadFile(stream, mt);
+                    }
+                }
+            }
+            throw new ConnectionError(
+                    String.format("Service response entity was null. [service=%s]", target.getUri().toString()));
+        }
+    }
+
+    private File createDownloadFile(InputStream stream, MediaType mt) throws Exception {
+        String filename = PathUtils.toValidFilename(String.format("%s-%s.%s",
+                mt.getType(), UUID.randomUUID().toString(), mt.getSubtype()));
+        File temp = PathUtils.getTempFile(filename);
+        int bsize = 4096;
+        byte[] buffer = new byte[bsize];
+        try (FileOutputStream fos = new FileOutputStream(temp)) {
+            while (true) {
+                int r = stream.read(buffer);
+                if (r <= 0) break;
+                fos.write(buffer, 0, r);
+                if (r < bsize) break;
+            }
+            fos.flush();
+        }
+        return temp;
     }
 
     public <R, T> T post(@NonNull String service,
@@ -352,6 +412,28 @@ public class WebServiceClient {
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new ConnectionError(ex);
+        }
+    }
+
+    @Getter
+    @Accessors(fluent = true)
+    public static class UploadCallable implements Callable<Response> {
+        private final WebServiceClient client;
+        private final JerseyWebTarget target;
+        private final FormDataMultiPart multipartEntity;
+
+        public UploadCallable(WebServiceClient client,
+                              JerseyWebTarget target,
+                              FormDataMultiPart multipartEntity) {
+            this.client = client;
+            this.target = target;
+            this.multipartEntity = multipartEntity;
+        }
+
+        @Override
+        public Response call() throws Exception {
+            return target.request().post(
+                    Entity.entity(multipartEntity, multipartEntity.getMediaType()));
         }
     }
 

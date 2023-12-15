@@ -16,7 +16,6 @@
 
 package io.zyient.base.core.utils;
 
-import com.google.common.base.Strings;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.core.BaseEnv;
@@ -55,7 +54,7 @@ public class UtilsEnv extends BaseEnv<UtilsEnv.EUtilsState> {
     private HierarchicalConfiguration<ImmutableNode> configNode;
 
     public UtilsEnv(@NonNull String name) {
-        super(name);
+        super(name, new UtilsState());
     }
 
 
@@ -65,13 +64,10 @@ public class UtilsEnv extends BaseEnv<UtilsEnv.EUtilsState> {
 
     }
 
-    public BaseEnv<EUtilsState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                     @NonNull String password) throws ConfigurationException {
-        if (Strings.isNullOrEmpty(storeKey()))
-            withStoreKey(password);
+    public BaseEnv<EUtilsState> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
-        super.init(xmlConfig, new UtilsState(), UtilsEnvSettings.class);
+        super.init(xmlConfig, UtilsEnvSettings.class);
 
         configNode = baseConfig().configurationAt(name());
 

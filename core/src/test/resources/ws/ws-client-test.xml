@@ -34,6 +34,8 @@
                         <update>update</update>
                         <delete>delete</delete>
                         <find>find</find>
+                        <upload>upload</upload>
+                        <download>download</download>
                     </paths>
                     <retryCount>3</retryCount>
                 </client>

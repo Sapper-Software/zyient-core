@@ -87,7 +87,7 @@ public class FileCreateRequestBuilder {
             if (path == null || !path.exists()) {
                 throw new ValidationException("Path is not specified or file not found.");
             }
-            FileHandle handle = client.multipart(SERVICE_CONTENT_CREATE,
+            FileHandle handle = client.upload(SERVICE_CONTENT_CREATE,
                     FileHandle.class,
                     request,
                     params,

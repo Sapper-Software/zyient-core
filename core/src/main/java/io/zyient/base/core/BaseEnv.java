@@ -83,8 +83,10 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     private Processor<?, ?> processor;
     private final Map<String, ManagedThread> managedThreads = new HashMap<>();
 
-    public BaseEnv(@NonNull String name) {
+    public BaseEnv(@NonNull String name,
+                   @NonNull AbstractEnvState<T> state) {
         this.name = name;
+        this.state = state;
     }
 
     public BaseEnv<T> withStoreKey(@NonNull String storeKey) {
@@ -98,7 +100,6 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     }
 
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                           @NonNull AbstractEnvState<T> state,
                            @NonNull Class<? extends BaseEnvSettings> type) throws ConfigurationException {
         config = new BaseEnvConfig(xmlConfig, type);
         config.read();
@@ -303,6 +304,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
         dLockBuilder.close();
     }
 
+    protected abstract BaseEnv<?> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     public String module() {
         return moduleInstance.getModule();
@@ -329,6 +331,19 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
 
     public static void add(@NonNull String name, @NonNull BaseEnv<?> env) {
         __instances.put(name, env);
+    }
+
+    public static BaseEnv<?> create(@NonNull Class<? extends BaseEnv<?>> type,
+                                    @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                    String passKey) throws Exception {
+        BaseEnv<?> env = type.getDeclaredConstructor()
+                .newInstance();
+        if (!Strings.isNullOrEmpty(passKey)) {
+            env.withStoreKey(passKey);
+        }
+        env.create(xmlConfig);
+        add(env.name, env);
+        return env;
     }
 
     public static boolean remove(@NonNull String name) throws Exception {

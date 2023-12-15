@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
-@RestController(value = "ws")
+@RestController
 public class DemoEntityService {
     private final Map<String, DemoEntity> cache = new HashMap<>();
 

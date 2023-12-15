@@ -105,4 +105,9 @@ public class RuleGroup<T> implements Rule<T> {
             this.rules.addAll(rules);
         }
     }
+
+    @Override
+    public boolean ignoreRecordOnCondition() {
+        return false;
+    }
 }

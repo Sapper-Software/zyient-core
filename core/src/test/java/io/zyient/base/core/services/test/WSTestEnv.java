@@ -36,7 +36,7 @@ public class WSTestEnv extends BaseEnv<WSTestEnv.EDemoState> {
     private static final String __CONFIG_PATH_CLIENT = "ws";
 
     public WSTestEnv() {
-        super("demo");
+        super("demo", new DemoState());
     }
 
     public enum EDemoState {
@@ -75,12 +75,12 @@ public class WSTestEnv extends BaseEnv<WSTestEnv.EDemoState> {
 
     }
 
-    public BaseEnv<EDemoState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public BaseEnv<EDemoState> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         if (Strings.isNullOrEmpty(storeKey()))
             withStoreKey(TEST_PASSWD);
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
-        super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
+        super.init(xmlConfig, DemoEnvSettings.class);
 
         configNode = baseConfig().configurationAt(__CONFIG_PATH);
         serviceClient = new WebServiceClient()
