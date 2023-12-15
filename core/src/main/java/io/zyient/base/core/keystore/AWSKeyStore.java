@@ -20,7 +20,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ChecksumUtils;
-import io.zyient.base.common.utils.CypherUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import lombok.NonNull;
@@ -58,7 +57,10 @@ public class AWSKeyStore extends KeyStore {
             client = SecretsManagerClient.builder()
                     .region(region)
                     .build();
-            password = CypherUtils.checkPassword(password, name);
+            password = readInternal(DEFAULT_KEY);
+            if (Strings.isNullOrEmpty(password)) {
+                throw new Exception(String.format("Default Secret Key not set. [name=%s]", DEFAULT_KEY));
+            }
             withPassword(password);
             passwdHash = ChecksumUtils.generateHash(password);
         } catch (Exception ex) {
@@ -98,16 +100,20 @@ public class AWSKeyStore extends KeyStore {
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         try {
-            GetSecretValueRequest request = GetSecretValueRequest.builder()
-                    .secretId(name)
-                    .build();
-
-            GetSecretValueResponse response = client.getSecretValue(request);
-            return response.secretString();
+            return readInternal(name);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw ex;
         }
+    }
+
+    private String readInternal(@NonNull String name) throws Exception {
+        GetSecretValueRequest request = GetSecretValueRequest.builder()
+                .secretId(name)
+                .build();
+
+        GetSecretValueResponse response = client.getSecretValue(request);
+        return response.secretString();
     }
 
     @Override

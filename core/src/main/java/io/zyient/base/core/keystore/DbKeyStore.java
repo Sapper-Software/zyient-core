@@ -88,6 +88,13 @@ public class DbKeyStore extends KeyStore {
             iv = CypherUtils.formatIvString(iv);
             passwdHash = ChecksumUtils.generateHash(password);
             checkDbSetup();
+            String passwd = read(DEFAULT_KEY, password);
+            if (passwd == null) {
+                save(DEFAULT_KEY, password, password);
+                flush(password);
+            } else if (passwd.compareTo(password) != 0) {
+                throw new Exception("Invalid password specified...");
+            }
             this.env = env;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
