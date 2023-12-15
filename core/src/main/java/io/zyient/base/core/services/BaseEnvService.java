@@ -16,15 +16,24 @@
 
 package io.zyient.base.core.services;
 
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.services.EConfigFileType;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.services.model.EnvResponse;
+import io.zyient.base.core.services.model.EnvShutdownResponse;
 import io.zyient.base.core.services.model.EnvStartRequest;
+import io.zyient.base.core.services.model.ShutdownStatus;
+import org.apache.commons.configuration2.XMLConfiguration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
 @RestController
 public class BaseEnvService {
-
 
     @SuppressWarnings("unchecked")
     @RequestMapping(value = "/admin/env/start", method = RequestMethod.POST)
@@ -35,11 +44,84 @@ public class BaseEnvService {
             Class<? extends BaseEnv<?>> type = (Class<? extends BaseEnv<?>>) Class.forName(request.getEnvClass());
             BaseEnv<?> env = BaseEnv.get(request.getName(), type);
             if (env == null) {
+                File config = new File(request.getConfigFilePath());
+                if (!config.exists()) {
+                    throw new IOException(String.format("Configuration file not found. [path=%s]",
+                            config.getAbsolutePath()));
+                }
+                XMLConfiguration cfg = ConfigReader.read(config.getAbsolutePath(), EConfigFileType.File);
+                env = BaseEnv.create(type, cfg, password);
             }
             return ResponseEntity.ok(from(env));
         } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(t.getLocalizedMessage());
             return ResponseEntity.internalServerError()
                     .body(new EnvResponse(request.getName(), state, t));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @RequestMapping(value = "/admin/env/status/{name}", method = RequestMethod.GET)
+    public ResponseEntity<EnvResponse> status(@PathVariable("name") String name,
+                                              @RequestParam("type") String type) {
+        String state = "ERROR";
+        try {
+            Class<? extends BaseEnv<?>> t = (Class<? extends BaseEnv<?>>) Class.forName(type);
+            BaseEnv<?> env = BaseEnv.get(name, t);
+            if (env == null) {
+                throw new Exception(String.format("Environment not found. [name=%s][type=%s]",
+                        name, type));
+            }
+            return ResponseEntity.ok(from(env));
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(t.getLocalizedMessage());
+            return ResponseEntity.internalServerError()
+                    .body(new EnvResponse(name, state, t));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @RequestMapping(value = "/admin/env/stop/{name}", method = RequestMethod.GET)
+    public ResponseEntity<EnvResponse> stop(@PathVariable("name") String name,
+                                            @RequestParam("type") String type) {
+        String state = "ERROR";
+        try {
+            Class<? extends BaseEnv<?>> t = (Class<? extends BaseEnv<?>>) Class.forName(type);
+            BaseEnv<?> env = BaseEnv.get(name, t);
+            if (env == null) {
+                throw new Exception(String.format("Environment not found. [name=%s][type=%s]",
+                        name, type));
+            }
+            if (BaseEnv.remove(name)) {
+                return ResponseEntity.ok(from(env));
+            }
+            throw new Exception(String.format("Failed to shutdown environment. [name=%s][type=%s]",
+                    name, type));
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(t.getLocalizedMessage());
+            return ResponseEntity.internalServerError()
+                    .body(new EnvResponse(name, state, t));
+        }
+    }
+
+    @RequestMapping(value = "/admin/env/shutdown", method = RequestMethod.GET)
+    public ResponseEntity<EnvShutdownResponse> shutdown() {
+        EnvShutdownResponse response = new EnvShutdownResponse();
+        try {
+            Map<String, ShutdownStatus> statuses = BaseEnv.disposeAll();
+            response.setResponses(statuses);
+            response.setTimestamp(System.currentTimeMillis());
+            return ResponseEntity.ok(response);
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(t.getLocalizedMessage());
+            response.setTimestamp(System.currentTimeMillis());
+            response.setError(t);
+            return ResponseEntity.internalServerError()
+                    .body(response);
         }
     }
 

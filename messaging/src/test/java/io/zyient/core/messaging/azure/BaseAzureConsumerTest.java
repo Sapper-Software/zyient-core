@@ -56,7 +56,7 @@ class BaseAzureConsumerTest {
         xmlConfiguration = ConfigReader.readFromFile(__CONFIG_FILE);
         Preconditions.checkState(xmlConfiguration != null);
         env = new DemoEnv();
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
         env.connectionManager().save();
         HierarchicalConfiguration<ImmutableNode> node = env.baseConfig();
         initProducer(node);

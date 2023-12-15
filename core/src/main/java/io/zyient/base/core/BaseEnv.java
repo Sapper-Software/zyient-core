@@ -35,6 +35,7 @@ import io.zyient.base.core.errors.Errors;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.ModuleInstance;
 import io.zyient.base.core.processing.Processor;
+import io.zyient.base.core.services.model.ShutdownStatus;
 import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.base.core.state.HeartbeatThread;
 import lombok.Getter;
@@ -355,17 +356,21 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
         return false;
     }
 
-    public static int disposeAll() throws Exception {
+    public static Map<String, ShutdownStatus> disposeAll() throws Exception {
         __instanceLock.lock();
         try {
-            int count = 0;
+            Map<String, ShutdownStatus> statuses = new HashMap<>();
             for (String name : __instances.keySet()) {
                 BaseEnv<?> env = __instances.get(name);
-                env.close();
-                count++;
+                try {
+                    env.close();
+                    statuses.put(name, new ShutdownStatus(name, true));
+                } catch (Throwable t) {
+                    statuses.put(name, new ShutdownStatus(name, t));
+                }
             }
             __instances.clear();
-            return count;
+            return statuses;
         } finally {
             __instanceLock.unlock();
         }
