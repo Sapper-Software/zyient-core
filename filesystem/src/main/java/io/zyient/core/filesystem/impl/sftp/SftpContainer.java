@@ -33,7 +33,7 @@ import lombok.Setter;
 public class SftpContainer extends Container {
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
-        return new SftpPathInfo(fs, getPath(), getDomain());
+        return new SftpPathInfo(fs, "/", getDomain());
     }
 
     @Override

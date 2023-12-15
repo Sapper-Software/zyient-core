@@ -38,7 +38,7 @@ public class AzureContainer extends Container {
 
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
-        return new AzurePathInfo(fs, getDomain(), getContainer(), getPath(), InodeType.Directory);
+        return new AzurePathInfo(fs, getDomain(), getContainer(), "/", InodeType.Directory);
     }
 
     @Override

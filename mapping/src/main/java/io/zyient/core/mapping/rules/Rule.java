@@ -41,4 +41,6 @@ public interface Rule<T> {
     RuleType getRuleType();
 
     void addSubRules(@NonNull List<Rule<T>> rules) throws Exception;
+
+    boolean ignoreRecordOnCondition();
 }

@@ -16,6 +16,7 @@
 
 package io.zyient.base.core.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import dev.morphia.annotations.Entity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.model.entity.NativeKey;
@@ -28,6 +29,8 @@ import lombok.Setter;
 @Setter
 @Embeddable
 @Entity
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class DoubleKey extends NativeKey<Double> {
     public DoubleKey() {
         super(Double.class);

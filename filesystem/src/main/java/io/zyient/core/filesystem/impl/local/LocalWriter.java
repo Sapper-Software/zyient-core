@@ -49,7 +49,7 @@ public class LocalWriter extends Writer {
                           boolean overwrite) throws IOException {
         super(inode, fs, overwrite);
         if (inode.getPathInfo() == null) {
-            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
+            path = (LocalPathInfo) fs.parsePathInfo(inode.getURI());
             inode.setPathInfo(path);
         } else {
             path = (LocalPathInfo) inode.getPathInfo();
@@ -61,7 +61,7 @@ public class LocalWriter extends Writer {
                           @NonNull File temp) throws IOException {
         super(inode, fs, temp);
         if (inode.getPathInfo() == null) {
-            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
+            path = (LocalPathInfo) fs.parsePathInfo(inode.getURI());
             inode.setPathInfo(path);
         } else {
             path = (LocalPathInfo) inode.getPathInfo();
@@ -89,7 +89,7 @@ public class LocalWriter extends Writer {
                 lock.unlock();
             }
         } catch (DistributedLock.LockError le) {
-            String err = String.format("[%s][%s] %s", inode.getDomain(), inode.getAbsolutePath(), le.getLocalizedMessage());
+            String err = String.format("[%s][%s] %s", inode.getDomain(), inode.getPath(), le.getLocalizedMessage());
             throw new DistributedLock.LockError(err);
         } catch (Exception ex) {
             throw new IOException(ex);
@@ -182,12 +182,12 @@ public class LocalWriter extends Writer {
                     if (!fs.isFileLocked(inode)) {
                         throw new IOException(
                                 String.format("[%s][%s] File not locked or locked by another process.",
-                                        inode.getDomain(), inode.getAbsolutePath()));
+                                        inode.getDomain(), inode.getPath()));
                     }
                     String p = inode.getLock().getLocalPath();
                     if (p.compareTo(temp.getAbsolutePath()) != 0) {
                         throw new IOException(String.format("[%s][%s] Local path mismatch. [expected=%s][locked=%s]",
-                                inode.getDomain(), inode.getAbsolutePath(),
+                                inode.getDomain(), inode.getPath(),
                                 temp.getAbsolutePath(), p));
                     }
 

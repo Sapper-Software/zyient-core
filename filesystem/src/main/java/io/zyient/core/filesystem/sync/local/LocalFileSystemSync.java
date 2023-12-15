@@ -242,7 +242,7 @@ public class LocalFileSystemSync extends FileSystemSync implements FileWatcher.F
                 syncer.scanRunning = true;
                 for (String domain : domains.keySet()) {
                     DirectoryInode node = domains.get(domain);
-                    File dir = new File(node.getAbsolutePath());
+                    File dir = new File(node.getPath());
                     if (dir.exists()) {
                         DefaultLogger.debug(String.format("Scanning domain folder. [path=%s]", dir.getAbsolutePath()));
                     }

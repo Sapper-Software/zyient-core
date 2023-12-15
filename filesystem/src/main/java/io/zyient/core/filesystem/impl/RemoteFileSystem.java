@@ -84,12 +84,12 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
 
     @Override
     public DirectoryInode mkdir(@NonNull DirectoryInode parent, @NonNull String name) throws IOException {
-        String path = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), name));
-        PathInfo pp = parsePathInfo(parent.getPath());
+        String path = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), name));
+        PathInfo pp = parsePathInfo(parent.getURI());
         PathInfo pi = createSubPath(pp, path);
         Inode node = createInode(InodeType.Directory, pi);
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (DirectoryInode) updateInodeWithLock(node);
@@ -98,27 +98,25 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     @Override
     public DirectoryInode mkdirs(@NonNull String domain, @NonNull String path) throws IOException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        path = getAbsolutePath(path, domain);
         Container container = domainMap.get(domain);
         if (container == null) {
             throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
         }
-
+        path = PathUtils.formatPath(path);
         PathInfo pi = createPath(domain, container, path, InodeType.Directory);
         Inode node = createInode(InodeType.Directory, pi);
 
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (DirectoryInode) updateInodeWithLock(node);
     }
 
-
     @Override
     public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
-        path = getAbsolutePath(path, domain);
         Container container = domainMap.get(domain);
+        path = PathUtils.formatPath(path);
         PathInfo pi = createPath(domain, container, path, InodeType.File);
         return create(pi);
     }
@@ -126,8 +124,8 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     @Override
     public FileInode create(@NonNull PathInfo pathInfo) throws IOException {
         Inode node = createInode(InodeType.File, pathInfo);
-        if (node.getPath() == null)
-            node.setPath(pathInfo.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pathInfo.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pathInfo);
         return (FileInode) updateInodeWithLock(node);
@@ -144,7 +142,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
             DefaultLogger.error(LOG,
                     String.format("Error uploading file. [domain=%s][path=%s][temp=%s][error=%s]",
                             inode.getDomain(),
-                            inode.getAbsolutePath(),
+                            inode.getPath(),
                             temp,
                             error.getLocalizedMessage()));
             DefaultLogger.stacktrace(error);
@@ -205,21 +203,6 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     }
 
     @Override
-    protected String getAbsolutePath(@NonNull String path,
-                                     @NonNull String domain) throws IOException {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
-        Container container = domainMap.get(domain);
-        if (container == null) {
-            throw new IOException(String.format("Mapped container not found. [domain=%s]", domain));
-        }
-        String pp = container.getPath();
-
-        return PathUtils.formatPath(String.format("/%s/%s",
-                pp, path));
-    }
-
-    @Override
     public void close() throws IOException {
         super.close();
         uploader.shutdown();
@@ -258,7 +241,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
             } catch (Throwable t) {
                 DefaultLogger.stacktrace(t);
                 DefaultLogger.error(
-                        String.format("Upload failed. [domain=%s][path=%s]", inode.getDomain(), inode.getPath()));
+                        String.format("Upload failed. [domain=%s][path=%s]", inode.getDomain(), inode.getURI()));
                 callback.onError(inode, t);
             }
         }

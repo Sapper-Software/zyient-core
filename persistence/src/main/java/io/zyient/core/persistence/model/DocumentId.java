@@ -17,9 +17,9 @@
 package io.zyient.core.persistence.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.core.sdk.model.content.ContentId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Getter;
@@ -57,6 +57,11 @@ public class DocumentId implements IKey {
     public DocumentId(@NonNull DocumentId id) {
         this.id = id.id;
         this.collection = id.collection;
+    }
+
+    public DocumentId(@NonNull ContentId contentId) {
+        collection = contentId.getCollection();
+        id = contentId.getId();
     }
 
     /**

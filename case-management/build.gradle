@@ -7,6 +7,10 @@ idea {
 dependencies {
     implementation project(':common')
     implementation project(':core')
+    implementation project(':core-sdk')
+    implementation project(':persistence')
+    implementation project(':filesystem')
+    implementation project(':content')
 
 
     // https://mvnrepository.com/artifact/org.glassfish.jersey.core/jersey-client
@@ -30,4 +34,6 @@ dependencies {
 
     implementation 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final'
     implementation 'org.hibernate:hibernate-core:6.2.7.Final'
+
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
 }

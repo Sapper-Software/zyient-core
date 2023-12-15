@@ -18,7 +18,9 @@ package io.zyient.core.filesystem.impl.s3;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.filesystem.FileSystem;
@@ -27,6 +29,8 @@ import io.zyient.core.filesystem.Writer;
 import io.zyient.core.filesystem.impl.FileUploadCallback;
 import io.zyient.core.filesystem.impl.PostOperationVisitor;
 import io.zyient.core.filesystem.impl.RemoteFileSystem;
+import io.zyient.core.filesystem.impl.s3.auth.S3StorageAuth;
+import io.zyient.core.filesystem.impl.s3.auth.S3StorageAuthSettings;
 import io.zyient.core.filesystem.model.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -37,14 +41,17 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
+import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -83,12 +90,7 @@ public class S3FileSystem extends RemoteFileSystem {
         try {
             super.init(config, env, new S3FileSystemConfigReader(config));
             S3FileSystemSettings settings = (S3FileSystemSettings) configReader().settings();
-            if (client == null) {
-                Region region = Region.of(settings.getRegion());
-                client = S3Client.builder()
-                        .region(region)
-                        .build();
-            }
+            s3Init();
             return postInit();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
@@ -99,17 +101,12 @@ public class S3FileSystem extends RemoteFileSystem {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public FileSystem init(@NonNull FileSystemSettings settings, @NonNull BaseEnv<?> env) throws IOException {
         Preconditions.checkArgument(settings instanceof S3FileSystemSettings);
         super.init(settings, env);
         try {
-            S3FileSystemSettings s3settings = (S3FileSystemSettings) this.settings;
-            if (client == null) {
-                Region region = Region.of(s3settings.getRegion());
-                client = S3Client.builder()
-                        .region(region)
-                        .build();
-            }
+            s3Init();
             return postInit();
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
@@ -117,11 +114,48 @@ public class S3FileSystem extends RemoteFileSystem {
             state().error(t);
             throw new IOException(t);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void s3Init() throws Exception {
+        S3FileSystemSettings s3settings = (S3FileSystemSettings) this.settings;
+        if (client == null) {
+            S3StorageAuth auth = null;
+            if (ConfigReader.checkIfNodeExists(configReader().config(), S3StorageAuthSettings.__CONFIG_PATH)) {
+                HierarchicalConfiguration<ImmutableNode> ac =
+                        configReader().config().configurationAt(S3StorageAuthSettings.__CONFIG_PATH);
+                Class<? extends S3StorageAuth> clazz = (Class<? extends S3StorageAuth>) ConfigReader.readType(ac);
+                auth = clazz.getDeclaredConstructor()
+                        .newInstance();
+                auth.init(configReader().config(), env().keyStore());
+            }
+            Region region = Region.of(s3settings.getRegion());
+            S3ClientBuilder builder = S3Client.builder()
+                    .region(region);
+            if (!Strings.isNullOrEmpty(((S3FileSystemSettings) settings).getEndpoint())) {
+                builder.endpointOverride(new URI(((S3FileSystemSettings) settings).getEndpoint()));
+            }
+            if (auth != null) {
+                builder.credentialsProvider(auth.credentials());
+            }
+            client = builder.build();
+        }
+    }
+
+    @Override
+    protected boolean createDomainDir(DirectoryInode dir) throws IOException {
+        return true;
     }
 
     @Override
     public PathInfo parsePathInfo(@NonNull Map<String, String> values) throws IOException {
         return new S3PathInfo(this, values);
+    }
+
+    @Override
+    public PathInfo parsePathInfo(@NonNull String domain, @NonNull String path) throws IOException {
+        S3Container container = (S3Container) domainMap.get(domain);
+        return new S3PathInfo(this, domain, container.getBucket(), path, InodeType.Directory);
     }
 
     @Override
@@ -136,8 +170,8 @@ public class S3FileSystem extends RemoteFileSystem {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
         S3PathInfo pi = checkAndGetPath(node);
         Preconditions.checkNotNull(pi);
-        if (node.getPath() == null)
-            node.setPath(pi.pathConfig());
+        if (node.getURI() == null)
+            node.setURI(pi.pathConfig());
         if (node.getPathInfo() == null)
             node.setPathInfo(pi);
         return (FileInode) updateInodeWithLock(node);
@@ -170,18 +204,27 @@ public class S3FileSystem extends RemoteFileSystem {
                                 .bucket(s3path.bucket())
                                 .key(obj.key())
                                 .build();
-                        DeleteObjectResponse dres = client.deleteObject(dr);
-                        if (!dres.deleteMarker() && ret) {
-                            ret = false;
+                        DeleteObjectResponse r = client.deleteObject(dr);
+                        SdkHttpResponse sr = r.sdkHttpResponse();
+                        if (sr.statusCode() < 200 || sr.statusCode() >= 300) {
+                            String mesg = JSONUtils.asString(sr, sr.getClass());
+                            throw new IOException(mesg);
                         }
                     }
                     return ret;
                 } else if (!path.directory()) {
                     DeleteObjectRequest dr = DeleteObjectRequest.builder()
                             .bucket(s3path.bucket())
-                            .key(s3path.path())
+                            .key(s3path.fsPath())
                             .build();
-                    client.deleteObject(dr);
+                    DeleteObjectResponse r = client.deleteObject(dr);
+                    SdkHttpResponse sr = r.sdkHttpResponse();
+                    if (sr.statusCode() >= 200 && sr.statusCode() < 300) {
+                        return true;
+                    } else {
+                        String mesg = JSONUtils.asString(sr, sr.getClass());
+                        throw new IOException(mesg);
+                    }
                 }
             }
         }
@@ -192,7 +235,7 @@ public class S3FileSystem extends RemoteFileSystem {
     protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
                                      @NonNull String path,
                                      @NonNull InodeType type) throws IOException {
-        String p = PathUtils.formatPath(String.format("%s/%s", parent.getAbsolutePath(), path));
+        String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));
         S3PathInfo pi = checkAndGetPath(parent);
         return new S3PathInfo(this, parent.getDomain(), pi.bucket(), p, type);
     }
@@ -205,8 +248,8 @@ public class S3FileSystem extends RemoteFileSystem {
             }
             try {
                 HeadObjectRequest request = HeadObjectRequest.builder()
-                        .key(((S3PathInfo) path).bucket())
-                        .bucket(getAbsolutePath(path.path(), path.domain()))
+                        .bucket(((S3PathInfo) path).bucket())
+                        .key(path.fsPath())
                         .build();
                 HeadObjectResponse response = client.headObject(request);
                 return (response != null);
@@ -228,7 +271,7 @@ public class S3FileSystem extends RemoteFileSystem {
             inode.setPathInfo(pi);
         }
         if (!pi.exists()) {
-            throw new IOException(String.format("Local file not found. [path=%s]", inode.getAbsolutePath()));
+            throw new IOException(String.format("S3 file not found. [path=%s]", inode.getPath()));
         }
         return new S3Reader(this, inode).open();
     }
@@ -261,9 +304,9 @@ public class S3FileSystem extends RemoteFileSystem {
         S3PathInfo tp = checkAndGetPath(target);
         CopyObjectRequest cr = CopyObjectRequest.builder()
                 .sourceBucket(sp.bucket())
-                .sourceKey(sp.path())
+                .sourceKey(sp.fsPath())
                 .destinationBucket(tp.bucket())
-                .destinationKey(tp.path())
+                .destinationKey(tp.fsPath())
                 .build();
         CopyObjectResponse rc = client.copyObject(cr);
     }
@@ -281,7 +324,9 @@ public class S3FileSystem extends RemoteFileSystem {
                           @NonNull FileInode target) throws IOException {
         doCopy(source, target);
         S3PathInfo sp = checkAndGetPath(source);
-        delete(sp, false);
+        if (!delete(sp, false)) {
+            throw new IOException(String.format("Failed to delete file. [path=%s]", sp.pathConfig()));
+        }
     }
 
     protected File read(@NonNull FileInode path) throws IOException {
@@ -322,6 +367,10 @@ public class S3FileSystem extends RemoteFileSystem {
                                @NonNull String path,
                                @NonNull InodeType type) {
         Preconditions.checkArgument(container instanceof S3Container);
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        path = PathUtils.formatPath(path);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         return new S3PathInfo(this, domain, ((S3Container) container).getBucket(), path, type);
     }
@@ -353,11 +402,11 @@ public class S3FileSystem extends RemoteFileSystem {
             if (!checkInodeAvailable(inode, timeout)) {
                 throw new IOException(
                         String.format("Download operation timeout: File not available for download. [path=%s]",
-                                inode.getPath()));
+                                inode.getURI()));
             }
             GetObjectRequest request = GetObjectRequest.builder()
                     .bucket(path.bucket())
-                    .key(path.path())
+                    .key(path.fsPath())
                     .build();
             try (FileOutputStream fos = new FileOutputStream(path.temp())) {
                 client.getObject(request, ResponseTransformer.toOutputStream(fos));
@@ -373,7 +422,7 @@ public class S3FileSystem extends RemoteFileSystem {
             try {
                 HeadObjectRequest request = HeadObjectRequest.builder()
                         .key(((S3PathInfo) path).bucket())
-                        .bucket(getAbsolutePath(path.path(), path.domain()))
+                        .bucket(path.fsPath())
                         .build();
                 HeadObjectResponse response = client.headObject(request);
                 return response.contentLength();
@@ -452,14 +501,14 @@ public class S3FileSystem extends RemoteFileSystem {
             }
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(pi.bucket())
-                    .key(pi.path())
+                    .key(pi.fsPath())
                     .build();
             PutObjectResponse response = client
                     .putObject(request, RequestBody.fromFile(source));
             S3Waiter waiter = client.waiter();
             HeadObjectRequest requestWait = HeadObjectRequest.builder()
                     .bucket(pi.bucket())
-                    .key(pi.path())
+                    .key(pi.fsPath())
                     .build();
 
             WaiterResponse<HeadObjectResponse> waiterResponse = waiter.waitUntilObjectExists(requestWait);

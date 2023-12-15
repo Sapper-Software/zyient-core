@@ -22,6 +22,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,6 +43,10 @@ public class TimeUnitValue extends UnitValue<TimeUnit, Long> {
     public TimeUnitValue(long value, @NonNull TimeUnit unit) {
         setValue(value);
         setUnit(unit);
+    }
+
+    public Duration of() {
+        return Duration.of((long) getValue(), getUnit().toChronoUnit());
     }
 
     @Override

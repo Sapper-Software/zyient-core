@@ -18,8 +18,10 @@ package io.zyient.base.common.model;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.utils.ReflectionHelper;
 
 import javax.annotation.Nonnull;
+import java.lang.reflect.Field;
 
 /**
  * Exception type to be used for escalating Validation errors.
@@ -128,5 +130,27 @@ public class ValidationException extends Exception {
             errors = ValidationExceptions.add(ve, errors);
         }
         return errors;
+    }
+
+    public static void check(@Nonnull Object entity,
+                             @Nonnull String property) throws ValidationException {
+        try {
+            Field field = ReflectionHelper.findField(entity.getClass(), property);
+            if (field == null) {
+                throw new ValidationException(String.format("Property not found. [type=%s][field=%s]",
+                        entity.getClass().getCanonicalName(), property));
+            }
+            Object value = ReflectionHelper.getFieldValue(entity, field, true);
+            if (value == null) {
+                throw new ValidationException(String.format("Property value is NULL. [type=%s][field=%s]",
+                        entity.getClass().getCanonicalName(), property));
+            }
+            if (field.getType().equals(String.class)) {
+                throw new ValidationException(String.format("Property value is empty. [type=%s][field=%s]",
+                        entity.getClass().getCanonicalName(), property));
+            }
+        } catch (Exception ex) {
+            throw new ValidationException(ex);
+        }
     }
 }

@@ -36,9 +36,9 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class FileSystemManagerSettings extends Settings {
-    @Config(name = "zkPath")
+    @Config(name = "zk.path")
     private String zkBasePath;
-    @Config(name = "zkConnection")
+    @Config(name = "zk.connection")
     private String zkConnection;
     @Config(name = "autoSave", required = false, type = Boolean.class)
     private boolean autoSave = true;

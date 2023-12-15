@@ -34,7 +34,7 @@ public class LocalContainer extends Container {
 
     @Override
     public PathInfo pathInfo(@NonNull FileSystem fs) {
-        return new LocalPathInfo(fs, getPath(), getDomain());
+        return new LocalPathInfo(fs, "/", getDomain());
     }
 
     @Override

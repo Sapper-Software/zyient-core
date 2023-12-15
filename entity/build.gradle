@@ -33,6 +33,7 @@ dependencies {
     implementation project(':common')
     implementation project(':core')
     implementation project(':filesystem')
+    implementation project(':messaging')
 
     implementation 'org.apache.avro:avro:1.11.0'
 

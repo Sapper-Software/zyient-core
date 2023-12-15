@@ -73,10 +73,10 @@ class AzureFileSystemDLTest {
             String dir = String.format("%s/%s/create", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getPath()));
             FileInode fi = fs.create(di, String.format("%s.tmp", UUID.randomUUID().toString()));
             assertNotNull(fi);
-            DefaultLogger.info(String.format("Created file. [path=%s]", fi.getAbsolutePath()));
+            DefaultLogger.info(String.format("Created file. [path=%s]", fi.getPath()));
 
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -91,7 +91,7 @@ class AzureFileSystemDLTest {
             String dir = String.format("%s/%s/delete", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getPath()));
             FileInode fi = fs.create(di, String.format("%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
@@ -125,7 +125,7 @@ class AzureFileSystemDLTest {
             String dir = String.format("%s/%s/reader", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getPath()));
             FileInode fi = fs.create(di, String.format("%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());
@@ -174,7 +174,7 @@ class AzureFileSystemDLTest {
             String dir = String.format("%s/%s/writer", BASE_DIR, UUID.randomUUID().toString());
             DirectoryInode di = fs.mkdirs(FS_DEMO_DOMAIN, dir);
             assertNotNull(di);
-            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getAbsolutePath()));
+            DefaultLogger.info(String.format("Created directory. [path=%s]", di.getPath()));
             FileInode fi = fs.create(di, String.format("%s.tmp", UUID.randomUUID().toString()));
 
             fi = (FileInode) fs.getInode(fi.getPathInfo());

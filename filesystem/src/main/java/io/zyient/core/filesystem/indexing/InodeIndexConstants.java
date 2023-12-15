@@ -21,14 +21,14 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 public class InodeIndexConstants {
-    public static final String NAME_FS_PATH = "fsPath";
+    public static final String NAME_FS_PATH = "fs_path";
     public static final String NAME_UUID = "UUID";
     public static final String NAME_DOMAIN = "domain";
+    public static final String NAME_URI = "URI";
     public static final String NAME_PATH = "path";
-    public static final String NAME_ABSOLUTE_PATH = "absolutePath";
     public static final String NAME_TYPE = "type";
-    public static final String NAME_PARENT_ZK_PATH = "zkPathParent";
-    public static final String NAME_ZK_PATH = "zkPath";
+    public static final String NAME_PARENT_ZK_PATH = "zk_parent_path";
+    public static final String NAME_ZK_PATH = "zk_path";
     public static final String NAME_NAME = "name";
     public static final String NAME_ATTRS = "attributes";
     public static final String NAME_STATE = "state";
@@ -41,8 +41,8 @@ public class InodeIndexConstants {
         FS_PATH(NAME_FS_PATH),
         UUID(NAME_UUID),
         DOMAIN(NAME_DOMAIN),
+        URI(NAME_URI),
         PATH(NAME_PATH),
-        ABSOLUTE_PATH(NAME_ABSOLUTE_PATH),
         TYPE(NAME_TYPE),
         ZK_PATH(NAME_ZK_PATH),
         NAME(NAME_NAME),

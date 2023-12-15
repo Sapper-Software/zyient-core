@@ -33,6 +33,8 @@ public abstract class RuleConfig extends Settings {
     private String name;
     @Config(name = "ruleType", required = false, type = RuleType.class)
     private RuleType type = RuleType.Transformation;
+    @Config(name = "ignoreRecordOnCondition", required = false, type = Boolean.class)
+    private boolean ignoreRecordOnCondition = false;
 
     public abstract void validate() throws ConfigurationException;
 

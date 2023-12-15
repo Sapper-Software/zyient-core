@@ -71,7 +71,6 @@ public class S3PathInfo extends PathInfo {
         this.client = ((S3FileSystem) fs).client();
         bucket = config.get(CONFIG_KEY_BUCKET);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(bucket));
-        directory = false;
     }
 
     protected S3PathInfo withTemp(@NonNull File temp) {

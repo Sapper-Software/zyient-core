@@ -18,11 +18,11 @@ package io.zyient.core.mapping.rules.spel;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.errors.Error;
-import io.zyient.base.common.errors.Errors;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.core.errors.Error;
+import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
@@ -193,4 +193,5 @@ public class SpELRule<T> extends BaseRule<T> {
     public Rule<T> withContentDir(@NonNull File contentDir) {
         return this;
     }
+
 }

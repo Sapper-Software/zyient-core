@@ -23,7 +23,6 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.errors.Errors;
 import io.zyient.base.common.model.InvalidDataError;
 import io.zyient.base.common.threads.ManagedThread;
 import io.zyient.base.common.threads.ThreadManager;
@@ -32,6 +31,7 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.env.BaseEnvSettings;
+import io.zyient.base.core.errors.Errors;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.ModuleInstance;
 import io.zyient.base.core.processing.Processor;
@@ -156,7 +156,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                                 this);
             }
             if (ConfigReader.checkIfNodeExists(baseConfig, Errors.__CONFIG_PATH)) {
-                Errors.create(baseConfig.configurationAt(Errors.__CONFIG_PATH));
+                Errors.create(baseConfig.configurationAt(Errors.__CONFIG_PATH), this);
             }
             DefaultExports.initialize();
             if (meterRegistry == null) {
