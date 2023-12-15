@@ -30,6 +30,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.HashMap;
@@ -322,6 +323,15 @@ public class DbKeyStore extends KeyStore {
             } else {
                 DefaultLogger.warn(String.format("[%s] Update returned zero. [key=%s]", name, record.name));
             }
+        }
+    }
+
+
+    @Override
+    public void close() throws IOException {
+        if (connection != null) {
+            connection.close();
+            connection = null;
         }
     }
 }

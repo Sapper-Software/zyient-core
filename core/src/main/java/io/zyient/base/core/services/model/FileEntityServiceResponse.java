@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.services.test.model;
+package io.zyient.base.core.services.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.services.EResponseState;

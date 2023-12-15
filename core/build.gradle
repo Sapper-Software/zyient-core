@@ -48,6 +48,7 @@ dependencies {
     implementation 'com.azure:azure-data-tables:12.3.9'
 
     implementation 'software.amazon.awssdk:sqs:2.20.140'
+    implementation 'software.amazon.awssdk:secretsmanager:2.21.46'
     implementation 'com.azure:azure-messaging-servicebus:7.14.3'
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
     implementation 'net.openhft:chronicle-queue:5.24ea23'
