@@ -17,31 +17,17 @@
 package io.zyient.base.core.services.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.services.ServiceResponse;
+import io.zyient.base.common.AbstractEnvState;
+import io.zyient.base.core.model.ModuleInstance;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
-
-import java.util.HashMap;
-import java.util.Map;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class EnvShutdownResponse extends ServiceResponse<Map<String, ShutdownStatus>> {
-    public EnvShutdownResponse() {
-    }
-
-    public EnvShutdownResponse(@NonNull Throwable error) {
-        super(error);
-    }
-
-    public EnvShutdownResponse add(@NonNull ShutdownStatus shutdown) {
-        if (getEntity() == null) {
-            setEntity(new HashMap<>());
-        }
-        getEntity().put(shutdown.getName(), shutdown);
-        return this;
-    }
+public class EnvStatus {
+    private String name;
+    private ModuleInstance instance;
+    private AbstractEnvState<?> state;
 }

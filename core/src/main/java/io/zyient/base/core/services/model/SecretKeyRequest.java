@@ -17,30 +17,16 @@
 package io.zyient.base.core.services.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.core.model.ModuleInstance;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class EnvResponse {
+public class SecretKeyRequest {
+    private String env;
+    private String envClass;
     private String name;
-    private ModuleInstance instance;
-    private String state;
-    private Throwable error;
-
-    public EnvResponse() {
-
-    }
-
-    public EnvResponse(@NonNull String name,
-                       @NonNull String state,
-                       @NonNull Throwable error) {
-        this.name = name;
-        this.state = state;
-        this.error = error;
-    }
+    private String value;
 }

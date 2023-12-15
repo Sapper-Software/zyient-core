@@ -18,12 +18,11 @@ package io.zyient.base.core.services;
 
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
+import io.zyient.base.common.model.services.EResponseState;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.services.model.EnvResponse;
-import io.zyient.base.core.services.model.EnvShutdownResponse;
-import io.zyient.base.core.services.model.EnvStartRequest;
-import io.zyient.base.core.services.model.ShutdownStatus;
+import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.base.core.services.model.*;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,9 +36,8 @@ public class BaseEnvService {
 
     @SuppressWarnings("unchecked")
     @RequestMapping(value = "/admin/env/start", method = RequestMethod.POST)
-    public ResponseEntity<EnvResponse> start(@RequestParam("passwd") String password,
-                                             @RequestBody EnvStartRequest request) {
-        String state = "ERROR";
+    public ResponseEntity<EnvStatusResponse> start(@RequestParam("passwd") String password,
+                                                   @RequestBody EnvStartRequest request) {
         try {
             Class<? extends BaseEnv<?>> type = (Class<? extends BaseEnv<?>>) Class.forName(request.getEnvClass());
             BaseEnv<?> env = BaseEnv.get(request.getName(), type);
@@ -52,20 +50,19 @@ public class BaseEnvService {
                 XMLConfiguration cfg = ConfigReader.read(config.getAbsolutePath(), EConfigFileType.File);
                 env = BaseEnv.create(type, cfg, password);
             }
-            return ResponseEntity.ok(from(env));
+            return ResponseEntity.ok(new EnvStatusResponse(EResponseState.Success, from(env)));
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             DefaultLogger.error(t.getLocalizedMessage());
             return ResponseEntity.internalServerError()
-                    .body(new EnvResponse(request.getName(), state, t));
+                    .body(new EnvStatusResponse(t));
         }
     }
 
     @SuppressWarnings("unchecked")
     @RequestMapping(value = "/admin/env/status/{name}", method = RequestMethod.GET)
-    public ResponseEntity<EnvResponse> status(@PathVariable("name") String name,
-                                              @RequestParam("type") String type) {
-        String state = "ERROR";
+    public ResponseEntity<EnvStatusResponse> status(@PathVariable("name") String name,
+                                                    @RequestParam("type") String type) {
         try {
             Class<? extends BaseEnv<?>> t = (Class<? extends BaseEnv<?>>) Class.forName(type);
             BaseEnv<?> env = BaseEnv.get(name, t);
@@ -73,20 +70,19 @@ public class BaseEnvService {
                 throw new Exception(String.format("Environment not found. [name=%s][type=%s]",
                         name, type));
             }
-            return ResponseEntity.ok(from(env));
+            return ResponseEntity.ok(new EnvStatusResponse(EResponseState.Success, from(env)));
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             DefaultLogger.error(t.getLocalizedMessage());
             return ResponseEntity.internalServerError()
-                    .body(new EnvResponse(name, state, t));
+                    .body(new EnvStatusResponse(t));
         }
     }
 
     @SuppressWarnings("unchecked")
     @RequestMapping(value = "/admin/env/stop/{name}", method = RequestMethod.GET)
-    public ResponseEntity<EnvResponse> stop(@PathVariable("name") String name,
-                                            @RequestParam("type") String type) {
-        String state = "ERROR";
+    public ResponseEntity<EnvStatusResponse> stop(@PathVariable("name") String name,
+                                                  @RequestParam("type") String type) {
         try {
             Class<? extends BaseEnv<?>> t = (Class<? extends BaseEnv<?>>) Class.forName(type);
             BaseEnv<?> env = BaseEnv.get(name, t);
@@ -95,7 +91,7 @@ public class BaseEnvService {
                         name, type));
             }
             if (BaseEnv.remove(name)) {
-                return ResponseEntity.ok(from(env));
+                return ResponseEntity.ok(new EnvStatusResponse(EResponseState.Success, from(env)));
             }
             throw new Exception(String.format("Failed to shutdown environment. [name=%s][type=%s]",
                     name, type));
@@ -103,36 +99,84 @@ public class BaseEnvService {
             DefaultLogger.stacktrace(t);
             DefaultLogger.error(t.getLocalizedMessage());
             return ResponseEntity.internalServerError()
-                    .body(new EnvResponse(name, state, t));
+                    .body(new EnvStatusResponse(t));
         }
     }
 
     @RequestMapping(value = "/admin/env/shutdown", method = RequestMethod.GET)
     public ResponseEntity<EnvShutdownResponse> shutdown() {
-        EnvShutdownResponse response = new EnvShutdownResponse();
         try {
+            EnvShutdownResponse response = new EnvShutdownResponse();
             Map<String, ShutdownStatus> statuses = BaseEnv.disposeAll();
-            response.setResponses(statuses);
-            response.setTimestamp(System.currentTimeMillis());
+            response.setEntity(statuses);
             return ResponseEntity.ok(response);
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             DefaultLogger.error(t.getLocalizedMessage());
-            response.setTimestamp(System.currentTimeMillis());
-            response.setError(t);
             return ResponseEntity.internalServerError()
-                    .body(response);
+                    .body(new EnvShutdownResponse(t));
         }
     }
 
-    private EnvResponse from(BaseEnv<?> env) {
-        EnvResponse response = new EnvResponse();
+    @SuppressWarnings("unchecked")
+    @RequestMapping(value = "/admin/env/secrets/add", method = RequestMethod.POST)
+    public ResponseEntity<KeyStoreOpResponse> addKey(@RequestBody SecretKeyRequest request,
+                                                     @RequestParam("passwd") String password) {
+        try {
+            Class<? extends BaseEnv<?>> t = (Class<? extends BaseEnv<?>>) Class.forName(request.getEnvClass());
+            BaseEnv<?> env = BaseEnv.get(request.getEnv(), t);
+            if (env == null) {
+                throw new Exception(String.format("Environment not found. [name=%s][type=%s]",
+                        request.getEnv(), request.getEnvClass()));
+            }
+            KeyStore keyStore = env.keyStore();
+            if (keyStore == null) {
+                throw new Exception(String.format("Environment KeyStore not initialized. [env=%s][type=%s]",
+                        request.getEnv(), request.getEnvClass()));
+            }
+            keyStore.save(request.getName(), request.getValue(), password);
+            keyStore.flush();
+            return ResponseEntity.ok(new KeyStoreOpResponse(EResponseState.Success, true));
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(t.getLocalizedMessage());
+            return ResponseEntity.internalServerError()
+                    .body(new KeyStoreOpResponse(t));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @RequestMapping(value = "/admin/env/secrets/delete", method = RequestMethod.POST)
+    public ResponseEntity<KeyStoreOpResponse> deleteKey(@RequestBody SecretKeyRequest request,
+                                                        @RequestParam("passwd") String password) {
+        try {
+            Class<? extends BaseEnv<?>> t = (Class<? extends BaseEnv<?>>) Class.forName(request.getEnvClass());
+            BaseEnv<?> env = BaseEnv.get(request.getEnv(), t);
+            if (env == null) {
+                throw new Exception(String.format("Environment not found. [name=%s][type=%s]",
+                        request.getEnv(), request.getEnvClass()));
+            }
+            KeyStore keyStore = env.keyStore();
+            if (keyStore == null) {
+                throw new Exception(String.format("Environment KeyStore not initialized. [env=%s][type=%s]",
+                        request.getEnv(), request.getEnvClass()));
+            }
+            keyStore.delete(request.getName(), password);
+            keyStore.flush();
+            return ResponseEntity.ok(new KeyStoreOpResponse(EResponseState.Success, true));
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            DefaultLogger.error(t.getLocalizedMessage());
+            return ResponseEntity.internalServerError()
+                    .body(new KeyStoreOpResponse(t));
+        }
+    }
+
+    private EnvStatus from(BaseEnv<?> env) {
+        EnvStatus response = new EnvStatus();
         response.setName(env.name());
         response.setInstance(env.moduleInstance());
-        response.setState(env.state().getState().name());
-        if (env.state().hasError()) {
-            response.setError(env.state().getError());
-        }
+        response.setState(env.state());
         return response;
     }
 }
