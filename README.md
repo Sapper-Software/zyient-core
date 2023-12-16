@@ -3,17 +3,17 @@
 
     Common
     Core
+    SDK
 
 ## Zyient Core Framework
 
     Messaging
     FileSystem
     Persistence
-    Mapping
 
 ## Zyient Application Framework
 
-    Data Mapping
+    Data Mapping & Transformation
     Case Management
 
 
