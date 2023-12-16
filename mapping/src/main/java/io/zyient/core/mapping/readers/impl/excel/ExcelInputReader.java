@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.model.ExcelColumn;
+import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
@@ -32,7 +33,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -58,7 +58,7 @@ public class ExcelInputReader extends InputReader {
     }
 
     @Override
-    public List<Map<String, Object>> nextBatch() throws IOException {
+    public List<SourceMap> nextBatch() throws IOException {
         Preconditions.checkState(workbook != null);
         Preconditions.checkState(settings() instanceof ExcelReaderSettings);
         if (EOF) return null;
@@ -66,10 +66,10 @@ public class ExcelInputReader extends InputReader {
             if (current == null) {
                 checkSheet();
             }
-            List<Map<String, Object>> response = new ArrayList<>();
+            List<SourceMap> response = new ArrayList<>();
             int remaining = settings().getReadBatchSize();
             while (true) {
-                List<Map<String, Object>> data = readFromSheet(remaining, (ExcelReaderSettings) settings());
+                List<SourceMap> data = readFromSheet(remaining, (ExcelReaderSettings) settings());
                 if (!data.isEmpty()) {
                     response.addAll(data);
                     remaining -= data.size();
@@ -107,12 +107,12 @@ public class ExcelInputReader extends InputReader {
         }
     }
 
-    private List<Map<String, Object>> readFromSheet(int count, ExcelReaderSettings settings) throws Exception {
-        List<Map<String, Object>> data = new ArrayList<>();
+    private List<SourceMap> readFromSheet(int count, ExcelReaderSettings settings) throws Exception {
+        List<SourceMap> data = new ArrayList<>();
         while (count > 0) {
             Row row = current.getRow(rowIndex);
             if (row == null) break;
-            Map<String, Object> record = new HashMap<>();
+            SourceMap record = new SourceMap();
             if (settings.getHeaders() != null) {
                 for (int ii : settings.getHeaders().keySet()) {
                     ExcelColumn column = (ExcelColumn) settings.getHeaders().get(ii);

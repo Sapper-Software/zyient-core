@@ -79,11 +79,12 @@ public class RuleGroup<T> implements Rule<T> {
         }
         EvaluationStatus status = new EvaluationStatus();
         try {
+            status.status(StatusCode.Success);
             evaluator.evaluate(data, status);
             if (status.errors() != null) {
                 return status.status(StatusCode.ValidationFailed);
             }
-            return status.status(StatusCode.Success);
+            return status;
         } catch (RuleValidationError ve) {
             if (terminateOnValidationError) {
                 throw ve;

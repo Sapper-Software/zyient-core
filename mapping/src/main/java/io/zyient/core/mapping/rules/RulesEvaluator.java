@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -62,16 +63,13 @@ public class RulesEvaluator<T> {
                 }
 
                 if (rule.getRuleType() == RuleType.Condition) {
-                    Preconditions.checkNotNull(r.response());
-                    if (!(r.response() instanceof Boolean)) {
-                        throw new RuleEvaluationError(rule.name(),
-                                rule.entityType(),
-                                rule.getRuleType().name(),
-                                rule.errorCode(),
-                                String.format("Expected Boolean response. [received=%s]",
-                                        r.response().getClass().getCanonicalName()));
+                    if (r.status() == StatusCode.Failed) {
+                        status.status(StatusCode.Failed);
+                        break;
                     }
-                    if (!((Boolean) r.response())) {
+                } else if (rule.getRuleType() == RuleType.Filter) {
+                    if (r.status() == StatusCode.IgnoreRecord) {
+                        status.status(StatusCode.IgnoreRecord);
                         break;
                     }
                 }

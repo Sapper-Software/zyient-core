@@ -62,10 +62,11 @@ public class RulesExecutor<T> {
             }
         }
         EvaluationStatus status = new EvaluationStatus();
+        status.status(StatusCode.Success);
         evaluator.evaluate(input, status);
         if (status.errors() != null) {
             return status.status(StatusCode.ValidationFailed);
         }
-        return status.status(StatusCode.Success);
+        return status;
     }
 }

@@ -46,7 +46,6 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -127,7 +126,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                     }
                     committed = false;
                 }
-                Map<String, Object> data = cursor.next();
+                SourceMap data = cursor.next();
                 if (data == null) break;
                 EvaluationStatus ret = null;
                 MappedResponse<E> r = mapping.read(data, context);

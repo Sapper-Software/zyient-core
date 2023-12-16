@@ -83,6 +83,32 @@
                 <type>Field</type>
             </map>
         </mappings>
+        <filters>
+            <rules>
+                <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                    <name>filter-credit-limit</name>
+                    <expression>
+                        <![CDATA[
+                        (#root['creditLimit'] == null ? true : false)
+                        ]]>
+                    </expression>
+                    <ruleType>Filter</ruleType>
+                    <errorCode>1000001</errorCode>
+                    <validationErrorCode>1500001</validationErrorCode>
+                </rule>
+                <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                    <name>filter-credit-limit</name>
+                    <expression>
+                        <![CDATA[
+                        (T(Double).parseDouble(#root['creditLimit']) <= 0 ? true : false)
+                        ]]>
+                    </expression>
+                    <ruleType>Filter</ruleType>
+                    <errorCode>1000001</errorCode>
+                    <validationErrorCode>1500001</validationErrorCode>
+                </rule>
+            </rules>
+        </filters>
         <rules>
             <rule settings="io.zyient.core.mapping.rules.RuleGroupConfig">
                 <name>customer-name</name>

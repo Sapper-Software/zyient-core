@@ -24,11 +24,13 @@ import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.PropertyBag;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
+import io.zyient.core.mapping.rules.FilterChain;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RulesCache;
 import io.zyient.core.mapping.rules.RulesExecutor;
@@ -63,6 +65,7 @@ public abstract class Mapping<T> {
     private MappingContextProvider contextProvider;
     private RulesCache<MappedResponse<T>> rulesCache;
     private MapTransformer<T> mapTransformer;
+    private FilterChain<SourceMap> filterChain;
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
 
@@ -121,10 +124,20 @@ public abstract class Mapping<T> {
                 }
                 mapper.registerModule(module);
             }
+            checkAndLoadFilters(config);
             checkAndLoadRules(config);
             return this;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
+        }
+    }
+
+    private void checkAndLoadFilters(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, FilterChain.__CONFIG_PATH)) {
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(FilterChain.__CONFIG_PATH);
+            filterChain = new FilterChain<>(SourceMap.class)
+                    .withContentDir(contentDir)
+                    .configure(config);
         }
     }
 
@@ -210,11 +223,22 @@ public abstract class Mapping<T> {
         }
     }
 
-    public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
-        Map<String, Object> converted = mapTransformer.transform(source);
-        T entity = mapper.convertValue(converted, entityType);
+    public MappedResponse<T> read(@NonNull SourceMap source, Context context) throws Exception {
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
+        if (filterChain != null) {
+            StatusCode s = filterChain.evaluate(source);
+            if (s == StatusCode.IgnoreRecord) {
+                if (DefaultLogger.isTraceEnabled()) {
+                    DefaultLogger.trace("IGNORED RECORD", source);
+                }
+                EvaluationStatus status = new EvaluationStatus();
+                status.status(s);
+                return response.status(status);
+            }
+        }
+        Map<String, Object> converted = mapTransformer.transform(source);
+        T entity = mapper.convertValue(converted, entityType);
         response.entity(entity);
 
         for (String path : sourceIndex.keySet()) {
@@ -231,10 +255,14 @@ public abstract class Mapping<T> {
             }
             setFieldValue(me, value, response);
         }
+        EvaluationStatus status;
         if (rulesExecutor != null) {
-            EvaluationStatus status = rulesExecutor.evaluate(response);
-            response.status(status);
+            status = rulesExecutor.evaluate(response);
+        } else {
+            status = new EvaluationStatus();
+            status.status(StatusCode.Success);
         }
+        response.status(status);
         return response;
     }
 

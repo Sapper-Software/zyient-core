@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.rules;
 
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -77,7 +78,19 @@ public class FilterChain<T> {
 
     public StatusCode evaluate(@NonNull T data) throws RuleEvaluationError {
         for (Rule<T> rule : chain) {
-
+            try {
+                EvaluationStatus status = rule.evaluate(data);
+                if (status.status() == StatusCode.IgnoreRecord) {
+                    return StatusCode.IgnoreRecord;
+                }
+            } catch (RuleValidationError ve) {
+                throw new RuleEvaluationError(rule.name(),
+                        rule.entityType(),
+                        rule.getRuleType().name(),
+                        rule.errorCode(),
+                        "Invalid rule...",
+                        ve);
+            }
         }
         return StatusCode.Success;
     }

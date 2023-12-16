@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.readers.impl.separated;
 
 import com.google.common.base.Preconditions;
+import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;
@@ -27,7 +28,10 @@ import org.apache.commons.csv.CSVRecord;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 public class SeparatedInputReader extends InputReader {
     private CSVFormat format = null;
@@ -85,15 +89,15 @@ public class SeparatedInputReader extends InputReader {
     }
 
     @Override
-    public List<Map<String, Object>> nextBatch() throws IOException {
+    public List<SourceMap> nextBatch() throws IOException {
         Preconditions.checkNotNull(parser);
         SeparatedReaderSettings settings = (SeparatedReaderSettings) settings();
         if (!parser.isClosed()) {
-            List<Map<String, Object>> batch = new ArrayList<>();
+            List<SourceMap> batch = new ArrayList<>();
             int count = 0;
             while (iterator.hasNext()) {
                 CSVRecord record = iterator.next();
-                Map<String, Object> data = new HashMap<>(record.size());
+                SourceMap data = new SourceMap(record.size());
                 if (settings.getHasHeader()) {
                     Map<String, String> recordMap = record.toMap();
                     for (String key : recordMap.keySet()) {

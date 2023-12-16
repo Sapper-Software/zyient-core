@@ -106,13 +106,33 @@ public abstract class BaseRule<T> implements Rule<T> {
         try {
             Object response = doEvaluate(data);
             status.response(response);
+            RuleType rt = getRuleType();
+            if (rt == RuleType.Filter || rt == RuleType.Condition) {
+                if (!(response instanceof Boolean)) {
+                    throw new RuleEvaluationError(name,
+                            entityType,
+                            getRuleType().name(),
+                            errorCode,
+                            String.format("Invalid Filter Rule response. [type=%s]",
+                                    response.getClass().getCanonicalName()));
+                }
+                boolean r = (boolean) response;
+                if (rt == RuleType.Condition) {
+                    if (!r)
+                        return status.status(StatusCode.Failed);
+                } else {
+                    if (r)
+                        return status.status(StatusCode.IgnoreRecord);
+                }
+            }
+            status.status(StatusCode.Success);
             if (evaluator != null) {
                 evaluator.evaluate(data, status);
             }
             if (status.errors() != null) {
                 return status.status(StatusCode.ValidationFailed);
             }
-            return status.status(StatusCode.Success);
+            return status;
         } catch (RuleValidationError ve) {
             if (terminateOnValidationError) {
                 throw ve;

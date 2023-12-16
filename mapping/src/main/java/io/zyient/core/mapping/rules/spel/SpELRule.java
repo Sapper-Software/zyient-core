@@ -80,7 +80,8 @@ public class SpELRule<T> extends BaseRule<T> {
         try {
             Object response = spELRule.getValue(ctx);
             if (getRuleType() == RuleType.Validation ||
-                    getRuleType() == RuleType.Condition) {
+                    getRuleType() == RuleType.Condition ||
+                    getRuleType() == RuleType.Filter) {
                 if (!(response instanceof Boolean)) {
                     if (response == null) {
                         throw new RuleEvaluationError(name(),
