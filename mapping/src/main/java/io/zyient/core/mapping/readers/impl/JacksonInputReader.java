@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.readers.impl;
 
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 
 import java.io.IOException;
@@ -49,13 +50,13 @@ public abstract class JacksonInputReader extends InputReader {
     }
 
     @Override
-    public List<Map<String, Object>> nextBatch() throws IOException {
+    public List<SourceMap> nextBatch() throws IOException {
         if (data != null && !data.isEmpty()) {
             if (readIndex < data.size()) {
-                List<Map<String, Object>> records = new ArrayList<>();
+                List<SourceMap> records = new ArrayList<>();
                 int index = readIndex;
                 for (int ii = 0; ii < settings().getReadBatchSize(); ii++) {
-                    records.add(data.get(index + ii));
+                    records.add(new SourceMap(data.get(index + ii)));
                     readIndex++;
                     if (readIndex >= data.size()) {
                         break;

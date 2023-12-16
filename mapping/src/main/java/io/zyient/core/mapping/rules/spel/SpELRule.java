@@ -23,7 +23,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.errors.Error;
 import io.zyient.base.core.errors.Errors;
-import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -73,7 +72,7 @@ public class SpELRule<T> extends BaseRule<T> {
 
 
     @Override
-    public Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
+    public Object doEvaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
         SpELRuleConfig config = (SpELRuleConfig) config();
         StandardEvaluationContext ctx = new StandardEvaluationContext(data);
         Object result = null;
@@ -81,7 +80,8 @@ public class SpELRule<T> extends BaseRule<T> {
         try {
             Object response = spELRule.getValue(ctx);
             if (getRuleType() == RuleType.Validation ||
-                    getRuleType() == RuleType.Condition) {
+                    getRuleType() == RuleType.Condition ||
+                    getRuleType() == RuleType.Filter) {
                 if (!(response instanceof Boolean)) {
                     if (response == null) {
                         throw new RuleEvaluationError(name(),
@@ -154,7 +154,7 @@ public class SpELRule<T> extends BaseRule<T> {
     }
 
     @Override
-    protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
+    public void setup(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof SpELRuleConfig);
         try {
             if (getRuleType() == RuleType.Transformation) {

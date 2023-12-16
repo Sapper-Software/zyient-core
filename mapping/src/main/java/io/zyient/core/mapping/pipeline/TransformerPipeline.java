@@ -26,16 +26,13 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.mapper.Mapping;
-import io.zyient.core.mapping.model.EntityValidationError;
-import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RuleValidationError;
-import io.zyient.core.mapping.rules.RulesEvaluationStatus;
 import io.zyient.core.mapping.rules.RulesExecutor;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;
@@ -49,17 +46,17 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.util.Map;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
 public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
+    private Class<? extends MappedResponse<E>> responseType;
     private Class<? extends E> entityType;
     private Class<? extends K> keyType;
     private AbstractDataStore<?> dataStore;
     private Mapping<E> mapping;
-    private RulesExecutor<E> postProcessor;
+    private RulesExecutor<MappedResponse<E>> postProcessor;
     private TransformerPipelineSettings settings;
     private MappingContextProvider contextProvider;
     private File contentDir;
@@ -82,6 +79,8 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                 throw new ConfigurationException(String.format("Specified mapping not found. [mapping=%s]",
                         settings.getMapping()));
             }
+            mapping.withTerminateOnValidationError(settings.isTerminateOnValidationError());
+            responseType = (Class<? extends MappedResponse<E>>) settings.getResponseType();
             entityType = (Class<? extends E>) settings.getEntityType();
             keyType = (Class<? extends K>) settings.getKeyType();
             dataStore = dataStoreManager.getDataStore(settings.getDataStore(), settings().getDataStoreType());
@@ -102,7 +101,8 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     @SuppressWarnings("unchecked")
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
-            postProcessor = (RulesExecutor<E>) new RulesExecutor<>(entityType)
+            postProcessor = (RulesExecutor<MappedResponse<E>>) new RulesExecutor<>(responseType)
+                    .terminateOnValidationError(settings.isTerminateOnValidationError())
                     .contentDir(contentDir)
                     .configure(xmlConfig);
         }
@@ -126,22 +126,22 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                     }
                     committed = false;
                 }
-                Map<String, Object> data = cursor.next();
+                SourceMap data = cursor.next();
                 if (data == null) break;
-                RulesEvaluationStatus ret = null;
+                EvaluationStatus ret = null;
                 MappedResponse<E> r = mapping.read(data, context);
                 ret = r.status();
-                if (ret == RulesEvaluationStatus.Success && postProcessor != null) {
-                    ret = postProcessor.evaluate(r, settings().isTerminateOnValidationError());
+                if (ret.status() == StatusCode.Success && postProcessor != null) {
+                    ret = postProcessor.evaluate(r);
                 }
-                if (ret != RulesEvaluationStatus.IgnoreRecord) {
+                if (ret.status() != StatusCode.IgnoreRecord) {
                     E entity = dataStore.create(r.entity(), entityType, context);
                     if (DefaultLogger.isTraceEnabled()) {
                         String json = JSONUtils.asString(entity, entityType);
                         DefaultLogger.trace(json);
                     }
-                    if (r.errors() != null) {
-                        ValidationExceptions errors = r.errors();
+                    if (ret.errors() != null) {
+                        ValidationExceptions errors = ret.errors();
                         if (settings().isSaveValidationErrors()) {
                             for (ValidationException error : errors) {
                                 if (error instanceof RuleValidationError) {

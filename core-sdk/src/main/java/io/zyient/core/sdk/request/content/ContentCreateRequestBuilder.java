@@ -95,7 +95,7 @@ public class ContentCreateRequestBuilder {
                 if (t != null && t != SourceTypes.UNKNOWN)
                     withMimeType(t.getMimeType());
             }
-            Content content = client.multipart(SERVICE_CONTENT_CREATE,
+            Content content = client.upload(SERVICE_CONTENT_CREATE,
                     Content.class,
                     request,
                     params,

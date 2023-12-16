@@ -30,29 +30,21 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 public abstract class BaseRuleConfig extends RuleConfig {
     @Config(name = "expression", required = false)
     private String expression;
-    @Config(name = "errorCode", required = false, type = Integer.class)
-    private Integer errorCode;
-    @Config(name = "validationErrorCode", required = false, type = Integer.class)
-    private Integer validationErrorCode;
 
     public void validate() throws ConfigurationException {
+        super.validate();
+        if (getErrorCode() == null) {
+            throw new ConfigurationException(String.format("Missing required property [errorCode]. [rule=%s]",
+                    getName()));
+        }
+
         if (getType() == RuleType.Group || getType() == RuleType.Reference) {
             throw new ConfigurationException(String.format("Invalid Rule type. [type=%s][rule=%s]",
                     getType().name(), getName()));
         }
-        if (errorCode == null) {
-            throw new ConfigurationException(String.format("Missing required property [errorCode]. [rule=%s]",
-                    getName()));
-        }
         if (Strings.isNullOrEmpty(expression)) {
             throw new ConfigurationException(String.format("Missing required property [expression]. [rule=%s]",
                     getName()));
-        }
-        if (getType() == RuleType.Validation) {
-            if (validationErrorCode == null) {
-                throw new ConfigurationException(
-                        String.format("Missing required property [validationErrorCode]. [rule=%s]", getName()));
-            }
         }
     }
 }

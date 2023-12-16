@@ -33,7 +33,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Accessors(fluent = true)
 public class DemoFileSystemEnv extends FileSystemEnv<DemoFileSystemEnv.EDemoState> {
     public DemoFileSystemEnv() {
-        super("filesystem");
+        super("filesystem", new DemoState());
     }
 
     public enum EDemoState {
@@ -71,12 +71,12 @@ public class DemoFileSystemEnv extends FileSystemEnv<DemoFileSystemEnv.EDemoStat
 
     }
 
-    public BaseEnv<EDemoState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public BaseEnv<EDemoState> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         if (Strings.isNullOrEmpty(storeKey()))
             withStoreKey(TEST_PASSWD);
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
-        super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
+        super.init(xmlConfig, DemoEnvSettings.class);
 
         configNode = baseConfig().configurationAt(__CONFIG_PATH);
 

@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.annotations;
+package io.zyient.core.mapping.env;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-@Retention(RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target(ElementType.FIELD)
-@Inherited
-public @interface Ignore {
+public enum EDemoState {
+    Unknown, Available, Error
 }

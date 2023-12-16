@@ -35,19 +35,19 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Accessors(fluent = true)
-public class DataStoreEnv<T extends Enum<?>> extends FileSystemEnv<T> implements DataStoreProvider {
+public abstract class DataStoreEnv<T extends Enum<?>> extends FileSystemEnv<T> implements DataStoreProvider {
     private DataStoreManager dataStoreManager;
 
-    public DataStoreEnv(@NonNull String name) {
-        super(name);
+    public DataStoreEnv(@NonNull String name,
+                        @NonNull AbstractEnvState<T> state) {
+        super(name, state);
     }
 
     @Override
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                           @NonNull AbstractEnvState<T> state,
                            @NonNull Class<? extends BaseEnvSettings> type) throws ConfigurationException {
         Preconditions.checkArgument(ReflectionHelper.isSuperType(DataStoreEnvSettings.class, type));
-        super.init(xmlConfig, state, type);
+        super.init(xmlConfig, type);
         try {
             DataStoreEnvSettings settings = (DataStoreEnvSettings) settings();
             HierarchicalConfiguration<ImmutableNode> config = config().config();

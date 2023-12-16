@@ -42,6 +42,7 @@
                 <mapping>test-customer</mapping>
                 <keyType>io.zyient.base.core.model.IntegerKey</keyType>
                 <entityType>io.zyient.core.mapping.model.Customer</entityType>
+                <responseType>io.zyient.core.mapping.mapper.CustomerMappedResponse</responseType>
                 <terminateOnValidationError>false</terminateOnValidationError>
                 <saveValidationErrors>false</saveValidationErrors>
                 <dataStore>
@@ -89,7 +90,7 @@
         </readers>
         <caches>
             <cache>
-                <entity>io.zyient.core.mapping.model.Customer</entity>
+                <entity>io.zyient.core.mapping.mapper.CustomerMappedResponse</entity>
                 <path>rules/global-rules.xml</path>
             </cache>
         </caches>

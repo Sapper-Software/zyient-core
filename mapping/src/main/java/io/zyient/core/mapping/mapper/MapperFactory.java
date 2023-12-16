@@ -115,7 +115,7 @@ public class MapperFactory {
             HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
             Class<?> entityType = ConfigReader.readType(mConfig, "entity");
             RulesCache<?> cache = rulesCaches.get(entityType);
-            Mapping<?> mapping = createInstance(entityType)
+            Mapping<?> mapping = createInstance(mConfig)
                     .withRulesCache(cache)
                     .withContentDir(contentDir)
                     .configure(mConfig);
@@ -123,9 +123,14 @@ public class MapperFactory {
         }
     }
 
-    private <E> Mapping<E> createInstance(Class<? extends E> entityType) {
-        return new Mapping<E>()
-                .withEntityType(entityType);
+    @SuppressWarnings("unchecked")
+    private <E> Mapping<E> createInstance(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        Class<? extends Mapping<E>> type = (Class<? extends Mapping<E>>) ConfigReader.readType(config);
+        if (type == null) {
+            throw new Exception("Mapper type not specified...");
+        }
+        return type.getDeclaredConstructor()
+                .newInstance();
     }
 
     public Mapping<?> findMapping(@NonNull InputContentInfo inputContentInfo) throws Exception {

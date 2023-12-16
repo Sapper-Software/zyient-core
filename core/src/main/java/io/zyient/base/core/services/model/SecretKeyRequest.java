@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.annotations;
+package io.zyient.base.core.services.model;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.Setter;
 
-@Retention(RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target(ElementType.FIELD)
-@Inherited
-public @interface Target {
-    String name();
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class SecretKeyRequest {
+    private String env;
+    private String envClass;
+    private String name;
+    private String value;
 }

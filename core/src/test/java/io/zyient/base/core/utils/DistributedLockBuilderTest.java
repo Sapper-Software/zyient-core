@@ -39,7 +39,7 @@ class DistributedLockBuilderTest {
     public static void setup() throws Exception {
         xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
         Preconditions.checkState(xmlConfiguration != null);
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
     }
 
     @AfterAll

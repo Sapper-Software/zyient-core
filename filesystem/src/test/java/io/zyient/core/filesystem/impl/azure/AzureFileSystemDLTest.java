@@ -53,7 +53,7 @@ class AzureFileSystemDLTest {
     public static void setup() throws Exception {
         xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
         Preconditions.checkState(xmlConfiguration != null);
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
         manager = env.fileSystemManager();
         Preconditions.checkNotNull(manager);
         fs = manager.get(FS_DEMO);

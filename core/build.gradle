@@ -48,6 +48,7 @@ dependencies {
     implementation 'com.azure:azure-data-tables:12.3.9'
 
     implementation 'software.amazon.awssdk:sqs:2.20.140'
+    implementation 'software.amazon.awssdk:secretsmanager:2.21.46'
     implementation 'com.azure:azure-messaging-servicebus:7.14.3'
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
     implementation 'net.openhft:chronicle-queue:5.24ea23'
@@ -77,14 +78,14 @@ dependencies {
     implementation 'org.eclipse.jgit:org.eclipse.jgit.ssh.apache:6.7.0.202309050840-r'
     implementation 'org.eclipse.jgit:org.eclipse.jgit.gpg.bc:6.7.0.202309050840-r'
 
-    testImplementation 'org.springframework.boot:spring-boot-starter-jetty:3.2.0'
-    testImplementation('org.springframework.boot:spring-boot-starter-web:3.2.0') {
+    implementation 'org.springframework.boot:spring-boot-starter-jetty:3.2.0'
+    implementation('org.springframework.boot:spring-boot-starter-web:3.2.0') {
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
         exclude group: 'ch.qos.logback', module: 'logback-classic'
         exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
     }
     // https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-starter-log4j2
-    testImplementation 'org.springframework.boot:spring-boot-starter-log4j2:3.2.0'
-    testImplementation 'org.springframework.boot:spring-boot-starter-actuator:3.2.0'
-    testImplementation 'org.springframework.boot:spring-boot-starter-json:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator:3.2.0'
+    implementation 'org.springframework.boot:spring-boot-starter-json:3.2.0'
 }

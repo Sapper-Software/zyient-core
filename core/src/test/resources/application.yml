@@ -1,6 +1,9 @@
 spring:
   application:
     name: zyient-ws-test
+  servlet:
+    multipart:
+      enabled: true
 
 management:
   endpoints:

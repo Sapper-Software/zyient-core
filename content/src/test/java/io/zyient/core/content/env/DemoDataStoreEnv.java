@@ -34,7 +34,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Accessors(fluent = true)
 public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> {
     public DemoDataStoreEnv() {
-        super("content");
+        super("content", new DemoState());
     }
 
     public enum EDemoState {
@@ -72,12 +72,12 @@ public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> 
 
     }
 
-    public BaseEnv<EDemoState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public BaseEnv<EDemoState> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         if (Strings.isNullOrEmpty(storeKey()))
             withStoreKey(TEST_PASSWD);
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
-        super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
+        super.init(xmlConfig, DemoEnvSettings.class);
         demoConfig = baseConfig().configurationAt(__CONFIG_PATH);
         return this;
     }

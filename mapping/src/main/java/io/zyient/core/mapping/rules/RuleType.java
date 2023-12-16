@@ -21,5 +21,6 @@ public enum RuleType {
     Validation,
     Transformation,
     Group,
-    Reference
+    Reference,
+    Filter
 }

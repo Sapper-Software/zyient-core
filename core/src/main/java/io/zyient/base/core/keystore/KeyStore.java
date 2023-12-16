@@ -29,11 +29,12 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.io.Closeable;
 import java.security.SecureRandom;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class KeyStore {
+public abstract class KeyStore implements Closeable {
     public static final String __CONFIG_PATH = "keystore";
     public static final String CONFIG_KEYSTORE_CLASS = String.format("%s.class", __CONFIG_PATH);
     public static final String CIPHER_TYPE = "PBEWithMD5AndDES";

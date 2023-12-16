@@ -14,8 +14,24 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.rules;
+package io.zyient.core.mapping.model;
 
-public enum RulesEvaluationStatus {
-    Failed, ValidationFailed, IgnoreRecord, Success
+import java.util.HashMap;
+import java.util.Map;
+
+public class SourceMap extends HashMap<String, Object> {
+    public SourceMap(int initialCapacity, float loadFactor) {
+        super(initialCapacity, loadFactor);
+    }
+
+    public SourceMap(int initialCapacity) {
+        super(initialCapacity);
+    }
+
+    public SourceMap() {
+    }
+
+    public SourceMap(Map<? extends String, ?> m) {
+        super(m);
+    }
 }

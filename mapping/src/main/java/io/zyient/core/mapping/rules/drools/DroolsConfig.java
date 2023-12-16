@@ -35,6 +35,8 @@ import java.util.List;
 public class DroolsConfig extends RuleConfig {
     @Config(name = "DRL", parser = StringListParser.class)
     private List<String> drls;
+    @Config(name = "errorCode", type = Integer.class)
+    private Integer errorCode;
 
     @Override
     public void validate() throws ConfigurationException {
