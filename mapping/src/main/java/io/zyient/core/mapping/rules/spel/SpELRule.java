@@ -23,7 +23,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.errors.Error;
 import io.zyient.base.core.errors.Errors;
-import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
 import lombok.NonNull;

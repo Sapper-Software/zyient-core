@@ -87,7 +87,7 @@ public class ZkKeyStore extends KeyStore {
             if (passwd == null) {
                 save(DEFAULT_KEY, password, password);
                 flush(password);
-            } else if (passwd.compareTo(password) == 0) {
+            } else if (passwd.compareTo(password) != 0) {
                 throw new Exception("Invalid password specified....");
             }
         } catch (Exception ex) {

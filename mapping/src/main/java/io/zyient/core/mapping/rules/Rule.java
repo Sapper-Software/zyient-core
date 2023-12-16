@@ -17,7 +17,6 @@
 package io.zyient.core.mapping.rules;
 
 import io.zyient.core.mapping.model.EvaluationStatus;
-import io.zyient.core.mapping.model.MappedResponse;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 

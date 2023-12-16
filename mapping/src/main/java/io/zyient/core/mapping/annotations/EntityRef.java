@@ -22,8 +22,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target(ElementType.FIELD)
+@java.lang.annotation.Target(ElementType.TYPE)
 @Inherited
-public @interface Target {
-    String name();
+public @interface EntityRef {
+    Class<?> type();
 }

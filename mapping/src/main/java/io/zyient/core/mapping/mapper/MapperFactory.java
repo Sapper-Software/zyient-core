@@ -126,6 +126,9 @@ public class MapperFactory {
     @SuppressWarnings("unchecked")
     private <E> Mapping<E> createInstance(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         Class<? extends Mapping<E>> type = (Class<? extends Mapping<E>>) ConfigReader.readType(config);
+        if (type == null) {
+            throw new Exception("Mapper type not specified...");
+        }
         return type.getDeclaredConstructor()
                 .newInstance();
     }

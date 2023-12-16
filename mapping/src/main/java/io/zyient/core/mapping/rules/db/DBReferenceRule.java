@@ -24,7 +24,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.MappingExecutor;
-import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;

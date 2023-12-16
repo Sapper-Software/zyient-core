@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.annotations;
+package io.zyient.core.mapping.mapper;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import io.zyient.core.mapping.annotations.EntityRef;
+import io.zyient.core.mapping.model.Customer;
+import io.zyient.core.mapping.model.MappedResponse;
 
-@Retention(RetentionPolicy.RUNTIME)
-@java.lang.annotation.Target(ElementType.FIELD)
-@Inherited
-public @interface Ignore {
+import java.util.Map;
+
+@EntityRef(type = Customer.class)
+public class CustomerMappedResponse extends MappedResponse<Customer> {
+    public CustomerMappedResponse(Map<String, Object> source) {
+        super(source);
+    }
 }

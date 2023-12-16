@@ -19,7 +19,6 @@ package io.zyient.core.mapping.rules.drools;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.model.EvaluationStatus;
-import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;

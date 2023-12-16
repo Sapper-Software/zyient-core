@@ -16,7 +16,8 @@
   -->
 
 <configuration>
-    <mapping entity="io.zyient.core.mapping.model.Customer">
+    <mapping entity="io.zyient.core.mapping.mapper.CustomerMappedResponse"
+             type="io.zyient.core.mapping.mapper.CustomerEntityMapping">
         <settings>
             <name>test-customer</name>
             <!--
@@ -86,10 +87,12 @@
             <rule settings="io.zyient.core.mapping.rules.RuleGroupConfig">
                 <name>customer-name</name>
                 <ruleType>Group</ruleType>
+                <errorCode>1000001</errorCode>
                 <rules>
                     <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                         <name>validate-names</name>
-                        <expression>(${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())
+                        <expression>(${property['contact.name.last']} == null ||
+                            ${property['contact.name.last']}.isEmpty())
                             or (${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())?
                             false : true
                         </expression>
@@ -99,7 +102,8 @@
                     </rule>
                     <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                         <name>append-names</name>
-                        <expression>(${property['contact.name.last']} + ', ' + ${property['contact.name.first']})</expression>
+                        <expression>(${property['contact.name.last']} + ', ' + ${property['contact.name.first']})
+                        </expression>
                         <field>name</field>
                         <ruleType>Transformation</ruleType>
                         <errorCode>1000001</errorCode>

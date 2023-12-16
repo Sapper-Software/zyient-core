@@ -31,7 +31,6 @@ import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RulesCache;
-import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.RulesExecutor;
 import io.zyient.core.mapping.transformers.*;
 import lombok.Getter;

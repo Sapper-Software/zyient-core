@@ -33,6 +33,11 @@ public abstract class BaseRuleConfig extends RuleConfig {
 
     public void validate() throws ConfigurationException {
         super.validate();
+        if (getErrorCode() == null) {
+            throw new ConfigurationException(String.format("Missing required property [errorCode]. [rule=%s]",
+                    getName()));
+        }
+
         if (getType() == RuleType.Group || getType() == RuleType.Reference) {
             throw new ConfigurationException(String.format("Invalid Rule type. [type=%s][rule=%s]",
                     getType().name(), getName()));

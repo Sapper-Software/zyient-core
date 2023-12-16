@@ -17,7 +17,6 @@
 package io.zyient.core.mapping.model;
 
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.ValidationExceptions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

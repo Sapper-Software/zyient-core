@@ -19,11 +19,15 @@ package io.zyient.core.mapping.rules;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.PropertyBag;
+import io.zyient.core.mapping.annotations.EntityRef;
 import io.zyient.core.mapping.model.ExtendedPropertyModel;
 import io.zyient.core.mapping.model.MappedResponse;
 import lombok.NonNull;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,6 +78,12 @@ public class MappingReflectionHelper {
     public static PropertyModel findField(@NonNull String name,
                                           @NonNull Class<?> entityType) throws Exception {
         if (ReflectionHelper.isSuperType(MappedResponse.class, entityType)) {
+            if (!entityType.isAnnotationPresent(EntityRef.class)) {
+                throw new Exception(String.format("Entity reference annotation not present. [type=%s]",
+                        entityType.getCanonicalName()));
+            }
+            EntityRef ref = entityType.getAnnotation(EntityRef.class);
+            Class<?> inner = ref.type();
             if (isCachePrefixed(name)) {
                 return ReflectionHelper.findProperty(MappedResponse.class, FIELD_CACHED);
             } else if (isSourcePrefixed(name)) {
@@ -129,11 +139,19 @@ public class MappingReflectionHelper {
                 if (isEntityPrefixed(name)) {
                     name = removePrefix(name, FIELD_ENTITY);
                 }
-                return ReflectionHelper.findProperty(entityType, name);
+                return ReflectionHelper.findProperty(inner, name);
             }
         } else {
             return ReflectionHelper.findProperty(entityType, name);
         }
+    }
+
+    private static Class<?> getGenericType(Field field) {
+        Type type = field.getGenericType();
+        if (type instanceof ParameterizedType pt) {
+            return (Class<?>) pt.getActualTypeArguments()[0];
+        }
+        return field.getType();
     }
 
     public static String normalizeField(@NonNull String field) throws Exception {
@@ -225,6 +243,10 @@ public class MappingReflectionHelper {
             }
         }
         return null;
+    }
+
+    public static String entityPrefix(String name) {
+        return String.format("%s.%s", FIELD_ENTITY, name);
     }
 
     public static String dot(String name) {

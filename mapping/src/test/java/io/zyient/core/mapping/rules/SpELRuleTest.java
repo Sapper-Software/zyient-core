@@ -19,7 +19,6 @@ package io.zyient.core.mapping.rules;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
-import io.zyient.core.mapping.MappingExecutor;
 import io.zyient.core.mapping.env.DemoDataStoreEnv;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.rules.spel.SpELRule;
@@ -33,7 +32,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class SpELRuleTest {
     private static final String __CONFIG_FILE = "src/test/resources/mapping/test-mapping-env.xml";
