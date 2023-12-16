@@ -73,61 +73,65 @@ public class MappingReflectionHelper {
 
     public static PropertyModel findField(@NonNull String name,
                                           @NonNull Class<?> entityType) throws Exception {
-        if (isCachePrefixed(name)) {
-            return ReflectionHelper.findProperty(MappedResponse.class, FIELD_CACHED);
-        } else if (isSourcePrefixed(name)) {
-            return ReflectionHelper.findProperty(MappedResponse.class, FIELD_SOURCE);
-        } else if (isPropertyPrefixed(name)) {
-            if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
-                throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
-                        entityType.getCanonicalName()));
-            }
-            ExtendedPropertyModel pm = new ExtendedPropertyModel();
-            pm.property(name);
-            List<String> keys = extractKey(name);
-            if (keys == null) {
-                throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
-            }
-            pm.key(keys.get(0));
-            List<Method> setters = ReflectionHelper.findMethod(entityType,
-                    METHOD_SET_PROPERTY,
-                    false);
-            if (setters != null) {
-                for (Method m : setters) {
-                    Class<?>[] params = m.getParameterTypes();
-                    if (params.length == 2) {
-                        if (params[0].equals(String.class)) {
-                            if (params[1].equals(Object.class)) {
-                                pm.setter(m);
+        if (ReflectionHelper.isSuperType(MappedResponse.class, entityType)) {
+            if (isCachePrefixed(name)) {
+                return ReflectionHelper.findProperty(MappedResponse.class, FIELD_CACHED);
+            } else if (isSourcePrefixed(name)) {
+                return ReflectionHelper.findProperty(MappedResponse.class, FIELD_SOURCE);
+            } else if (isPropertyPrefixed(name)) {
+                if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
+                    throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
+                            entityType.getCanonicalName()));
+                }
+                ExtendedPropertyModel pm = new ExtendedPropertyModel();
+                pm.property(name);
+                List<String> keys = extractKey(name);
+                if (keys == null) {
+                    throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
+                }
+                pm.key(keys.get(0));
+                List<Method> setters = ReflectionHelper.findMethod(entityType,
+                        METHOD_SET_PROPERTY,
+                        false);
+                if (setters != null) {
+                    for (Method m : setters) {
+                        Class<?>[] params = m.getParameterTypes();
+                        if (params.length == 2) {
+                            if (params[0].equals(String.class)) {
+                                if (params[1].equals(Object.class)) {
+                                    pm.setter(m);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                List<Method> getters = ReflectionHelper.findMethod(entityType,
+                        METHOD_GET_PROPERTY,
+                        false);
+                if (getters != null) {
+                    for (Method m : getters) {
+                        Class<?>[] params = m.getParameterTypes();
+                        if (params.length == 1) {
+                            if (params[0].equals(String.class)) {
+                                pm.getter(m);
                                 break;
                             }
                         }
                     }
                 }
-            }
-            List<Method> getters = ReflectionHelper.findMethod(entityType,
-                    METHOD_GET_PROPERTY,
-                    false);
-            if (getters != null) {
-                for (Method m : getters) {
-                    Class<?>[] params = m.getParameterTypes();
-                    if (params.length == 1) {
-                        if (params[0].equals(String.class)) {
-                            pm.getter(m);
-                            break;
-                        }
-                    }
+                if (pm.getter() == null || pm.setter() == null) {
+                    throw new Exception(String.format("Property Getter/Setter method not found. [type=%s]",
+                            entityType.getCanonicalName()));
                 }
+                return pm;
+            } else {
+                if (isEntityPrefixed(name)) {
+                    name = removePrefix(name, FIELD_ENTITY);
+                }
+                return ReflectionHelper.findProperty(entityType, name);
             }
-            if (pm.getter() == null || pm.setter() == null) {
-                throw new Exception(String.format("Property Getter/Setter method not found. [type=%s]",
-                        entityType.getCanonicalName()));
-            }
-            return pm;
         } else {
-            if (isEntityPrefixed(name)) {
-                name = removePrefix(name, FIELD_ENTITY);
-            }
             return ReflectionHelper.findProperty(entityType, name);
         }
     }

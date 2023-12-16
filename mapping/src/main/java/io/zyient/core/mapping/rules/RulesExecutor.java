@@ -18,7 +18,8 @@ package io.zyient.core.mapping.rules;
 
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -40,6 +41,8 @@ public class RulesExecutor<T> {
     private List<Rule<T>> rules;
     private RulesCache<T> cache;
     private File contentDir;
+    private RulesEvaluator<T> evaluator;
+    private boolean terminateOnValidationError;
 
     public RulesExecutor(@NonNull Class<? extends T> type) {
         this.type = type;
@@ -54,36 +57,17 @@ public class RulesExecutor<T> {
         return this;
     }
 
-    public RulesEvaluationStatus evaluate(@NonNull MappedResponse<T> input,
-                                          boolean terminateOnValidationError) throws Exception {
-        try {
-            for (Rule<T> rule : rules) {
-                Object r = rule.evaluate(input);
-                if (rule.getRuleType() == RuleType.Validation) {
-                    if (rule.ignoreRecordOnCondition()) {
-                        if (!(r instanceof Boolean)) {
-                            throw new Exception(String.format("Invalid Rule response. [rule=%s][type=%s]",
-                                    rule.name(), r.getClass().getCanonicalName()));
-                        }
-                        boolean ret = (boolean) r;
-                        if (ret) return RulesEvaluationStatus.IgnoreRecord;
-                    }
-                }
+    public EvaluationStatus evaluate(@NonNull T input) throws Exception {
+        synchronized (this) {
+            if (evaluator == null) {
+                evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
             }
-            if (input.errors() != null) {
-                return RulesEvaluationStatus.ValidationFailed;
-            }
-            return RulesEvaluationStatus.Success;
-        } catch (ValidationException ex) {
-            if (terminateOnValidationError)
-                throw ex;
-            input.errors(ValidationExceptions.add(ex, input.errors()));
-            return RulesEvaluationStatus.ValidationFailed;
-        } catch (ValidationExceptions ex) {
-            if (terminateOnValidationError)
-                throw ex;
-            input.errors(ex);
-            return RulesEvaluationStatus.ValidationFailed;
         }
+        EvaluationStatus status = new EvaluationStatus();
+        evaluator.evaluate(input, status);
+        if (status.errors() != null) {
+            return status.status(StatusCode.ValidationFailed);
+        }
+        return status.status(StatusCode.Success);
     }
 }

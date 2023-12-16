@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.rules;
+package io.zyient.core.mapping.model;
 
-public enum RuleType {
-    Condition,
-    Validation,
-    Transformation,
-    Group,
-    Reference,
-    Filter
+import java.util.Map;
+
+public class CustomerMappedResponse extends MappedResponse<CustomersEntity> {
+    public CustomerMappedResponse(Map<String, Object> source) {
+        super(source);
+    }
 }

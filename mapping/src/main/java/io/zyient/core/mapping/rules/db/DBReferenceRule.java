@@ -62,7 +62,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     private Map<String, FieldProperty> targetMappings = null;
 
     @Override
-    protected Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
+    protected Object doEvaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
         Preconditions.checkNotNull(dataStore);
         try {
             AbstractDataStore.Q q = new AbstractDataStore.Q()
@@ -97,7 +97,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         }
     }
 
-    private Object process(@NonNull MappedResponse<T> response,
+    private Object process(@NonNull T response,
                            @NonNull Cursor<K, E> cursor) throws RuleValidationError, RuleEvaluationError {
         if (handler != null) {
             return handler.handle(response, cursor);
@@ -132,7 +132,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends Ex
 
     @Override
     @SuppressWarnings("unchecked")
-    protected void setup(@NonNull RuleConfig cfg) throws ConfigurationException {
+    public void setup(@NonNull RuleConfig cfg) throws ConfigurationException {
         Preconditions.checkArgument(cfg instanceof DBRuleConfig);
         DBRuleConfig config = (DBRuleConfig) cfg;
         try {

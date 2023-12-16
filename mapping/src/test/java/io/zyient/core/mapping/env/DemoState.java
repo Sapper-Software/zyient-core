@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.rules;
+package io.zyient.core.mapping.env;
 
-public enum RuleType {
-    Condition,
-    Validation,
-    Transformation,
-    Group,
-    Reference,
-    Filter
+import io.zyient.base.common.AbstractState;
+
+public class DemoState extends AbstractState<EDemoState> {
+    public DemoState() {
+        super(EDemoState.Error, EDemoState.Unknown);
+    }
 }

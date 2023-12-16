@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.rules;
+package io.zyient.core.mapping.env;
 
-public enum RulesEvaluationStatus {
-    Failed, ValidationFailed, IgnoreRecord, Success
+public enum EDemoState {
+    Unknown, Available, Error
 }

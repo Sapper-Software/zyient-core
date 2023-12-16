@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.rules;
+package io.zyient.core.mapping.model;
 
-public enum RuleType {
-    Condition,
-    Validation,
-    Transformation,
-    Group,
-    Reference,
-    Filter
+public enum StatusCode {
+    Failed, ValidationFailed, IgnoreRecord, Success
 }

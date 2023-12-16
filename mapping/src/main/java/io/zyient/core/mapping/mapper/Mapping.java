@@ -31,7 +31,7 @@ import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RulesCache;
-import io.zyient.core.mapping.rules.RulesEvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.RulesExecutor;
 import io.zyient.core.mapping.transformers.*;
 import lombok.Getter;
@@ -48,27 +48,29 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class Mapping<T> {
+public abstract class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
     public static final String __CONFIG_PATH_MAPPINGS = "mappings";
     public static final String __CONFIG_PATH_SERDE = "serdes";
 
-    private Class<? extends T> entityType;
+    private final Class<? extends T> entityType;
+    private final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
-    private RulesExecutor<T> rulesExecutor;
+    private RulesExecutor<MappedResponse<T>> rulesExecutor;
     private MappingContextProvider contextProvider;
-    private RulesCache<T> rulesCache;
+    private RulesCache<MappedResponse<T>> rulesCache;
     private MapTransformer<T> mapTransformer;
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
 
-    public Mapping<T> withEntityType(@NonNull Class<? extends T> entityType) {
+    protected Mapping(@NonNull Class<? extends T> entityType,
+                      @NonNull Class<? extends MappedResponse<T>> responseType) {
         this.entityType = entityType;
-        return this;
+        this.responseType = responseType;
     }
 
     public Mapping<T> withContentDir(@NonNull File contentDir) {
@@ -78,7 +80,7 @@ public class Mapping<T> {
 
     @SuppressWarnings("unchecked")
     public Mapping<T> withRulesCache(RulesCache<?> rulesCache) {
-        this.rulesCache = (RulesCache<T>) rulesCache;
+        this.rulesCache = (RulesCache<MappedResponse<T>>) rulesCache;
         return this;
     }
 
@@ -175,7 +177,8 @@ public class Mapping<T> {
 
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
-            rulesExecutor = new RulesExecutor<T>(entityType)
+            rulesExecutor = new RulesExecutor<MappedResponse<T>>(responseType)
+                    .terminateOnValidationError(terminateOnValidationError)
                     .cache(rulesCache)
                     .contentDir(contentDir)
                     .configure(xmlConfig);
@@ -230,7 +233,7 @@ public class Mapping<T> {
             setFieldValue(me, value, response);
         }
         if (rulesExecutor != null) {
-            RulesEvaluationStatus status = rulesExecutor.evaluate(response, terminateOnValidationError);
+            EvaluationStatus status = rulesExecutor.evaluate(response);
             response.status(status);
         }
         return response;

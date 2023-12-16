@@ -55,6 +55,7 @@ public class ZkKeyStore extends KeyStore {
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
+        this.env = env;
         try {
             String pwd = password;
             config = configNode.configurationAt(__CONFIG_PATH);
@@ -89,7 +90,6 @@ public class ZkKeyStore extends KeyStore {
             } else if (passwd.compareTo(password) == 0) {
                 throw new Exception("Invalid password specified....");
             }
-            this.env = env;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }

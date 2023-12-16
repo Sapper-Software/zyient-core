@@ -73,7 +73,7 @@ public class SpELRule<T> extends BaseRule<T> {
 
 
     @Override
-    public Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError, RuleEvaluationError {
+    public Object doEvaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
         SpELRuleConfig config = (SpELRuleConfig) config();
         StandardEvaluationContext ctx = new StandardEvaluationContext(data);
         Object result = null;
@@ -154,7 +154,7 @@ public class SpELRule<T> extends BaseRule<T> {
     }
 
     @Override
-    protected void setup(@NonNull RuleConfig config) throws ConfigurationException {
+    public void setup(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof SpELRuleConfig);
         try {
             if (getRuleType() == RuleType.Transformation) {

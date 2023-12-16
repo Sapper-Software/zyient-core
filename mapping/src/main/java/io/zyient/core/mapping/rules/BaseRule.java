@@ -20,7 +20,9 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.spel.SpELRule;
 import lombok.Getter;
 import lombok.NonNull;
@@ -37,12 +39,13 @@ public abstract class BaseRule<T> implements Rule<T> {
     private String name;
     private String expression;
     private RuleType ruleType = RuleType.Transformation;
-    private boolean ignoreRecordOnCondition = false;
     private Class<? extends T> entityType;
     private List<Rule<T>> rules;
     private int errorCode;
     private int validationErrorCode = -1;
     private RuleConfig config;
+    private boolean terminateOnValidationError = true;
+    private RulesEvaluator<T> evaluator;
 
     @Override
     public Rule<T> withEntityType(@NonNull Class<? extends T> type) {
@@ -57,6 +60,12 @@ public abstract class BaseRule<T> implements Rule<T> {
         else {
             this.rules.addAll(rules);
         }
+    }
+
+    @Override
+    public Rule<T> withTerminateOnValidationError(boolean terminate) {
+        terminateOnValidationError = terminate;
+        return this;
     }
 
     @Override
@@ -75,11 +84,9 @@ public abstract class BaseRule<T> implements Rule<T> {
             name = config.getName();
             expression = config.getExpression();
             ruleType = config.getType();
-            if (config.getErrorCode() != null)
-                errorCode = config.getErrorCode();
+            errorCode = config.getErrorCode();
             if (config.getValidationErrorCode() != null)
                 validationErrorCode = config.getValidationErrorCode();
-            ignoreRecordOnCondition = cfg.isIgnoreRecordOnCondition();
             setup(config);
             this.config = config;
             return this;
@@ -90,44 +97,37 @@ public abstract class BaseRule<T> implements Rule<T> {
     }
 
     @Override
-    public Object evaluate(@NonNull MappedResponse<T> data) throws Exception {
-        ValidationExceptions errors = null;
-        try {
-            Object response = doEvaluate(data);
-            if (rules != null && !rules.isEmpty()) {
-                for (Rule<T> rule : rules) {
-                    try {
-                        response = rule.evaluate(data);
-                        if (rule.getRuleType() == RuleType.Condition) {
-                            Preconditions.checkNotNull(response);
-                            if (!(response instanceof Boolean)) {
-                                throw new Exception(String
-                                        .format("Rule returned invalid response. [rule=%s][response=%s]",
-                                                rule.name(), response.getClass().getCanonicalName()));
-                            }
-                            if (!((Boolean) response)) {
-                                break;
-                            }
-                        }
-                    } catch (RuleValidationError ve) {
-                        errors = ValidationExceptions.add(ve, errors);
-                    }
+    public EvaluationStatus evaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
+        if (rules != null) {
+            synchronized (this) {
+                if (evaluator == null) {
+                    evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
                 }
             }
-            if (errors != null) {
-                throw errors;
+        }
+        EvaluationStatus status = new EvaluationStatus();
+        try {
+            Object response = doEvaluate(data);
+            status.response(response);
+            if (evaluator != null) {
+                evaluator.evaluate(data, status);
             }
-            return response;
-        } catch (ValidationException ve) {
-            errors = ValidationExceptions.add(ve, errors);
-            throw errors;
+            if (status.errors() != null) {
+                return status.status(StatusCode.ValidationFailed);
+            }
+            return status.status(StatusCode.Success);
+        } catch (RuleValidationError ve) {
+            if (terminateOnValidationError) {
+                throw ve;
+            }
+            return status.error(ve).status(StatusCode.ValidationFailed);
         }
     }
 
-    protected abstract Object doEvaluate(@NonNull MappedResponse<T> data) throws RuleValidationError,
+    protected abstract Object doEvaluate(@NonNull T data) throws RuleValidationError,
             RuleEvaluationError;
 
-    protected abstract void setup(@NonNull RuleConfig config) throws ConfigurationException;
+    public abstract void setup(@NonNull RuleConfig config) throws ConfigurationException;
 
     public static <T> Rule<T> createDefaultInstance() {
         return new SpELRule<T>();

@@ -29,6 +29,6 @@ public interface DBRuleHandler<T, K extends IKey, E extends IEntity<K>> {
     DBRuleHandler<T, K, E> configure(@NonNull DBRuleConfig config,
                                      @NonNull DBReferenceRule<T, K, E> parent) throws ConfigurationException;
 
-    Object handle(@NonNull MappedResponse<T> response,
+    Object handle(@NonNull T response,
                   @NonNull Cursor<K, E> cursor) throws RuleEvaluationError, RuleValidationError;
 }

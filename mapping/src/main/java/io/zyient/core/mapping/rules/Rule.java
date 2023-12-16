@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.rules;
 
+import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.MappedResponse;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -34,13 +35,19 @@ public interface Rule<T> {
 
     Rule<T> withEntityType(@NonNull Class<? extends T> type);
 
+    Rule<T> withTerminateOnValidationError(boolean terminate);
+
     Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException;
 
-    Object evaluate(@NonNull MappedResponse<T> data) throws Exception;
+    EvaluationStatus evaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError;
 
     RuleType getRuleType();
 
-    void addSubRules(@NonNull List<Rule<T>> rules) throws Exception;
+    Class<? extends T> entityType();
 
-    boolean ignoreRecordOnCondition();
+    int errorCode();
+
+    int validationErrorCode();
+
+    void addSubRules(@NonNull List<Rule<T>> rules) throws Exception;
 }
