@@ -82,6 +82,11 @@
                 <target>creditLimit</target>
                 <type>Field</type>
             </map>
+            <map source="context['source.URI']">
+                <target>source.URI</target>
+                <nullable>false</nullable>
+                <type>Property</type>
+            </map>
         </mappings>
         <filters>
             <rules>
@@ -139,7 +144,8 @@
                     <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                         <name>append-names</name>
                         <expression>
-                            (${property['contact.name.last']}.substring(0, 5) + ${property['contact.name.first']}.substring(0,5) + '@test.com')
+                            (${property['contact.name.last']}.substring(0, 5) +
+                            ${property['contact.name.first']}.substring(0,5) + '@test.com')
                         </expression>
                         <field>contact.emailId</field>
                         <ruleType>Transformation</ruleType>
