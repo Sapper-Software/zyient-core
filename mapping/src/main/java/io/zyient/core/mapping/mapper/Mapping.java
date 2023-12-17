@@ -68,6 +68,8 @@ public abstract class Mapping<T> {
     private FilterChain<SourceMap> filterChain;
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
+    private StringTransformer stringTransformer;
+
 
     protected Mapping(@NonNull Class<? extends T> entityType,
                       @NonNull Class<? extends MappedResponse<T>> responseType) {
@@ -114,6 +116,8 @@ public abstract class Mapping<T> {
             reader.read();
             settings = (MappingSettings) reader.settings();
             settings.postLoad();
+            stringTransformer = new StringTransformer(this)
+                    .useJson(settings().isUseJsonForString());
             readDeSerializers(config);
             readMappings(config);
             if (!deSerializers.isEmpty()) {
@@ -313,22 +317,7 @@ public abstract class Mapping<T> {
         }
         if (element.getClass().equals(MappedElement.class)) {
             if (type.equals(String.class)) {
-                if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
-                    return String.valueOf(value);
-                } else if (value instanceof Date) {
-                    DateTransformer transformer = (DateTransformer) getDeSerializer(Date.class, null);
-                    Preconditions.checkNotNull(transformer);
-                    return transformer.serialize((Date) value);
-                } else if (value.getClass().isEnum()) {
-                    return ((Enum<?>) value).name();
-                } else if (value instanceof URI) {
-                    return ((URI) value).toString();
-                } else if (value instanceof URL) {
-                    return ((URL) value).toString();
-                } else {
-                    throw new Exception(String.format("Cannot map value to String. [type=%s]",
-                            value.getClass().getCanonicalName()));
-                }
+                return stringTransformer.serialize(value);
             } else if (ReflectionHelper.isSuperType(type, value.getClass())) {
                 return value;
             } else if (type.isInterface() && ReflectionHelper.implementsInterface(type, value.getClass())) {
@@ -339,8 +328,8 @@ public abstract class Mapping<T> {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private DeSerializer<?> getDeSerializer(@NonNull Class<?> type,
-                                            MappedElement element) throws Exception {
+    public DeSerializer<?> getDeSerializer(@NonNull Class<?> type,
+                                           MappedElement element) throws Exception {
         if (deSerializers.containsKey(type.getCanonicalName())) {
             return deSerializers.get(type.getCanonicalName());
         }
