@@ -97,4 +97,9 @@ public abstract class NumericTransformer<T> extends DeSerializer<T> {
             throw new DataException(ex);
         }
     }
+
+    @Override
+    public String serialize(@NonNull T value) throws DataException {
+        return String.valueOf(value);
+    }
 }

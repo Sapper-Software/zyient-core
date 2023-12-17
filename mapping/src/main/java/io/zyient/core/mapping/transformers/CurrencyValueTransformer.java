@@ -140,4 +140,9 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
         }
         throw new DataException(String.format("Cannot transform to Currency. [source=%s]", source.getClass()));
     }
+
+    @Override
+    public String serialize(@NonNull CurrencyValue value) throws DataException {
+        return String.format("%s %f", currency.getCurrencyCode(), value.getValue());
+    }
 }

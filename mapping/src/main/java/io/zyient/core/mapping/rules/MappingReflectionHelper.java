@@ -16,6 +16,8 @@
 
 package io.zyient.core.mapping.rules;
 
+import com.google.common.base.Strings;
+import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.PropertyBag;
@@ -24,10 +26,7 @@ import io.zyient.core.mapping.model.ExtendedPropertyModel;
 import io.zyient.core.mapping.model.MappedResponse;
 import lombok.NonNull;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,6 +40,7 @@ public class MappingReflectionHelper {
     public static final String FIELD_CUSTOM = String.format("entity.%s", FIELD_PROPERTY);
     public static final String FIELD_SOURCE = "source";
     public static final String FIELD_CACHED = "cached";
+    public static final String FIELD_CONTEXT = "context";
     public static final String FIELD_REGEX = "(\\$\\{(.*?)\\})";
     public static final String KEY_REGEX = "\\['?(.*?)'?\\]";
     public static final String METHOD_SET_PROPERTY = "setProperty";
@@ -88,8 +88,10 @@ public class MappingReflectionHelper {
                 return ReflectionHelper.findProperty(MappedResponse.class, FIELD_CACHED);
             } else if (isSourcePrefixed(name)) {
                 return ReflectionHelper.findProperty(MappedResponse.class, FIELD_SOURCE);
+            } else if (isContextPrefixed(name)) {
+                return ReflectionHelper.findProperty(MappedResponse.class, FIELD_CONTEXT);
             } else if (isPropertyPrefixed(name)) {
-                if (!ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
+                if (!ReflectionHelper.implementsInterface(PropertyBag.class, inner)) {
                     throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
                             entityType.getCanonicalName()));
                 }
@@ -100,7 +102,7 @@ public class MappingReflectionHelper {
                     throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
                 }
                 pm.key(keys.get(0));
-                List<Method> setters = ReflectionHelper.findMethod(entityType,
+                List<Method> setters = ReflectionHelper.findMethod(inner,
                         METHOD_SET_PROPERTY,
                         false);
                 if (setters != null) {
@@ -116,7 +118,7 @@ public class MappingReflectionHelper {
                         }
                     }
                 }
-                List<Method> getters = ReflectionHelper.findMethod(entityType,
+                List<Method> getters = ReflectionHelper.findMethod(inner,
                         METHOD_GET_PROPERTY,
                         false);
                 if (getters != null) {
@@ -146,16 +148,8 @@ public class MappingReflectionHelper {
         }
     }
 
-    private static Class<?> getGenericType(Field field) {
-        Type type = field.getGenericType();
-        if (type instanceof ParameterizedType pt) {
-            return (Class<?>) pt.getActualTypeArguments()[0];
-        }
-        return field.getType();
-    }
-
     public static String normalizeField(@NonNull String field) throws Exception {
-        if (isCachePrefixed(field) || isSourcePrefixed(field)) {
+        if (isCachePrefixed(field) || isSourcePrefixed(field) || isContextPrefixed(field)) {
             return field;
         } else if (!isEntityPrefixed(field)) {
             return dot(FIELD_ENTITY) + field;
@@ -199,6 +193,9 @@ public class MappingReflectionHelper {
                                    @NonNull PropertyModel property,
                                    @NonNull Object entity,
                                    Object value) throws Exception {
+        if (isSourcePrefixed(field) || isContextPrefixed(field)) {
+            throw new Exception(String.format("Cannot set value for Context/Source. [field=%s]", field));
+        }
         if (property instanceof ExtendedPropertyModel) {
             PropertyBag pb = (PropertyBag) entity;
             pb.setProperty(((ExtendedPropertyModel) property).key(), value);
@@ -213,10 +210,16 @@ public class MappingReflectionHelper {
         if (property instanceof ExtendedPropertyModel) {
             PropertyBag pb = (PropertyBag) entity;
             return pb.getProperty(((ExtendedPropertyModel) property).key());
-        }
-        if (isSourcePrefixed(field)) {
+        } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
                 return getSourceProperty(field, ((MappedResponse<?>) entity).source());
+            } else {
+                throw new Exception(String.format("Source fields not present. [type=%s]",
+                        entity.getClass().getCanonicalName()));
+            }
+        } else if (isContextPrefixed(field)) {
+            if (entity instanceof MappedResponse<?>) {
+                return getContextProperty(field, ((MappedResponse<?>) entity).context());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));
@@ -240,6 +243,18 @@ public class MappingReflectionHelper {
                 if (value instanceof Map<?, ?>) {
                     node = (Map<String, Object>) value;
                 }
+            }
+        }
+        return null;
+    }
+
+    public static Object getContextProperty(@NonNull String field,
+                                            @NonNull Context context) {
+        List<String> keys = extractKey(field);
+        if (keys != null && !keys.isEmpty()) {
+            String key = keys.get(0);
+            if (!Strings.isNullOrEmpty(key)) {
+                return context.get(key);
             }
         }
         return null;
@@ -283,9 +298,15 @@ public class MappingReflectionHelper {
         return name.startsWith(FIELD_ENTITY + ".");
     }
 
+    public static boolean isContextPrefixed(@NonNull String name) {
+        return name.startsWith(FIELD_CONTEXT + "[");
+    }
+
     private static boolean prefixEntityField(String field) {
         return !isSourcePrefixed(field)
                 && !isCachePrefixed(field)
-                && !isEntityPrefixed(field);
+                && !isEntityPrefixed(field)
+                && !isPropertyPrefixed(field)
+                && !isContextPrefixed(field);
     }
 }

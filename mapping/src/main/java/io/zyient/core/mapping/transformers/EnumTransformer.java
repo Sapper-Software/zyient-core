@@ -91,4 +91,9 @@ public class EnumTransformer<T extends Enum<T>> extends DeSerializer<T> {
         }
         throw new DataException(String.format("Cannot transform to Enum. [source=%s]", source.getClass()));
     }
+
+    @Override
+    public String serialize(@NonNull T value) throws DataException {
+        return value.name();
+    }
 }
