@@ -47,7 +47,7 @@ public abstract class RemoteReader extends Reader {
             cacheFile = cache.get(inode());
             if (cacheFile == null || !cacheFile.exists()) {
                 throw new IOException(
-                        String.format("Error downloading file to local. [path=%s]", inode.getAbsolutePath()));
+                        String.format("Error downloading file to local. [path=%s]", inode.getPath()));
             }
 
             inputStream = new RandomAccessFile(cacheFile, "r");

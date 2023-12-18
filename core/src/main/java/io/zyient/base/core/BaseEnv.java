@@ -23,7 +23,6 @@ import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.errors.Errors;
 import io.zyient.base.common.model.InvalidDataError;
 import io.zyient.base.common.threads.ManagedThread;
 import io.zyient.base.common.threads.ThreadManager;
@@ -32,9 +31,11 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.env.BaseEnvSettings;
+import io.zyient.base.core.errors.Errors;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.ModuleInstance;
 import io.zyient.base.core.processing.Processor;
+import io.zyient.base.core.services.model.ShutdownStatus;
 import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.base.core.state.HeartbeatThread;
 import lombok.Getter;
@@ -83,8 +84,10 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     private Processor<?, ?> processor;
     private final Map<String, ManagedThread> managedThreads = new HashMap<>();
 
-    public BaseEnv(@NonNull String name) {
+    public BaseEnv(@NonNull String name,
+                   @NonNull AbstractEnvState<T> state) {
         this.name = name;
+        this.state = state;
     }
 
     public BaseEnv<T> withStoreKey(@NonNull String storeKey) {
@@ -98,7 +101,6 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     }
 
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                           @NonNull AbstractEnvState<T> state,
                            @NonNull Class<? extends BaseEnvSettings> type) throws ConfigurationException {
         config = new BaseEnvConfig(xmlConfig, type);
         config.read();
@@ -156,7 +158,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                                 this);
             }
             if (ConfigReader.checkIfNodeExists(baseConfig, Errors.__CONFIG_PATH)) {
-                Errors.create(baseConfig.configurationAt(Errors.__CONFIG_PATH));
+                Errors.create(baseConfig.configurationAt(Errors.__CONFIG_PATH), this);
             }
             DefaultExports.initialize();
             if (meterRegistry == null) {
@@ -303,6 +305,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
         dLockBuilder.close();
     }
 
+    protected abstract BaseEnv<?> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     public String module() {
         return moduleInstance.getModule();
@@ -331,6 +334,19 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
         __instances.put(name, env);
     }
 
+    public static BaseEnv<?> create(@NonNull Class<? extends BaseEnv<?>> type,
+                                    @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                    String passKey) throws Exception {
+        BaseEnv<?> env = type.getDeclaredConstructor()
+                .newInstance();
+        if (!Strings.isNullOrEmpty(passKey)) {
+            env.withStoreKey(passKey);
+        }
+        env.create(xmlConfig);
+        add(env.name, env);
+        return env;
+    }
+
     public static boolean remove(@NonNull String name) throws Exception {
         BaseEnv<?> env = __instances.remove(name);
         if (env != null) {
@@ -340,17 +356,21 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
         return false;
     }
 
-    public static int disposeAll() throws Exception {
+    public static Map<String, ShutdownStatus> disposeAll() throws Exception {
         __instanceLock.lock();
         try {
-            int count = 0;
+            Map<String, ShutdownStatus> statuses = new HashMap<>();
             for (String name : __instances.keySet()) {
                 BaseEnv<?> env = __instances.get(name);
-                env.close();
-                count++;
+                try {
+                    env.close();
+                    statuses.put(name, new ShutdownStatus(name, true));
+                } catch (Throwable t) {
+                    statuses.put(name, new ShutdownStatus(name, t));
+                }
             }
             __instances.clear();
-            return count;
+            return statuses;
         } finally {
             __instanceLock.unlock();
         }

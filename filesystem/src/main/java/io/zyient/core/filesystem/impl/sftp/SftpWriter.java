@@ -35,7 +35,7 @@ public class SftpWriter extends RemoteWriter {
         if (path.getPathInfo() != null) {
             pathInfo = (SftpPathInfo) path.getPathInfo();
         } else {
-            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getURI());
             path.setPathInfo(pathInfo);
         }
     }
@@ -46,7 +46,7 @@ public class SftpWriter extends RemoteWriter {
         if (path.getPathInfo() != null) {
             pathInfo = (SftpPathInfo) path.getPathInfo();
         } else {
-            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getURI());
             path.setPathInfo(pathInfo);
         }
     }

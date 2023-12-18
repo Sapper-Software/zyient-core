@@ -16,9 +16,8 @@
 
 package io.zyient.core.mapping.rules;
 
-import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.common.model.ValidationExceptions;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -40,6 +39,8 @@ public class RulesExecutor<T> {
     private List<Rule<T>> rules;
     private RulesCache<T> cache;
     private File contentDir;
+    private RulesEvaluator<T> evaluator;
+    private boolean terminateOnValidationError;
 
     public RulesExecutor(@NonNull Class<? extends T> type) {
         this.type = type;
@@ -54,20 +55,18 @@ public class RulesExecutor<T> {
         return this;
     }
 
-    public void evaluate(@NonNull MappedResponse<T> input,
-                         boolean terminateOnValidationError) throws Exception {
-        try {
-            for (Rule<T> rule : rules) {
-                rule.evaluate(input);
+    public EvaluationStatus evaluate(@NonNull T input) throws Exception {
+        synchronized (this) {
+            if (evaluator == null) {
+                evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
             }
-        } catch (ValidationException ex) {
-            if (terminateOnValidationError)
-                throw ex;
-            input.errors(ValidationExceptions.add(ex, input.errors()));
-        } catch (ValidationExceptions ex) {
-            if (terminateOnValidationError)
-                throw ex;
-            input.errors(ex);
         }
+        EvaluationStatus status = new EvaluationStatus();
+        status.status(StatusCode.Success);
+        evaluator.evaluate(input, status);
+        if (status.errors() != null) {
+            return status.status(StatusCode.ValidationFailed);
+        }
+        return status;
     }
 }

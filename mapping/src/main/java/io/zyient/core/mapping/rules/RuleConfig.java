@@ -33,8 +33,19 @@ public abstract class RuleConfig extends Settings {
     private String name;
     @Config(name = "ruleType", required = false, type = RuleType.class)
     private RuleType type = RuleType.Transformation;
+    @Config(name = "errorCode", required = false, type = Integer.class)
+    private Integer errorCode;
+    @Config(name = "validationErrorCode", required = false, type = Integer.class)
+    private Integer validationErrorCode;
 
-    public abstract void validate() throws ConfigurationException;
+    public void validate() throws ConfigurationException {
+        if (getType() == RuleType.Validation) {
+            if (validationErrorCode == null) {
+                throw new ConfigurationException(
+                        String.format("Missing required property [validationErrorCode]. [rule=%s]", getName()));
+            }
+        }
+    }
 
     public abstract <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception;
 }

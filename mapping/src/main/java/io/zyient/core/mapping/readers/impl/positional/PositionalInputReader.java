@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.model.PositionalColumn;
+import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.PositionalReaderSettings;
@@ -28,9 +29,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class PositionalInputReader extends InputReader {
     private BufferedReader reader;
@@ -86,10 +85,10 @@ public class PositionalInputReader extends InputReader {
     }
 
     @Override
-    public List<Map<String, Object>> nextBatch() throws IOException {
+    public List<SourceMap> nextBatch() throws IOException {
         if (EOF) return null;
         try {
-            List<Map<String, Object>> records = new ArrayList<>();
+            List<SourceMap> records = new ArrayList<>();
             int count = 0;
             while (true) {
                 String line = reader.readLine();
@@ -114,9 +113,9 @@ public class PositionalInputReader extends InputReader {
         }
     }
 
-    private Map<String, Object> parse(String line) throws Exception {
+    private SourceMap parse(String line) throws Exception {
         PositionalReaderSettings settings = (PositionalReaderSettings) settings();
-        Map<String, Object> map = new HashMap<>();
+        SourceMap map = new SourceMap();
         for (int ii = 0; ii < settings.getColumns().size(); ii++) {
             PositionalColumn column = (PositionalColumn) settings.getColumns().get(ii);
             int end = -1;

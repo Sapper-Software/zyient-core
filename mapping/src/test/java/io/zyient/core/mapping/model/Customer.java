@@ -22,6 +22,7 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.IntegerKey;
 import io.zyient.base.core.model.PropertyBag;
+import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -43,7 +44,8 @@ public class Customer implements IEntity<IntegerKey>, PropertyBag {
     private Contact contact;
     @Column(name = "credit_limit")
     private double creditLimit;
-    @Transient
+    @Convert(converter = PropertiesConverter.class)
+    @Column(name = "properties")
     private Map<String, Object> properties;
     /**
      * Compare the entity key with the key specified.

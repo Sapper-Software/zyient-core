@@ -17,7 +17,6 @@
 package io.zyient.core.mapping.model;
 
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.ValidationExceptions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -34,7 +33,7 @@ public class MappedResponse<T> {
     private final Map<String, Object> source;
     private Map<String, Object> cached;
     private Context context;
-    private ValidationExceptions errors;
+    private EvaluationStatus status;
 
     public MappedResponse(Map<String, Object> source) {
         this.source = source;

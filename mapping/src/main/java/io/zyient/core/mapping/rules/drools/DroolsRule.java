@@ -17,10 +17,10 @@
 package io.zyient.core.mapping.rules.drools;
 
 import com.google.common.base.Preconditions;
-import io.zyient.core.mapping.model.MappedResponse;
-import io.zyient.core.mapping.rules.Rule;
-import io.zyient.core.mapping.rules.RuleConfig;
-import io.zyient.core.mapping.rules.RuleType;
+import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -45,6 +45,8 @@ public class DroolsRule<T> implements Rule<T> {
     private Class<? extends T> entityType;
     private final KieServices services = KieServices.Factory.get();
     private KieContainer container;
+    private boolean terminateOnValidationError = true;
+    private int errorCode;
 
     @Override
     public String name() {
@@ -65,9 +67,16 @@ public class DroolsRule<T> implements Rule<T> {
     }
 
     @Override
+    public Rule<T> withTerminateOnValidationError(boolean terminate) {
+        terminateOnValidationError = terminate;
+        return this;
+    }
+
+    @Override
     public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof DroolsConfig);
         this.config = (DroolsConfig) config;
+        errorCode = config.getErrorCode();
         createContainer();
         return this;
     }
@@ -91,11 +100,21 @@ public class DroolsRule<T> implements Rule<T> {
     }
 
     @Override
-    public Object evaluate(@NonNull MappedResponse<T> data) throws Exception {
+    public EvaluationStatus evaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
+        EvaluationStatus status = new EvaluationStatus();
         KieSession session = container.newKieSession();
         try {
             session.insert(data);
-            return session.fireAllRules();
+            int r = session.fireAllRules();
+            DefaultLogger.info(String.format("[rule=%s] Fired %d rules.", r));
+            return status.status(StatusCode.Success);
+        } catch (RuntimeException re) {
+            throw new RuleEvaluationError(name(),
+                    entityType,
+                    getRuleType().name(),
+                    errorCode(),
+                    "Runtime Exception raised.",
+                    re);
         } finally {
             session.destroy();
         }
@@ -104,6 +123,16 @@ public class DroolsRule<T> implements Rule<T> {
     @Override
     public RuleType getRuleType() {
         return RuleType.Transformation;
+    }
+
+    @Override
+    public int errorCode() {
+        return errorCode;
+    }
+
+    @Override
+    public int validationErrorCode() {
+        return -1;
     }
 
     @Override

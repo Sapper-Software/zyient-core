@@ -24,14 +24,13 @@ import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.PropertyBag;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
-import io.zyient.core.mapping.rules.RuleConfigReader;
-import io.zyient.core.mapping.rules.RulesCache;
-import io.zyient.core.mapping.rules.RulesExecutor;
+import io.zyient.core.mapping.rules.*;
 import io.zyient.core.mapping.transformers.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -41,33 +40,39 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URL;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class Mapping<T> {
+public abstract class Mapping<T> {
     public static final String __CONFIG_PATH = "mapping";
     public static final String __CONFIG_PATH_MAPPINGS = "mappings";
     public static final String __CONFIG_PATH_SERDE = "serdes";
 
-    private Class<? extends T> entityType;
+    private final Class<? extends T> entityType;
+    private final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
     private final Map<String, MappedElement> sourceIndex = new HashMap<>();
     private final Map<String, MappedElement> targetIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
-    private RulesExecutor<T> rulesExecutor;
+    private RulesExecutor<MappedResponse<T>> rulesExecutor;
     private MappingContextProvider contextProvider;
-    private RulesCache<T> rulesCache;
+    private RulesCache<MappedResponse<T>> rulesCache;
     private MapTransformer<T> mapTransformer;
+    private FilterChain<SourceMap> filterChain;
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
 
-    public Mapping<T> withEntityType(@NonNull Class<? extends T> entityType) {
+    protected Mapping(@NonNull Class<? extends T> entityType,
+                      @NonNull Class<? extends MappedResponse<T>> responseType) {
         this.entityType = entityType;
-        return this;
+        this.responseType = responseType;
     }
 
     public Mapping<T> withContentDir(@NonNull File contentDir) {
@@ -77,7 +82,7 @@ public class Mapping<T> {
 
     @SuppressWarnings("unchecked")
     public Mapping<T> withRulesCache(RulesCache<?> rulesCache) {
-        this.rulesCache = (RulesCache<T>) rulesCache;
+        this.rulesCache = (RulesCache<MappedResponse<T>>) rulesCache;
         return this;
     }
 
@@ -119,10 +124,20 @@ public class Mapping<T> {
                 }
                 mapper.registerModule(module);
             }
+            checkAndLoadFilters(config);
             checkAndLoadRules(config);
             return this;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
+        }
+    }
+
+    private void checkAndLoadFilters(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, FilterChain.__CONFIG_PATH)) {
+            HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(FilterChain.__CONFIG_PATH);
+            filterChain = new FilterChain<>(SourceMap.class)
+                    .withContentDir(contentDir)
+                    .configure(config);
         }
     }
 
@@ -174,7 +189,8 @@ public class Mapping<T> {
 
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
-            rulesExecutor = new RulesExecutor<T>(entityType)
+            rulesExecutor = new RulesExecutor<MappedResponse<T>>(responseType)
+                    .terminateOnValidationError(terminateOnValidationError)
                     .cache(rulesCache)
                     .contentDir(contentDir)
                     .configure(xmlConfig);
@@ -207,18 +223,34 @@ public class Mapping<T> {
         }
     }
 
-    public MappedResponse<T> read(@NonNull Map<String, Object> source, Context context) throws Exception {
-        Map<String, Object> converted = mapTransformer.transform(source);
-        T entity = mapper.convertValue(converted, entityType);
+    public MappedResponse<T> read(@NonNull SourceMap source, Context context) throws Exception {
         MappedResponse<T> response = new MappedResponse<T>(source)
                 .context(context);
+        if (filterChain != null) {
+            StatusCode s = filterChain.evaluate(source);
+            if (s == StatusCode.IgnoreRecord) {
+                if (DefaultLogger.isTraceEnabled()) {
+                    DefaultLogger.trace("IGNORED RECORD", source);
+                }
+                EvaluationStatus status = new EvaluationStatus();
+                status.status(s);
+                return response.status(status);
+            }
+        }
+        Map<String, Object> converted = mapTransformer.transform(source);
+        T entity = mapper.convertValue(converted, entityType);
         response.entity(entity);
 
         for (String path : sourceIndex.keySet()) {
             MappedElement me = sourceIndex.get(path);
             if (me.getMappingType() == MappingType.Field) continue;
-            String[] parts = path.split("\\.");
-            Object value = findSourceValue(source, parts, 0);
+            Object value = null;
+            if (MappingReflectionHelper.isContextPrefixed(path)) {
+                value = findContextValue(context, path);
+            } else {
+                String[] parts = path.split("\\.");
+                value = findSourceValue(source, parts, 0);
+            }
             if (value == null) {
                 if (!me.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
@@ -228,9 +260,14 @@ public class Mapping<T> {
             }
             setFieldValue(me, value, response);
         }
+        EvaluationStatus status;
         if (rulesExecutor != null) {
-            rulesExecutor.evaluate(response, terminateOnValidationError);
+            status = rulesExecutor.evaluate(response);
+        } else {
+            status = new EvaluationStatus();
+            status.status(StatusCode.Success);
         }
+        response.status(status);
         return response;
     }
 
@@ -278,6 +315,16 @@ public class Mapping<T> {
             if (type.equals(String.class)) {
                 if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
                     return String.valueOf(value);
+                } else if (value instanceof Date) {
+                    DateTransformer transformer = (DateTransformer) getDeSerializer(Date.class, null);
+                    Preconditions.checkNotNull(transformer);
+                    return transformer.serialize((Date) value);
+                } else if (value.getClass().isEnum()) {
+                    return ((Enum<?>) value).name();
+                } else if (value instanceof URI) {
+                    return ((URI) value).toString();
+                } else if (value instanceof URL) {
+                    return ((URL) value).toString();
                 } else {
                     throw new Exception(String.format("Cannot map value to String. [type=%s]",
                             value.getClass().getCanonicalName()));
@@ -314,6 +361,14 @@ public class Mapping<T> {
             deSerializer = new CurrencyValueTransformer()
                     .locale(settings.getLocale())
                     .configure(settings);
+        } else if (ReflectionHelper.isSuperType(Date.class, type)) {
+            if (deSerializers.containsKey(Date.class.getCanonicalName())) {
+                return deSerializers.get(Date.class.getCanonicalName());
+            }
+            deSerializer = new DateTransformer()
+                    .locale(settings.getLocale())
+                    .format(settings.getDateFormat())
+                    .configure(settings);
         }
         if (deSerializer != null) {
             deSerializers.put(deSerializer.name(), deSerializer);
@@ -335,5 +390,9 @@ public class Mapping<T> {
             }
         }
         return null;
+    }
+
+    private Object findContextValue(Context context, String field) {
+        return MappingReflectionHelper.getContextProperty(field, context);
     }
 }

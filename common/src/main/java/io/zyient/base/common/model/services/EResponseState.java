@@ -17,5 +17,8 @@
 package io.zyient.base.common.model.services;
 
 public enum EResponseState {
-    Success, Failed, Error;
+    Success,
+    Failed,
+    Error,
+    Unknown
 }

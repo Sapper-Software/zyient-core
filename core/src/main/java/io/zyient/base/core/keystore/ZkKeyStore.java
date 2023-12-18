@@ -33,6 +33,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -54,6 +55,7 @@ public class ZkKeyStore extends KeyStore {
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
+        this.env = env;
         try {
             String pwd = password;
             config = configNode.configurationAt(__CONFIG_PATH);
@@ -73,15 +75,21 @@ public class ZkKeyStore extends KeyStore {
                     .withPath(name)
                     .build();
             ConfigReader.checkStringValue(zkBasePath, getClass(), CONFIG_ZK_PATH);
-            CuratorFramework client = connection.client();
-            if (client.checkExists().forPath(zkBasePath) == null) {
-                client.create().creatingParentsIfNeeded().forPath(zkBasePath);
-            }
             iv = config.getString(CONFIG_IV_SPEC);
             ConfigReader.checkStringValue(iv, getClass(), CONFIG_IV_SPEC);
             iv = CypherUtils.formatIvString(iv);
             passwdHash = ChecksumUtils.generateHash(password);
-            this.env = env;
+            CuratorFramework client = connection.client();
+            if (client.checkExists().forPath(zkBasePath) == null) {
+                client.create().creatingParentsIfNeeded().forPath(zkBasePath);
+            }
+            String passwd = read(DEFAULT_KEY, password);
+            if (passwd == null) {
+                save(DEFAULT_KEY, password, password);
+                flush(password);
+            } else if (passwd.compareTo(password) != 0) {
+                throw new Exception("Invalid password specified....");
+            }
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
@@ -193,6 +201,14 @@ public class ZkKeyStore extends KeyStore {
     private synchronized void checkLock() throws Exception {
         if (updateLock == null) {
             updateLock = env.createCustomLock(name, zkBasePath, connection, 5000L);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (connection != null) {
+            connection.close();
+            connection = null;
         }
     }
 }

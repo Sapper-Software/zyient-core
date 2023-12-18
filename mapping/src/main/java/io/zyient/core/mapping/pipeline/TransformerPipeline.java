@@ -26,9 +26,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.mapper.Mapping;
-import io.zyient.core.mapping.model.EntityValidationError;
-import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.readers.ReadCursor;
@@ -48,17 +46,17 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.util.Map;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
 public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
+    private Class<? extends MappedResponse<E>> responseType;
     private Class<? extends E> entityType;
     private Class<? extends K> keyType;
     private AbstractDataStore<?> dataStore;
     private Mapping<E> mapping;
-    private RulesExecutor<E> postProcessor;
+    private RulesExecutor<MappedResponse<E>> postProcessor;
     private TransformerPipelineSettings settings;
     private MappingContextProvider contextProvider;
     private File contentDir;
@@ -81,6 +79,8 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                 throw new ConfigurationException(String.format("Specified mapping not found. [mapping=%s]",
                         settings.getMapping()));
             }
+            mapping.withTerminateOnValidationError(settings.isTerminateOnValidationError());
+            responseType = (Class<? extends MappedResponse<E>>) settings.getResponseType();
             entityType = (Class<? extends E>) settings.getEntityType();
             keyType = (Class<? extends K>) settings.getKeyType();
             dataStore = dataStoreManager.getDataStore(settings.getDataStore(), settings().getDataStoreType());
@@ -101,7 +101,8 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     @SuppressWarnings("unchecked")
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
-            postProcessor = (RulesExecutor<E>) new RulesExecutor<>(entityType)
+            postProcessor = (RulesExecutor<MappedResponse<E>>) new RulesExecutor<>(responseType)
+                    .terminateOnValidationError(settings.isTerminateOnValidationError())
                     .contentDir(contentDir)
                     .configure(xmlConfig);
         }
@@ -120,35 +121,41 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
         while (true) {
             try {
                 if (committed) {
-                    if (dataStore instanceof TransactionDataStore<?,?>) {
-                        ((TransactionDataStore<?,?>) dataStore).beingTransaction();
+                    if (dataStore instanceof TransactionDataStore<?, ?>) {
+                        ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
                     }
                     committed = false;
                 }
-                Map<String, Object> data = cursor.next();
+                SourceMap data = cursor.next();
                 if (data == null) break;
+                EvaluationStatus ret = null;
                 MappedResponse<E> r = mapping.read(data, context);
-                if (postProcessor != null) {
-                    postProcessor.evaluate(r, settings().isTerminateOnValidationError());
+                ret = r.status();
+                if (ret.status() == StatusCode.Success && postProcessor != null) {
+                    ret = postProcessor.evaluate(r);
                 }
-                E entity = dataStore.create(r.entity(), entityType, context);
-                if (DefaultLogger.isTraceEnabled()) {
-                    String json = JSONUtils.asString(entity, entityType);
-                    DefaultLogger.trace(json);
-                }
-                if (r.errors() != null) {
-                    ValidationExceptions errors = r.errors();
-                    if (settings().isSaveValidationErrors()) {
-                        for (ValidationException error : errors) {
-                            if (error instanceof RuleValidationError) {
-                                EntityValidationError ve = new EntityValidationError(entity.entityKey().stringKey(),
-                                        (Class<? extends IEntity<?>>) entity.getClass(),
-                                        (RuleValidationError) error);
-                                dataStore.create(ve, ve.getClass(), context);
+                if (ret.status() != StatusCode.IgnoreRecord) {
+                    E entity = dataStore.create(r.entity(), entityType, context);
+                    if (DefaultLogger.isTraceEnabled()) {
+                        String json = JSONUtils.asString(entity, entityType);
+                        DefaultLogger.trace(json);
+                    }
+                    if (ret.errors() != null) {
+                        ValidationExceptions errors = ret.errors();
+                        if (settings().isSaveValidationErrors()) {
+                            for (ValidationException error : errors) {
+                                if (error instanceof RuleValidationError) {
+                                    EntityValidationError ve = new EntityValidationError(entity.entityKey().stringKey(),
+                                            (Class<? extends IEntity<?>>) entity.getClass(),
+                                            (RuleValidationError) error);
+                                    dataStore.create(ve, ve.getClass(), context);
+                                }
                             }
                         }
+                        throw errors;
                     }
-                    throw errors;
+                } else if (DefaultLogger.isTraceEnabled()) {
+                    DefaultLogger.trace("RECORD IGNORED", data);
                 }
                 count++;
                 if (commitCount >= settings.getCommitBatchSize()) {
@@ -198,7 +205,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     }
 
     private void rollback() throws Exception {
-        if (dataStore instanceof TransactionDataStore<?,?>) {
+        if (dataStore instanceof TransactionDataStore<?, ?>) {
             if (((TransactionDataStore<?, ?>) dataStore).isInTransaction()) {
                 ((TransactionDataStore<?, ?>) dataStore).rollback(true);
             }
@@ -206,7 +213,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
     }
 
     private void commit() throws Exception {
-        if (dataStore instanceof TransactionDataStore<?,?>) {
+        if (dataStore instanceof TransactionDataStore<?, ?>) {
             if (((TransactionDataStore<?, ?>) dataStore).isInTransaction()) {
                 ((TransactionDataStore<?, ?>) dataStore).commit();
             } else {

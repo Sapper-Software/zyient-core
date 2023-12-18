@@ -31,7 +31,7 @@
         <managers>
             <state>
                 <stateManagerClass>io.zyient.core.mapping.env.DemoStateManager</stateManagerClass>
-                <basePath>demo</basePath>
+                <basePath>mapping</basePath>
                 <connection>test-zk</connection>
                 <fileState>true</fileState>
             </state>
@@ -79,7 +79,7 @@
             </dataStores>
         </mapping>
         <errors>
-            <loader type="io.zyient.base.common.errors.impl.XmlErrorsReader">
+            <loader type="io.zyient.base.core.errors.impl.XmlErrorsReader">
                 <reader>
                     <baseDir>src/test/resources/mapping/errors</baseDir>
                 </reader>

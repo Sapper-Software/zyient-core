@@ -30,4 +30,9 @@ public class DemoDocState extends DocumentState<EEntityState> {
         super(EEntityState.Error, EEntityState.New, EEntityState.Synced);
         setState(getNewState());
     }
+
+    @Override
+    public boolean clearError() {
+        return false;
+    }
 }

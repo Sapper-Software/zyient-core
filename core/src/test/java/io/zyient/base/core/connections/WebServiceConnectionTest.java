@@ -45,7 +45,7 @@ class WebServiceConnectionTest {
         xmlConfiguration = TestUtils.readFile(__CONFIG_FILE);
         Preconditions.checkState(xmlConfiguration != null);
         DemoEnv env = new DemoEnv();
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
         manager = env.connectionManager();
     }
 
@@ -54,7 +54,9 @@ class WebServiceConnectionTest {
         DefaultLogger.debug(String.format("Running [%s].%s()", getClass().getCanonicalName(), "connect"));
         try {
             WebServiceConnection ws = manager.getConnection(__CONNECTION_NAME, WebServiceConnection.class);
-
+            if (ws.isConnected()) {
+                ws.connect();
+            }
             JerseyWebTarget wt = ws.connect("jersey");
             Invocation.Builder builder = wt.request(MediaType.APPLICATION_JSON);
             Response response = builder.get();

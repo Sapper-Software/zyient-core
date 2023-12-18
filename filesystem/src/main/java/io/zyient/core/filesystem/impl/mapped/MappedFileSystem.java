@@ -34,7 +34,7 @@ public class MappedFileSystem extends LocalFileSystem {
             inode.setPathInfo(pi);
         }
         if (!pi.exists()) {
-            throw new IOException(String.format("Local file not found. [path=%s]", inode.getAbsolutePath()));
+            throw new IOException(String.format("Local file not found. [path=%s]", inode.getPath()));
         }
         return new MappedReader(inode, this).open();
     }

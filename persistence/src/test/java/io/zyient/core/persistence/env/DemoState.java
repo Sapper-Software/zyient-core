@@ -17,7 +17,6 @@
 package io.zyient.core.persistence.env;
 
 import io.zyient.base.common.AbstractState;
-import lombok.NonNull;
 
 public class DemoState extends AbstractState<EDemoState> {
     public DemoState() {

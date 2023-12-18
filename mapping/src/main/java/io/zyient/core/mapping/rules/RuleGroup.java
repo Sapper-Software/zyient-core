@@ -17,9 +17,8 @@
 package io.zyient.core.mapping.rules;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.common.model.ValidationExceptions;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -32,7 +31,11 @@ import java.util.List;
 @Accessors(fluent = true)
 public class RuleGroup<T> implements Rule<T> {
     private RuleGroupConfig settings;
+    private RulesEvaluator<T> evaluator;
     private List<Rule<T>> rules;
+    private Class<? extends T> entityType;
+    private int errorCode;
+    private boolean terminateOnValidationError = true;
 
     @Override
     public String name() {
@@ -47,6 +50,13 @@ public class RuleGroup<T> implements Rule<T> {
 
     @Override
     public Rule<T> withEntityType(@NonNull Class<? extends T> type) {
+        this.entityType = type;
+        return this;
+    }
+
+    @Override
+    public Rule<T> withTerminateOnValidationError(boolean terminate) {
+        terminateOnValidationError = terminate;
         return this;
     }
 
@@ -54,47 +64,53 @@ public class RuleGroup<T> implements Rule<T> {
     public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof RuleGroupConfig);
         settings = (RuleGroupConfig) config;
+        if (config.getErrorCode() != null)
+            errorCode = config.getErrorCode();
         return this;
     }
 
     @Override
-    public Object evaluate(@NonNull MappedResponse<T> data) throws Exception {
-        ValidationExceptions errors = null;
+    public EvaluationStatus evaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
+        Preconditions.checkState(rules != null && !rules.isEmpty());
+        synchronized (this) {
+            if (evaluator == null) {
+                evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
+            }
+        }
+        EvaluationStatus status = new EvaluationStatus();
         try {
-            Object response = null;
-            if (rules != null && !rules.isEmpty()) {
-                for (Rule<T> rule : rules) {
-                    try {
-                        response = rule.evaluate(data);
-                        if (rule.getRuleType() == RuleType.Condition) {
-                            Preconditions.checkNotNull(response);
-                            if (!(response instanceof Boolean)) {
-                                throw new Exception(String
-                                        .format("Rule returned invalid response. [rule=%s][response=%s]",
-                                                rule.name(), response.getClass().getCanonicalName()));
-                            }
-                            if (!((Boolean) response)) {
-                                break;
-                            }
-                        }
-                    } catch (RuleValidationError ve) {
-                        errors = ValidationExceptions.add(ve, errors);
-                    }
-                }
+            status.status(StatusCode.Success);
+            evaluator.evaluate(data, status);
+            if (status.errors() != null) {
+                return status.status(StatusCode.ValidationFailed);
             }
-            if (errors != null) {
-                throw errors;
+            return status;
+        } catch (RuleValidationError ve) {
+            if (terminateOnValidationError) {
+                throw ve;
             }
-            return response;
-        } catch (ValidationException ve) {
-            errors = ValidationExceptions.add(ve, errors);
-            throw errors;
+            return status.error(ve).status(StatusCode.ValidationFailed);
         }
     }
 
     @Override
     public RuleType getRuleType() {
         return RuleType.Group;
+    }
+
+    @Override
+    public Class<? extends T> entityType() {
+        return entityType;
+    }
+
+    @Override
+    public int errorCode() {
+        return errorCode;
+    }
+
+    @Override
+    public int validationErrorCode() {
+        return -1;
     }
 
     @Override

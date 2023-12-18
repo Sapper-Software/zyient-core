@@ -25,7 +25,6 @@ import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import io.zyient.base.core.connections.settings.MailConnectionSettings;
-import io.zyient.base.core.stores.AbstractConnection;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;

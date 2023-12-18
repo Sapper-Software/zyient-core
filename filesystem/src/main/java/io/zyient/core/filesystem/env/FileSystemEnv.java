@@ -34,15 +34,15 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 public abstract class FileSystemEnv<T extends Enum<?>> extends BaseEnv<T> {
     private FileSystemManager fileSystemManager;
 
-    public FileSystemEnv(@NonNull String name) {
-        super(name);
+    public FileSystemEnv(@NonNull String name,
+                         @NonNull AbstractEnvState<T> state) {
+        super(name, state);
     }
 
     @Override
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                           @NonNull AbstractEnvState<T> state,
                            @NonNull Class<? extends BaseEnvSettings> type) throws ConfigurationException {
-        super.init(xmlConfig, state, type);
+        super.init(xmlConfig, type);
         try {
             if (ConfigReader.checkIfNodeExists(baseConfig(), FileSystemManager.__CONFIG_PATH)) {
                 fileSystemManager = new FileSystemManager();

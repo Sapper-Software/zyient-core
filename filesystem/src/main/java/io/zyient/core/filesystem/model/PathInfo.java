@@ -20,6 +20,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.core.filesystem.FileSystem;
+import io.zyient.core.filesystem.PathsBuilder;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -43,7 +45,10 @@ public abstract class PathInfo {
 
     private final FileSystem fs;
     private final String domain;
-    private final String path;
+    private final String fsPath;
+    private final String zkPath;
+    @Setter(AccessLevel.PROTECTED)
+    private String path;
     private final String uuid;
     protected boolean directory = false;
     private long dataSize = -1;
@@ -54,10 +59,23 @@ public abstract class PathInfo {
         this.directory = node.isDirectory();
         domain = node.getDomain();
         Preconditions.checkArgument(!Strings.isNullOrEmpty(domain));
-        path = node.getAbsolutePath();
+        path = node.getPath();
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         uuid = node.getUuid();
         Preconditions.checkArgument(!Strings.isNullOrEmpty(uuid));
+        PathsBuilder builder = fs.pathsBuilders().get(domain);
+        if (Strings.isNullOrEmpty(node.getZkPath())) {
+            zkPath = builder.buildZkPath(path);
+            node.setZkPath(zkPath);
+        } else {
+            zkPath = node.getZkPath();
+        }
+        if (Strings.isNullOrEmpty(node.getFsPath())) {
+            fsPath = builder.buildFsPath(path);
+            node.setFsPath(fsPath);
+        } else {
+            fsPath = node.getFsPath();
+        }
     }
 
     protected PathInfo(@NonNull FileSystem fs,
@@ -67,6 +85,9 @@ public abstract class PathInfo {
         this.path = PathUtils.formatPath(path);
         this.domain = domain;
         this.uuid = UUID.randomUUID().toString();
+        PathsBuilder builder = fs.pathsBuilders().get(domain);
+        zkPath = builder.buildZkPath(path);
+        fsPath = builder.buildFsPath(path);
     }
 
     protected PathInfo(@NonNull FileSystem fs,
@@ -79,6 +100,9 @@ public abstract class PathInfo {
         directory = Boolean.parseBoolean(config.get(CONFIG_IS_DIRECTORY));
         uuid = config.get(CONFIG_KEY_UUID);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(uuid));
+        PathsBuilder builder = fs.pathsBuilders().get(domain);
+        zkPath = builder.buildZkPath(path);
+        fsPath = builder.buildFsPath(path);
     }
 
     public String parent() {

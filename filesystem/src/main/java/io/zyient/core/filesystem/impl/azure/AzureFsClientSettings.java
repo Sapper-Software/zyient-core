@@ -19,6 +19,7 @@ package io.zyient.core.filesystem.impl.azure;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
+import io.zyient.core.filesystem.impl.azure.auth.AzureStorageAuthSettings;
 import lombok.Getter;
 import lombok.Setter;
 

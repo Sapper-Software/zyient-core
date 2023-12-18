@@ -30,6 +30,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -162,16 +163,25 @@ public class MapTransformer<T> {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getTargetNode(Map<String, Object> data, String targetPath) {
+    private Map<String, Object> getTargetNode(Map<String, Object> data,
+                                              String targetPath) throws Exception {
         String[] parts = targetPath.split("\\.");
         Map<String, Object> current = data;
         int index = 0;
+        Class<?> currentType = type;
         while (index < parts.length - 1) {
             String name = parts[index];
+            Field f = ReflectionHelper.findField(currentType, name);
+            if (f == null) {
+                throw new Exception(String.format("Field not found. [type=%s][name=%s]",
+                        currentType.getCanonicalName(), name));
+            }
+            currentType = f.getType();
             if (current.containsKey(name)) {
                 current = (Map<String, Object>) current.get(name);
             } else {
                 Map<String, Object> nmap = new HashMap<>();
+                nmap.put("@class", currentType.getCanonicalName());
                 current.put(name, nmap);
                 current = nmap;
             }

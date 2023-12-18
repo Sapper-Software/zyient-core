@@ -16,7 +16,8 @@
   -->
 
 <configuration>
-    <mapping entity="io.zyient.core.mapping.model.Customer">
+    <mapping entity="io.zyient.core.mapping.mapper.CustomerMappedResponse"
+             type="io.zyient.core.mapping.mapper.CustomerEntityMapping">
         <settings>
             <name>test-customer</name>
             <!--
@@ -81,17 +82,50 @@
                 <target>creditLimit</target>
                 <type>Field</type>
             </map>
+            <map source="context['source.URI']">
+                <target>source.URI</target>
+                <nullable>false</nullable>
+                <type>Property</type>
+            </map>
         </mappings>
+        <filters>
+            <rules>
+                <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                    <name>filter-credit-limit</name>
+                    <expression>
+                        <![CDATA[
+                        (#root['creditLimit'] == null ? true : false)
+                        ]]>
+                    </expression>
+                    <ruleType>Filter</ruleType>
+                    <errorCode>1000001</errorCode>
+                    <validationErrorCode>1500001</validationErrorCode>
+                </rule>
+                <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                    <name>filter-credit-limit</name>
+                    <expression>
+                        <![CDATA[
+                        (T(Double).parseDouble(#root['creditLimit']) <= 0 ? true : false)
+                        ]]>
+                    </expression>
+                    <ruleType>Filter</ruleType>
+                    <errorCode>1000001</errorCode>
+                    <validationErrorCode>1500001</validationErrorCode>
+                </rule>
+            </rules>
+        </filters>
         <rules>
             <rule settings="io.zyient.core.mapping.rules.RuleGroupConfig">
                 <name>customer-name</name>
                 <ruleType>Group</ruleType>
+                <errorCode>1000001</errorCode>
                 <rules>
                     <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                         <name>validate-names</name>
-                        <expression>(${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())
-                            or (${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())?
-                            false : true
+                        <expression>
+                            ((${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty())
+                            or (${property['contact.name.last']} == null || ${property['contact.name.last']}.isEmpty()))
+                            ? false : true
                         </expression>
                         <ruleType>Validation</ruleType>
                         <errorCode>1000001</errorCode>
@@ -99,8 +133,21 @@
                     </rule>
                     <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                         <name>append-names</name>
-                        <expression>(${property['contact.name.last']} + ', ' + ${property['contact.name.first']})</expression>
+                        <expression>
+                            (${property['contact.name.last']} + ', ' + ${property['contact.name.first']})
+                        </expression>
                         <field>name</field>
+                        <ruleType>Transformation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
+                    <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>append-names</name>
+                        <expression>
+                            (${property['contact.name.last']}.substring(0, 5) +
+                            ${property['contact.name.first']}.substring(0,5) + '@test.com')
+                        </expression>
+                        <field>contact.emailId</field>
                         <ruleType>Transformation</ruleType>
                         <errorCode>1000001</errorCode>
                         <validationErrorCode>1500001</validationErrorCode>
@@ -109,7 +156,9 @@
             </rule>
             <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                 <name>address-append</name>
-                <expression>${source['addressLine1']} + ", " + ${source['addressLine2']}</expression>
+                <expression>
+                    ${source['addressLine1']} + ", " + ${source['addressLine2']}
+                </expression>
                 <field>contact.address.street</field>
                 <errorCode>1000001</errorCode>
                 <validationErrorCode>1500001</validationErrorCode>

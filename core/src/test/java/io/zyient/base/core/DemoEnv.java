@@ -32,7 +32,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Accessors(fluent = true)
 public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
     public DemoEnv() {
-        super("demo");
+        super("demo",  new DemoState());
     }
 
     public enum EDemoState {
@@ -70,12 +70,12 @@ public class DemoEnv extends BaseEnv<DemoEnv.EDemoState> {
 
     }
 
-    public BaseEnv<EDemoState> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public BaseEnv<EDemoState> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         if (Strings.isNullOrEmpty(storeKey()))
             withStoreKey(TEST_PASSWD);
         CompositeMeterRegistry registry = new CompositeMeterRegistry();
         BaseEnv.registry(registry);
-        super.init(xmlConfig, new DemoState(), DemoEnvSettings.class);
+        super.init(xmlConfig, DemoEnvSettings.class);
 
         configNode = baseConfig().configurationAt(__CONFIG_PATH);
 

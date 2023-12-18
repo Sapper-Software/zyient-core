@@ -18,7 +18,6 @@ package io.zyient.core.mapping.rules.db;
 
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
 import io.zyient.core.mapping.rules.RuleValidationError;
 import io.zyient.core.persistence.Cursor;
@@ -27,8 +26,8 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 
 public interface DBRuleHandler<T, K extends IKey, E extends IEntity<K>> {
     DBRuleHandler<T, K, E> configure(@NonNull DBRuleConfig config,
-                                     @NonNull DBReferenceRule<T, K, E> parent) throws ConfigurationException;
+                                     @NonNull DBRule<T, K, E> parent) throws ConfigurationException;
 
-    Object handle(@NonNull MappedResponse<T> response,
+    Object handle(@NonNull T response,
                   @NonNull Cursor<K, E> cursor) throws RuleEvaluationError, RuleValidationError;
 }

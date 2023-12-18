@@ -42,7 +42,7 @@ public class LocalReader extends Reader {
                        @NonNull FileSystem fs) throws IOException {
         super(inode, fs);
         if (inode.getPathInfo() == null) {
-            path = (LocalPathInfo) fs.parsePathInfo(inode.getPath());
+            path = (LocalPathInfo) fs.parsePathInfo(inode.getURI());
             inode.setPathInfo(path);
         } else {
             path = (LocalPathInfo) inode.getPathInfo();

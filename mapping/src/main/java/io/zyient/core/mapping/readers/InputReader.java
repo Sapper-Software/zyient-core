@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.readers;
 
 import io.zyient.core.mapping.model.InputContentInfo;
+import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,7 +27,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @Getter
 @Setter
@@ -38,5 +38,5 @@ public abstract class InputReader implements Closeable {
 
     public abstract ReadCursor open() throws IOException;
 
-    public abstract List<Map<String, Object>> nextBatch() throws IOException;
+    public abstract List<SourceMap> nextBatch() throws IOException;
 }

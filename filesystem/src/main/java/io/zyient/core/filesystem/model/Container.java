@@ -30,14 +30,11 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class Container extends Settings {
-    public static final String PATH_ROOT = "root";
-
     @Config(name = "domain")
     private String domain;
-    @Config(name = "path")
-    private String path;
 
     public abstract PathInfo pathInfo(@NonNull FileSystem fs);
 
     public abstract ArchivePathInfo pathInfo(@NonNull Archiver archiver);
+
 }

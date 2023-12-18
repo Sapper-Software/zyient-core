@@ -35,7 +35,7 @@ public class S3Reader extends RemoteReader {
         if (path.getPathInfo() != null) {
             pathInfo = (S3PathInfo) path.getPathInfo();
         } else {
-            pathInfo = (S3PathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (S3PathInfo) fs.parsePathInfo(path.getURI());
             path.setPathInfo(pathInfo);
         }
     }

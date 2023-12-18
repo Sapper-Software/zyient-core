@@ -21,6 +21,7 @@ import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.persistence.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
@@ -36,6 +37,8 @@ public class TransformerPipelineSettings extends Settings {
     private Class<? extends IKey> keyType;
     @Config(name = "entityType", type = Class.class)
     private Class<? extends IEntity<?>> entityType;
+    @Config(name = "responseType", type = Class.class)
+    private Class<? extends MappedResponse<?>> responseType;
     @Config(name = "terminateOnValidationError", required = false, type = Boolean.class)
     private boolean terminateOnValidationError = true;
     @Config(name = "saveValidationErrors", required = false, type = Boolean.class)

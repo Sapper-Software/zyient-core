@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.google.common.base.Strings;
 import io.zyient.base.common.GlobalConstants;
+import jakarta.ws.rs.core.MediaType;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -158,5 +159,26 @@ public class FileTypeDetector {
             return SourceTypes.COMPRESSED;
         }
         return SourceTypes.UNKNOWN;
+    }
+
+    public static MediaType as(@NonNull SourceTypes type) {
+        switch (type) {
+            case CSV, EXCEL_CSV, PSV, RFC4180, TSV, POSITIONAL -> {
+                return MediaType.TEXT_PLAIN_TYPE;
+            }
+            case PDF, EXCEL, PPT, WORD, COMPRESSED -> {
+                return MediaType.APPLICATION_OCTET_STREAM_TYPE;
+            }
+            case XML -> {
+                return MediaType.APPLICATION_XML_TYPE;
+            }
+            case JSON -> {
+                return MediaType.APPLICATION_JSON_TYPE;
+            }
+            case HTML -> {
+                return MediaType.APPLICATION_XHTML_XML_TYPE;
+            }
+        }
+        return MediaType.WILDCARD_TYPE;
     }
 }

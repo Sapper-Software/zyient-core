@@ -16,19 +16,43 @@
 
 package io.zyient.core.mapping.rules;
 
-import io.zyient.core.mapping.model.CustomersEntity;
-import io.zyient.core.mapping.model.MappedResponse;
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.services.EConfigFileType;
+import io.zyient.core.mapping.env.DemoDataStoreEnv;
+import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.rules.spel.SpELRule;
 import io.zyient.core.mapping.rules.spel.SpELRuleConfig;
+import org.apache.commons.configuration2.XMLConfiguration;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class SpELRuleTest {
+    private static final String __CONFIG_FILE = "src/test/resources/mapping/test-mapping-env.xml";
+
+    private static XMLConfiguration xmlConfiguration = null;
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+        xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
+        Preconditions.checkState(xmlConfiguration != null);
+        env.create(xmlConfiguration);
+        env.connectionManager().save();
+    }
+
+    @AfterAll
+    static void afterAll() throws Exception {
+        env.close();
+    }
 
     @Test
     void doEvaluate() {
@@ -37,15 +61,21 @@ class SpELRuleTest {
     @Test
     void setup() {
         try {
-            SpELRule<CustomersEntity> rule = new SpELRule<>();
+            SpELRuleConfig config = new SpELRuleConfig();
+            config.setTarget("country");
+
+            SpELRule<MappedResponse<CustomersEntity>> rule = new SpELRule<>();
             rule.name("test-setup")
                     .expression("${city} == 'Bangalore' and ${state} == 'KA'? 'IN' : 'UN' ")
-                    .setup(new SpELRuleConfig());
+                    .errorCode(1000001)
+                    .withEntityType(CustomerMappedResponse.class);
+            rule.setup(config);
             List<CustomersEntity> entities = createCustomers(5);
             for (CustomersEntity entity : entities) {
                 MappedResponse<CustomersEntity> response = new MappedResponse<CustomersEntity>(new HashMap<>())
                         .entity(entity);
-                rule.doEvaluate(response);
+                EvaluationStatus status = rule.evaluate(response);
+                assertSame(status.status(), StatusCode.Success);
             }
         } catch (Exception ex) {
             fail(ex);

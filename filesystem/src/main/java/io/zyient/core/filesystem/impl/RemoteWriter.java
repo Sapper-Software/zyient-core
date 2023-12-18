@@ -178,12 +178,12 @@ public abstract class RemoteWriter extends Writer {
                     if (!fs.isFileLocked(inode)) {
                         throw new IOException(
                                 String.format("[%s][%s] File not locked or locked by another process.",
-                                        inode.getDomain(), inode.getAbsolutePath()));
+                                        inode.getDomain(), inode.getPath()));
                     }
                     String path = inode.getLock().getLocalPath();
                     if (path.compareTo(temp.getAbsolutePath()) != 0) {
                         throw new IOException(String.format("[%s][%s] Local path mismatch. [expected=%s][locked=%s]",
-                                inode.getDomain(), inode.getAbsolutePath(),
+                                inode.getDomain(), inode.getPath(),
                                 temp.getAbsolutePath(), path));
                     }
                     inode.setSyncedSize(fileSize(temp));

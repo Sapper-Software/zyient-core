@@ -32,7 +32,7 @@ public class SftpReader extends RemoteReader {
         if (path.getPathInfo() != null) {
             pathInfo = (SftpPathInfo) path.getPathInfo();
         } else {
-            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getPath());
+            pathInfo = (SftpPathInfo) fs.parsePathInfo(path.getURI());
             path.setPathInfo(pathInfo);
         }
     }

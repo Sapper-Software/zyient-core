@@ -54,7 +54,7 @@ class HdfsConnectionTest {
         xmlConfiguration = TestUtils.readFile(__CONFIG_FILE);
         Preconditions.checkState(xmlConfiguration != null);
         DemoEnv env = new DemoEnv();
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
         manager.init(xmlConfiguration, env, env.name());
     }
 

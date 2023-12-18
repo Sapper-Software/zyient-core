@@ -30,6 +30,8 @@ import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.model.UserContext;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.core.persistence.impl.solr.SolrConstants;
+import io.zyient.core.sdk.model.content.Content;
+import io.zyient.core.sdk.model.content.ContentId;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -313,6 +315,29 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         }
         properties.put(name, value);
         return this;
+    }
+
+    public Content asContent() {
+        Content content = new Content();
+        ContentId id = new ContentId();
+        id.setCollection(this.id.getCollection());
+        id.setId(this.id.getId());
+        content.setId(id);
+        content.setName(name);
+        content.setCreatedBy(createdBy);
+        content.setProperties(properties);
+        content.setModifiedBy(modifiedBy);
+        content.setMimeType(mimeType);
+        content.setURI(uri);
+        content.setState(docState.getState().name());
+        if (docState.hasError()) {
+            Throwable t = docState.getError();
+            content.setError(t.getLocalizedMessage());
+        }
+        content.setTimeCreated(getCreatedTime());
+        content.setTimeModified(getUpdatedTime());
+        content.setNestedContentCount(documentCount);
+        return content;
     }
 
     public abstract Document<E, K, T> createInstance() throws Exception;

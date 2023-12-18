@@ -75,7 +75,7 @@ public abstract class FileSystemSettings extends Settings {
     public static class Constants {
         public static final String CONFIG_FS_CLASS = "type";
         public static final String CONFIG_NAME = "name";
-        public static final String CONFIG_ID = "id";
+        public static final String CONFIG_BASE_PATH = "basePath";
         public static final String CONFIG_TEMP_FOLDER = "tmp.path";
         public static final String CONFIG_TEMP_TTL = "tmp.ttl";
         public static final String CONFIG_TEMP_CLEAN = "tmp.clean";
@@ -93,6 +93,8 @@ public abstract class FileSystemSettings extends Settings {
     private String type;
     @Config(name = Constants.CONFIG_NAME)
     private String name;
+    @Config(name = Constants.CONFIG_BASE_PATH)
+    private String basePath;
     @Config(name = Constants.CONFIG_ZK_CONNECTION, required = false)
     private String zkConnection;
     @Config(name = Constants.CONFIG_ZK_PATH, required = false)

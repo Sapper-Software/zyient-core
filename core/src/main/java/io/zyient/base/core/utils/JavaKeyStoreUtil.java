@@ -56,7 +56,7 @@ public class JavaKeyStoreUtil {
         Preconditions.checkNotNull(fileSource);
         HierarchicalConfiguration<ImmutableNode> config = ConfigReader.read(configFile, fileSource);
         env.withStoreKey(password);
-        env.init(config, password);
+        env.create(config);
 
         config = env.baseConfig();
 

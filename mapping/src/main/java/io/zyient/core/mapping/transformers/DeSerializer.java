@@ -52,6 +52,7 @@ public abstract class DeSerializer<T> extends StdDeserializer<T> {
 
     public abstract T transform(@NonNull Object value) throws DataException;
 
+    public abstract String serialize(@NonNull T value) throws DataException;
 
     /**
      * Method that can be called to ask implementation to deserialize

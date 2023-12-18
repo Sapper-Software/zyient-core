@@ -67,7 +67,7 @@ class DbContentProviderTest {
     static void beforeAll() throws Exception {
         xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
         Preconditions.checkState(xmlConfiguration != null);
-        env.init(xmlConfiguration);
+        env.create(xmlConfiguration);
         env.connectionManager().save();
 
         HierarchicalConfiguration<ImmutableNode> xmlConfig = env.demoConfig().configurationAt(ContentProvider.__CONFIG_PATH);

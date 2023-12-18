@@ -69,4 +69,10 @@ public abstract class DocumentState<E extends Enum<?>> {
         state = availableState;
         return this;
     }
+
+    public boolean hasError() {
+        return state == errorState;
+    }
+
+    public abstract boolean clearError();
 }
