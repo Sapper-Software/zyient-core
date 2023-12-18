@@ -235,6 +235,20 @@ public class ConfigReader {
         for (Field field : fields) {
             if (field.isAnnotationPresent(Config.class)) {
                 Config cfg = field.getAnnotation(Config.class);
+                if (!cfg.custom().equals(FieldValueParser.DummyParser.class)) {
+                    FieldValueParser<?> parser = cfg.custom().getDeclaredConstructor()
+                            .newInstance();
+                    Object value = parser.parse(node);
+                    if (value == null) {
+                        if (cfg.required()) {
+                            throw new Exception(String.format("Required value not found. [name=%s]", cfg.name()));
+                        } else {
+                            continue;
+                        }
+                    }
+                    ReflectionHelper.setValue(value, pojo, field);
+                    continue;
+                }
                 String value = node.getString(cfg.name());
                 if (Strings.isNullOrEmpty(value)) {
                     if (cfg.required()) {
@@ -405,8 +419,8 @@ public class ConfigReader {
         throw new Exception(String.format("List type not supported. [type=%s]", type.getCanonicalName()));
     }
 
-    public Map<String, String> readParameters() {
-        if (checkIfNodeExists((String) null, __NODE_PARAMETERS)) {
+    public Map<String, String> readParameters(@NonNull String node) {
+        if (checkIfNodeExists((String) null, node)) {
             HierarchicalConfiguration<ImmutableNode> pc = config.configurationAt(__NODE_PARAMETERS);
             if (pc != null) {
                 List<HierarchicalConfiguration<ImmutableNode>> pl = pc.configurationsAt(__NODE_PARAMETER);
@@ -424,6 +438,10 @@ public class ConfigReader {
             }
         }
         return null;
+    }
+
+    public Map<String, String> readParameters() {
+        return readParameters(__NODE_PARAMETERS);
     }
 
     public static XMLConfiguration readFromFile(@NonNull String filename) throws ConfigurationException {
