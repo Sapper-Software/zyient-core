@@ -30,10 +30,7 @@ import io.zyient.base.core.model.PropertyBag;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
-import io.zyient.core.mapping.rules.FilterChain;
-import io.zyient.core.mapping.rules.RuleConfigReader;
-import io.zyient.core.mapping.rules.RulesCache;
-import io.zyient.core.mapping.rules.RulesExecutor;
+import io.zyient.core.mapping.rules.*;
 import io.zyient.core.mapping.transformers.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -43,6 +40,9 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URL;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -244,8 +244,13 @@ public abstract class Mapping<T> {
         for (String path : sourceIndex.keySet()) {
             MappedElement me = sourceIndex.get(path);
             if (me.getMappingType() == MappingType.Field) continue;
-            String[] parts = path.split("\\.");
-            Object value = findSourceValue(source, parts, 0);
+            Object value = null;
+            if (MappingReflectionHelper.isContextPrefixed(path)) {
+                value = findContextValue(context, path);
+            } else {
+                String[] parts = path.split("\\.");
+                value = findSourceValue(source, parts, 0);
+            }
             if (value == null) {
                 if (!me.isNullable()) {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
@@ -310,6 +315,16 @@ public abstract class Mapping<T> {
             if (type.equals(String.class)) {
                 if (ReflectionHelper.isPrimitiveTypeOrString(value.getClass())) {
                     return String.valueOf(value);
+                } else if (value instanceof Date) {
+                    DateTransformer transformer = (DateTransformer) getDeSerializer(Date.class, null);
+                    Preconditions.checkNotNull(transformer);
+                    return transformer.serialize((Date) value);
+                } else if (value.getClass().isEnum()) {
+                    return ((Enum<?>) value).name();
+                } else if (value instanceof URI) {
+                    return ((URI) value).toString();
+                } else if (value instanceof URL) {
+                    return ((URL) value).toString();
                 } else {
                     throw new Exception(String.format("Cannot map value to String. [type=%s]",
                             value.getClass().getCanonicalName()));
@@ -346,6 +361,14 @@ public abstract class Mapping<T> {
             deSerializer = new CurrencyValueTransformer()
                     .locale(settings.getLocale())
                     .configure(settings);
+        } else if (ReflectionHelper.isSuperType(Date.class, type)) {
+            if (deSerializers.containsKey(Date.class.getCanonicalName())) {
+                return deSerializers.get(Date.class.getCanonicalName());
+            }
+            deSerializer = new DateTransformer()
+                    .locale(settings.getLocale())
+                    .format(settings.getDateFormat())
+                    .configure(settings);
         }
         if (deSerializer != null) {
             deSerializers.put(deSerializer.name(), deSerializer);
@@ -367,5 +390,9 @@ public abstract class Mapping<T> {
             }
         }
         return null;
+    }
+
+    private Object findContextValue(Context context, String field) {
+        return MappingReflectionHelper.getContextProperty(field, context);
     }
 }

@@ -27,6 +27,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,7 +37,7 @@ import java.util.regex.Pattern;
 public class RegexTransformer implements Transformer<String> {
     private String regex;
     private String replace;
-    private List<Integer> groups;
+    private Map<Integer, List<Integer>> groups;
     private String format;
     @Setter(AccessLevel.NONE)
     private Pattern pattern;
@@ -63,13 +64,17 @@ public class RegexTransformer implements Transformer<String> {
                 if (Strings.isNullOrEmpty(format)) {
                     return value;
                 }
+                int count = 0;
                 if (groups != null && !groups.isEmpty()) {
                     value = format;
-                    for (int group : groups) {
-                        if (group > m.groupCount()) break;
-                        String v = m.group(group);
-                        String k = "{" + group + "}";
-                        value = value.replace(k, v);
+                    int matchCount = 0;
+                    while (m.find()) {
+                        for (int ii = 0; ii < m.groupCount(); ii++) {
+                            String k = String.format("{%d:%d}", matchCount, ii);
+                            String v = m.group(ii);
+                            value = value.replace(k, v);
+                        }
+                        matchCount++;
                     }
                     return value;
                 }

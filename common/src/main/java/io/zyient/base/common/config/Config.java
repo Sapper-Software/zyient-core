@@ -31,4 +31,6 @@ public @interface Config {
     boolean autoUpdate() default false;
 
     Class<? extends ConfigValueParser<?>> parser() default ConfigValueParser.DummyValueParser.class;
+
+    Class<? extends FieldValueParser<?>> custom() default FieldValueParser.DummyParser.class;
 }

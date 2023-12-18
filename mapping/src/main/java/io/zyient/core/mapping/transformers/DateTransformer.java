@@ -111,4 +111,10 @@ public class DateTransformer extends DeSerializer<Date> {
             throw new DataException(ex);
         }
     }
+
+    @Override
+    public String serialize(@NonNull Date value) throws DataException {
+        SimpleDateFormat df = new SimpleDateFormat(format, locale);
+        return df.format(value);
+    }
 }
