@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <executor>
+        <settings>
+            <numThreads>4</numThreads>
+            <taskQueueSize>32</taskQueueSize>
+        </settings>
+        <mappers>
+            <factory>
+                <contentDir>src/test/resources/mapping/mappers</contentDir>
+                <mappings>
+                    <principal>test/principal.xml</principal>
+                </mappings>
+            </factory>
+        </mappers>
+        <contextProvider type="io.zyient.core.mapping.DemoContextProvider">
+            <readers>
+                <CSV>customer-csv-reader</CSV>
+            </readers>
+            <mappings>
+                <customers>principal</customers>
+            </mappings>
+        </contextProvider>
+        <pipelines>
+            <pipeline type="io.zyient.core.mapping.pipeline.HoldingPipeline">
+                <mapping>principal</mapping>
+                <keyType>io.zyient.base.core.model.LongKey</keyType>
+                <entityType>io.zyient.core.mapping.model.Holding</entityType>
+                <terminateOnValidationError>false</terminateOnValidationError>
+                <saveValidationErrors>false</saveValidationErrors>
+                <dataStore>
+                    <name>test-rdbms</name>
+                    <type>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</type>
+                </dataStore>
+            </pipeline>
+        </pipelines>
+        <readers>
+            <!--
+            <factory>
+                <defaults>
+                    <type>[Reader Class]</type>
+                </defaults>
+            </factory>
+            -->
+            <reader type="io.zyient.core.mapping.readers.impl.separated.SeparatedReaderConfig">
+                <name>customer-csv-reader</name>
+                <assumeFileType>CSV</assumeFileType>
+                <readBatchSize>1024</readBatchSize>
+                <type>DEFAULT</type>
+                <header>
+                    <present>true</present>
+                    <!-- Specify columns, if required for validation or header not present in source.
+                    <columns>
+                        <name>[Column name]</name>
+                        <index>[Column index, starts with 0]</index>
+                    </columns>
+                    -->
+                </header>
+                <!--
+                <override>
+                    <delimiter>,</delimiter>
+                    <escapeChar>\</escapeChar>
+                    <quoteChar>"</quoteChar>
+                    <recordSeparator>\n</recordSeparator>
+                    <quoteMode>[ALL, ALL_NON_NULL, MINIMAL, NON_NUMERIC, NULL]</quoteMode>
+                    <nullString>[String if value is NULL]</nullString>
+                    <ignoreEmptyLines>true</ignoreEmptyLines>
+                    <duplicateHeaders>[ALLOW_ALL, ALLOW_EMPTY, DISALLOW]</duplicateHeaders>
+                </override>
+                <columnPrefix>[IF no column names are defined or available]</columnPrefix>
+                -->
+            </reader>
+        </readers>
+        <caches>
+            <cache>
+                <entity>io.zyient.core.mapping.model.Holding</entity>
+                <path>rules/global-rules.xml</path>
+            </cache>
+        </caches>
+    </executor>
+</configuration>

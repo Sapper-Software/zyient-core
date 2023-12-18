@@ -18,18 +18,30 @@
 <configuration>
     <global>
         <rules>
-            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">
-                <name>fetch-iso-country</name>
-                <expression>key.name = ${contact.address.country}</expression>
-                <errorCode>1000001</errorCode>
-                <validationErrorCode>1500001</validationErrorCode>
-                <dataStore>test-rdbms</dataStore>
-                <keyType>io.zyient.core.mapping.model.IsoCountryKey</keyType>
-                <entityType>io.zyient.core.mapping.model.IsoCountries</entityType>
-                <fieldMappings>
-                    <alpha3>contact.address.countryCode</alpha3>
-                </fieldMappings>
-            </rule>
+<!--            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">-->
+<!--                <name>fetch-iso-country</name>-->
+<!--                <expression>key.name = ${contact.address.country}</expression>-->
+<!--                <errorCode>1000001</errorCode>-->
+<!--                <validationErrorCode>1500001</validationErrorCode>-->
+<!--                <dataStore>test-rdbms</dataStore>-->
+<!--                <keyType>io.zyient.core.mapping.model.IsoCountryKey</keyType>-->
+<!--                <entityType>io.zyient.core.mapping.model.IsoCountries</entityType>-->
+<!--                <fieldMappings>-->
+<!--                    <alpha3>contact.address.countryCode</alpha3>-->
+<!--                </fieldMappings>-->
+<!--            </rule>-->
+<!--            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">-->
+<!--                <name>account-lookup</name>-->
+<!--                <expression>accountNo = ${source['Contract']}</expression>-->
+<!--                <errorCode>1000002</errorCode>-->
+<!--                <validationErrorCode>1500002</validationErrorCode>-->
+<!--                <dataStore>test-rdbms</dataStore>-->
+<!--                <keyType>io.zyient.base.core.model.LongKey</keyType>-->
+<!--                <entityType>io.zyient.core.mapping.model.CustodianAccount</entityType>-->
+<!--                <fieldMappings>-->
+<!--                    <key.a.b>custodianAccountId</key.a.b>-->
+<!--                </fieldMappings>-->
+<!--            </rule>-->
         </rules>
     </global>
 </configuration>

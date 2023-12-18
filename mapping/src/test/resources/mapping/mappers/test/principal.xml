@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <mapping entity="io.zyient.core.mapping.model.Holding">
+        <settings>
+            <name>principal</name>
+            <!--
+            <currency>[ISO Currency Symbol]</currency>
+            <format>
+                <date>[Date Format String]</date>
+            </format>
+            <locale>[{Country Code}, {Language Code}]</locale>
+            -->
+        </settings>
+        <mappings>
+            <!--            <map source="_id">-->
+            <!--                <target>id.key</target>-->
+            <!--                <nullable>false</nullable>-->
+            <!--                <type>Field</type>-->
+            <!--            </map>-->
+            <map source="Contract">
+                <target>properties.accountNo</target>
+                <type>Property</type>
+            </map>
+            <map source="Investment Marketing Name Long">
+                <target>securityDescription</target>
+                <type>Property</type>
+            </map>
+            <map source="Investment Marketing Name Long">
+                <target>securityDescription</target>
+                <type>Property</type>
+            </map>
+            <map source="Cusip Number">
+                <target>cusip</target>
+                <type>Property</type>
+            </map>
+            <map source="Ticker Symbol">
+                <target>ticker</target>
+                <type>Property</type>
+            </map>
+            <map source="Month End Date" type="io.zyient.core.mapping.model.RegexMappedElement">
+                <name>trade-regex</name>
+                <target>tradeDate</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+                <regex>(\d{2,4}/?)+?</regex>
+                <groups>0:1,1:1,2:1</groups>
+                <format>{2:1}{1:1}{0:1}</format>
+            </map>
+
+
+        </mappings>
+        <rules>
+            <rule settings="io.zyient.core.mapping.rules.RuleGroupConfig">
+                <name>principal</name>
+                <ruleType>Group</ruleType>
+                <rules>
+                    <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>price-to-double</name>
+                        <expression>(${source['Month End Account Value']}.replace(',','').replace('$',''))</expression>
+                        <field>marketValue</field>
+                        <ruleType>Transformation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
+                    <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>cusip-remove</name>
+                        <expression>
+                            (${source['Investment Marketing Name Long']}.trim().endsWith('Collective')?'':${source['Investment Marketing Name Long']}.trim())
+                        </expression>
+                        <field>transactionType</field>
+                        <ruleType>Transformation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
+                </rules>
+            </rule>
+            <!--            <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">-->
+            <!--                <name>address-append</name>-->
+            <!--                <expression>${source['addressLine1']} + ", " + ${source['addressLine2']}</expression>-->
+            <!--                <field>contact.address.street</field>-->
+            <!--                <errorCode>1000001</errorCode>-->
+            <!--                <validationErrorCode>1500001</validationErrorCode>-->
+            <!--            </rule>-->
+<!--                        <rule settings="io.zyient.core.mapping.rules.RuleReferenceConfig">-->
+<!--                            <name>account-lookup</name>-->
+<!--                        </rule>-->
+        </rules>
+    </mapping>
+</configuration>

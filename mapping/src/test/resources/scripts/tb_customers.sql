@@ -31,3 +31,57 @@ CREATE TABLE `test`.`tb_customers`
     credit_limit     NUMERIC(18, 4),
     PRIMARY KEY (id)
 ) ENGINE = Aria;
+
+CREATE TABLE IF NOT EXISTS `test`.`holdings`
+(
+    accured_income double precision NOT NULL,
+    market_value double precision NOT NULL,
+    price double precision NOT NULL,
+    quantity double precision NOT NULL,
+    trade_date bigint NOT NULL,
+    custodian_account_id bigint NOT NULL,
+    id bigint NOT NULL,
+    security_id bigint NULL,
+    created_by VARCHAR(255),
+    reference_type VARCHAR(255),
+    security_props VARCHAR(255),
+    transaction_type VARCHAR(255),
+    updated_by VARCHAR(255),
+    PRIMARY KEY (id)
+)ENGINE = Aria;
+
+
+CREATE TABLE IF NOT EXISTS `test`.`client_accounts`
+(
+    inception_date bigint NOT NULL,
+    client_id bigint NOT NULL,
+    id bigint NOT NULL,
+    account_name VARCHAR(255),
+    account_no VARCHAR(255) ,
+    account_type VARCHAR(255) ,
+    created_by VARCHAR(255),
+    updated_by VARCHAR(255),
+    PRIMARY KEY (id)
+    )ENGINE = Aria;
+
+
+
+CREATE TABLE IF NOT EXISTS `test`.`custodian_accounts`
+(
+    connectivity_date integer NOT NULL,
+    feed_start_date integer NOT NULL,
+    start_date integer NOT NULL,
+    
+    custodian_id bigint NOT NULL,
+    id bigint NOT NULL,
+    portfolio_id bigint NOT NULL,
+    
+    account_name VARCHAR(255) ,
+    account_no VARCHAR(255) ,
+    created_by VARCHAR(255) ,
+    fund_name VARCHAR(255) ,
+    investment_strategy VARCHAR(255) ,
+    updated_by VARCHAR(255) ,
+    inception_date integer NOT NULL,
+    PRIMARY KEY (id)
+    )ENGINE = Aria;
