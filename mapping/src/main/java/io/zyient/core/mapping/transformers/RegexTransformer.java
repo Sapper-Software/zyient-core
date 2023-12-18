@@ -64,7 +64,6 @@ public class RegexTransformer implements Transformer<String> {
                 if (Strings.isNullOrEmpty(format)) {
                     return value;
                 }
-                int count = 0;
                 if (groups != null && !groups.isEmpty()) {
                     value = format;
                     int matchCount = 0;

@@ -36,7 +36,7 @@ public class RegexMappedElement extends MappedElement {
     @Config(name = "replaceWith", required = false)
     private String replace;
     @Config(name = "groups", required = false, parser = RegexGroupParser.class)
-    private Map<Integer, Integer> groups;
+    private Map<Integer, List<Integer>> groups;
     @Config(name = "format", required = false)
     private String format;
 }
