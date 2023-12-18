@@ -19,10 +19,12 @@ package io.zyient.core.mapping.model;
 
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.IntegerListParser;
+import io.zyient.core.mapping.config.RegexGroupParser;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -33,8 +35,8 @@ public class RegexMappedElement extends MappedElement {
     private String regex;
     @Config(name = "replaceWith", required = false)
     private String replace;
-    @Config(name = "groups", required = false, parser = IntegerListParser.class)
-    private List<Integer> groups;
+    @Config(name = "groups", required = false, parser = RegexGroupParser.class)
+    private Map<Integer, Integer> groups;
     @Config(name = "format", required = false)
     private String format;
 }
