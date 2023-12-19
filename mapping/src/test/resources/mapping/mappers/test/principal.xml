@@ -16,7 +16,7 @@
   -->
 
 <configuration>
-    <mapping entity="io.zyient.core.mapping.model.Holding">
+    <mapping entity="io.zyient.core.mapping.model.Holding" type="io.zyient.core.mapping.mapper.HoldingEntityMapping">
         <settings>
             <name>principal</name>
             <!--
@@ -58,9 +58,10 @@
                 <target>tradeDate</target>
                 <nullable>false</nullable>
                 <type>Field</type>
-                <regex>(\d{2,4}/?)+?</regex>
-                <groups>0:1,1:1,2:1</groups>
-                <format>{2:1}{1:1}{0:1}</format>
+                <regex>((\d{2,4})/?)+?</regex>
+                <groups>0:2,1:2,2:2</groups>
+                <!--                <groups>{matchNo}:{groupNo},{matchNo}:{groupNo}</groups>-->
+                <format>{2:2}{1:2}{0:2}</format>
             </map>
 
 
@@ -97,9 +98,9 @@
             <!--                <errorCode>1000001</errorCode>-->
             <!--                <validationErrorCode>1500001</validationErrorCode>-->
             <!--            </rule>-->
-<!--                        <rule settings="io.zyient.core.mapping.rules.RuleReferenceConfig">-->
-<!--                            <name>account-lookup</name>-->
-<!--                        </rule>-->
+<!--            <rule settings="io.zyient.core.mapping.rules.RuleReferenceConfig">-->
+<!--                <name>account-lookup</name>-->
+<!--            </rule>-->
         </rules>
     </mapping>
 </configuration>

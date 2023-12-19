@@ -56,14 +56,9 @@ public class IDGenerator {
                         ReflectionHelper.setStringValue(entity, field, UUID.randomUUID().toString());
                     } else {
                         Long value = dataStore.nextSequence(gi.sequence());
-                        if (field.getType().equals(LongKey.class)) {
-                            // TODO vinay
-                            LongKey lk = new LongKey();
-                            lk.setKey(value);
-                            ReflectionHelper.setObjectValue(entity, field, lk);
-                        } else {
-                            ReflectionHelper.setLongValue(entity, field, value);
-                        }
+
+                        ReflectionHelper.setLongValue(entity, field, value);
+
 
                     }
                 }

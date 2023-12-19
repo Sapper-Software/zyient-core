@@ -22,11 +22,9 @@ import java.util.Map;
 @Setter
 @Entity(name = "holdings")
 @Table(name = "holdings", schema = "test")
-public class Holding implements IEntity<LongKey>, PropertyBag {
+public class Holding implements IEntity<LongIDKey>, PropertyBag {
     @EmbeddedId
-    @Id
-    @GeneratedId(type = EGeneratedType.SEQUENCE,sequence = "holding_seq")
-    private LongKey id;
+    private LongIDKey id;
     @Column(name = "custodian_account_id")
     private long custodianAccountId;
     @Column(name = "quantity")
@@ -47,22 +45,22 @@ public class Holding implements IEntity<LongKey>, PropertyBag {
 
 
     @Override
-    public int compare(LongKey key) {
+    public int compare(LongIDKey key) {
         return this.id.compareTo(key);
     }
 
     @Override
-    public IEntity<LongKey> copyChanges(IEntity<LongKey> source, Context context) throws CopyException {
+    public IEntity<LongIDKey> copyChanges(IEntity<LongIDKey> source, Context context) throws CopyException {
         return null;
     }
 
     @Override
-    public IEntity<LongKey> clone(Context context) throws CopyException {
+    public IEntity<LongIDKey> clone(Context context) throws CopyException {
         return null;
     }
 
     @Override
-    public LongKey entityKey() {
+    public LongIDKey entityKey() {
         return this.id;
     }
 
