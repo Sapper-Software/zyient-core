@@ -44,7 +44,7 @@ public class AWSKeyStore extends KeyStore {
     }
 
     private static class Key {
-        private String name;
+        private final String name;
         private String value;
         private KeyState state;
 
@@ -93,18 +93,19 @@ public class AWSKeyStore extends KeyStore {
             client = SecretsManagerClient.builder()
                     .region(region)
                     .build();
-            password = readInternal(DEFAULT_KEY);
-            if (Strings.isNullOrEmpty(password)) {
-                throw new Exception(String.format("Default Secret Key not set. [name=%s]", DEFAULT_KEY));
-            }
-            withPassword(password);
             String s = config.getString(CONFIG_CACHE_TIMEOUT);
             if (!Strings.isNullOrEmpty(s)) {
                 cacheTimeout = Long.parseLong(s);
             }
-            passwdHash = ChecksumUtils.generateHash(password);
             bucket = String.format("%s/%s", env.name(), name);
             fetch();
+            Key key = keys.get(DEFAULT_KEY);
+            password = key.getValue();
+            if (Strings.isNullOrEmpty(password)) {
+                throw new Exception(String.format("Default Secret Key not set. [name=%s]", DEFAULT_KEY));
+            }
+            withPassword(password);
+            passwdHash = ChecksumUtils.generateHash(password);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
@@ -257,13 +258,13 @@ public class AWSKeyStore extends KeyStore {
                     }
                 }
                 String value = JSONUtils.asString(keys, Map.class);
-                CreateSecretRequest secretRequest = CreateSecretRequest.builder()
-                        .name(bucket)
+                UpdateSecretRequest  secretRequest = UpdateSecretRequest.builder()
+                        .secretId(bucket)
                         .description(String.format("[keyStore=%s] Saved secret. [name=%s]", this.name, bucket))
                         .secretString(value)
                         .build();
 
-                CreateSecretResponse response = client.createSecret(secretRequest);
+                UpdateSecretResponse response = client.updateSecret(secretRequest);
             } catch (Exception ex) {
                 DefaultLogger.stacktrace(ex);
                 throw ex;

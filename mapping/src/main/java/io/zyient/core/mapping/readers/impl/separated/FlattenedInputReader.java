@@ -5,7 +5,6 @@ import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.FlattenedInputReaderSettings;
-import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
