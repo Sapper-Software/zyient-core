@@ -21,6 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.BaseEnv;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -31,16 +32,51 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.secretsmanager.model.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class AWSKeyStore extends KeyStore {
+    private enum KeyState {
+        New, Updated, Synced, Deleted
+    }
+
+    private static class Key {
+        private String name;
+        private String value;
+        private KeyState state;
+
+        public Key(String name, String value) {
+            this.name = name;
+            setValue(value);
+        }
+
+        public void setValue(String value) {
+            this.value = Base64.getEncoder().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+        }
+
+        public String getValue() {
+            byte[] v = Base64.getDecoder().decode(value);
+            return new String(v, StandardCharsets.UTF_8);
+        }
+    }
+
     public static final String CONFIG_REGION = "region";
     public static final String CONFIG_NAME = "name";
+    public static final String CONFIG_CACHE_TIMEOUT = "timeout";
+    private static final long CACHE_TIMEOUT = 30 * 60 * 1000; // 30mins
 
     private String name;
     private String passwdHash;
     private SecretsManagerClient client;
     private HierarchicalConfiguration<ImmutableNode> config;
+    private String bucket;
+    private Map<String, Key> keys;
+    private long fetchedTimestamp = 0;
+    private long cacheTimeout = CACHE_TIMEOUT;
+
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
@@ -62,11 +98,39 @@ public class AWSKeyStore extends KeyStore {
                 throw new Exception(String.format("Default Secret Key not set. [name=%s]", DEFAULT_KEY));
             }
             withPassword(password);
+            String s = config.getString(CONFIG_CACHE_TIMEOUT);
+            if (!Strings.isNullOrEmpty(s)) {
+                cacheTimeout = Long.parseLong(s);
+            }
             passwdHash = ChecksumUtils.generateHash(password);
+            bucket = String.format("%s/%s", env.name(), name);
+            fetch();
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private synchronized void fetch() throws Exception {
+        if (this.keys != null)
+            this.keys.clear();
+        else
+            this.keys = new HashMap<>();
+        String json = readInternal(bucket);
+        if (!Strings.isNullOrEmpty(json)) {
+            Map<String, String> keys = JSONUtils.read(json, Map.class);
+            if (!keys.containsKey(DEFAULT_KEY)) {
+                throw new Exception(String.format("Invalid Secrets: Default key not found. [name=%s]", bucket));
+            }
+            for (String name : keys.keySet()) {
+                String value = keys.get(name);
+                Key key = new Key(name, value);
+                key.state = KeyState.Synced;
+                this.keys.put(name, key);
+            }
+            fetchedTimestamp = System.currentTimeMillis();
+        } else throw new Exception(String.format("Secrets not found. [name=%s]", bucket));
     }
 
     @Override
@@ -78,14 +142,19 @@ public class AWSKeyStore extends KeyStore {
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
+        if (DEFAULT_KEY.compareTo(name) == 0) {
+            throw new Exception("Default key cannot be updated...");
+        }
         try {
-            CreateSecretRequest secretRequest = CreateSecretRequest.builder()
-                    .name(name)
-                    .description(String.format("[keyStore=%s] Saved secret. [name=%s]", this.name, name))
-                    .secretString(value)
-                    .build();
-
-            CreateSecretResponse response = client.createSecret(secretRequest);
+            Key key = keys.get(name);
+            if (key == null) {
+                key = new Key(name, value);
+                key.state = KeyState.New;
+                keys.put(name, key);
+            } else {
+                key.setValue(value);
+                key.state = KeyState.Updated;
+            }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw ex;
@@ -100,7 +169,15 @@ public class AWSKeyStore extends KeyStore {
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         try {
-            return readInternal(name);
+            long delta = System.currentTimeMillis() - fetchedTimestamp;
+            if (delta > cacheTimeout) {
+                fetch();
+            }
+            Key key = keys.get(name);
+            if (key != null) {
+                return key.getValue();
+            }
+            return null;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw ex;
@@ -124,12 +201,14 @@ public class AWSKeyStore extends KeyStore {
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
+        if (DEFAULT_KEY.compareTo(name) == 0) {
+            throw new Exception("Default key cannot be deleted...");
+        }
         try {
-            DeleteSecretRequest secretRequest = DeleteSecretRequest.builder()
-                    .secretId(name)
-                    .build();
-
-            DeleteSecretResponse response = client.deleteSecret(secretRequest);
+            Key key = keys.get(name);
+            if (key != null) {
+                key.state = KeyState.Deleted;
+            }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw ex;
@@ -156,7 +235,41 @@ public class AWSKeyStore extends KeyStore {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public String flush(@NonNull String password) throws Exception {
+        Preconditions.checkState(client != null);
+        Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+
+        String hash = ChecksumUtils.generateHash(password);
+        Preconditions.checkArgument(hash.equals(passwdHash));
+        synchronized (this) {
+            try {
+                String json = readInternal(bucket);
+                Map<String, String> keys = JSONUtils.read(json, Map.class);
+                for (String name : this.keys.keySet()) {
+                    Key key = this.keys.get(name);
+                    if (key.state == KeyState.Synced) continue;
+                    if (key.state == KeyState.Deleted) {
+                        keys.remove(key.name);
+                    } else if (key.state == KeyState.New) {
+                        String value = key.getValue();
+                        keys.put(name, value);
+                    }
+                }
+                String value = JSONUtils.asString(keys, Map.class);
+                CreateSecretRequest secretRequest = CreateSecretRequest.builder()
+                        .name(bucket)
+                        .description(String.format("[keyStore=%s] Saved secret. [name=%s]", this.name, bucket))
+                        .secretString(value)
+                        .build();
+
+                CreateSecretResponse response = client.createSecret(secretRequest);
+            } catch (Exception ex) {
+                DefaultLogger.stacktrace(ex);
+                throw ex;
+            }
+        }
+        fetch();
         return name;
     }
 
