@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.common.config.maps;
 
+import io.zyient.base.common.config.ConfigValueParser;
 import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.NonNull;
 

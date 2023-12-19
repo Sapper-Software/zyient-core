@@ -10,11 +10,14 @@ import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
 public class FlattenedInputReader extends InputReader {
     private final SeparatedInputReader reader;
+    private Map<String, Boolean> headerFields;
+
 
     public FlattenedInputReader() {
         reader = new SeparatedInputReader();
