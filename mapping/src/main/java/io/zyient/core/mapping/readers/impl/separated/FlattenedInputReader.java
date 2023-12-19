@@ -29,6 +29,7 @@ public class FlattenedInputReader extends InputReader {
 
     @Override
     public List<SourceMap> nextBatch() throws IOException {
+
         return null;
     }
 
