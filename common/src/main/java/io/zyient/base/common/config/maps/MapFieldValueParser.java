@@ -14,10 +14,10 @@ import java.util.Map;
 
 
 public abstract class MapFieldValueParser<V> implements FieldValueParser<Map<String, V>> {
-    private static final String __CONFIG_PATH = "map";
-    private static final String __CONFIG_PATH_VALUES = "values";
-    private static final String KEY_NAME = "name";
-    private static final String KEY_VALUE = "value";
+    public static final String __CONFIG_PATH = "map";
+    public static final String __CONFIG_PATH_VALUES = "values";
+    public static final String KEY_NAME = "name";
+    public static final String KEY_VALUE = "value";
 
     private final String path;
     private final String valuesPath;

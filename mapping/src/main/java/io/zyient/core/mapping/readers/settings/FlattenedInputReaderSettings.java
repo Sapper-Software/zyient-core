@@ -5,6 +5,8 @@ import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
+
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
@@ -14,4 +16,6 @@ public class FlattenedInputReaderSettings extends SeparatedReaderSettings {
     private String sectionSeparator;
     @Config(name = "separator.field", required = false)
     private String fieldSeparator = ":";
+    @Config(name = HeaderMapSettingParser.__SECTION, custom = HeaderMapSettingParser.class)
+    private Map<String, Boolean> fields;
 }
