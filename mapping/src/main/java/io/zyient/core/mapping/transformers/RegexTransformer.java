@@ -60,26 +60,22 @@ public class RegexTransformer implements Transformer<String> {
                 return ((String) source).replaceAll(regex, replace);
             }
             Matcher m = pattern.matcher(value);
-
             if (Strings.isNullOrEmpty(format)) {
                 return value;
             }
             if (groups != null && !groups.isEmpty()) {
                 value = format;
                 int matchCount = 0;
-
                 while (m.find()) {
                     for (int ii = 1; ii <= m.groupCount(); ii++) {
                         String k = String.format("{%d:%d}", matchCount, ii);
                         String v = m.group(ii);
                         value = value.replace(k, v);
-
                     }
                     matchCount++;
                 }
                 return value;
             }
-
             return null;
         }
         throw new SerializationException(String.format("Cannot transform to String. [source=%s]", source.getClass()));

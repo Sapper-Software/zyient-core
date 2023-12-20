@@ -19,7 +19,6 @@ package io.zyient.cdc.entity;
 import com.google.protobuf.ByteString;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.cdc.entity.model.*;
 import io.zyient.cdc.entity.schema.EntitySchema;
 import io.zyient.cdc.entity.types.*;
 import lombok.NonNull;

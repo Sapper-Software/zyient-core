@@ -163,6 +163,20 @@ public class ConfigReader {
                                 }
                                 continue;
                             }
+                            if (!c.custom().equals(FieldValueParser.DummyParser.class)) {
+                                FieldValueParser<?> parser = c.custom().getDeclaredConstructor()
+                                        .newInstance();
+                                Object value = parser.parse(config);
+                                if (value == null) {
+                                    if (c.required()) {
+                                        throw new Exception(String.format("Required value not found. [name=%s]", c.name()));
+                                    } else {
+                                        continue;
+                                    }
+                                }
+                                ReflectionHelper.setValue(value, settings, field);
+                                continue;
+                            }
                             if (c.type().equals(String.class)) {
                                 ReflectionHelper.setStringValue(settings, field, config.getString(c.name()));
                             } else if (ReflectionHelper.isBoolean(c.type())) {
