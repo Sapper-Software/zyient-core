@@ -41,7 +41,7 @@
             <pipeline type="io.zyient.core.mapping.pipeline.HoldingPipeline">
                 <responseType>io.zyient.core.mapping.mapper.HoldingMappedResponse</responseType>
                 <mapping>principal</mapping>
-                <keyType>io.zyient.core.mapping.model.LongIDKey</keyType>
+                <keyType>io.zyient.base.core.model.LongKey</keyType>
                 <entityType>io.zyient.core.mapping.model.Holding</entityType>
                 <terminateOnValidationError>false</terminateOnValidationError>
                 <saveValidationErrors>false</saveValidationErrors>

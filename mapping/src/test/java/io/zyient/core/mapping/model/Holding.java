@@ -6,15 +6,12 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.LongKey;
 import io.zyient.base.core.model.PropertyBag;
-import io.zyient.core.persistence.annotations.EGeneratedType;
-import io.zyient.core.persistence.annotations.GeneratedId;
-import jakarta.persistence.*;
 import jakarta.persistence.Column;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import javax.annotation.Generated;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,9 +19,9 @@ import java.util.Map;
 @Setter
 @Entity(name = "holdings")
 @Table(name = "holdings", schema = "test")
-public class Holding implements IEntity<LongIDKey>, PropertyBag {
+public class Holding implements IEntity<LongKey>, PropertyBag {
     @EmbeddedId
-    private LongIDKey id;
+    private LongKey id;
     @Column(name = "custodian_account_id")
     private long custodianAccountId;
     @Column(name = "quantity")
@@ -42,25 +39,27 @@ public class Holding implements IEntity<LongIDKey>, PropertyBag {
     private int tradeDate; //YYYYMMDD
     @Transient
     private Map<String, Object> properties;
+    @Column(name = "security_desc")
+    private String securityDescription;
 
 
     @Override
-    public int compare(LongIDKey key) {
+    public int compare(LongKey key) {
         return this.id.compareTo(key);
     }
 
     @Override
-    public IEntity<LongIDKey> copyChanges(IEntity<LongIDKey> source, Context context) throws CopyException {
+    public IEntity<LongKey> copyChanges(IEntity<LongKey> source, Context context) throws CopyException {
         return null;
     }
 
     @Override
-    public IEntity<LongIDKey> clone(Context context) throws CopyException {
+    public IEntity<LongKey> clone(Context context) throws CopyException {
         return null;
     }
 
     @Override
-    public LongIDKey entityKey() {
+    public LongKey entityKey() {
         return this.id;
     }
 

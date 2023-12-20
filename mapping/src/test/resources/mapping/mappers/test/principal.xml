@@ -45,14 +45,14 @@
                 <target>securityDescription</target>
                 <type>Property</type>
             </map>
-            <map source="Cusip Number">
-                <target>cusip</target>
-                <type>Property</type>
-            </map>
-            <map source="Ticker Symbol">
-                <target>ticker</target>
-                <type>Property</type>
-            </map>
+<!--            <map source="Cusip Number">-->
+<!--                <target>cusip</target>-->
+<!--                <type>Property</type>-->
+<!--            </map>-->
+<!--            <map source="Ticker Symbol">-->
+<!--                <target>ticker</target>-->
+<!--                <type>Property</type>-->
+<!--            </map>-->
             <map source="Month End Date" type="io.zyient.core.mapping.model.RegexMappedElement">
                 <name>trade-regex</name>
                 <target>tradeDate</target>
@@ -71,6 +71,19 @@
                 <name>principal</name>
                 <ruleType>Group</ruleType>
                 <rules>
+                    <rule settings="io.zyient.core.mapping.rules.collection.ListRuleConfig">
+                        <name>check-if-exists</name>
+                        <field>securityDescription</field>
+                        <ruleType>Condition</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <isPresent>true</isPresent>
+                        <validationErrorCode>1500001</validationErrorCode>
+                        <items>
+                            <item>Principal LifeTime Hybrid Income CIT U</item>
+                            <item>Principal LifeTime Hybrid 2030 CIT U</item>
+                            <item>Principal LifeTime Hybrid 2035 CIT U</item>
+                        </items>
+                    </rule>
                     <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                         <name>price-to-double</name>
                         <expression>(${source['Month End Account Value']}.replace(',','').replace('$',''))</expression>
