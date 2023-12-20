@@ -20,6 +20,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.model.Column;
 import io.zyient.core.mapping.model.InputContentInfo;
+import io.zyient.core.mapping.readers.settings.FlattenedInputReaderSettings;
 import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;
 import org.junit.jupiter.api.Test;
 
@@ -34,37 +35,37 @@ class FlattenedInputReaderTest {
     @Test
     void nextBatchWitCustomHeader() {
         try {
-            Map<Integer, Column> headers = Map.of(
-                    0, new Column("MASTERACCOUNT", 0),
-                    1, new Column("ACCOUNTNUMBER", 1),
-                    2, new Column("TRANSACTION", 2),
-                    3, new Column("TRANSACTIONDESCRIPTION", 3),
-                    4, new Column("POSTINGDATE", 4),
-                    5, new Column("CUSIP", 5)
-            );
             File file = new File(FILE_WITHOUT_HEADER);
             InputContentInfo ci = new InputContentInfo()
                     .path(file)
                     .sourceURI(file.toURI());
-            SeparatedReaderSettings settings = new SeparatedReaderSettings();
+            Map<String, Boolean> sectionHeaders = Map.of(
+                    "Account Number", true,
+                    "Account Name", true,
+                    "As of date", true,
+                    "Position Type", true
+            );
+            FlattenedInputReaderSettings settings = new FlattenedInputReaderSettings();
             settings.setHasHeader(false);
-            settings.setHeaders(headers);
+            settings.setSectionSeparator("\"\"");
+            settings.setFieldSeparator(":");
+            settings.setQuote("'");
+            settings.setFields(sectionHeaders);
             settings.setReadBatchSize(32);
-            SeparatedInputReader reader = (SeparatedInputReader) new SeparatedInputReader()
+            try (FlattenedInputReader reader = (FlattenedInputReader) new FlattenedInputReader()
                     .contentInfo(ci)
-                    .settings(settings);
-            try (SeparatedReadCursor cursor = (SeparatedReadCursor) reader.open()) {
-                int count = 0;
-                while (true) {
-                    Map<String, Object> data = cursor.next();
-                    if (data == null) {
-                        break;
+                    .settings(settings)) {
+                try (SeparatedReadCursor cursor = (SeparatedReadCursor) reader.open()) {
+                    int count = 0;
+                    while (true) {
+                        Map<String, Object> data = cursor.next();
+                        if (data == null) {
+                            break;
+                        }
+                        count++;
                     }
-                    String v = (String) data.get(headers.get(4).getName());
-                    assertFalse(Strings.isNullOrEmpty(v));
-                    count++;
+                    assertEquals(115, count);
                 }
-                assertEquals(300024, count);
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
