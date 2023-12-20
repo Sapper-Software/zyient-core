@@ -18,7 +18,6 @@ package io.zyient.core.mapping.model;
 
 
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.IntegerListParser;
 import io.zyient.core.mapping.config.RegexGroupParser;
 import lombok.Getter;
 import lombok.Setter;
