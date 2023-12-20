@@ -69,27 +69,29 @@ DROP TABLE IF EXISTS `cm_cases`;
 
 CREATE TABLE `cm_cases`
 (
-    case_id            VARCHAR(64)   NOT NULL,
-    case_state         VARCHAR(64)   NOT NULL,
-    error              TEXT,
-    description        VARCHAR(2048) NOT NULL,
-    assigned_to        VARCHAR(128),
-    assigned_to_type   VARCHAR(8),
-    assigned_timestamp NUMERIC(18),
-    closed_by          VARCHAR(128),
-    closed_by_type     VARCHAR(8),
-    closed_timestamp   NUMERIC(18),
-    parent_case_id     VARCHAR(64),
-    properties         MEDIUMTEXT,
-    created_by         VARCHAR(128)  NOT NULL,
-    created_by_type    VARCHAR(8)    NOT NULL,
-    time_created       NUMERIC(18)   NOT NULL,
-    time_updated       NUMERIC(18)   NOT NULL,
+    case_id               VARCHAR(64)   NOT NULL,
+    case_state            VARCHAR(64)   NOT NULL,
+    error                 TEXT,
+    description           VARCHAR(2048) NOT NULL,
+    assigned_to           VARCHAR(128),
+    assigned_to_type      VARCHAR(8),
+    assigned_timestamp    NUMERIC(18),
+    closed_by             VARCHAR(128),
+    closed_by_type        VARCHAR(8),
+    closed_timestamp      NUMERIC(18),
+    parent_case_id        VARCHAR(64),
+    properties            MEDIUMTEXT,
+    created_by            VARCHAR(128)  NOT NULL,
+    created_by_type       VARCHAR(8)    NOT NULL,
+    time_created          NUMERIC(18)   NOT NULL,
+    time_updated          NUMERIC(18)   NOT NULL,
+    external_reference_id VARCHAR(128),
     PRIMARY KEY (case_id)
 ) ENGINE = Aria;
 CREATE INDEX index_cases_state ON `cm_cases` (case_state, case_id);
 CREATE INDEX index_cases_assigned_to ON `cm_cases` (assigned_to, case_id);
 CREATE INDEX index_cases_parent_case ON `cm_cases` (parent_case_id, case_id);
+CREATE INDEX index_cases_reference ON `cm_cases` (external_reference_id, case_id)
 
 DROP TABLE IF EXISTS `cm_case_history`;
 
