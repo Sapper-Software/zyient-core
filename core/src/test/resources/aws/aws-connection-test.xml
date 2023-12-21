@@ -19,15 +19,13 @@
     <env>
         <name>TEST</name>
         <module>TEST-ENV</module>
-        <instance>S3</instance>
-        <source>filesystem</source>
+        <instance>Test</instance>
         <paths>
             <connections>config</connections>
-            <registry>/test/filesystem/registry</registry>
-            <root>/test/filesystem</root>
+            <registry>/test/env/connections/registry</registry>
         </paths>
-        <filesystem>
-        </filesystem>
+        <demo>
+        </demo>
         <keystore>
             <name>test-zk-keystore</name>
             <class>io.zyient.base.core.keystore.ZkKeyStore</class>
@@ -46,47 +44,11 @@
                 </zookeeper>
             </connection>
         </keystore>
-        <fs>
-            <zk>
-                <path>/test/filesystem/s3/admin</path>
-                <connection>test-zk</connection>
-            </zk>
-            <autoSave>true</autoSave>
-            <overwrite>true</overwrite>
-            <fileSystems>
-                <fileSystem>
-                    <type>io.zyient.core.filesystem.impl.s3.S3FileSystem</type>
-                    <name>s3-test-1</name>
-                    <basePath>root/fs/test</basePath>
-                    <tmp>
-                        <path>/tmp/test/fs</path>
-                        <clean>true</clean>
-                    </tmp>
-                    <compressed>true</compressed>
-                    <hierarchical>true</hierarchical>
-                    <endpoint>http://127.0.0.1:9000</endpoint>
-                    <region>us-east-1</region>
-                    <auth type="io.zyient.base.core.connections.aws.auth.BasicStorageAuth">
-                        <accessKey>root</accessKey>
-                        <passKey>mongodb-password</passKey>
-                    </auth>
-                    <cache>
-                        <enabled>true</enabled>
-                    </cache>
-                    <containers>
-                        <container>
-                            <domain>s3-demo-1</domain>
-                            <bucket>s3-test-1</bucket>
-                        </container>
-                        <default>s3-demo-1</default>
-                    </containers>
-                </fileSystem>
-            </fileSystems>
-        </fs>
         <config>
             <connections>
                 <shared>
                     <connection>test-zk</connection>
+                    <path>/test/env/connections</path>
                 </shared>
                 <connection>
                     <class>io.zyient.base.core.connections.common.ZookeeperConnection</class>
@@ -101,15 +63,16 @@
                     </zookeeper>
                 </connection>
                 <connection>
-                    <class>io.zyient.base.core.connections.ws.WebServiceConnection</class>
-                    <rest>
-                        <name>test-ws</name>
-                        <endpoint>https://howtodoinjava.com/</endpoint>
-                        <paths>
-                            <jersey>jersey</jersey>
-                            <other>jersey/jersey-restful-client-examples/</other>
-                        </paths>
-                    </rest>
+                    <class>io.zyient.base.core.connections.aws.AwsS3Connection</class>
+                    <s3>
+                        <name>test-aws</name>
+                        <endpoint>http://127.0.0.1:9000</endpoint>
+                        <region>us-east-1</region>
+                        <auth type="io.zyient.base.core.connections.aws.auth.BasicStorageAuth">
+                            <accessKey>root</accessKey>
+                            <passKey>mongodb-password</passKey>
+                        </auth>
+                    </s3>
                 </connection>
             </connections>
         </config>

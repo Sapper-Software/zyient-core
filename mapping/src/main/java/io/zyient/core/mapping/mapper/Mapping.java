@@ -40,8 +40,6 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.net.URI;
-import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.s3.auth;
+package io.zyient.base.core.connections.aws.auth;
 
 import io.zyient.base.core.keystore.KeyStore;
 import lombok.NonNull;

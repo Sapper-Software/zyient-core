@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.s3.auth;
+package io.zyient.base.core.connections.aws.auth;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Settings;
