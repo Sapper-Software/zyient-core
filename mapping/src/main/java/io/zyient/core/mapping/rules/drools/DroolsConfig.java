@@ -18,7 +18,7 @@ package io.zyient.core.mapping.rules.drools;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.StringListParser;
+import io.zyient.base.common.config.lists.StringListParser;
 import io.zyient.core.mapping.rules.Rule;
 import io.zyient.core.mapping.rules.RuleConfig;
 import lombok.Getter;

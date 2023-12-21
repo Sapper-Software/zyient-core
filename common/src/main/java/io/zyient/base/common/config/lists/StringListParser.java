@@ -14,39 +14,37 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.config;
+package io.zyient.base.common.config.lists;
 
 import com.google.common.base.Strings;
+import io.zyient.base.common.config.ConfigValueParser;
 import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class IntegerListParser implements ConfigValueParser<List<Integer>> {
+public class StringListParser implements ConfigValueParser<List<String>> {
     @Override
-    public List<Integer> parse(@NonNull String value) throws Exception {
+    public List<String> parse(@NonNull String value) throws Exception {
         if (!Strings.isNullOrEmpty(value)) {
             String[] parts = value.split(",");
-            List<Integer> array = new ArrayList<>(parts.length);
+            List<String> values = new ArrayList<>(parts.length);
             for (String part : parts) {
-                if (Strings.isNullOrEmpty(part)) {
-                    continue;
-                }
-                array.add(Integer.parseInt(part));
+                values.add(part.trim());
             }
-            return array;
+            return values;
         }
         return null;
     }
 
     @Override
-    public String serialize(@NonNull List<Integer> value) throws Exception {
+    public String serialize(@NonNull List<String> value) throws Exception {
         StringBuilder builder = new StringBuilder();
-        for (int v : value) {
+        for (String v : value) {
             if (!builder.isEmpty()) {
                 builder.append(",");
             }
-            builder.append(v);
+            builder.append(v.trim());
         }
         return builder.toString();
     }

@@ -88,6 +88,8 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
     private Map<String, Object> properties;
     @Transient
     private Set<CaseDocument<E, T>> deleted;
+    @Column(name = "external_reference_id")
+    private String externalReferenceId;
 
     public Case() {
         id = new CaseId();

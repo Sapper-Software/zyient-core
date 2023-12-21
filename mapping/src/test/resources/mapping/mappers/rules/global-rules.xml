@@ -27,7 +27,10 @@
                 <keyType>io.zyient.core.mapping.model.IsoCountryKey</keyType>
                 <entityType>io.zyient.core.mapping.model.IsoCountries</entityType>
                 <fieldMappings>
-                    <alpha3>contact.address.countryCode</alpha3>
+                    <mapping>
+                        <source>alpha3</source>
+                        <target>contact.address.countryCode</target>
+                    </mapping>
                 </fieldMappings>
             </rule>
         </rules>

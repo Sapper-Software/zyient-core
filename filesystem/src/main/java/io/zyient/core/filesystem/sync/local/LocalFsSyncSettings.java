@@ -18,7 +18,7 @@ package io.zyient.core.filesystem.sync.local;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.StringListParser;
+import io.zyient.base.common.config.lists.StringListParser;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.core.filesystem.sync.FileSystemSyncSettings;

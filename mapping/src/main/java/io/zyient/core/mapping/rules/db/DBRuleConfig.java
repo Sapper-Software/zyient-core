@@ -39,7 +39,7 @@ public class DBRuleConfig extends BaseRuleConfig {
     private Class<? extends IKey> keyType;
     @Config(name = "entityType", type = Class.class)
     private Class<? extends IEntity<?>> entityType;
-    @Config(name = "fieldMappings", required = false, type = Map.class)
+    @Config(name = "fieldMappings", required = false, custom = FieldMappingReader.class)
     private Map<String, String> fieldMappings;
     @Config(name = "handler", required = false, type = Class.class)
     private Class<? extends DBRuleHandler<?, ?, ?>> handler;
