@@ -60,7 +60,7 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
             @AttributeOverride(name = "id", column = @Column(name = "artefact_id"))
     })
     private DocumentId artefactId;
-    @Column(name = "comment")
+    @Column(name = "comment_text")
     private String comment;
     @Column(name = "reason_code")
     private String reasonCode;

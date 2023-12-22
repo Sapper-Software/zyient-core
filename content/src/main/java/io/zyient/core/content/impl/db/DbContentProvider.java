@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 public class DbContentProvider extends ManagedContentProvider<Session> {
-    protected DbContentProvider() {
+    public DbContentProvider() {
         super(ManagedProviderSettings.class);
     }
 

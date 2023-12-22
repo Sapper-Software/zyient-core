@@ -44,7 +44,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
 
-    protected IndexedContentProvider() {
+    public IndexedContentProvider() {
         super(ManagedProviderSettings.class);
     }
 

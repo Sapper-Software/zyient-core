@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 public class MongoContentProvider extends ManagedContentProvider<MorphiaSession> {
-    protected MongoContentProvider() {
+    public MongoContentProvider() {
         super(ManagedProviderSettings.class);
     }
 

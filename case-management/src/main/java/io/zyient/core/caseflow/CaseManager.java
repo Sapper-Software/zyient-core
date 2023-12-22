@@ -84,7 +84,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             HierarchicalConfiguration<ImmutableNode> contentConfig = reader.config()
                     .configurationAt(ContentProvider.__CONFIG_PATH);
             Class<? extends ContentProvider> clazz
-                    = (Class<? extends ContentProvider>) ConfigReader.readType(reader.config());
+                    = (Class<? extends ContentProvider>) ConfigReader.readType(contentConfig);
             contentProvider = clazz.getDeclaredConstructor()
                     .newInstance()
                     .configure(reader.config(), env);

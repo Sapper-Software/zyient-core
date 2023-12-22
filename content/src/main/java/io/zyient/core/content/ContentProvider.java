@@ -57,7 +57,7 @@ public abstract class ContentProvider implements Closeable {
     public static final String ENCRYPTED_PREFIX = "encrypted";
     public static final String ENCRYPTED_REGEX = String.format("%s=\\[(.+)\\]", ENCRYPTED_PREFIX);
     public static final String KEY_ENGINE = "ContentProvider";
-    public static final String __CONFIG_PATH = "contentManager";
+    public static final String __CONFIG_PATH = "content-manager";
     public static final String CONTENT_TEMP_PATH = "content/temp";
 
     private static final Pattern ENCRYPTED = Pattern.compile(ENCRYPTED_REGEX);

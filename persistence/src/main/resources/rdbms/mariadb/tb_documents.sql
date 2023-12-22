@@ -15,7 +15,7 @@ CREATE TABLE `tb_documents`
     modified_by     VARCHAR(256)  NOT NULL,
     time_created    NUMERIC(18)   NOT NULL,
     time_updated    NUMERIC(18)   NOT NULL,
-    password        VARCHAR(256),
+    passkey         VARCHAR(256),
     error           TEXT,
     properties      MEDIUMTEXT,
     reference_id    VARCHAR(256)  NOT NULL,
