@@ -266,10 +266,9 @@ public class FileUtils {
                     List<File> dfs = getFiles(f);
                     if (!dfs.isEmpty()) {
                         files.addAll(dfs);
-                    } else {
-                        files.add(f);
                     }
                 }
+                files.add(f);
             }
         }
         return files;

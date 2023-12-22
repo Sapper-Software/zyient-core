@@ -16,18 +16,16 @@
 
 package io.zyient.core.mapping.readers.impl.separated;
 
-import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.core.mapping.model.Column;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.settings.FlattenedInputReaderSettings;
-import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class FlattenedInputReaderTest {
     private static final String FILE_WITHOUT_HEADER = "src/test/resources/data/TransactionDetail_2023-07-03.txt";

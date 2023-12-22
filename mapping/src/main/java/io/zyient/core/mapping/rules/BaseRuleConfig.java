@@ -42,7 +42,7 @@ public abstract class BaseRuleConfig extends RuleConfig {
             throw new ConfigurationException(String.format("Invalid Rule type. [type=%s][rule=%s]",
                     getType().name(), getName()));
         }
-        if (Strings.isNullOrEmpty(expression)) {
+        if (getType() == RuleType.Transformation && Strings.isNullOrEmpty(expression)) {
             throw new ConfigurationException(String.format("Missing required property [expression]. [rule=%s]",
                     getName()));
         }

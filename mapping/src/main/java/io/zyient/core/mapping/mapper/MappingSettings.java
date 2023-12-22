@@ -41,6 +41,8 @@ public class MappingSettings extends Settings {
     private String dateFormat = null;
     @Config(name = "locale", required = false)
     private String localeStr = null;
+    @Config(name = "useJson", required = false, type = Boolean.class)
+    private boolean useJsonForString = true;
     private Locale locale = Locale.getDefault();
 
     public MappingSettings() {

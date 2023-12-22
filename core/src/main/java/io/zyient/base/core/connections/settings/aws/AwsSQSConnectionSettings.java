@@ -32,11 +32,11 @@ public class AwsSQSConnectionSettings extends MessageConnectionSettings {
     @Config(name = "region")
     private String region;
 
-    protected AwsSQSConnectionSettings() {
+    public AwsSQSConnectionSettings() {
         super(EConnectionType.sqs);
     }
 
-    protected AwsSQSConnectionSettings(@NonNull AwsSQSConnectionSettings settings) {
+    public AwsSQSConnectionSettings(@NonNull AwsSQSConnectionSettings settings) {
         super(settings);
         region = settings.region;
     }
