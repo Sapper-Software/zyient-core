@@ -45,7 +45,11 @@ public class S3EventObject {
         if (Strings.isNullOrEmpty(object.key)) {
             throw new Exception("Object key not defined...");
         }
-        object.size = (int) data.get(KEY_SIZE);
+        Object s = data.get(KEY_SIZE);
+        if (s instanceof Integer)
+            object.size = (int) s;
+        else
+            object.size = 0;
         object.tag = (String) data.get(KEY_TAG);
         object.versionId = (String) data.get(KEY_VERSION);
         return object;

@@ -44,6 +44,7 @@ public class S3Event {
     public static final String KEY_NAME = "eventName";
     public static final String KEY_TIMESTAMP = "eventTime";
 
+    private String messageId;
     private String region;
     private String principalId;
     private DateTime timestamp;
