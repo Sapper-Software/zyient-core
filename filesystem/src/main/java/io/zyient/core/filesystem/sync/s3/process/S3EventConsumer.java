@@ -149,7 +149,16 @@ public class S3EventConsumer {
                                 .entries(entries)
                                 .queueUrl(queueUrl)
                                 .build();
-                        connection.client().deleteMessageBatch(request);
+                        DeleteMessageBatchResponse response = connection.client().deleteMessageBatch(request);
+                        if (response.hasFailed()) {
+                            List<BatchResultErrorEntry> errors = response.failed();
+                            for (BatchResultErrorEntry error : errors) {
+                                DefaultLogger.error(String.format("[queue=%s] Delete failed for message: [id=%s][code=%s]",
+                                        queueUrl, error.id(), error.code()));
+                            }
+                            DefaultLogger.error(String.format("[queue=%s] Delete failed count = %d",
+                                    queueUrl, errors.size()));
+                        }
                     }
                     if (!delete.isEmpty()) {
                         for (MessageHandle handle : delete) {

@@ -60,7 +60,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "created_by")),
             @AttributeOverride(name = "type", column = @Column(name = "created_by_type")),
-            @AttributeOverride(name = "timestamp", column = @Column(name = "time_created"))
+            @AttributeOverride(name = "timestamp", column = @Column(name = "created_timestamp"))
     })
     private Actor createdBy;
     @Embedded
@@ -109,8 +109,14 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         ArtefactReference reference = new ArtefactReference();
         reference.setId(refId);
         reference.setArtefactType(artefact.getClass().getCanonicalName());
+        if (artefactReferences == null) {
+            artefactReferences = new HashSet<>();
+        }
         artefactReferences.add(reference);
         artefact.setReferenceId(id);
+        if (artefacts == null) {
+            artefacts = new HashSet<>();
+        }
         artefacts.add(artefact);
 
         return this;

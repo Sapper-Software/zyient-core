@@ -20,8 +20,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
 import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -33,9 +31,8 @@ import lombok.Setter;
 public class CaseHistoryId implements IKey {
     @Column(name = "case_id")
     private String caseId;
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "sequence")
-    private int sequence;
+    private long sequence = -1;
 
     /**
      * Get the String representation of the key.
@@ -65,7 +62,7 @@ public class CaseHistoryId implements IKey {
         if (key instanceof CaseHistoryId) {
             int ret = caseId.compareTo(((CaseHistoryId) key).caseId);
             if (ret == 0) {
-                ret = sequence - ((CaseHistoryId) key).sequence;
+                ret = (int) (sequence - ((CaseHistoryId) key).sequence);
             }
             return ret;
         }

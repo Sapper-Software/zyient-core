@@ -47,8 +47,8 @@ public class CaseComment extends BaseEntity<CaseCommentId> {
     private Actor commentedBy;
     @Embedded
     @AttributeOverrides({
-            @AttributeOverride(name = "case_id", column = @Column(name = "parent_comment_case_id")),
-            @AttributeOverride(name = "comment_id", column = @Column(name = "parent_comment_id"))
+            @AttributeOverride(name = "caseId", column = @Column(name = "parent_comment_case_id")),
+            @AttributeOverride(name = "commentId", column = @Column(name = "parent_comment_id"))
     })
     private CaseCommentId parent;
     @Enumerated(EnumType.STRING)

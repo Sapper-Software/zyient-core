@@ -40,7 +40,7 @@ public class CaseHistory extends BaseEntity<CaseHistoryId> {
     private CaseHistoryId id;
     @Column(name = "action_id")
     private String action;
-    @Column(name = "case_code")
+    @Column(name = "code_id")
     private String caseCode;
     @Column(name = "comment")
     private String comment;
@@ -50,7 +50,7 @@ public class CaseHistory extends BaseEntity<CaseHistoryId> {
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "created_by")),
             @AttributeOverride(name = "type", column = @Column(name = "created_by_type")),
-            @AttributeOverride(name = "timestamp", column = @Column(name = "time_created"))
+            @AttributeOverride(name = "timestamp", column = @Column(name = "created_timestamp"))
     })
     private Actor actor;
 

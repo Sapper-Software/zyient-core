@@ -120,6 +120,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         }
         CaseHistoryId id = new CaseHistoryId();
         id.setCaseId(caseId.getId());
+        id.setSequence(System.nanoTime());
         CaseHistory history = new CaseHistory();
         history.setId(id);
         history.setAction(action.getKey().getKey());
@@ -155,6 +156,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             if (caseObject.getId() == null) {
                 caseObject.setId(new CaseId());
             }
+            caseObject.setDescription(description);
             caseObject.setCreatedBy(new Actor(creator));
             if (artefacts != null) {
                 for (Artefact f : artefacts) {
@@ -257,14 +259,14 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
 
 
     @SuppressWarnings("unchecked")
-    public Case<S, E, T> addArtefact(@NonNull String caseId,
+    public CaseDocument<E, T> addArtefact(@NonNull String caseId,
                                      @NonNull Artefact artefact,
                                      @NonNull UserOrRole modifier,
                                      Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(id, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -281,6 +283,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             document.setId(new DocumentId(settings.getContentCollection()));
             document.setName(artefact.name());
             document.setPath(artefact.file());
+            document.setSourcePath(artefact.sourceUrl());
             document.getState().setState(EEntityState.New);
             if (!Strings.isNullOrEmpty(artefact.mimeType())) {
                 document.setMimeType(artefact.mimeType());
@@ -300,7 +303,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                         document,
                         modifier);
                 dataStore.commit();
-                return caseObject;
+                return document;
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
@@ -352,6 +355,42 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    protected CaseDocument<E, T> updateArtefact(@NonNull CaseId caseId,
+                                                @NonNull CaseDocument<E, T> document,
+                                                @NonNull UserOrRole modifier,
+                                                Context context) throws Exception {
+        checkState();
+        Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        if (caseObject == null) {
+            throw new Exception(String.format("Case not found. [id=%s][type=%s]",
+                    caseId, settings.getCaseType().getCanonicalName()));
+        }
+        authorization.authorize(caseObject, EStandardAction.UpdateArtefact.action(), modifier, context);
+        DocumentContext docCtx = null;
+        if (context != null) {
+            docCtx = new DocumentContext(context);
+        } else {
+            docCtx = new DocumentContext();
+        }
+        docCtx.user(modifier.asPrincipal());
+        dataStore.beingTransaction();
+        try {
+            document = (CaseDocument<E, T>) contentProvider.update(document, docCtx);
+            addCaseHistory(caseObject.getId(),
+                    EStandardAction.UpdateArtefact.action(),
+                    EStandardCode.ActionUpdateArtefactState.code(),
+                    null,
+                    document,
+                    modifier);
+            dataStore.commit();
+            return document;
+        } catch (Throwable t) {
+            dataStore.rollback(false);
+            throw t;
         }
     }
 
@@ -531,6 +570,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected Case<S, E, T> update(@NonNull Case<S, E, T> caseObject,
                                    @NonNull CaseAction action,
                                    @NonNull CaseCode code,
@@ -550,6 +590,8 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                         notes,
                         caseObject,
                         modifier);
+                dataStore.commit();
+                caseObject = findById(caseObject.getId(), (Class<? extends Case<S, E, T>>) caseObject.getClass(), context);
                 return caseObject;
             } catch (Throwable t) {
                 dataStore.rollback(false);
@@ -561,6 +603,12 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             DefaultLogger.stacktrace(ex);
             throw new CaseActionException(ex);
         }
+    }
+
+    protected Case<S, E, T> findById(@NonNull CaseId id,
+                                     @NonNull Class<? extends Case<S, E, T>> entityType,
+                                     Context context) throws Exception {
+        return dataStore.find(id, entityType, context);
     }
 
     @SuppressWarnings("unchecked")

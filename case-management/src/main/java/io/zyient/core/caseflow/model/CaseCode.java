@@ -39,7 +39,7 @@ import lombok.Setter;
 public class CaseCode implements IEntity<StringKey> {
     public static final int __START_INDEX = 1000;
     public static final int __KEY_SIZE = 16;
-    public static final String __KEY_FORMAT = "%" + __KEY_SIZE + "d";
+    public static final String __KEY_FORMAT = "%0" + __KEY_SIZE + "d";
 
     @EmbeddedId
     private StringKey key;
@@ -50,6 +50,15 @@ public class CaseCode implements IEntity<StringKey> {
     private String name;
     @Column(name = "description")
     private String description;
+
+    public CaseCode() {}
+
+    public CaseCode(StringKey key, ECaseCodeType type, String name, String description) {
+        this.key = key;
+        this.type = type;
+        this.name = name;
+        this.description = description;
+    }
 
     /**
      * Compare the entity key with the key specified.

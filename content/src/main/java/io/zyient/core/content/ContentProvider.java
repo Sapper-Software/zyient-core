@@ -178,7 +178,7 @@ public abstract class ContentProvider implements Closeable {
                     }
                 }
             }
-            return document;
+            return find(document.getId(), (Class<? extends Document<E, K, T>>) document.getClass(), context);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
@@ -302,7 +302,7 @@ public abstract class ContentProvider implements Closeable {
                     }
                 }
             }
-            return document;
+            return find(document.getId(), (Class<? extends Document<E, K, T>>) document.getClass(), context);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);

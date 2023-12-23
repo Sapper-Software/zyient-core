@@ -27,7 +27,6 @@ import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -143,7 +142,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));
             }
-            ScrollableResults<E> results = qq.scroll(ScrollMode.FORWARD_ONLY);
+            ScrollableResults<E> results = qq.scroll();
             HibernateCursor<K, E> cursor = new HibernateCursor<>(results);
             return cursor.pageSize(maxResults);
         } catch (Exception ex) {
