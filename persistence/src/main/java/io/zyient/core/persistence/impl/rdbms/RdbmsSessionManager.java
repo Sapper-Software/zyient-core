@@ -112,7 +112,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         clearCache();
     }
 
-    private void clearCache() {
+    private void clearCache() throws DataStoreException {
         long tid = Thread.currentThread().getId();
         Map<String, TransactionCacheElement> cache = transactionCache.remove(tid);
         if (cache != null) {

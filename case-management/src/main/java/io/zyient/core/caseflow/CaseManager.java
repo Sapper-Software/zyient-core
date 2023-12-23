@@ -23,6 +23,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.Actor;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.processing.ProcessorState;
@@ -44,6 +45,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
@@ -158,6 +160,15 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             }
             caseObject.setDescription(description);
             caseObject.setCreatedBy(new Actor(creator));
+            if (context instanceof CaseContext ctx) {
+                if (((CaseContext) context).customFields() != null) {
+                    Map<String, Object> values = ctx.customFields();
+                    for (String field : values.keySet()) {
+                        Object v = values.get(field);
+                        ReflectionHelper.setFieldValue(v, caseObject, field);
+                    }
+                }
+            }
             if (artefacts != null) {
                 for (Artefact f : artefacts) {
                     Preconditions.checkArgument(!Strings.isNullOrEmpty(f.name()));
@@ -260,9 +271,9 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
 
     @SuppressWarnings("unchecked")
     public CaseDocument<E, T> addArtefact(@NonNull String caseId,
-                                     @NonNull Artefact artefact,
-                                     @NonNull UserOrRole modifier,
-                                     Context context) throws CaseAuthorizationError, CaseActionException {
+                                          @NonNull Artefact artefact,
+                                          @NonNull UserOrRole modifier,
+                                          Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
             CaseId id = new CaseId(caseId);
@@ -621,14 +632,13 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         }
         docCtx.user(user.asPrincipal());
         if (caseObject.getState().getState() == EEntityState.New) {
-            caseObject = dataStore.create(caseObject, caseObject.getClass(), context);
             if (caseObject.getArtefacts() != null) {
                 for (CaseDocument<E, T> document : caseObject.getArtefacts()) {
                     contentProvider.create(document, docCtx);
                 }
             }
+            caseObject = dataStore.create(caseObject, caseObject.getClass(), context);
         } else {
-            caseObject = dataStore.update(caseObject, caseObject.getClass(), context);
             if (caseObject.getArtefacts() != null) {
                 for (CaseDocument<E, T> document : caseObject.getArtefacts()) {
                     if (document.getState().getState() == EEntityState.New)
@@ -642,6 +652,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                     contentProvider.update(doc, docCtx);
                 }
             }
+            caseObject = dataStore.update(caseObject, caseObject.getClass(), context);
         }
         return caseObject;
     }

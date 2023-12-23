@@ -115,7 +115,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-
         E entity = session.find(type, key);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);

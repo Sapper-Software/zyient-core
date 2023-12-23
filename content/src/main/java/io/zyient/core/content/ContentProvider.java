@@ -166,7 +166,13 @@ public abstract class ContentProvider implements Closeable {
                 document.setCreatedTime(System.nanoTime());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
-
+                if (context.customFields() != null) {
+                    Map<String, Object> values = context.customFields();
+                    for (String field : values.keySet()) {
+                        Object v = values.get(field);
+                        ReflectionHelper.setFieldValue(v, document, field);
+                    }
+                }
                 document = createDoc(document, context);
                 if (document.getDocuments() != null && !document.getDocuments().isEmpty()) {
                     Set<Document<E, K, T>> children = (Set<Document<E, K, T>>) document.getDocuments();
@@ -178,7 +184,7 @@ public abstract class ContentProvider implements Closeable {
                     }
                 }
             }
-            return find(document.getId(), (Class<? extends Document<E, K, T>>) document.getClass(), context);
+            return document;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);

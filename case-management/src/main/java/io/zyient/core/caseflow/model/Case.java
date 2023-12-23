@@ -77,11 +77,11 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
             @AttributeOverride(name = "timestamp", column = @Column(name = "closed_timestamp"))
     })
     private Actor closedBy;
-    @OneToMany
-    @JoinColumn(name = "case_id")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "case_id", referencedColumnName = "case_id")
     private Set<CaseComment> comments;
-    @OneToMany
-    @JoinColumn(name = "case_id")
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "case_id", referencedColumnName = "case_id")
     private Set<ArtefactReference> artefactReferences;
     @Embedded
     @AttributeOverrides({
