@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
@@ -29,7 +30,10 @@ import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.caseflow.errors.CaseActionException;
 import io.zyient.core.caseflow.errors.CaseAuthorizationError;
+import io.zyient.core.caseflow.errors.CaseFatalError;
 import io.zyient.core.caseflow.model.*;
+import io.zyient.core.caseflow.workflow.StateTransitionHandler;
+import io.zyient.core.caseflow.workflow.StateTransitionSettings;
 import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.persistence.AbstractDataStore;
@@ -51,18 +55,23 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>> {
+public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>> {
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends CaseManagerSettings> settingsType;
+    private final Class<P> caseStateType;
 
     private TransactionDataStore<?, ?> dataStore;
     private ContentProvider contentProvider;
     private CaseManagerSettings settings;
     private ActionAuthorization<P, S> authorization;
     private DataStoreEnv<?> env;
+    private Map<String, StateTransitionHandler<P, S, E, T>> handlers;
+    private Map<P, Map<P, StateTransitionHandler<P, S, E, T>>> transitions;
 
-    public CaseManager(@NonNull Class<? extends CaseManagerSettings> settingsType) {
+    public CaseManager(@NonNull Class<? extends CaseManagerSettings> settingsType,
+                       @NonNull Class<P> caseStateType) {
         this.settingsType = settingsType;
+        this.caseStateType = caseStateType;
     }
 
     @SuppressWarnings("unchecked")
@@ -96,12 +105,63 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                     .getDeclaredConstructor()
                     .newInstance();
             authorization.configure(reader.config());
+
+            readStateHandlers(reader.config());
+
             state.setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             state.error(ex);
             throw new ConfigurationException(ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void readStateHandlers(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        if (ConfigReader.checkIfNodeExists(config, CaseManagerSettings.__CONFIG_PATH_HANDLERS)) {
+            HierarchicalConfiguration<ImmutableNode> cfg
+                    = config.configurationAt(CaseManagerSettings.__CONFIG_PATH_HANDLERS);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes
+                    = cfg.configurationsAt(StateTransitionHandler.__CONFIG_PATH);
+            if (nodes != null) {
+                handlers = new HashMap<>();
+                for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                    Class<? extends StateTransitionHandler<P, S, E, T>> type
+                            = (Class<? extends StateTransitionHandler<P, S, E, T>>) ConfigReader.readType(node);
+                    StateTransitionHandler<P, S, E, T> handler = type.getDeclaredConstructor()
+                            .newInstance()
+                            .configure(node, env);
+                    handlers.put(handler.name(), handler);
+                }
+                readTransitions(config);
+            }
+        }
+    }
+
+    private void readTransitions(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
+        if (ConfigReader.checkIfNodeExists(config, CaseManagerSettings.__CONFIG_PATH_TRANSITIONS)) {
+            HierarchicalConfiguration<ImmutableNode> cfg
+                    = config.configurationAt(CaseManagerSettings.__CONFIG_PATH_TRANSITIONS);
+            List<HierarchicalConfiguration<ImmutableNode>> nodes
+                    = cfg.configurationsAt(StateTransitionSettings.__CONFIG_PATH);
+            if (nodes != null) {
+                transitions = new HashMap<>();
+                for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
+                    ConfigReader reader = new ConfigReader(node, StateTransitionSettings.class);
+                    reader.read();
+                    StateTransitionSettings settings = (StateTransitionSettings) reader.settings();
+                    P from = Enum.valueOf(caseStateType, settings.getFromState());
+                    P to = Enum.valueOf(caseStateType, settings.getToState());
+                    StateTransitionHandler<P, S, E, T> handler = handlers.get(settings.getHandler());
+                    if (handler == null) {
+                        throw new Exception(String.format("Specified transition handler not found. [name=%s]",
+                                settings.getHandler()));
+                    }
+                    Map<P, StateTransitionHandler<P, S, E, T>> map = transitions.computeIfAbsent(from, k -> new HashMap<>());
+                    map.put(to, handler);
+                }
+            }
         }
     }
 
@@ -149,7 +209,7 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                                    @NonNull CaseCode caseCode,
                                    @NonNull String notes,
                                    Context context) throws CaseActionException,
-            CaseAuthorizationError {
+            CaseAuthorizationError, CaseFatalError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(description));
         checkState();
         try {
@@ -215,11 +275,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -273,11 +333,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -332,11 +392,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -374,11 +434,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -462,11 +522,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -501,11 +561,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -542,11 +602,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -586,11 +646,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -618,6 +678,7 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
             caseObject.getCaseState().setState(state);
             if (context instanceof CaseContext ctx) {
                 if (((CaseContext) context).customFields() != null) {
+                    authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
                     Map<String, Object> values = ctx.customFields();
                     for (String field : values.keySet()) {
                         Object v = values.get(field);
@@ -639,19 +700,38 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                         modifier,
                         diff,
                         context);
-                handleStateTransition(current, caseObject);
+                transition(current, caseObject.getCaseState().getState(), caseObject);
                 dataStore.commit();
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
             }
             return caseObject;
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
+    }
+
+    private void transition(P fromState, P toState, Case<P, S, E, T> caseObject) throws CaseActionException {
+        if (transitions != null) {
+            if (transitions.containsKey(fromState)) {
+                Map<P, StateTransitionHandler<P, S, E, T>> map = transitions.get(fromState);
+                if (map.containsKey(toState)) {
+                    StateTransitionHandler<P, S, E, T> handler = map.get(toState);
+                    try {
+                        handler.handleStateTransition(fromState, caseObject);
+                    } catch (CaseActionException | CaseFatalError ae) {
+                        throw ae;
+                    } catch (Throwable t) {
+                        throw new CaseFatalError(t);
+                    }
+                }
+            }
+        }
+        handleStateTransition(fromState, caseObject);
     }
 
     @SuppressWarnings("unchecked")
@@ -680,11 +760,11 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
                 dataStore.rollback(false);
                 throw t;
             }
-        } catch (CaseAuthorizationError ae) {
+        } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
-            throw new CaseActionException(ex);
+            throw new CaseFatalError(ex);
         }
     }
 
@@ -749,12 +829,12 @@ public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E e
 
     protected abstract Case<P, S, E, T> createInstance() throws Exception;
 
-    protected abstract void validateCase(@NonNull Case<P, S, E, T> caseObject) throws Exception;
+    protected abstract void validateCase(@NonNull Case<P, S, E, T> caseObject) throws ValidationExceptions;
 
-    protected abstract @NonNull CaseDocument<E, T> validateArtefact(@NonNull CaseDocument<E, T> document) throws Exception;
+    protected abstract @NonNull CaseDocument<E, T> validateArtefact(@NonNull CaseDocument<E, T> document) throws ValidationExceptions;
 
-    protected abstract void validateAssignment(UserOrRole from, Case<P, S, E, T> caseObject) throws Exception;
+    protected abstract void validateAssignment(UserOrRole from, Case<P, S, E, T> caseObject) throws ValidationExceptions;
 
     protected abstract void handleStateTransition(@NonNull P previousState,
-                                                  @NonNull Case<P, S, E, T> caseObject) throws Exception;
+                                                  @NonNull Case<P, S, E, T> caseObject) throws CaseActionException;
 }

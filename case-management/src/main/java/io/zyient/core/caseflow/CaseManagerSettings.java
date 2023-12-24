@@ -31,6 +31,8 @@ import lombok.Setter;
         property = "@class")
 public class CaseManagerSettings extends Settings {
     public static final String __CONFIG_PATH = "case-manager";
+    public static final String __CONFIG_PATH_HANDLERS = "handlers";
+    public static final String __CONFIG_PATH_TRANSITIONS = "transitions";
 
     @Config(name = "case.type", type = Class.class)
     private Class<? extends Case<?, ?, ?, ?>> caseType;

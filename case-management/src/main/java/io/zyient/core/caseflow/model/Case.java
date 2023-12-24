@@ -48,7 +48,7 @@ import java.util.Set;
 @MappedSuperclass
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class Case<P extends Enum<?>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
+public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;

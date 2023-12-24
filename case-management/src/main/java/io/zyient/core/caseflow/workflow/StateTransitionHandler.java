@@ -14,28 +14,29 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow;
+package io.zyient.core.caseflow.workflow;
 
-import io.zyient.base.common.model.Context;
-import io.zyient.base.core.model.UserOrRole;
-import io.zyient.core.caseflow.errors.CaseAuthorizationError;
+import io.zyient.core.caseflow.errors.CaseActionException;
 import io.zyient.core.caseflow.model.Case;
-import io.zyient.core.caseflow.model.CaseAction;
+import io.zyient.core.caseflow.model.CaseDocument;
 import io.zyient.core.caseflow.model.CaseState;
+import io.zyient.core.persistence.env.DataStoreEnv;
+import io.zyient.core.persistence.model.DocumentState;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public interface ActionAuthorization<P extends Enum<P>, S extends CaseState<P>> {
-    void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
+import java.io.Closeable;
 
-    void authorize(Case<P, S, ?, ?> caseObject,
-                   @NonNull CaseAction action,
-                   @NonNull UserOrRole actor,
-                   Context context) throws CaseAuthorizationError;
+public interface StateTransitionHandler<P extends Enum<P>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>> extends Closeable {
+    String __CONFIG_PATH = "handler";
 
-    void checkAssignment(@NonNull Case<P, S, ?, ?> caseObject,
-                         @NonNull UserOrRole assignTo,
-                         Context context) throws CaseAuthorizationError;
+    String name();
+
+    StateTransitionHandler<P, S, E, T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                                 @NonNull DataStoreEnv<?> env) throws ConfigurationException;
+
+    void handleStateTransition(@NonNull P previousState,
+                               @NonNull Case<P, S, E, T> caseObject) throws CaseActionException;
 }
