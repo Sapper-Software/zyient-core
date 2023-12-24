@@ -24,7 +24,9 @@ import io.zyient.base.core.connections.aws.AwsS3Connection;
 import io.zyient.base.core.utils.FileUtils;
 import io.zyient.core.filesystem.env.DemoFileSystemEnv;
 import io.zyient.core.filesystem.impl.s3.S3Helper;
+import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.XMLConfiguration;
+import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -61,7 +63,9 @@ class S3EventListenerTest {
         if (!connection.isConnected())
             connection.connect();
         listener = new S3EventListener();
-        listener.init(env.configNode(), env);
+        HierarchicalConfiguration<ImmutableNode> node
+                = env.configNode().configurationAt(S3EventListenerSettings.__CONFIG_PATH);
+        listener.init(node, env);
         files = FileUtils.getFiles(new File(FILES_DIR));
     }
 

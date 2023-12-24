@@ -16,6 +16,7 @@
 
 package io.zyient.core.caseflow.workflow;
 
+import io.zyient.core.caseflow.CaseManager;
 import io.zyient.core.caseflow.errors.CaseActionException;
 import io.zyient.core.caseflow.model.Case;
 import io.zyient.core.caseflow.model.CaseDocument;
@@ -33,6 +34,8 @@ public interface StateTransitionHandler<P extends Enum<P>, S extends CaseState<P
     String __CONFIG_PATH = "handler";
 
     String name();
+
+    StateTransitionHandler<P, S, E, T> withCaseManager(@NonNull CaseManager<P, S, E, T> caseManager);
 
     StateTransitionHandler<P, S, E, T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                                  @NonNull DataStoreEnv<?> env) throws ConfigurationException;

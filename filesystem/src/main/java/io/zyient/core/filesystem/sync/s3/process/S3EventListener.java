@@ -56,7 +56,6 @@ public class S3EventListener implements Closeable {
         this.env = env;
         try {
             ConfigReader reader = new ConfigReader(config,
-                    S3EventListenerSettings.__CONFIG_PATH,
                     S3EventListenerSettings.class);
             reader.read();
             settings = (S3EventListenerSettings) reader.settings();

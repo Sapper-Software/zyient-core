@@ -133,6 +133,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                             = (Class<? extends StateTransitionHandler<P, S, E, T>>) ConfigReader.readType(node);
                     StateTransitionHandler<P, S, E, T> handler = type.getDeclaredConstructor()
                             .newInstance()
+                            .withCaseManager(this)
                             .configure(node, env);
                     handlers.put(handler.name(), handler);
                 }
@@ -716,6 +717,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             }
             dataStore.beingTransaction();
             try {
+                transition(current, caseObject.getCaseState().getState(), caseObject);
                 caseObject = saveUpdate(caseObject,
                         EStandardAction.UpdateState.action(),
                         EStandardCode.UpdateSate.code(),
@@ -723,7 +725,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         modifier,
                         diff,
                         context);
-                transition(current, caseObject.getCaseState().getState(), caseObject);
                 dataStore.commit();
             } catch (Throwable t) {
                 dataStore.rollback(false);
