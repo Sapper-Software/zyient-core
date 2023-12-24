@@ -116,6 +116,10 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         E entity = session.find(type, key);
+        if (doRefresh(context)) {
+            session.evict(entity);
+        }
+        entity = session.find(type, key);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -160,4 +164,5 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                                                                     @NonNull Class<? extends K> keyTpe) throws Exception {
         return new SqlQueryParser<>(keyTpe, entityType);
     }
+
 }

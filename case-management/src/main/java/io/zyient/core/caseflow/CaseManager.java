@@ -32,6 +32,7 @@ import io.zyient.core.caseflow.errors.CaseAuthorizationError;
 import io.zyient.core.caseflow.model.*;
 import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
+import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;
 import io.zyient.core.persistence.TransactionDataStore;
 import io.zyient.core.persistence.env.DataStoreEnv;
@@ -44,19 +45,20 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class CaseManager<S extends CaseState<?>, E extends DocumentState<?>, T extends CaseDocument<E, T>> {
+public abstract class CaseManager<P extends Enum<?>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>> {
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends CaseManagerSettings> settingsType;
 
     private TransactionDataStore<?, ?> dataStore;
     private ContentProvider contentProvider;
     private CaseManagerSettings settings;
-    private ActionAuthorization<S> authorization;
+    private ActionAuthorization<P, S> authorization;
     private DataStoreEnv<?> env;
 
     public CaseManager(@NonNull Class<? extends CaseManagerSettings> settingsType) {
@@ -64,8 +66,8 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     }
 
     @SuppressWarnings("unchecked")
-    public CaseManager<S, E, T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                          @NonNull DataStoreEnv<?> env) throws ConfigurationException {
+    public CaseManager<P, S, E, T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                             @NonNull DataStoreEnv<?> env) throws ConfigurationException {
         try {
             this.env = env;
             ConfigReader reader = new ConfigReader(xmlConfig,
@@ -90,7 +92,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             contentProvider = clazz.getDeclaredConstructor()
                     .newInstance()
                     .configure(reader.config(), env);
-            authorization = (ActionAuthorization<S>) settings.getAuthorizer()
+            authorization = (ActionAuthorization<P, S>) settings.getAuthorizer()
                     .getDeclaredConstructor()
                     .newInstance();
             authorization.configure(reader.config());
@@ -118,7 +120,10 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                                 UserOrRole actor) throws Exception {
         String json = null;
         if (change != null) {
-            json = JSONUtils.asString(change, change.getClass());
+            if (change instanceof String) {
+                json = (String) change;
+            } else
+                json = JSONUtils.asString(change, change.getClass());
         }
         CaseHistoryId id = new CaseHistoryId();
         id.setCaseId(caseId.getId());
@@ -138,18 +143,18 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     }
 
     @SuppressWarnings("unchecked")
-    public Case<S, E, T> create(@NonNull String description,
-                                List<Artefact> artefacts,
-                                @NonNull UserOrRole creator,
-                                @NonNull CaseCode caseCode,
-                                @NonNull String notes,
-                                Context context) throws CaseActionException,
+    public Case<P, S, E, T> create(@NonNull String description,
+                                   List<Artefact> artefacts,
+                                   @NonNull UserOrRole creator,
+                                   @NonNull CaseCode caseCode,
+                                   @NonNull String notes,
+                                   Context context) throws CaseActionException,
             CaseAuthorizationError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(description));
         checkState();
         try {
             authorization.authorize(null, EStandardAction.Create.action(), creator, context);
-            Case<S, E, T> caseObject = createInstance();
+            Case<P, S, E, T> caseObject = createInstance();
             if (caseObject.getCaseState() == null) {
                 throw new Exception(String.format("Invalid case instance: state is null. [type=%s]",
                         caseObject.getClass().getCanonicalName()));
@@ -219,21 +224,25 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     }
 
     @SuppressWarnings("unchecked")
-    public Case<S, E, T> assignTo(@NonNull String caseId,
-                                  UserOrRole assignTo,
-                                  @NonNull String notes,
-                                  @NonNull UserOrRole assigner,
-                                  Context context) throws CaseActionException, CaseAuthorizationError {
+    public Case<P, S, E, T> assignTo(@NonNull String caseId,
+                                     UserOrRole assignTo,
+                                     @NonNull String notes,
+                                     @NonNull UserOrRole assigner,
+                                     Context context) throws CaseActionException, CaseAuthorizationError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
+            Map<String, Object> diff = new HashMap<>();
             Actor current = caseObject.getAssignedTo();
+            if (current == null && assignTo == null) {
+                throw new CaseActionException("No assignment to remove...");
+            }
             if (assignTo != null) {
                 authorization.authorize(caseObject, EStandardAction.AssignTo.action(), assigner, context);
                 authorization.checkAssignment(caseObject, assignTo, context);
@@ -243,17 +252,21 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                 caseObject.setAssignedTo(new Actor(assignTo));
             else
                 caseObject.setAssignedTo(null);
+            diff.put("assignment.removed", current);
+            if (assignTo != null) {
+                diff.put("assignment.to", assignTo);
+            }
             validateAssignment(current, caseObject);
             caseObject.getState().setState(EEntityState.Updated);
             dataStore.beingTransaction();
             try {
-                caseObject = save(caseObject, assigner, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         EStandardAction.AssignTo.action(),
                         EStandardCode.ActionAssignTo.code(),
-                        notes,
-                        assignTo,
-                        assigner);
+                        null,
+                        assigner,
+                        diff,
+                        context);
                 dataStore.commit();
                 return caseObject;
             } catch (Throwable t) {
@@ -277,7 +290,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(id, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(id, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -306,13 +319,13 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             caseObject.addArtefact(document);
             dataStore.beingTransaction();
             try {
-                caseObject = save(caseObject, modifier, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         EStandardAction.AddArtefact.action(),
                         EStandardCode.ActionAddArtefact.code(),
                         null,
-                        document,
-                        modifier);
+                        modifier,
+                        Map.of("artefact.add", artefact.sourceUrl()),
+                        context);
                 dataStore.commit();
                 return document;
             } catch (Throwable t) {
@@ -328,14 +341,14 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
     }
 
     @SuppressWarnings("unchecked")
-    public Case<S, E, T> removeArtefact(@NonNull String caseId,
-                                        @NonNull String artefactId,
-                                        @NonNull UserOrRole modifier,
-                                        Context context) throws CaseAuthorizationError, CaseActionException {
+    public Case<P, S, E, T> removeArtefact(@NonNull String caseId,
+                                           @NonNull String artefactId,
+                                           @NonNull UserOrRole modifier,
+                                           Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -348,13 +361,13 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             }
             dataStore.beingTransaction();
             try {
-                caseObject = save(caseObject, modifier, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         EStandardAction.DeleteArtefact.action(),
                         EStandardCode.ActionRemoveArtefact.code(),
                         null,
-                        docId,
-                        modifier);
+                        modifier,
+                        Map.of("artefact.removed", artefactId),
+                        context);
                 dataStore.commit();
                 return caseObject;
             } catch (Throwable t) {
@@ -375,7 +388,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
                                                 @NonNull UserOrRole modifier,
                                                 Context context) throws Exception {
         checkState();
-        Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -414,7 +427,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -466,7 +479,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -475,13 +488,13 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             CaseComment c = caseObject.addComment(commentBy, comment, reason, null, null, null);
             dataStore.beingTransaction();
             try {
-                save(caseObject, commentBy, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         EStandardAction.Comment.action(),
                         reason,
-                        null,
-                        c,
-                        commentBy);
+                        comment,
+                        commentBy,
+                        Map.of("reason", reason, "comment", comment),
+                        context);
                 dataStore.commit();
                 return c;
             } catch (Throwable t) {
@@ -506,7 +519,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -516,13 +529,13 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             CaseComment c = caseObject.addComment(commentBy, comment, reason, null, null, docId);
             dataStore.beingTransaction();
             try {
-                save(caseObject, commentBy, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         EStandardAction.Comment.action(),
                         reason,
-                        null,
-                        c,
-                        commentBy);
+                        comment,
+                        commentBy,
+                        Map.of("reason", reason, "comment", comment),
+                        context);
                 dataStore.commit();
                 return c;
             } catch (Throwable t) {
@@ -548,7 +561,7 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<S, E, T> caseObject = (Case<S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
@@ -560,13 +573,13 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
             CaseComment c = caseObject.addComment(commentBy, comment, reason, commentId, responseState, null);
             dataStore.beingTransaction();
             try {
-                save(caseObject, commentBy, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         EStandardAction.Comment.action(),
                         reason,
-                        null,
-                        c,
-                        commentBy);
+                        comment,
+                        commentBy,
+                        Map.of("response", responseState, "comment", comment),
+                        context);
                 dataStore.commit();
                 return c;
             } catch (Throwable t) {
@@ -581,28 +594,87 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         }
     }
 
+    public Case<P, S, E, T> updateCaseState(@NonNull CaseId id,
+                                            @NonNull Class<? extends Case<P, S, E, T>> entityType,
+                                            @NonNull P state,
+                                            @NonNull String notes,
+                                            @NonNull UserOrRole modifier,
+                                            Context context) throws CaseActionException, CaseAuthorizationError {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
+        checkState();
+        context = AbstractDataStore.withRefresh(context);
+        try {
+            Case<P, S, E, T> caseObject = dataStore.find(id, entityType, context);
+            if (caseObject == null) {
+                throw new Exception(String.format("Case not found. [id=%s][type=%s]",
+                        id.stringKey(), entityType.getCanonicalName()));
+            }
+            if (caseObject.getCaseState().getState() == state) {
+                throw new Exception(String.format("Case already in state. [id=%s][state=%s]",
+                        id.stringKey(), state.name()));
+            }
+            authorization.authorize(caseObject, EStandardAction.UpdateState.action(), modifier, context);
+            P current = caseObject.getCaseState().getState();
+            caseObject.getCaseState().setState(state);
+            if (context instanceof CaseContext ctx) {
+                if (((CaseContext) context).customFields() != null) {
+                    Map<String, Object> values = ctx.customFields();
+                    for (String field : values.keySet()) {
+                        Object v = values.get(field);
+                        ReflectionHelper.setFieldValue(v, caseObject, field);
+                    }
+                }
+            }
+            Map<String, Object> diff = new HashMap<>();
+            diff.put("state", state);
+            if (context instanceof CaseContext) {
+                diff.put("updates", context);
+            }
+            dataStore.beingTransaction();
+            try {
+                caseObject = saveUpdate(caseObject,
+                        EStandardAction.UpdateState.action(),
+                        EStandardCode.UpdateSate.code(),
+                        notes,
+                        modifier,
+                        diff,
+                        context);
+                handleStateTransition(current, caseObject);
+                dataStore.commit();
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
+            }
+            return caseObject;
+        } catch (CaseAuthorizationError ae) {
+            throw ae;
+        } catch (Throwable ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new CaseActionException(ex);
+        }
+    }
+
     @SuppressWarnings("unchecked")
-    protected Case<S, E, T> update(@NonNull Case<S, E, T> caseObject,
-                                   @NonNull CaseAction action,
-                                   @NonNull CaseCode code,
-                                   @NonNull String notes,
-                                   @NonNull UserOrRole modifier,
-                                   Context context) throws CaseActionException, CaseAuthorizationError {
+    protected Case<P, S, E, T> update(@NonNull Case<P, S, E, T> caseObject,
+                                      @NonNull CaseAction action,
+                                      @NonNull CaseCode code,
+                                      @NonNull String notes,
+                                      @NonNull UserOrRole modifier,
+                                      Context context) throws CaseActionException, CaseAuthorizationError {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
         checkState();
         try {
             authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
             dataStore.beingTransaction();
             try {
-                caseObject = save(caseObject, modifier, context);
-                addCaseHistory(caseObject.getId(),
+                caseObject = saveUpdate(caseObject,
                         action,
                         code,
                         notes,
-                        caseObject,
-                        modifier);
+                        modifier,
+                        Map.of("action", action, "code", code, "notes", notes),
+                        context);
                 dataStore.commit();
-                caseObject = findById(caseObject.getId(), (Class<? extends Case<S, E, T>>) caseObject.getClass(), context);
                 return caseObject;
             } catch (Throwable t) {
                 dataStore.rollback(false);
@@ -616,14 +688,32 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         }
     }
 
-    protected Case<S, E, T> findById(@NonNull CaseId id,
-                                     @NonNull Class<? extends Case<S, E, T>> entityType,
+    private Case<P, S, E, T> saveUpdate(Case<P, S, E, T> caseObject,
+                                        @NonNull CaseAction action,
+                                        @NonNull CaseCode code,
+                                        String notes,
+                                        UserOrRole modifier,
+                                        Object diff,
+                                        Context context) throws Exception {
+        // context = AbstractDataStore.withRefresh(context);
+        caseObject = save(caseObject, modifier, context);
+        addCaseHistory(caseObject.getId(),
+                action,
+                code,
+                notes,
+                diff,
+                modifier);
+        return caseObject;
+    }
+
+    public Case<P, S, E, T> findById(@NonNull CaseId id,
+                                     @NonNull Class<? extends Case<P, S, E, T>> entityType,
                                      Context context) throws Exception {
         return dataStore.find(id, entityType, context);
     }
 
     @SuppressWarnings("unchecked")
-    private Case<S, E, T> save(Case<S, E, T> caseObject, UserOrRole user, Context context) throws Exception {
+    private Case<P, S, E, T> save(Case<P, S, E, T> caseObject, UserOrRole user, Context context) throws Exception {
         DocumentContext docCtx = null;
         if (context != null) {
             docCtx = new DocumentContext(context);
@@ -657,11 +747,14 @@ public abstract class CaseManager<S extends CaseState<?>, E extends DocumentStat
         return caseObject;
     }
 
-    protected abstract Case<S, E, T> createInstance() throws Exception;
+    protected abstract Case<P, S, E, T> createInstance() throws Exception;
 
-    protected abstract void validateCase(@NonNull Case<S, E, T> caseObject) throws Exception;
+    protected abstract void validateCase(@NonNull Case<P, S, E, T> caseObject) throws Exception;
 
     protected abstract @NonNull CaseDocument<E, T> validateArtefact(@NonNull CaseDocument<E, T> document) throws Exception;
 
-    protected abstract void validateAssignment(UserOrRole from, Case<S, E, T> caseObject) throws Exception;
+    protected abstract void validateAssignment(UserOrRole from, Case<P, S, E, T> caseObject) throws Exception;
+
+    protected abstract void handleStateTransition(@NonNull P previousState,
+                                                  @NonNull Case<P, S, E, T> caseObject) throws Exception;
 }

@@ -33,7 +33,7 @@ public class CaseManagerSettings extends Settings {
     public static final String __CONFIG_PATH = "case-manager";
 
     @Config(name = "case.type", type = Class.class)
-    private Class<? extends Case<?, ?, ?>> caseType;
+    private Class<? extends Case<?, ?, ?, ?>> caseType;
     @Config(name = "dataStore.name")
     private String dataStore;
     @Config(name = "dataStore.type", type = Class.class)
@@ -41,7 +41,7 @@ public class CaseManagerSettings extends Settings {
     @Config(name = "documentType", type = Class.class)
     private Class<? extends CaseDocument<?, ?>> documentType;
     @Config(name = "authorizer", type = Class.class)
-    private Class<? extends ActionAuthorization<?>> authorizer;
+    private Class<? extends ActionAuthorization<?, ?>> authorizer;
     @Config(name = "content.collection")
     private String contentCollection;
 }

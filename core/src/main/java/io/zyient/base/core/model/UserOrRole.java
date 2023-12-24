@@ -17,6 +17,8 @@
 package io.zyient.base.core.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,6 +32,7 @@ import java.security.Principal;
 @MappedSuperclass
 public abstract class UserOrRole {
     private String name;
+    @Enumerated(EnumType.STRING)
     private EUserOrRole type;
 
     public abstract Principal asPrincipal() throws Exception;

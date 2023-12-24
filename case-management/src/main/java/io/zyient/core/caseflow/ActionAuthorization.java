@@ -27,15 +27,15 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public interface ActionAuthorization<S extends CaseState<?>> {
+public interface ActionAuthorization<P extends Enum<?>, S extends CaseState<P>> {
     void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
-    void authorize(Case<S, ?, ?> caseObject,
+    void authorize(Case<P, S, ?, ?> caseObject,
                    @NonNull CaseAction action,
                    @NonNull UserOrRole actor,
                    Context context) throws CaseAuthorizationError;
 
-    void checkAssignment(@NonNull Case<S, ?, ?> caseObject,
+    void checkAssignment(@NonNull Case<P, S, ?, ?> caseObject,
                          @NonNull UserOrRole assignTo,
                          Context context) throws CaseAuthorizationError;
 }

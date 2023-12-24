@@ -48,7 +48,7 @@ import java.util.Set;
 @MappedSuperclass
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
+public abstract class Case<P extends Enum<?>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
@@ -102,7 +102,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         id = new CaseId();
     }
 
-    public Case<S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
+    public Case<P, S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
         ArtefactReferenceId refId = new ArtefactReferenceId();
         refId.setCaseId(id);
         refId.setDocumentId(artefact.getId());

@@ -17,7 +17,9 @@
 package io.zyient.base.common.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flipkart.zjsonpatch.JsonDiff;
 import com.google.common.base.Strings;
 import io.zyient.base.common.GlobalConstants;
 import lombok.NonNull;
@@ -126,5 +128,14 @@ public class JSONUtils {
             }
             return current;
         }
+    }
+
+    public static <T> String diff(@NonNull T current,
+                                  @NonNull T previous) throws Exception {
+        ObjectMapper mapper = mapper();
+        JsonNode cn = mapper.valueToTree(current);
+        JsonNode pn = mapper.valueToTree(previous);
+        JsonNode diff = JsonDiff.asJson(cn, pn);
+        return mapper.writeValueAsString(diff);
     }
 }
