@@ -88,8 +88,8 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
                                                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                                         int batchSize,
                                                                                                                                          boolean download,
+                                                                                                                                         int batchSize,
                                                                                                                                          DocumentContext context) throws DataStoreException {
         MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
         MongoDbCursor<DocumentId, Document<E, K, D>> cursor = (MongoDbCursor<DocumentId, Document<E, K, D>>) dataStore

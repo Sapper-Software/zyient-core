@@ -120,7 +120,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
             String uri = JSONUtils.asString(fi.getURI(), Map.class);
             document.setUri(uri);
             document.validate();
-            if (dataStore instanceof TransactionDataStore<?,?>) {
+            if (dataStore instanceof TransactionDataStore<?, ?>) {
                 ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }
             try {
@@ -199,7 +199,7 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                                                                                                           @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                           @NonNull DocumentContext context) throws DataStoreException {
         try {
-            Document<?, ?, ?> doc = findDoc(id, entityType, context);
+            Document<?, ?, ?> doc = findDoc(id, entityType, false, context);
             if (doc != null) {
                 Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
                 PathInfo pi = fileSystem.parsePathInfo(map);
@@ -263,19 +263,22 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull DocumentId docId,
                                                                                                                   @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                  boolean download,
                                                                                                                   DocumentContext context) throws DataStoreException {
         try {
             Document<E, K, D> doc = dataStore.find(docId, entityType, context);
             if (doc != null) {
-                Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
-                PathInfo pi = fileSystem.parsePathInfo(map);
-                FileInode fi = (FileInode) fileSystem.getInode(pi);
-                if (fi == null) {
-                    throw new DataStoreException(String.format("Document not found. [uri=%s]", doc.getUri()));
-                }
-                try (Reader reader = fileSystem.reader(pi)) {
-                    File path = reader.copy();
-                    doc.setPath(path);
+                if (download) {
+                    Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
+                    PathInfo pi = fileSystem.parsePathInfo(map);
+                    FileInode fi = (FileInode) fileSystem.getInode(pi);
+                    if (fi == null) {
+                        throw new DataStoreException(String.format("Document not found. [uri=%s]", doc.getUri()));
+                    }
+                    try (Reader reader = fileSystem.reader(pi)) {
+                        File path = reader.copy();
+                        doc.setPath(path);
+                    }
                 }
                 return doc;
             }

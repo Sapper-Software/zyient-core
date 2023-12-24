@@ -150,7 +150,7 @@ class DbContentProviderTest {
             }
             Thread.sleep(10000);
             for (DocumentId id : ids) {
-                DemoTestDocument doc = (DemoTestDocument) contentProvider.find(id, DemoTestDocument.class, userContext);
+                DemoTestDocument doc = (DemoTestDocument) contentProvider.find(id, DemoTestDocument.class, false, userContext);
                 assertNotNull(doc);
                 assertEquals(7, doc.getDocuments().size());
             }
