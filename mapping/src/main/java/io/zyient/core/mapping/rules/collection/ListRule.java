@@ -22,7 +22,7 @@ public class ListRule<T> extends BaseRule<T> {
     protected Object doEvaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
         ListRuleConfig listRuleConfig = (ListRuleConfig) config();
         try {
-            boolean isPresent = Boolean.getBoolean(listRuleConfig.getPresent());
+            boolean isPresent = Boolean.parseBoolean(listRuleConfig.getPresent());
             Object value = MappingReflectionHelper.getProperty(target, property, data);
             if (isPresent ? !listRuleConfig.getItems().contains(value) : listRuleConfig.getItems().contains(value)) {
 
