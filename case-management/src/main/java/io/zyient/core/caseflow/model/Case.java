@@ -52,6 +52,8 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
+    @Column(name = "case_name")
+    private String name;
     @Column(name = "description")
     private String description;
     @Embedded

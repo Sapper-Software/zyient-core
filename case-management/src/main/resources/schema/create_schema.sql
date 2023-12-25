@@ -70,6 +70,7 @@ DROP TABLE IF EXISTS `cm_cases`;
 CREATE TABLE `cm_cases`
 (
     case_id               VARCHAR(64)   NOT NULL,
+    case_name             VARCHAR(256)  NOT NULL,
     case_state            VARCHAR(64)   NOT NULL,
     error                 TEXT,
     description           VARCHAR(2048) NOT NULL,

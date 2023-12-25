@@ -36,9 +36,7 @@ import io.zyient.core.caseflow.workflow.StateTransitionHandler;
 import io.zyient.core.caseflow.workflow.StateTransitionSettings;
 import io.zyient.core.content.ContentProvider;
 import io.zyient.core.content.DocumentContext;
-import io.zyient.core.persistence.AbstractDataStore;
-import io.zyient.core.persistence.DataStoreManager;
-import io.zyient.core.persistence.TransactionDataStore;
+import io.zyient.core.persistence.*;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
@@ -206,7 +204,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     }
 
     @SuppressWarnings("unchecked")
-    public Case<P, S, E, T> create(@NonNull String description,
+    public Case<P, S, E, T> create(@NonNull String name,
+                                   @NonNull String description,
                                    List<Artefact> artefacts,
                                    @NonNull UserOrRole creator,
                                    @NonNull CaseCode caseCode,
@@ -226,6 +225,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             if (caseObject.getId() == null) {
                 caseObject.setId(new CaseId());
             }
+            caseObject.setName(name);
             caseObject.setDescription(description);
             caseObject.setCreatedBy(new Actor(creator));
             if (context instanceof CaseContext ctx) {
@@ -813,7 +813,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     public Case<P, S, E, T> findById(@NonNull CaseId id,
                                      @NonNull Class<? extends Case<P, S, E, T>> entityType,
                                      boolean fetchDocuments,
-                                     Context context) throws Exception {
+                                     Context context) throws DataStoreException, CaseActionException {
         Case<P, S, E, T> caseObject = dataStore.find(id, entityType, context);
         if (fetchDocuments) {
             fetchDocuments(caseObject);
@@ -821,7 +821,45 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         return caseObject;
     }
 
-    protected void fetchDocuments(@NonNull Case<P, S, E, T> caseObject) throws Exception {
+    @SuppressWarnings("unchecked")
+    public <C extends Case<P, S, E, T>> List<C> findByName(@NonNull String caseName,
+                                             @NonNull Class<C> entityType,
+                                             boolean fetchDocuments,
+                                             Context context) throws DataStoreException, CaseActionException {
+        String condition = "name = :name";
+        Map<String, Object> params = Map.of("name", caseName);
+        AbstractDataStore.Q query = new AbstractDataStore.Q()
+                .where(condition)
+                .addAll(params);
+        try {
+            try (Cursor<CaseId, Case<P, S, E, T>> cursor = dataStore()
+                    .search(query, CaseId.class, entityType, context)) {
+                if (cursor != null) {
+                    List<C> cases = new ArrayList<>();
+                    while (true) {
+                        List<Case<P, S, E, T>> result = cursor.nextPage();
+                        if (result == null || result.isEmpty()) break;
+                        for (Case<P, S, E, T> c : result) {
+                            if (c.getCaseState().getState() != c.getCaseState().getDeletedState()) {
+                                if (fetchDocuments) {
+                                    fetchDocuments(c);
+                                }
+                                cases.add((C) c);
+                            }
+                        }
+                    }
+                    if (!cases.isEmpty()) {
+                        return cases;
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new CaseActionException(ex);
+        }
+        return null;
+    }
+
+    protected void fetchDocuments(@NonNull Case<P, S, E, T> caseObject) throws DataStoreException, CaseActionException {
         if (caseObject.getArtefactReferences() != null) {
             Set<CaseDocument<E, T>> docs = new HashSet<>();
             for (ArtefactReference ref : caseObject.getArtefactReferences()) {

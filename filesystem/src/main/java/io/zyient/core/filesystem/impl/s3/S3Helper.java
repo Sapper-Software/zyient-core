@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.s3;
 
 import io.zyient.base.common.utils.PathUtils;
 import lombok.NonNull;
+import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
@@ -33,7 +34,8 @@ public class S3Helper {
     public static File download(@NonNull S3Client client,
                                 @NonNull String bucket,
                                 @NonNull String path) throws IOException {
-        File file = PathUtils.getTempFile();
+        String name = FilenameUtils.getName(path);
+        File file = PathUtils.getTempFile(name);
         return download(client, bucket, path, file.getAbsolutePath());
     }
 
