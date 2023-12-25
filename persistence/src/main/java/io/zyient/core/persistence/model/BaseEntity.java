@@ -45,8 +45,10 @@ public abstract class BaseEntity<K extends IKey> implements IEntity<K>, Versione
     @Column(name = "time_created")
     private long createdTime;
     @Column(name = "time_updated")
-    @Version
     private long updatedTime;
+    @Column(name = "version")
+    @Version
+    private Integer version;
 
     public BaseEntity() {
         state.setState(EEntityState.Syncing);

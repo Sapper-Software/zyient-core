@@ -57,7 +57,7 @@ public abstract class ContentProvider implements Closeable {
     public static final String ENCRYPTED_PREFIX = "encrypted";
     public static final String ENCRYPTED_REGEX = String.format("%s=\\[(.+)\\]", ENCRYPTED_PREFIX);
     public static final String KEY_ENGINE = "ContentProvider";
-    public static final String __CONFIG_PATH = "contentManager";
+    public static final String __CONFIG_PATH = "content-manager";
     public static final String CONTENT_TEMP_PATH = "content/temp";
 
     private static final Pattern ENCRYPTED = Pattern.compile(ENCRYPTED_REGEX);
@@ -166,7 +166,13 @@ public abstract class ContentProvider implements Closeable {
                 document.setCreatedTime(System.nanoTime());
                 document.setUpdatedTime(System.nanoTime());
                 checkPassword(document);
-
+                if (context.customFields() != null) {
+                    Map<String, Object> values = context.customFields();
+                    for (String field : values.keySet()) {
+                        Object v = values.get(field);
+                        ReflectionHelper.setFieldValue(v, document, field);
+                    }
+                }
                 document = createDoc(document, context);
                 if (document.getDocuments() != null && !document.getDocuments().isEmpty()) {
                     Set<Document<E, K, T>> children = (Set<Document<E, K, T>>) document.getDocuments();
@@ -264,7 +270,7 @@ public abstract class ContentProvider implements Closeable {
                 Document<E, K, T> currrent = null;
                 if (document.getDocuments() != null && !document.getDocuments().isEmpty()) {
                     children = (Set<Document<E, K, T>>) document.getDocuments();
-                    currrent = find(document.getId(), type, context);
+                    currrent = find(document.getId(), type, false, context);
                     if (currrent == null) {
                         throw new Exception(String.format("Update failed: current instance not found. [id=%s]",
                                 document.getId().stringKey()));
@@ -302,7 +308,10 @@ public abstract class ContentProvider implements Closeable {
                     }
                 }
             }
-            return document;
+            return find(document.getId(),
+                    (Class<? extends Document<E, K, T>>) document.getClass(),
+                    false,
+                    context);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
@@ -360,12 +369,13 @@ public abstract class ContentProvider implements Closeable {
 
     public <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> find(@NonNull DocumentId id,
                                                                                                             @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                            boolean download,
                                                                                                             DocumentContext context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.readCounter().increment();
             try (Timer t = new Timer(metrics.readTimer())) {
-                Document<E, K, T> document = findDoc(id, entityType, context);
+                Document<E, K, T> document = findDoc(id, entityType, download, context);
                 if (document != null && document.getDocumentCount() > 0) {
                     if (document.getDocuments() == null) {
                         try (Cursor<DocumentId, Document<E, K, T>> cursor
@@ -393,7 +403,7 @@ public abstract class ContentProvider implements Closeable {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return searchDocs(query, entityType, settings().getBatchSize(), false, context);
+                return searchDocs(query, entityType, false, settings().getBatchSize(), context);
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -402,14 +412,14 @@ public abstract class ContentProvider implements Closeable {
 
     public <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> search(@NonNull AbstractDataStore.Q query,
                                                                                                                                   @NonNull Class<? extends Document<E, K, T>> entityType,
-                                                                                                                                  int batchSize,
                                                                                                                                   boolean download,
+                                                                                                                                  int batchSize,
                                                                                                                                   DocumentContext context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return searchDocs(query, entityType, batchSize, download, context);
+                return searchDocs(query, entityType, download, batchSize, context);
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -434,6 +444,7 @@ public abstract class ContentProvider implements Closeable {
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> findDoc(@NonNull DocumentId docId,
                                                                                                                            @NonNull Class<? extends Document<E, K, T>> entityType,
+                                                                                                                           boolean download,
                                                                                                                            DocumentContext context) throws DataStoreException;
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> findChildDocs(@NonNull DocumentId docId,
@@ -442,8 +453,8 @@ public abstract class ContentProvider implements Closeable {
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> searchDocs(@NonNull AbstractDataStore.Q query,
                                                                                                                                                   @NonNull Class<? extends Document<E, K, T>> entityType,
-                                                                                                                                                  int batchSize,
                                                                                                                                                   boolean download,
+                                                                                                                                                  int batchSize,
                                                                                                                                                   DocumentContext context) throws DataStoreException;
 
     protected abstract void doClose() throws IOException;

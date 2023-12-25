@@ -70,6 +70,7 @@ DROP TABLE IF EXISTS `cm_cases`;
 CREATE TABLE `cm_cases`
 (
     case_id               VARCHAR(64)   NOT NULL,
+    case_name             VARCHAR(256)  NOT NULL,
     case_state            VARCHAR(64)   NOT NULL,
     error                 TEXT,
     description           VARCHAR(2048) NOT NULL,
@@ -83,6 +84,7 @@ CREATE TABLE `cm_cases`
     properties            MEDIUMTEXT,
     created_by            VARCHAR(128)  NOT NULL,
     created_by_type       VARCHAR(8)    NOT NULL,
+    created_timestamp     NUMERIC(18)   NOT NULL,
     time_created          NUMERIC(18)   NOT NULL,
     time_updated          NUMERIC(18)   NOT NULL,
     external_reference_id VARCHAR(128),
@@ -97,16 +99,17 @@ DROP TABLE IF EXISTS `cm_case_history`;
 
 CREATE TABLE `cm_case_history`
 (
-    case_id         VARCHAR(64) NOT NULL,
-    sequence        NUMERIC(11) NOT NULL,
-    action_id       VARCHAR(24) NOT NULL,
-    code_id         VARCHAR(24) NOT NULL,
-    comment         VARCHAR(2048),
-    change_json     MEDIUMTEXT,
-    created_by      VARCHAR(128),
-    created_by_type VARCHAR(8)  NOT NULL,
-    time_created    NUMERIC(18) NOT NULL,
-    time_updated    NUMERIC(18) NOT NULL,
+    case_id           VARCHAR(64) NOT NULL,
+    sequence          NUMERIC(20) NOT NULL,
+    action_id         VARCHAR(24) NOT NULL,
+    code_id           VARCHAR(24) NOT NULL,
+    comment           VARCHAR(2048),
+    change_json       MEDIUMTEXT,
+    created_by        VARCHAR(128),
+    created_by_type   VARCHAR(8)  NOT NULL,
+    created_timestamp NUMERIC(18) NOT NULL,
+    time_created      NUMERIC(18) NOT NULL,
+    time_updated      NUMERIC(18) NOT NULL,
     PRIMARY KEY (case_id, sequence)
 ) ENGINE = Aria;
 CREATE INDEX index_case_history_by ON `cm_case_history` (created_by, case_id);

@@ -66,7 +66,7 @@
                     <hierarchical>true</hierarchical>
                     <endpoint>http://127.0.0.1:9000</endpoint>
                     <region>us-east-1</region>
-                    <auth type="io.zyient.core.filesystem.impl.s3.auth.BasicStorageAuth">
+                    <auth type="io.zyient.base.core.connections.aws.auth.BasicStorageAuth">
                         <accessKey>root</accessKey>
                         <passKey>mongodb-password</passKey>
                     </auth>

@@ -83,7 +83,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     private String modifiedBy;
     @Embedded
     private K referenceId;
-    @Column(name = "password")
+    @Column(name = "passkey")
     private String password;
     @Transient
     @JsonIgnore

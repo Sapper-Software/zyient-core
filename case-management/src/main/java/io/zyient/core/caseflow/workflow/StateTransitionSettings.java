@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.s3.auth;
+package io.zyient.core.caseflow.workflow;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public abstract class S3StorageAuthSettings extends Settings {
-    public static final String __CONFIG_PATH = "auth";
+public class StateTransitionSettings extends Settings {
+    public static final String __CONFIG_PATH = "transition";
+
+    @Config(name = "state.from")
+    private String fromState;
+    @Config(name = "state.to")
+    private String toState;
+    @Config(name = "handler")
+    private String handler;
 }

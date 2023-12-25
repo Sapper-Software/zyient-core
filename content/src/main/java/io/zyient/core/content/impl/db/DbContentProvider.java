@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 public class DbContentProvider extends ManagedContentProvider<Session> {
-    protected DbContentProvider() {
+    public DbContentProvider() {
         super(ManagedProviderSettings.class);
     }
 
@@ -90,8 +90,8 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
                                                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                                                         int batchSize,
                                                                                                                                          boolean download,
+                                                                                                                                         int batchSize,
                                                                                                                                          DocumentContext context) throws DataStoreException {
         RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
         HibernateCursor<DocumentId, Document<E, K, D>> cursor = (HibernateCursor<DocumentId, Document<E, K, D>>) dataStore

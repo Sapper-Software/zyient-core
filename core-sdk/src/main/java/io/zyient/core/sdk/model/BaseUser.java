@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.s3.auth;
+package io.zyient.core.sdk.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
+import io.zyient.base.core.model.EUserOrRole;
+import io.zyient.base.core.model.UserOrRole;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.UUID;
+import java.security.Principal;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class BasicStorageAuthSettings extends S3StorageAuthSettings {
-    @Config(name = "accessKey")
-    private String accessKey;
-    @Config(name = "passKey")
-    private String passKey;
-    @Config(name = "token", required = false)
-    private String sessionToken = UUID.randomUUID().toString();
+public class BaseUser  {
+    private String name;
+    private String type;
 }

@@ -21,6 +21,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.core.index.Indexed;
 import io.zyient.base.core.index.JsonIndexer;
 import io.zyient.core.filesystem.indexing.InodeIndexConstants;
+import io.zyient.core.sdk.model.fs.FileHandle;
+import io.zyient.core.sdk.model.fs.FileId;
+import io.zyient.core.sdk.model.fs.FileType;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -135,6 +138,26 @@ public abstract class Inode {
             return (attributes.remove(key) != null);
         }
         return false;
+    }
+
+    public FileHandle as() throws IOException {
+        FileId id = new FileId();
+        id.setId(uuid);
+        id.setName(name);
+        FileHandle handle = new FileHandle();
+        handle.setFileId(id);
+        handle.setDomain(domain);
+        handle.setPath(path);
+        handle.setURI(URI);
+        if (isDirectory())
+            handle.setType(FileType.Directory);
+        else
+            handle.setType(FileType.File);
+        handle.setCreateTime(createTimestamp);
+        handle.setUpdateTime(updateTimestamp);
+        handle.setSize(size());
+        handle.setAttributes(attributes);
+        return handle;
     }
 
     @Override

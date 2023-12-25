@@ -27,7 +27,6 @@ import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -116,8 +115,11 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-
         E entity = session.find(type, key);
+        if (doRefresh(context)) {
+            session.evict(entity);
+        }
+        entity = session.find(type, key);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -143,7 +145,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));
             }
-            ScrollableResults<E> results = qq.scroll(ScrollMode.FORWARD_ONLY);
+            ScrollableResults<E> results = qq.scroll();
             HibernateCursor<K, E> cursor = new HibernateCursor<>(results);
             return cursor.pageSize(maxResults);
         } catch (Exception ex) {
@@ -162,4 +164,5 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                                                                     @NonNull Class<? extends K> keyTpe) throws Exception {
         return new SqlQueryParser<>(keyTpe, entityType);
     }
+
 }

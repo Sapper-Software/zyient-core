@@ -17,12 +17,16 @@
 package io.zyient.base.common.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flipkart.zjsonpatch.JsonDiff;
 import com.google.common.base.Strings;
 import io.zyient.base.common.GlobalConstants;
 import lombok.NonNull;
 import org.apache.curator.framework.CuratorFramework;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.Map;
 
@@ -63,6 +67,10 @@ public class JSONUtils {
         return mapper.readValue(data, type);
     }
 
+    public static <T> T read(@NonNull File source, Class<? extends T> type) throws IOException {
+        return mapper.readValue(source, type);
+    }
+
     public static boolean isJson(@NonNull String value) {
         if (!Strings.isNullOrEmpty(value)) {
             try {
@@ -95,5 +103,39 @@ public class JSONUtils {
         }
         byte[] data = asBytes(value, value.getClass());
         client.setData().forPath(path, data);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object find(@NonNull Map<String, Object> data,
+                              @NonNull String path) throws Exception {
+        if (path.indexOf('.') < 0) {
+            return data.get(path);
+        } else {
+            String[] parts = path.split("\\.");
+            Object current = data;
+            int index = 0;
+            while (index < parts.length) {
+                if (current == null) break;
+                String key = parts[index];
+                if (current instanceof Map<?, ?>) {
+                    Map<String, ?> map = (Map<String, ?>) current;
+                    current = map.get(key);
+                } else {
+                    throw new Exception(String.format("Invalid path [%s][key=%s][type=%s]",
+                            path, key, current.getClass().getCanonicalName()));
+                }
+                index++;
+            }
+            return current;
+        }
+    }
+
+    public static <T> String diff(@NonNull T current,
+                                  @NonNull T previous) throws Exception {
+        ObjectMapper mapper = mapper();
+        JsonNode cn = mapper.valueToTree(current);
+        JsonNode pn = mapper.valueToTree(previous);
+        JsonNode diff = JsonDiff.asJson(cn, pn);
+        return mapper.writeValueAsString(diff);
     }
 }

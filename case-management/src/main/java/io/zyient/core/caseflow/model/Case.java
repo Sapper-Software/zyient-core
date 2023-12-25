@@ -17,6 +17,13 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Strings;
+import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.CopyException;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.common.model.entity.EEntityState;
+import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.Actor;
 import io.zyient.base.core.model.EUserOrRole;
 import io.zyient.base.core.model.PropertyBag;
@@ -41,10 +48,12 @@ import java.util.Set;
 @MappedSuperclass
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
+public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
+    @Column(name = "case_name")
+    private String name;
     @Column(name = "description")
     private String description;
     @Embedded
@@ -53,7 +62,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "created_by")),
             @AttributeOverride(name = "type", column = @Column(name = "created_by_type")),
-            @AttributeOverride(name = "timestamp", column = @Column(name = "time_created"))
+            @AttributeOverride(name = "timestamp", column = @Column(name = "created_timestamp"))
     })
     private Actor createdBy;
     @Embedded
@@ -70,11 +79,11 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
             @AttributeOverride(name = "timestamp", column = @Column(name = "closed_timestamp"))
     })
     private Actor closedBy;
-    @OneToMany
-    @JoinColumn(name = "case_id")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "case_id", referencedColumnName = "case_id")
     private Set<CaseComment> comments;
-    @OneToMany
-    @JoinColumn(name = "case_id")
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "case_id", referencedColumnName = "case_id")
     private Set<ArtefactReference> artefactReferences;
     @Embedded
     @AttributeOverrides({
@@ -95,15 +104,21 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         id = new CaseId();
     }
 
-    public Case<S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
+    public Case<P, S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
         ArtefactReferenceId refId = new ArtefactReferenceId();
         refId.setCaseId(id);
         refId.setDocumentId(artefact.getId());
         ArtefactReference reference = new ArtefactReference();
         reference.setId(refId);
         reference.setArtefactType(artefact.getClass().getCanonicalName());
+        if (artefactReferences == null) {
+            artefactReferences = new HashSet<>();
+        }
         artefactReferences.add(reference);
         artefact.setReferenceId(id);
+        if (artefacts == null) {
+            artefacts = new HashSet<>();
+        }
         artefacts.add(artefact);
 
         return this;
@@ -242,5 +257,89 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         }
         properties.put(name, value);
         return this;
+    }
+
+    /**
+     * Compare the entity key with the key specified.
+     *
+     * @param key - Target Key.
+     * @return - Comparision.
+     */
+    @Override
+    public int compare(CaseId key) {
+        return id.compareTo(key);
+    }
+
+    /**
+     * Get the object instance Key.
+     *
+     * @return - Key
+     */
+    @Override
+    public CaseId entityKey() {
+        return id;
+    }
+
+    /**
+     * Clone this instance of Entity.
+     *
+     * @param context - Clone Context.
+     * @return - Cloned Instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<CaseId> clone(Context context) throws CopyException {
+        return null;
+    }
+
+    /**
+     * Validate this entity instance.
+     *
+     * @param errors
+     * @throws ValidationExceptions - On validation failure will throw exception.
+     */
+    @Override
+    public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
+        if (id == null) {
+            errors = ValidationExceptions.add(new ValidationException("Case ID not set."), errors);
+        }
+        if (Strings.isNullOrEmpty(id.getId())) {
+            errors = ValidationExceptions.add(new ValidationException("Case ID is null/empty."), errors);
+        }
+        if (Strings.isNullOrEmpty(description)) {
+            errors = ValidationExceptions.add(new ValidationException("Case description is null/empty"), errors);
+        }
+        if (createdBy == null) {
+            errors = ValidationExceptions.add(new ValidationException("Created By not set."), errors);
+        }
+        return errors;
+    }
+
+    /**
+     * Copy the changes from the specified source entity
+     * to this instance.
+     * <p>
+     * All properties other than the Key will be copied.
+     * Copy Type:
+     * Primitive - Copy
+     * String - Copy
+     * Enum - Copy
+     * Nested Entity - Copy Recursive
+     * Other Objects - Copy Reference.
+     *
+     * @param source  - Source instance to Copy from.
+     * @param context - Execution context.
+     * @return - Copied Entity instance.
+     * @throws CopyException
+     */
+    @Override
+    public IEntity<CaseId> copyChanges(IEntity<CaseId> source, Context context) throws CopyException {
+        return super.copyChanges(source, context);
+    }
+
+    @Override
+    public void clone(@NonNull BaseEntity<CaseId> entity,
+                      @NonNull EEntityState state) throws CopyException {
+        super.clone(entity, state);
     }
 }

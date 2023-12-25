@@ -25,5 +25,5 @@ import lombok.ToString;
 @ToString
 public class FileId {
     private String id;
-    private String path;
+    private String name;
 }

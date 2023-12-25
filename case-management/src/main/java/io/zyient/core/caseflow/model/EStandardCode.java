@@ -22,28 +22,32 @@ public enum EStandardCode {
     ActionCreate(CaseCode.formatCodeId(101),
             ECaseCodeType.Action,
             "Create new case."),
-    ActionAddArtefact(CaseCode.formatCodeId(102),
+    UpdateSate(CaseCode.formatCodeId(102),
+            ECaseCodeType.Action,
+            "Update Case state"),
+    ActionAddArtefact(CaseCode.formatCodeId(103),
             ECaseCodeType.Action,
             "Add new artefact"
     ),
-    ActionRemoveArtefact(CaseCode.formatCodeId(103),
+    ActionRemoveArtefact(CaseCode.formatCodeId(104),
             ECaseCodeType.Action,
             "Remove artefact"
     ),
-    ActionUpdateArtefactState(CaseCode.formatCodeId(104),
+    ActionUpdateArtefactState(CaseCode.formatCodeId(105),
             ECaseCodeType.Action,
             "Updated document state."
     ),
-    ActionAssignTo(CaseCode.formatCodeId(104),
+    ActionAssignTo(CaseCode.formatCodeId(106),
             ECaseCodeType.Action,
             ""
     ),
-    Enquiry(CaseCode.formatCodeId(101),
+    Enquiry(CaseCode.formatCodeId(107),
             ECaseCodeType.Enquiry,
             "General enquiry."),
-    EnquiryResponse(CaseCode.formatCodeId(102),
+    EnquiryResponse(CaseCode.formatCodeId(108),
             ECaseCodeType.Enquiry,
-            "Response to general enquiry");
+            "Response to general enquiry"),
+    ;
 
     private final CaseCode code;
 
