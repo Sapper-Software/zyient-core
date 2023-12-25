@@ -48,10 +48,12 @@ import java.util.Set;
 @MappedSuperclass
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
+public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
+    @Column(name = "case_name")
+    private String name;
     @Column(name = "description")
     private String description;
     @Embedded
@@ -60,7 +62,7 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "created_by")),
             @AttributeOverride(name = "type", column = @Column(name = "created_by_type")),
-            @AttributeOverride(name = "timestamp", column = @Column(name = "time_created"))
+            @AttributeOverride(name = "timestamp", column = @Column(name = "created_timestamp"))
     })
     private Actor createdBy;
     @Embedded
@@ -77,11 +79,11 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
             @AttributeOverride(name = "timestamp", column = @Column(name = "closed_timestamp"))
     })
     private Actor closedBy;
-    @OneToMany
-    @JoinColumn(name = "case_id")
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "case_id", referencedColumnName = "case_id")
     private Set<CaseComment> comments;
-    @OneToMany
-    @JoinColumn(name = "case_id")
+    @OneToMany(cascade = CascadeType.ALL)
+    @JoinColumn(name = "case_id", referencedColumnName = "case_id")
     private Set<ArtefactReference> artefactReferences;
     @Embedded
     @AttributeOverrides({
@@ -102,15 +104,21 @@ public abstract class Case<S extends CaseState<?>, E extends DocumentState<?>, T
         id = new CaseId();
     }
 
-    public Case<S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
+    public Case<P, S, E, T> addArtefact(@NonNull CaseDocument<E, T> artefact) {
         ArtefactReferenceId refId = new ArtefactReferenceId();
         refId.setCaseId(id);
         refId.setDocumentId(artefact.getId());
         ArtefactReference reference = new ArtefactReference();
         reference.setId(refId);
         reference.setArtefactType(artefact.getClass().getCanonicalName());
+        if (artefactReferences == null) {
+            artefactReferences = new HashSet<>();
+        }
         artefactReferences.add(reference);
         artefact.setReferenceId(id);
+        if (artefacts == null) {
+            artefacts = new HashSet<>();
+        }
         artefacts.add(artefact);
 
         return this;

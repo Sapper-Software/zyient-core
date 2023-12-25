@@ -22,6 +22,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.utils.Timer;
+import io.zyient.core.persistence.model.BaseEntity;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -135,6 +136,10 @@ public abstract class AbstractDataStore<T> implements Closeable {
         try {
             metrics.createCounter().increment();
             try (Timer t = new Timer(metrics.createTimer())) {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setCreatedTime(System.nanoTime());
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
                 return createEntity(entity, type, context);
             }
         } catch (Throwable t) {
@@ -152,6 +157,9 @@ public abstract class AbstractDataStore<T> implements Closeable {
         try {
             metrics.updateCounter().increment();
             try (Timer t = new Timer(metrics.updateTimer())) {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
                 return updateEntity(entity, type, context);
             }
         } catch (Throwable t) {
@@ -272,5 +280,24 @@ public abstract class AbstractDataStore<T> implements Closeable {
         Context ctx = type.getDeclaredConstructor().newInstance();
         ctx.put(CONTEXT_KEY_CHECK_UPDATES, true);
         return ctx;
+    }
+
+    public static final String CONTEXT_KEY_REFRESH = "entity.cache.ignore";
+
+    protected boolean doRefresh(Context context) {
+        if (context != null) {
+            if (context.containsKey(CONTEXT_KEY_REFRESH)) {
+                return (boolean) context.get(CONTEXT_KEY_REFRESH);
+            }
+        }
+        return false;
+    }
+
+    public static Context withRefresh(Context context) {
+        if (context == null) {
+            context = new Context();
+        }
+        context.put(CONTEXT_KEY_REFRESH, true);
+        return context;
     }
 }

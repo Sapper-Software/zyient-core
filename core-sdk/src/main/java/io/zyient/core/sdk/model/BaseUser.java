@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.fs;
+package io.zyient.core.sdk.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.core.model.EUserOrRole;
+import io.zyient.base.core.model.UserOrRole;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
+
+import java.security.Principal;
 
 @Getter
 @Setter
-@ToString
-public class FileId {
-    private String id;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class BaseUser  {
     private String name;
+    private String type;
 }

@@ -14,16 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.fs;
+package io.zyient.core.caseflow.workflow;
 
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
-@ToString
-public class FileId {
-    private String id;
-    private String name;
+public class StateTransitionSettings extends Settings {
+    public static final String __CONFIG_PATH = "transition";
+
+    @Config(name = "state.from")
+    private String fromState;
+    @Config(name = "state.to")
+    private String toState;
+    @Config(name = "handler")
+    private String handler;
 }

@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.core.sdk.model.fs;
+package io.zyient.core.caseflow.errors;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+public class CaseFatalError extends RuntimeException {
+    private static final String __PREFIX = "Case Fatal Error : %s";
 
-@Getter
-@Setter
-@ToString
-public class FileId {
-    private String id;
-    private String name;
+    public CaseFatalError(String message) {
+        super(String.format(__PREFIX, message));
+    }
+
+    public CaseFatalError(String message, Throwable cause) {
+        super(String.format(__PREFIX, message), cause);
+    }
+
+    public CaseFatalError(Throwable cause) {
+        super(String.format(__PREFIX, cause.getLocalizedMessage()), cause);
+    }
 }

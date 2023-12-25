@@ -30,4 +30,5 @@ public class Artefact {
     private File file;
     private String password;
     private String mimeType;
+    private String sourceUrl;
 }

@@ -95,6 +95,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         if (!transaction.isActive()) {
             throw new DataStoreException("Transaction instance is not active...");
         }
+        session.flush();
         transaction.commit();
         clearCache();
     }
@@ -112,7 +113,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         clearCache();
     }
 
-    private void clearCache() {
+    private void clearCache() throws DataStoreException {
         long tid = Thread.currentThread().getId();
         Map<String, TransactionCacheElement> cache = transactionCache.remove(tid);
         if (cache != null) {
