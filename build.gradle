@@ -65,9 +65,9 @@ publishing {
     repositories {
         if (System.getenv("GIT_TOKEN")) {
             maven {
-                url = uri("https://maven.pkg.github.com/Sapper-Software/ZYIENT-CORE")
+                url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
                 credentials {
-                    username = "ZYIENT-CORE"
+                    username = "zyient-core"
                     password = System.getenv("GIT_TOKEN")
                 }
             }
@@ -136,9 +136,9 @@ subprojects {
         repositories {
             if (System.getenv("GIT_TOKEN")) {
                 maven {
-                    url = uri("https://maven.pkg.github.com/Sapper-Software/ZYIENT-CORE")
+                    url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
                     credentials {
-                        username = "ZYIENT-CORE"
+                        username = "zyient-core"
                         password = System.getenv("GIT_TOKEN")
                     }
                 }

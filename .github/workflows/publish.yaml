@@ -9,8 +9,7 @@ on:
 
 jobs:
   publish:
-    runs-on: 
-      group: spreading
+    runs-on: ubuntu-latest
     steps:
 
       - name: Checkout branch
