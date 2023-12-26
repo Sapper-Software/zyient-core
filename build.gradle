@@ -9,6 +9,7 @@ plugins {
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 group 'io.zyient.framework'
@@ -103,6 +104,7 @@ subprojects {
 
     repositories {
         mavenCentral()
+        gradlePluginPortal()
         // maven {
         //     url layout.buildDirectory.dir(repoDirSnapshot)
         //     mavenContent {
