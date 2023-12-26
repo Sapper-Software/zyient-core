@@ -43,6 +43,9 @@ jobs:
 
           echo "new_tag=$branch_ver."$(( tag_ver+1 ))"" >> $GITHUB_OUTPUT
       
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+      
       - name: Publish package
         id: publish
         uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
@@ -52,10 +55,10 @@ jobs:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # VERSION: ${{ steps.gen_tag.outputs.new_tag }}
 
-      # - name: push tag
-      #   if: steps.publish.outcome == 'success'
-      #   run: | 
-      #     git config user.name "GitHub Actions"
-      #     git config user.email "github-actions@users.noreply.github.com"
-      #     git tag ${{ steps.gen_tag.outputs.new_tag }}
-      #     git push origin ${{ steps.gen_tag.outputs.new_tag }}
+      - name: push tag
+        if: steps.publish.outcome == 'success'
+        run: | 
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git tag ${{ steps.gen_tag.outputs.new_tag }}
+          git push origin ${{ steps.gen_tag.outputs.new_tag }}
