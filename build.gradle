@@ -103,18 +103,18 @@ subprojects {
 
     repositories {
         mavenCentral()
-        maven {
-            url layout.buildDirectory.dir(repoDirSnapshot)
-            mavenContent {
-                snapshotsOnly()
-            }
-        }
-        maven {
-            url 'https://oss.sonatype.org/content/repositories/snapshots'
-            mavenContent {
-                snapshotsOnly()
-            }
-        }
+        // maven {
+        //     url layout.buildDirectory.dir(repoDirSnapshot)
+        //     mavenContent {
+        //         snapshotsOnly()
+        //     }
+        // }
+        // maven {
+        //     url 'https://oss.sonatype.org/content/repositories/snapshots'
+        //     mavenContent {
+        //         snapshotsOnly()
+        //     }
+        // }
     }
 
     publishing {
