@@ -48,6 +48,8 @@ jobs:
 
       - name: Setup Gradle wrapper
         run: gradle wrapper --gradle-version 8.5 --distribution-type all
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Publish package
         id: publish
