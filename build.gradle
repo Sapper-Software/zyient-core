@@ -73,14 +73,14 @@ publishing {
             }
         }
     }
-        publications {
-            gpr(MavenPublication) {
-                artifact jar
-            }
+    publications {
+        gpr(MavenPublication) {
+            artifact jar
         }
     }
-
 }
+
+
 
 apply plugin: 'maven-publish'
 subprojects {

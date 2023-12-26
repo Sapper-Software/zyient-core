@@ -47,7 +47,7 @@ jobs:
         uses: gradle/gradle-build-action@v2
 
       - name: Setup Gradle wrapper
-        run: gradle wrapper --gradle-version 8.5 --distribution-type all
+        run: gradle wrapper --gradle-version 8.2 --distribution-type all
         env:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
