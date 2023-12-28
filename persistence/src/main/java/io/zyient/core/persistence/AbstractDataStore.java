@@ -173,6 +173,28 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                           Context context) throws
             DataStoreException;
 
+    public <E extends IEntity<?>> E upsert(@NonNull E entity, @NonNull Class<? extends E> type, Context context) throws
+            DataStoreException {
+        state.check(DataStoreState.EDataStoreState.Available);
+        try {
+            metrics.updateCounter().increment();
+            try (Timer t = new Timer(metrics.updateTimer())) {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
+                return upsertEntity(entity, type, context);
+            }
+        } catch (Throwable t) {
+            metrics.updateCounterError().increment();
+            throw new DataStoreException(t);
+        }
+    }
+
+    public abstract <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                          @NonNull Class<? extends E> type,
+                                                          Context context) throws
+            DataStoreException;
+
     public <E extends IEntity<?>> boolean delete(@NonNull Object key,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws

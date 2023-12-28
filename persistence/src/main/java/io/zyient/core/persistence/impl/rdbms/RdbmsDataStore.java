@@ -91,6 +91,13 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     }
 
     @Override
+    public <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws DataStoreException {
+        return updateEntity(entity, type, context);
+    }
+
+    @Override
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
                                                        @NonNull Class<? extends E> type,
                                                        Context context) throws

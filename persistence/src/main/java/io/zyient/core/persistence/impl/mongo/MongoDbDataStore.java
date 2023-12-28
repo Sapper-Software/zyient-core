@@ -264,6 +264,13 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     }
 
     @Override
+    public <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws DataStoreException {
+        return updateEntity(entity, type, context);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
                                                        @NonNull Class<? extends E> type,

@@ -148,7 +148,7 @@ public class TransformerPipeline<K extends IKey, E extends IEntity<K>> {
                                     EntityValidationError ve = new EntityValidationError(entity.entityKey().stringKey(),
                                             (Class<? extends IEntity<?>>) entity.getClass(),
                                             (RuleValidationError) error);
-                                    dataStore.create(ve, ve.getClass(), context);
+                                    dataStore.upsert(ve, ve.getClass(), context);
                                 }
                             }
                         }

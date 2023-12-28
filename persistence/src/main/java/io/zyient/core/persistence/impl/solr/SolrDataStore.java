@@ -247,6 +247,13 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
+    @Override
+    public <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws DataStoreException {
+        return upsertEntity(entity, type, context);
+    }
+
     @SuppressWarnings("unchecked")
     private <E extends IEntity<?>> E checkEntity(E entity, SolrClient client) throws Exception {
         E current = (E) findEntity(entity.entityKey(), entity.getClass(), null);
