@@ -197,7 +197,8 @@ public class MappingReflectionHelper {
             throw new Exception(String.format("Cannot set value for Context/Source. [field=%s]", field));
         }
         if (property instanceof ExtendedPropertyModel) {
-            PropertyBag pb = (PropertyBag) entity;
+            MappedResponse<?> res = (MappedResponse<?>) entity;
+            PropertyBag pb = (PropertyBag)  res.entity();
             pb.setProperty(((ExtendedPropertyModel) property).key(), value);
         } else {
             ReflectionHelper.setFieldValue(value, entity, field);
@@ -208,7 +209,8 @@ public class MappingReflectionHelper {
                                      @NonNull PropertyModel property,
                                      @NonNull Object entity) throws Exception {
         if (property instanceof ExtendedPropertyModel) {
-            PropertyBag pb = (PropertyBag) entity;
+            MappedResponse<?> res = (MappedResponse<?>) entity;
+            PropertyBag pb = (PropertyBag)  res.entity();
             return pb.getProperty(((ExtendedPropertyModel) property).key());
         } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {

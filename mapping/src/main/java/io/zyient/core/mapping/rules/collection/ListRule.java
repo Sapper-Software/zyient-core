@@ -24,16 +24,32 @@ public class ListRule<T> extends BaseRule<T> {
         try {
             boolean isPresent = Boolean.parseBoolean(listRuleConfig.getPresent());
             Object value = MappingReflectionHelper.getProperty(target, property, data);
-            if (isPresent ? !listRuleConfig.getItems().contains(value) : listRuleConfig.getItems().contains(value)) {
+            if (value instanceof String s) {
+                if (isPresent) {
+                    if (listRuleConfig.getItems().contains(s)) {
+                        return true;
+                    } else {
 
-                throw new RuleValidationError(name(),
-                        entityType(),
-                        getRuleType().name(),
-                        errorCode(),
-                        Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
-                );
+                        throw new RuleValidationError(name(),
+                                entityType(),
+                                getRuleType().name(),
+                                errorCode(),
+                                Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
+                        );
+                    }
+                } else {
+                    if (!listRuleConfig.getItems().contains(s)) {
+                        return true;
+                    } else {
+                        throw new RuleValidationError(name(),
+                                entityType(),
+                                getRuleType().name(),
+                                errorCode(),
+                                Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
+                        );
+                    }
+                }
             }
-
         } catch (RuleValidationError | RuleEvaluationError e) {
             throw e;
         } catch (RuntimeException re) {
