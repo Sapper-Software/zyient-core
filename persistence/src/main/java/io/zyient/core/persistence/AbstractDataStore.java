@@ -243,11 +243,21 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                                       @NonNull Class<? extends E> type,
                                                                       Context context) throws
             DataStoreException {
+        return search(query, 0, maxResults, keyType, type, context);
+    }
+
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> search(@NonNull Q query,
+                                                                      int currentPage,
+                                                                      int maxResults,
+                                                                      @NonNull Class<? extends K> keyType,
+                                                                      @NonNull Class<? extends E> type,
+                                                                      Context context) throws
+            DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return doSearch(query, maxResults, keyType, type, context);
+                return doSearch(query, currentPage, maxResults, keyType, type, context);
             }
         } catch (Throwable t) {
             metrics.searchCounterError().increment();
@@ -257,6 +267,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
 
 
     public abstract <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                                 int currentPage,
                                                                                  int maxResults,
                                                                                  @NonNull Class<? extends K> keyType,
                                                                                  @NonNull Class<? extends E> type,

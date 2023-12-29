@@ -32,11 +32,14 @@ import java.util.List;
 public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, E> {
     private final ScrollableResults<E> results;
 
-    protected HibernateCursor(@NonNull ScrollableResults<E> results) {
+    public HibernateCursor(@NonNull ScrollableResults<E> results,
+                           int currentPage) {
+        super(currentPage);
         this.results = results;
     }
 
-    protected HibernateCursor(@NonNull HibernateCursor<K, E> cursor) {
+    public HibernateCursor(@NonNull HibernateCursor<K, E> cursor) {
+        super(cursor.currentPage());
         results = cursor.results;
     }
 

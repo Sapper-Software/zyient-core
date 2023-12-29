@@ -17,5 +17,5 @@
 package io.zyient.base.core.model;
 
 public enum EUserOrRole {
-    User, Role
+    User, Role, System
 }

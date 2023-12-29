@@ -40,6 +40,7 @@ import io.zyient.core.persistence.*;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
+import io.zyient.core.sdk.model.caseflow.Artefact;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -362,6 +363,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
             }
+            authorization.authorize(caseObject, EStandardAction.AddArtefact.action(), modifier, context);
             Preconditions.checkArgument(!Strings.isNullOrEmpty(artefact.name()));
             Preconditions.checkNotNull(artefact.file());
 
@@ -821,11 +823,45 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         return caseObject;
     }
 
+    public <C extends Case<P, S, E, T>> List<C> search(@NonNull AbstractDataStore.Q query,
+                                                       @NonNull Class<C> entityType,
+                                                       int currentPage,
+                                                       int batchSize,
+                                                       boolean fetchDocuments,
+                                                       Context context) throws DataStoreException, CaseActionException {
+        try {
+            try (Cursor<CaseId, Case<P, S, E, T>> cursor = dataStore()
+                    .search(query, currentPage, batchSize, CaseId.class, entityType, context)) {
+                if (cursor != null) {
+                    List<C> cases = new ArrayList<>();
+                    while (true) {
+                        List<Case<P, S, E, T>> result = cursor.nextPage();
+                        if (result == null || result.isEmpty()) break;
+                        for (Case<P, S, E, T> c : result) {
+                            if (c.getCaseState().getState() != c.getCaseState().getDeletedState()) {
+                                if (fetchDocuments) {
+                                    fetchDocuments(c);
+                                }
+                                cases.add((C) c);
+                            }
+                        }
+                    }
+                    if (!cases.isEmpty()) {
+                        return cases;
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new CaseActionException(ex);
+        }
+        return null;
+    }
+
     @SuppressWarnings("unchecked")
     public <C extends Case<P, S, E, T>> List<C> findByName(@NonNull String caseName,
-                                             @NonNull Class<C> entityType,
-                                             boolean fetchDocuments,
-                                             Context context) throws DataStoreException, CaseActionException {
+                                                           @NonNull Class<C> entityType,
+                                                           boolean fetchDocuments,
+                                                           Context context) throws DataStoreException, CaseActionException {
         String condition = "name = :name";
         Map<String, Object> params = Map.of("name", caseName);
         AbstractDataStore.Q query = new AbstractDataStore.Q()

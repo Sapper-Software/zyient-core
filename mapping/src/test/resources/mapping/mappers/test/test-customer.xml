@@ -87,6 +87,11 @@
                 <nullable>false</nullable>
                 <type>Property</type>
             </map>
+            <map source="context['source.country']">
+                <target>source.URI</target>
+                <nullable>false</nullable>
+                <type>Property</type>
+            </map>
         </mappings>
         <filters>
             <rules>

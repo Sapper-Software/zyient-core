@@ -136,6 +136,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int currentPage,
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
@@ -153,7 +154,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                     qq.setParameter(key, query.parameters().get(key));
             }
             ScrollableResults<E> results = qq.scroll();
-            HibernateCursor<K, E> cursor = new HibernateCursor<>(results);
+            HibernateCursor<K, E> cursor = new HibernateCursor<>(results, currentPage);
             return cursor.pageSize(maxResults);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

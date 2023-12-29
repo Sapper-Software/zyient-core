@@ -54,8 +54,10 @@ public class SolrCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, 
                       @NonNull SolrDataStore dataStore,
                       @NonNull SolrClient client,
                       @NonNull EntityQueryBuilder.LuceneQuery query,
+                      int currentPage,
                       int batchSize,
                       boolean fetchChildren) {
+        super(currentPage);
         this.entityType = entityType;
         this.dataStore = dataStore;
         this.client = client;

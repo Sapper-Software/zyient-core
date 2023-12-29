@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-DROP TABLE IF EXISTS `test`.`tb_customers`;
+package io.zyient.core.sdk.model.caseflow;
 
-CREATE TABLE `test`.`tb_customers`
-(
-    id               VARCHAR(64)  NOT NULL,
-    customer_name    VARCHAR(256) NOT NULL,
-    email_id         VARCHAR(256),
-    phone_no         VARCHAR(32)  NOT NULL,
-    address          VARCHAR(512),
-    address_city     VARCHAR(64),
-    address_state    VARCHAR(64),
-    address_country  VARCHAR(64),
-    address_zip_code VARCHAR(32),
-    country_code     VARCHAR(8),
-    credit_limit     NUMERIC(18, 4),
-    PRIMARY KEY (id)
-) ENGINE = Aria;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+
+import java.io.File;
+import java.util.Map;
+
+@Getter
+@Setter
+@Accessors(fluent = true)
+public class Artefact {
+    private String name;
+    private File file;
+    private String password;
+    private String mimeType;
+    private String sourceUrl;
+    private Map<String, String> artefactUri;
+}

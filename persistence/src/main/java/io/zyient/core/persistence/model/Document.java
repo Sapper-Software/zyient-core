@@ -317,8 +317,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         return this;
     }
 
-    public Content asContent() {
-        Content content = new Content();
+    public Content as(@NonNull Content content) {
         ContentId id = new ContentId();
         id.setCollection(this.id.getCollection());
         id.setId(this.id.getId());
@@ -339,6 +338,8 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         content.setNestedContentCount(documentCount);
         return content;
     }
+
+    public abstract Content as();
 
     public abstract Document<E, K, T> createInstance() throws Exception;
 }

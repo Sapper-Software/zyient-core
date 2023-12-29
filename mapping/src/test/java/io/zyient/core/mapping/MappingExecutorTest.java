@@ -70,6 +70,7 @@ class MappingExecutorTest {
                     .sourceURI(input.toURI())
                     .callback(callback)
                     .documentId(UUID.randomUUID().toString());
+            ci.put("country", "India");
             MappingExecutor.defaultInstance().read(ci);
             while (!callback.finished) {
                 Thread.sleep(1000);

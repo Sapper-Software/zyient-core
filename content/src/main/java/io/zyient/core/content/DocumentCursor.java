@@ -24,4 +24,7 @@ import io.zyient.core.persistence.model.DocumentState;
 
 public abstract class DocumentCursor<E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>>
         extends Cursor<DocumentId, Document<E, K, T>> {
+    public DocumentCursor(int currentPage) {
+        super(currentPage);
+    }
 }

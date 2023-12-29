@@ -96,7 +96,7 @@
                     <zookeeper>
                         <name>test-zk</name>
                         <!--connectionString>192.168.0.5:2181,192.168.0.4:2181</connectionString -->
-                        <connectionString>192.168.2.16:2181,192.168.2.17:2181,192.168.2.18:2181</connectionString>
+                        <connectionString>localhost:21811,localhost:21812,localhost:21813</connectionString>
                         <retry>
                             <interval>1500</interval>
                             <retries>5</retries>
@@ -108,13 +108,14 @@
                     <class>io.zyient.core.persistence.impl.rdbms.HibernateConnection</class>
                     <hibernate>
                         <name>test-hibernate</name>
-                        <url>jdbc:mariadb://192.168.2.19:3306/test</url>
-                        <username>debezium</username>
-                        <password>mongodb-password</password>
-                        <driver>org.mariadb.jdbc.Driver</driver>
-                        <dialect>MySQL</dialect>
+                        <url>jdbc:postgresql://localhost:5432/demo_db?currentSchema=ap</url>
+                        <username>demo</username>
+                        <password>default-db-password</password>
+                        <driver>org.postgresql.Driver</driver>
+                        <dialect>PostgreSQL</dialect>
                         <model>
-                            <packages>io.zyient.core.persistence.impl.rdbms.model, io.zyient.core.mapping.model</packages>
+                            <packages>io.zyient.core.persistence.impl.rdbms.model, io.zyient.core.mapping.model
+                            </packages>
                         </model>
                     </hibernate>
                 </connection>

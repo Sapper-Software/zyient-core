@@ -640,6 +640,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
 
     @Override
     public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int currentPage,
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
@@ -660,7 +661,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             }
             SolrClient client = connection.connect(cname);
             EntityQueryBuilder.LuceneQuery q = (EntityQueryBuilder.LuceneQuery) query;
-            return new SolrCursor<>(type, this, client, q, maxResults, fetchChildren);
+            return new SolrCursor<>(type, this, client, q, maxResults, currentPage, fetchChildren);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);
