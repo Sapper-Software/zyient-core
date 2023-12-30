@@ -35,4 +35,6 @@ public interface ServiceHandler<E extends Enum<E>> {
     String name();
 
     void checkState() throws Exception;
+
+    void checkPassKey(@NonNull String passKey) throws Exception;
 }

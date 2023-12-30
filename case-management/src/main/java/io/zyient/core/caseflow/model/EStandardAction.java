@@ -45,7 +45,9 @@ public enum EStandardAction {
     AssignTo(CaseAction.formatActionId(112),
             "Action - Assign a case to a specific user."),
     RemoveAssignment(CaseAction.formatActionId(113),
-            "Action - Remove a case assignment.");
+            "Action - Remove a case assignment."),
+    Read(CaseAction.formatActionId(114),
+            "Action - Read case data.");
 
     private final CaseAction action;
 

@@ -16,13 +16,8 @@
 
 package io.zyient.core.sdk.request.content;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
-import io.zyient.base.core.model.Actor;
-import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileUtils;
 import io.zyient.core.sdk.model.content.Content;
 import io.zyient.core.sdk.model.content.ContentId;
@@ -51,16 +46,6 @@ public class ContentUpdateRequestBuilder<E extends Enum<?>> {
         return this;
     }
 
-    public ContentUpdateRequestBuilder<E> withRequester(@NonNull UserOrRole requester) {
-        request.setUser(requester);
-        return this;
-    }
-
-    public ContentUpdateRequestBuilder<E> withRequester(@NonNull String name, @NonNull EUserOrRole type) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        request.setUser(new Actor(name, type));
-        return this;
-    }
 
     public ContentUpdateResponse execute(List<String> params) throws Exception {
         ContentUpdateResponse response = new ContentUpdateResponse();

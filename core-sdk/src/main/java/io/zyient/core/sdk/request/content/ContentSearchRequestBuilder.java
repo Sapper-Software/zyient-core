@@ -16,13 +16,8 @@
 
 package io.zyient.core.sdk.request.content;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
-import io.zyient.base.core.model.Actor;
-import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileUtils;
 import io.zyient.core.sdk.model.content.Content;
 import io.zyient.core.sdk.response.content.ContentSearchResponse;
@@ -34,17 +29,6 @@ public class ContentSearchRequestBuilder {
     public static final String SERVICE_CONTENT_SEARCH = "/search";
 
     private final WebServiceClient client;
-
-    public ContentSearchRequestBuilder withRequester(UserOrRole user) {
-        request.setUser(user);
-        return this;
-    }
-
-    public ContentSearchRequestBuilder withCreator(@NonNull String name, @NonNull EUserOrRole type) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        request.setUser(new Actor(name, type));
-        return this;
-    }
 
     public ContentSearchRequestBuilder withPageNo(int pageNo) {
         request.setPageNo(pageNo);

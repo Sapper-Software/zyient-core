@@ -70,6 +70,9 @@ public abstract class QueryParser<K extends IKey, E extends IEntity<K>> {
         } else {
             builder.append(entity);
         }
+        if (query.sort() != null && !query.sort().isEmpty()) {
+            builder.append(buildSort(query.sort()));
+        }
         Select stmnt = (Select) CCJSqlParserUtil.parse(builder.toString());
         process(query, stmnt);
         return stmnt.toString();
@@ -81,6 +84,8 @@ public abstract class QueryParser<K extends IKey, E extends IEntity<K>> {
         }
         return false;
     }
+
+    protected abstract String buildSort(@NonNull Map<String, Boolean> sort);
 
     protected abstract void process(@NonNull AbstractDataStore.Q query,
                                     @NonNull Select select) throws Exception;

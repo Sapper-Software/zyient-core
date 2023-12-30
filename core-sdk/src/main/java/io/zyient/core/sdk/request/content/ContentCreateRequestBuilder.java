@@ -21,9 +21,6 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
-import io.zyient.base.core.model.Actor;
-import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileTypeDetector;
 import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.sdk.model.content.Content;
@@ -64,16 +61,6 @@ public class ContentCreateRequestBuilder {
         return this;
     }
 
-    public ContentCreateRequestBuilder withCreator(@NonNull UserOrRole creator) {
-        request.setUser(creator);
-        return this;
-    }
-
-    public ContentCreateRequestBuilder withCreator(@NonNull String name, @NonNull EUserOrRole type) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        request.setUser(new Actor(name, type));
-        return this;
-    }
 
     public ContentCreateRequestBuilder withFile(@NonNull File file) {
         Preconditions.checkArgument(file.exists());

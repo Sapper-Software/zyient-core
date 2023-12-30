@@ -358,6 +358,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             Case<P, S, E, T> caseObject = findById(id,
                     (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                     true,
+                    modifier,
                     context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
@@ -421,6 +422,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             Case<P, S, E, T> caseObject = findById(id,
                     (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                     true,
+                    modifier,
                     context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
@@ -466,6 +468,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         Case<P, S, E, T> caseObject = findById(id,
                 (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                 true,
+                modifier,
                 context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
@@ -509,6 +512,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             Case<P, S, E, T> caseObject = findById(id,
                     (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                     true,
+                    modifier,
                     context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
@@ -690,6 +694,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             Case<P, S, E, T> caseObject = findById(id,
                     (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                     true,
+                    modifier,
                     context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
@@ -815,12 +820,24 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     public Case<P, S, E, T> findById(@NonNull CaseId id,
                                      @NonNull Class<? extends Case<P, S, E, T>> entityType,
                                      boolean fetchDocuments,
-                                     Context context) throws DataStoreException, CaseActionException {
-        Case<P, S, E, T> caseObject = dataStore.find(id, entityType, context);
-        if (fetchDocuments) {
-            fetchDocuments(caseObject);
+                                     @NonNull UserOrRole caller,
+                                     Context context) throws CaseAuthorizationError, CaseActionException {
+        try {
+            authorization.authorizeRead(EStandardAction.Read.action(),
+                    caller,
+                    context);
+            Case<P, S, E, T> caseObject = dataStore.find(id, entityType, context);
+            if (caseObject != null) {
+                if (fetchDocuments) {
+                    fetchDocuments(caseObject);
+                }
+            }
+            return caseObject;
+        } catch (CaseAuthorizationError | CaseActionException e) {
+            throw e;
+        } catch (Throwable t) {
+            throw new CaseActionException(t);
         }
-        return caseObject;
     }
 
     public <C extends Case<P, S, E, T>> List<C> search(@NonNull AbstractDataStore.Q query,
@@ -828,8 +845,12 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                                        int currentPage,
                                                        int batchSize,
                                                        boolean fetchDocuments,
-                                                       Context context) throws DataStoreException, CaseActionException {
+                                                       @NonNull UserOrRole caller,
+                                                       Context context) throws CaseAuthorizationError, CaseActionException {
         try {
+            authorization.authorizeRead(EStandardAction.Read.action(),
+                    caller,
+                    context);
             try (Cursor<CaseId, Case<P, S, E, T>> cursor = dataStore()
                     .search(query, currentPage, batchSize, CaseId.class, entityType, context)) {
                 if (cursor != null) {
@@ -851,6 +872,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     }
                 }
             }
+        } catch (CaseAuthorizationError | CaseActionException e) {
+            throw e;
         } catch (Exception ex) {
             throw new CaseActionException(ex);
         }
@@ -861,13 +884,17 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     public <C extends Case<P, S, E, T>> List<C> findByName(@NonNull String caseName,
                                                            @NonNull Class<C> entityType,
                                                            boolean fetchDocuments,
-                                                           Context context) throws DataStoreException, CaseActionException {
+                                                           @NonNull UserOrRole caller,
+                                                           Context context) throws CaseAuthorizationError, CaseActionException {
         String condition = "name = :name";
         Map<String, Object> params = Map.of("name", caseName);
         AbstractDataStore.Q query = new AbstractDataStore.Q()
                 .where(condition)
                 .addAll(params);
         try {
+            authorization.authorizeRead(EStandardAction.Read.action(),
+                    caller,
+                    context);
             try (Cursor<CaseId, Case<P, S, E, T>> cursor = dataStore()
                     .search(query, CaseId.class, entityType, context)) {
                 if (cursor != null) {
@@ -889,6 +916,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     }
                 }
             }
+        } catch (CaseAuthorizationError | CaseActionException e) {
+            throw e;
         } catch (Exception ex) {
             throw new CaseActionException(ex);
         }

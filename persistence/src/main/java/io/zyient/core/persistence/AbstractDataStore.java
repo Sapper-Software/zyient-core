@@ -42,6 +42,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
     @Accessors(fluent = true)
     public static class Q {
         private String where;
+        private Map<String, Boolean> sort;
         private String generatedQuery;
         private final Map<String, Object> parameters = new HashMap<>();
 
@@ -56,6 +57,14 @@ public abstract class AbstractDataStore<T> implements Closeable {
 
         public Q addAll(@NonNull Map<String, Object> parameters) {
             this.parameters.putAll(parameters);
+            return this;
+        }
+
+        public Q addSort(@NonNull String name, @NonNull Boolean asc) {
+            if (sort == null) {
+                sort = new HashMap<>();
+            }
+            sort.put(name, asc);
             return this;
         }
     }
@@ -255,6 +264,12 @@ public abstract class AbstractDataStore<T> implements Closeable {
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
+            if (maxResults <= 0) {
+                maxResults = settings.getMaxResults();
+            }
+            if (currentPage < 0) {
+                currentPage = 0;
+            }
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
                 return doSearch(query, currentPage, maxResults, keyType, type, context);
