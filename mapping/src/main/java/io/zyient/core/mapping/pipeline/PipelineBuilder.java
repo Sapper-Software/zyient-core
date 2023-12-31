@@ -40,7 +40,7 @@ public class PipelineBuilder {
     public static final String __CONFIG_PATH = "pipelines";
     public static final String __CONFIG_NODE_PIPELINE = "pipeline";
 
-    private final Map<String, TransformerPipeline<?, ?>> transformers = new HashMap<>();
+    private final Map<String, Pipeline> transformers = new HashMap<>();
     private MappingContextProvider contextProvider;
     private MapperFactory mapperFactory;
     private InputReaderFactory readerFactory;
@@ -63,9 +63,9 @@ public class PipelineBuilder {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
             List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_NODE_PIPELINE);
             for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                Class<? extends TransformerPipeline<?, ?>> cls =
-                        (Class<? extends TransformerPipeline<?, ?>>) ConfigReader.readType(node);
-                TransformerPipeline<?, ?> pipeline = cls.getDeclaredConstructor()
+                Class<? extends Pipeline> cls =
+                        (Class<? extends Pipeline>) ConfigReader.readType(node);
+                Pipeline pipeline = cls.getDeclaredConstructor()
                         .newInstance()
                         .contextProvider(contextProvider)
                         .contentDir(mapperFactory.contentDir())

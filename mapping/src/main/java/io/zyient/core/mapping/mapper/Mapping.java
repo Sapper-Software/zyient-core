@@ -224,8 +224,8 @@ public abstract class Mapping<T> {
     }
 
     public MappedResponse<T> read(@NonNull SourceMap source, Context context) throws Exception {
-        MappedResponse<T> response = new MappedResponse<T>(source)
-                .context(context);
+        MappedResponse<T> response = new MappedResponse<T>(source);
+        response.setContext(context);
         if (filterChain != null) {
             StatusCode s = filterChain.evaluate(source);
             if (s == StatusCode.IgnoreRecord) {
@@ -234,12 +234,13 @@ public abstract class Mapping<T> {
                 }
                 EvaluationStatus status = new EvaluationStatus();
                 status.status(s);
-                return response.status(status);
+                response.setStatus(status);
+                return response;
             }
         }
         Map<String, Object> converted = mapTransformer.transform(source);
         T entity = mapper.convertValue(converted, entityType);
-        response.entity(entity);
+        response.setEntity(entity);
 
         for (Integer index : sourceIndex.keySet()) {
             MappedElement me = sourceIndex.get(index);
@@ -268,14 +269,14 @@ public abstract class Mapping<T> {
             status = new EvaluationStatus();
             status.status(StatusCode.Success);
         }
-        response.status(status);
+        response.setStatus(status);
         return response;
     }
 
     private void setFieldValue(MappedElement element,
                                Object value,
                                MappedResponse<T> response) throws Exception {
-        T data = response.entity();
+        T data = response.getEntity();
         if (element.getMappingType() == MappingType.Property) {
             if (!(data instanceof PropertyBag)) {
                 throw new Exception(String.format("Custom mapping not supported for type. [type=%s]",

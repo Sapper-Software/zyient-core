@@ -18,9 +18,8 @@ package io.zyient.core.mapping.pipeline;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
-import io.zyient.core.persistence.AbstractDataStore;
+import io.zyient.base.common.config.Settings;
+import io.zyient.core.mapping.model.MappedResponse;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -28,17 +27,13 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class TransformerPipelineSettings extends PipelineSettings {
-    @Config(name = "mapping")
-    private String mapping;
-    @Config(name = "keyType", type = Class.class)
-    private Class<? extends IKey> keyType;
-    @Config(name = "entityType", type = Class.class)
-    private Class<? extends IEntity<?>> entityType;
-    @Config(name = "dataStore.name")
-    private String dataStore;
-    @Config(name = "dataStore.type", type = Class.class)
-    private Class<? extends AbstractDataStore<?>> dataStoreType;
-    @Config(name = "dataStore.commitBatchSize", required = false, type = Integer.class)
-    private int commitBatchSize = 256;
+public class PipelineSettings extends Settings {
+    @Config(name = "name", required = false)
+    private String name;
+    @Config(name = "responseType", type = Class.class)
+    private Class<? extends MappedResponse<?>> responseType;
+    @Config(name = "terminateOnValidationError", required = false, type = Boolean.class)
+    private boolean terminateOnValidationError = true;
+    @Config(name = "saveValidationErrors", required = false, type = Boolean.class)
+    private boolean saveValidationErrors = false;
 }

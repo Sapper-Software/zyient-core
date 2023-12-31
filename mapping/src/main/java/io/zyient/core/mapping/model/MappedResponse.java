@@ -20,14 +20,12 @@ import io.zyient.base.common.model.Context;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.util.HashMap;
 import java.util.Map;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
 public class MappedResponse<T> {
     private T entity;
     private final Map<String, Object> source;

@@ -18,27 +18,16 @@ package io.zyient.core.mapping.pipeline;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
-import io.zyient.core.persistence.AbstractDataStore;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Map;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class TransformerPipelineSettings extends PipelineSettings {
-    @Config(name = "mapping")
-    private String mapping;
-    @Config(name = "keyType", type = Class.class)
-    private Class<? extends IKey> keyType;
-    @Config(name = "entityType", type = Class.class)
-    private Class<? extends IEntity<?>> entityType;
-    @Config(name = "dataStore.name")
-    private String dataStore;
-    @Config(name = "dataStore.type", type = Class.class)
-    private Class<? extends AbstractDataStore<?>> dataStoreType;
-    @Config(name = "dataStore.commitBatchSize", required = false, type = Integer.class)
-    private int commitBatchSize = 256;
+public class CompositePipelineSettings extends PipelineSettings {
+    @Config(name = "context", custom = CompositeContextReader.class)
+    private Map<String, String> pipelineContext;
 }

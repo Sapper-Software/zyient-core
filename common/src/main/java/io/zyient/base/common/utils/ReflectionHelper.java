@@ -24,12 +24,14 @@ import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
 import io.zyient.base.common.model.PropertyModel;
 import lombok.NonNull;
+import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -101,54 +103,82 @@ public class ReflectionHelper {
 
     public static Object getFieldValue(@NonNull Object source,
                                        @NonNull String field) throws Exception {
-        String[] parts = field.split("\\.");
-        Object value = source;
-        Class<?> type = source.getClass();
-        int index = 0;
-        while (index < parts.length) {
-            Field f = findField(type, parts[index]);
-            if (f == null) {
-                throw new Exception(String.format("Field not found. [type=%s][field=%s]",
-                        type.getCanonicalName(), parts[index]));
-            }
-            value = getFieldValue(value, f);
-            if (value == null) {
-                break;
-            }
-            type = value.getClass();
-            index++;
+        return PropertyUtils.getProperty(source, field);
+    }
+
+
+    private static KeyValuePair<String, String> extractListFieldInfo(String name) {
+        int s = name.indexOf("[");
+        int e = name.indexOf("]");
+        if (s > 0 && e > s) {
+            String f = name.substring(0, s).trim();
+            String v = name.substring(s + 1, e).trim();
+            return new KeyValuePair<>(f, v);
         }
-        return value;
+        return null;
+    }
+
+    private static KeyValuePair<String, String> extractMapFieldInfo(String name) {
+        int s = name.indexOf("(");
+        int e = name.indexOf(")");
+        if (s > 0 && e > s) {
+            String f = name.substring(0, s).trim();
+            String v = name.substring(s + 1, e).trim();
+            return new KeyValuePair<>(f, v);
+        }
+        return null;
     }
 
     public static void setFieldValue(@NonNull Object value,
                                      @NonNull Object source,
                                      @NonNull String field) throws Exception {
-        String[] parts = field.split("\\.");
-        Object current = source;
-        Class<?> type = source.getClass();
-        int index = 0;
-        while (index < parts.length) {
-            Field f = findField(type, parts[index]);
-            if (f == null) {
-                throw new Exception(String.format("Field not found. [type=%s][field=%s]",
-                        type.getCanonicalName(), parts[index]));
-            }
-            if (index == parts.length - 1) {
-                setValue(value, current, f);
-                break;
-            }
-            Object parent = current;
-            current = getFieldValue(current, f);
-            if (current == null) {
-                current = f.getType()
+        PropertyUtils.setProperty(source, field, value);
+    }
+
+    private static Map<?, ?> initMapValue(Object target, Field field) throws Exception {
+        if (isMap(field)) {
+            Map<?, ?> map = null;
+            if (field.getType().equals(Map.class)) {
+                map = new HashMap<>();
+            } else {
+                map = (Map<?, ?>) field.getType()
                         .getDeclaredConstructor()
                         .newInstance();
-                setValue(current, parent, f);
             }
-            type = current.getClass();
-            index++;
+            setObjectValue(target, field, map);
+            return map;
         }
+        throw new Exception(String.format("Invalid map type: [type=%s]",
+                field.getType().getCanonicalName()));
+    }
+
+    private static Collection<?> initCollectionValue(Object target, Field field) throws Exception {
+        if (isCollection(field)) {
+            Collection<?> collection = null;
+            if (implementsInterface(List.class, field.getType())) {
+                if (field.getType().equals(List.class)) {
+                    collection = new ArrayList<>();
+                } else {
+                    collection = (List<?>) field.getType()
+                            .getDeclaredConstructor()
+                            .newInstance();
+                }
+            } else if (implementsInterface(Set.class, field.getType())) {
+                if (field.getType().equals(Set.class)) {
+                    collection = new HashSet<>();
+                } else {
+                    collection = (Set<?>) field.getType()
+                            .getDeclaredConstructor()
+                            .newInstance();
+                }
+            }
+            if (collection != null) {
+                setObjectValue(target, field, collection);
+                return collection;
+            }
+        }
+        throw new Exception(String.format("Invalid collection type: [type=%s]",
+                field.getType().getCanonicalName()));
     }
 
     /**
@@ -434,6 +464,12 @@ public class ReflectionHelper {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
         Object ret = null;
         if (type.equals(String.class)) {
+            if (value.startsWith("'")) {
+                value = value.substring(1);
+            }
+            if (value.endsWith("'")) {
+                value = value.substring(0, value.length() - 1);
+            }
             ret = value;
         } else if (isNumericType(type)) {
             if (isBoolean(type)) {
@@ -513,26 +549,24 @@ public class ReflectionHelper {
     /**
      * Check is the passed type (or its ancestor) implements the specified interface.
      *
-     * @param intf - Interface type to check.
-     * @param type - Type implementing expected interface.
+     * @param interfaceType - Interface type to check.
+     * @param type          - Type implementing expected interface.
      * @return - Implements Interface?
      */
-    public static boolean implementsInterface(@NonNull Class<?> intf,
+    public static boolean implementsInterface(@NonNull Class<?> interfaceType,
                                               @NonNull Class<?> type) {
-        if (intf.equals(type)) {
+        if (interfaceType.equals(type)) {
             return true;
         }
-        Class<?>[] intfs = type.getInterfaces();
-        if (intfs != null && intfs.length > 0) {
-            for (Class<?> itf : intfs) {
-                if (isSuperType(intf, itf)) {
-                    return true;
-                }
+        Class<?>[] interfaces = type.getInterfaces();
+        for (Class<?> itf : interfaces) {
+            if (isSuperType(interfaceType, itf)) {
+                return true;
             }
         }
         Class<?> parent = type.getSuperclass();
         if (parent != null && !parent.equals(Object.class)) {
-            return implementsInterface(intf, parent);
+            return implementsInterface(interfaceType, parent);
         }
         return false;
     }
@@ -606,71 +640,37 @@ public class ReflectionHelper {
      * @return - Parsed Value.
      */
     @SuppressWarnings("unchecked")
-    public static Object parseStringValue(Class<?> type, String value) {
+    public static Object parseStringValue(Class<?> type, String value) throws Exception {
         if (!Strings.isNullOrEmpty(value)) {
             if (isPrimitiveTypeOrString(type)) {
                 return parsePrimitiveValue(type, value);
             } else if (type.isEnum()) {
-                Class<Enum> et = (Class<Enum>) type;
-                return Enum.valueOf(et, value);
+                return asEnum(value, (Class<? extends Enum<?>>) type);
             }
         }
         return null;
-    }
-
-    /**
-     * Set the value of a primitive attribute for the specified object.
-     *
-     * @param value  - Value to set.
-     * @param source - Object to set the attribute value.
-     * @param f      - Field to set value for.
-     * @throws Exception
-     */
-    public static void setPrimitiveValue(@NonNull String value,
-                                         @NonNull Object source,
-                                         @NonNull Field f) throws Exception {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(value));
-
-        Class<?> type = f.getType();
-        if (type.equals(boolean.class) || type.equals(Boolean.class)) {
-            setBooleanValue(source, f, value);
-        } else if (type.equals(short.class) || type.equals(Short.class)) {
-            setShortValue(source, f, value);
-        } else if (type.equals(int.class) || type.equals(Integer.class)) {
-            setIntValue(source, f, value);
-        } else if (type.equals(float.class) || type.equals(Float.class)) {
-            setFloatValue(source, f, value);
-        } else if (type.equals(double.class) || type.equals(Double.class)) {
-            setDoubleValue(source, f, value);
-        } else if (type.equals(long.class) || type.equals(Long.class)) {
-            setLongValue(source, f, value);
-        } else if (type.equals(char.class) || type.equals(Character.class)) {
-            setCharValue(source, f, value);
-        } else if (type.equals(Class.class)) {
-            setClassValue(source, f, value);
-        } else if (type.equals(String.class)) {
-            setStringValue(source, f, value);
-        }
     }
 
     public static void setPrimitiveValue(@NonNull Object value,
                                          @NonNull Object source,
                                          @NonNull Field f) throws Exception {
         Class<?> type = f.getType();
-        if (type.equals(boolean.class) || type.equals(Boolean.class)) {
+        if (isBoolean(type)) {
             setBooleanValue(source, f, value);
-        } else if (type.equals(short.class) || type.equals(Short.class)) {
+        } else if (isShort(type)) {
             setShortValue(source, f, value);
-        } else if (type.equals(int.class) || type.equals(Integer.class)) {
+        } else if (isInt(type)) {
             setIntValue(source, f, value);
-        } else if (type.equals(float.class) || type.equals(Float.class)) {
+        } else if (isFloat(type)) {
             setFloatValue(source, f, value);
-        } else if (type.equals(double.class) || type.equals(Double.class)) {
+        } else if (isDouble(type)) {
             setDoubleValue(source, f, value);
-        } else if (type.equals(long.class) || type.equals(Long.class)) {
+        } else if (isLong(type)) {
             setLongValue(source, f, value);
-        } else if (type.equals(char.class) || type.equals(Character.class)) {
+        } else if (isChar(type)) {
             setCharValue(source, f, value);
+        } else if (isByte(type)) {
+            setByteValue(source, f, value);
         } else if (type.equals(Class.class)) {
             setClassValue(source, f, value);
         } else if (type.equals(String.class)) {
@@ -725,10 +725,8 @@ public class ReflectionHelper {
         try {
             Object retV = value;
             Class<?> type = f.getType();
-            if (isPrimitiveTypeOrClass(f)) {
+            if (isPrimitiveTypeOrString(f)) {
                 setPrimitiveValue(value, source, f);
-            } else if (type.equals(String.class)) {
-                setStringValue(source, f, value);
             } else if (type.isEnum()) {
                 Class<Enum> et = (Class<Enum>) type;
                 Object ev = Enum.valueOf(et, value);
@@ -738,10 +736,6 @@ public class ReflectionHelper {
                 File file = new File(value);
                 setObjectValue(source, f, file);
                 retV = file;
-            } else if (type.equals(Class.class)) {
-                Class<?> cls = Class.forName(value.trim());
-                setObjectValue(source, f, cls);
-                retV = cls;
             } else {
                 Class<?> cls = Class.forName(value.trim());
                 if (type.isAssignableFrom(cls)) {
@@ -764,6 +758,190 @@ public class ReflectionHelper {
                             + f.getName() + "]",
                     e);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object as(@NonNull Class<?> type,
+                            @NonNull Object value) throws Exception {
+        Object ret = null;
+        if (isPrimitiveTypeOrString(type)) {
+            if (isBoolean(type)) {
+                ret = asBoolean(value);
+            } else if (isShort(type)) {
+                ret = asShort(value);
+            } else if (isByte(type)) {
+                ret = asByte(value);
+            } else if (isInt(type)) {
+                ret = asInt(value);
+            } else if (isLong(type)) {
+                ret = asLong(value);
+            } else if (isFloat(type)) {
+                ret = asFloat(value);
+            } else if (isDouble(type)) {
+                ret = asDouble(value);
+            } else if (type.equals(Class.class)) {
+                ret = asClass(value);
+            } else if (isChar(type)) {
+                ret = asChar(value);
+            }
+        } else if (type.isEnum()) {
+            ret = asEnum(value, (Class<? extends Enum<?>>) type);
+        } else if (value instanceof String str) {
+            ret = JSONUtils.read(str, type);
+        } else {
+            throw new Exception(String.format("Conversion failed. [type=%s][value type=%s]",
+                    type.getCanonicalName(), value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Boolean asBoolean(@NonNull Object value) throws Exception {
+        Boolean ret = null;
+        if (isBoolean(value.getClass())) {
+            ret = (Boolean) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            if (str.compareTo("0") == 0) {
+                ret = false;
+            } else if (str.compareTo("1") == 0) {
+                ret = true;
+            } else {
+                ret = Boolean.parseBoolean(str);
+            }
+        } else if (isNumericType(value.getClass())) {
+            double d = (double) value;
+            ret = (d != 0.0);
+        } else {
+            throw new Exception(String.format("Boolean conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Short asShort(@NonNull Object value) throws Exception {
+        Short ret = null;
+        if (isNumericType(value.getClass())) {
+            ret = (short) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            ret = Short.parseShort(str);
+        } else {
+            throw new Exception(String.format("Short conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Integer asInt(@NonNull Object value) throws Exception {
+        Integer ret = null;
+        if (isNumericType(value.getClass())) {
+            ret = (int) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            ret = Integer.parseInt(str);
+        } else {
+            throw new Exception(String.format("Integer conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Long asLong(@NonNull Object value) throws Exception {
+        Long ret = null;
+        if (isNumericType(value.getClass())) {
+            ret = (long) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            ret = Long.parseLong(str);
+        } else {
+            throw new Exception(String.format("Long conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Class<?> asClass(@NonNull Object value) throws Exception {
+        Class<?> ret = null;
+        if (value instanceof Class<?>) {
+            ret = (Class<?>) value;
+        } else if (value instanceof String str) {
+            ret = Class.forName(str);
+        } else {
+            throw new Exception(String.format("Class conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Character asChar(@NonNull Object value) throws Exception {
+        Character ret = null;
+        if (value instanceof Character) {
+            ret = (Character) value;
+        } else if (value instanceof CharSequence cs) {
+            ret = ((CharSequence) value).charAt(0);
+        }
+        return ret;
+    }
+
+    public static Float asFloat(@NonNull Object value) throws Exception {
+        Float ret = null;
+        if (isNumericType(value.getClass())) {
+            ret = (float) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            ret = Float.parseFloat(str);
+        } else {
+            throw new Exception(String.format("Float conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Double asDouble(@NonNull Object value) throws Exception {
+        Double ret = null;
+        if (isNumericType(value.getClass())) {
+            ret = (double) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            ret = Double.parseDouble(str);
+        } else {
+            throw new Exception(String.format("Double conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    public static Byte asByte(@NonNull Object value) throws Exception {
+        Byte ret = null;
+        if (isByte(value.getClass())) {
+            ret = (byte) value;
+        } else if (value instanceof String str) {
+            byte[] data = str.getBytes(Charset.defaultCharset());
+            ret = data[0];
+        } else if (isChar(value.getClass())) {
+            char c = (char) value;
+            ret = (byte) c;
+        } else {
+            throw new Exception(String.format("Byte conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <E extends Enum<E>> E asEnum(@NonNull Object value,
+                                               @NonNull Class<? extends Enum<?>> type) throws Exception {
+        E ret = null;
+        if (value.getClass().isEnum()) {
+            ret = (E) value;
+        } else if (value instanceof String str) {
+            str = str.trim();
+            ret = Enum.valueOf((Class<E>) type, str);
+        } else {
+            throw new Exception(String.format("Enum conversion failed. [type=%s]",
+                    value.getClass().getCanonicalName()));
+        }
+        return ret;
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -891,10 +1069,6 @@ public class ReflectionHelper {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
 
         Field f = type.getField(property);
-        if (f == null) {
-            return false;
-        }
-
         String method = "set" + StringUtils.capitalize(f.getName());
         Method m = MethodUtils.getAccessibleMethod(o.getClass(), method,
                 f.getType());
@@ -938,15 +1112,7 @@ public class ReflectionHelper {
                                        @NonNull Field f,
                                        @NonNull Object value)
             throws Exception {
-        Boolean bv = null;
-        if (isBoolean(value.getClass())) {
-            bv = (Boolean) value;
-        } else if (value instanceof String) {
-            bv = Boolean.parseBoolean((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to boolean. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Boolean bv = asBoolean(value);
         setObjectValue(o, f, bv);
     }
 
@@ -962,15 +1128,7 @@ public class ReflectionHelper {
                                      @NonNull Field f,
                                      @NonNull Object value)
             throws Exception {
-        Short sv = null;
-        if (isShort(value.getClass())) {
-            sv = (Short) value;
-        } else if (value instanceof String) {
-            sv = Short.parseShort((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to short. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Short sv = asShort(value);
         setObjectValue(o, f, sv);
     }
 
@@ -986,15 +1144,7 @@ public class ReflectionHelper {
                                    @NonNull Field f,
                                    @NonNull Object value)
             throws Exception {
-        Integer iv = null;
-        if (isInt(value.getClass())) {
-            iv = (Integer) value;
-        } else if (value instanceof String) {
-            iv = Integer.parseInt((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to integer. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Integer iv = asInt(value);
         setObjectValue(o, f, iv);
     }
 
@@ -1010,15 +1160,7 @@ public class ReflectionHelper {
                                     @NonNull Field f,
                                     @NonNull Object value)
             throws Exception {
-        Long lv = null;
-        if (isLong(value.getClass())) {
-            lv = (Long) value;
-        } else if (value instanceof String) {
-            lv = Long.parseLong((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to long. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Long lv = asLong(value);
         setObjectValue(o, f, lv);
     }
 
@@ -1034,15 +1176,7 @@ public class ReflectionHelper {
                                      @NonNull Field f,
                                      @NonNull Object value)
             throws Exception {
-        Float fv = null;
-        if (isFloat(value.getClass())) {
-            fv = (Float) value;
-        } else if (value instanceof String) {
-            fv = Float.parseFloat((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to float. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Float fv = asFloat(value);
         setObjectValue(o, f, fv);
     }
 
@@ -1058,16 +1192,16 @@ public class ReflectionHelper {
                                       @NonNull Field f,
                                       @NonNull Object value)
             throws Exception {
-        Double dv = null;
-        if (isDouble(value.getClass())) {
-            dv = (Double) value;
-        } else if (value instanceof String) {
-            dv = Double.parseDouble((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to double. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Double dv = asDouble(value);
         setObjectValue(o, f, dv);
+    }
+
+    public static void setByteValue(@NonNull Object o,
+                                    @NonNull Field f,
+                                    @NonNull Object value)
+            throws Exception {
+        Byte b = asByte(value);
+        setObjectValue(o, f, b);
     }
 
     /**
@@ -1082,15 +1216,7 @@ public class ReflectionHelper {
                                     @NonNull Field f,
                                     @NonNull Object value)
             throws Exception {
-        Character cv = null;
-        if (isChar(value.getClass())) {
-            cv = (Character) value;
-        } else if (value instanceof String) {
-            cv = ((String) value).charAt(0);
-        } else {
-            throw new Exception(String.format("Failed to convert to char. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Character cv = asChar(value);
         setObjectValue(o, f, cv);
     }
 
@@ -1106,15 +1232,7 @@ public class ReflectionHelper {
                                      @NonNull Field f,
                                      @NonNull Object value)
             throws Exception {
-        Class<?> cv = null;
-        if (value instanceof Class) {
-            cv = (Class<?>) value;
-        } else if (value instanceof String) {
-            Class.forName((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to class. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
+        Class<?> cv = asClass(value);
         setObjectValue(o, f, cv);
     }
 
@@ -1125,23 +1243,23 @@ public class ReflectionHelper {
      * @param value - String value
      * @return - Parsed Value
      */
-    private static Object parsePrimitiveValue(Class<?> type, String value) {
-        if (type.equals(Boolean.class) || type.equals(boolean.class)) {
-            return Boolean.parseBoolean(value);
-        } else if (type.equals(Short.class) || type.equals(short.class)) {
-            return Short.parseShort(value);
-        } else if (type.equals(Integer.class) || type.equals(int.class)) {
-            return Integer.parseInt(value);
-        } else if (type.equals(Long.class) || type.equals(long.class)) {
-            return Long.parseLong(value);
-        } else if (type.equals(Float.class) || type.equals(float.class)) {
-            return Float.parseFloat(value);
-        } else if (type.equals(Double.class) || type.equals(double.class)) {
-            return Double.parseDouble(value);
-        } else if (type.equals(Character.class) || type.equals(char.class)) {
+    private static Object parsePrimitiveValue(Class<?> type, String value) throws Exception {
+        if (isBoolean(type)) {
+            return asBoolean(value);
+        } else if (isShort(type)) {
+            return asShort(value);
+        } else if (isInt(type)) {
+            return asInt(value);
+        } else if (isLong(type)) {
+            return asLong(value);
+        } else if (isFloat(type)) {
+            return asFloat(value);
+        } else if (isDouble(type)) {
+            return asDouble(value);
+        } else if (isChar(type)) {
             return value.charAt(0);
-        } else if (type.equals(Byte.class) || type.equals(byte.class)) {
-            return Byte.parseByte(value);
+        } else if (isByte(type)) {
+            return asByte(value);
         } else if (type.equals(String.class)) {
             return value;
         }

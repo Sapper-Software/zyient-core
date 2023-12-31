@@ -209,20 +209,20 @@ public class MappingReflectionHelper {
                                      @NonNull Object entity) throws Exception {
         if (property instanceof ExtendedPropertyModel) {
             if (entity instanceof MappedResponse<?>) {
-                entity = ((MappedResponse<?>) entity).entity();
+                entity = ((MappedResponse<?>) entity).getEntity();
             }
             PropertyBag pb = (PropertyBag) entity;
             return pb.getProperty(((ExtendedPropertyModel) property).key());
         } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
-                return getSourceProperty(field, ((MappedResponse<?>) entity).source());
+                return getSourceProperty(field, ((MappedResponse<?>) entity).getSource());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));
             }
         } else if (isContextPrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
-                return getContextProperty(field, ((MappedResponse<?>) entity).context());
+                return getContextProperty(field, ((MappedResponse<?>) entity).getContext());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));
