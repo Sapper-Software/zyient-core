@@ -47,7 +47,7 @@ public abstract class MapFieldValueParser<V> implements FieldValueParser<Map<Str
         try {
             if (ConfigReader.checkIfNodeExists(config, path)) {
                 Map<String, V> map = new HashMap<>();
-                HierarchicalConfiguration<ImmutableNode> node = config.configurationAt(__CONFIG_PATH);
+                HierarchicalConfiguration<ImmutableNode> node = config.configurationAt(path);
                 List<HierarchicalConfiguration<ImmutableNode>> nodes = node.configurationsAt(valuesPath);
                 for (HierarchicalConfiguration<ImmutableNode> n : nodes) {
                     String key = n.getString(keyName).trim();

@@ -29,6 +29,7 @@ CREATE TABLE tb_customers
     address_zip_code VARCHAR(32),
     country_code     VARCHAR(8),
     credit_limit     NUMERIC(18, 4),
+    properties       TEXT,
     PRIMARY KEY (id)
 );
 
@@ -48,5 +49,4 @@ CREATE TABLE tb_iso_country
     sub_region_code          VARCHAR(16),
     intermediate_region_code VARCHAR(16),
     PRIMARY KEY (name)
-
 );

@@ -26,8 +26,9 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,11 +38,16 @@ import java.util.regex.Pattern;
 public class RegexTransformer implements Transformer<String> {
     private String regex;
     private String replace;
-    private Map<Integer, List<Integer>> groups;
+    private Set<String> groups;
     private String format;
     @Setter(AccessLevel.NONE)
     private Pattern pattern;
     private String name;
+
+    public RegexTransformer withGroups(@NonNull Collection<String> groups) {
+        this.groups = new HashSet<>(groups);
+        return this;
+    }
 
     @Override
     public Transformer<String> configure(@NonNull MappingSettings settings) throws ConfigurationException {
@@ -65,12 +71,15 @@ public class RegexTransformer implements Transformer<String> {
             }
             if (groups != null && !groups.isEmpty()) {
                 value = format;
-                int matchCount = 0;
+                int matchCount = 1;
                 while (m.find()) {
                     for (int ii = 1; ii <= m.groupCount(); ii++) {
-                        String k = String.format("{%d:%d}", matchCount, ii);
-                        String v = m.group(ii);
-                        value = value.replace(k, v);
+                        String k = String.format("%d:%d", matchCount, ii);
+                        if (groups.contains(k)) {
+                            String v = m.group(ii);
+                            String r = String.format("{%s}", k);
+                            value = value.replace(r, v);
+                        }
                     }
                     matchCount++;
                 }

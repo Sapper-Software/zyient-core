@@ -55,8 +55,7 @@ public abstract class Mapping<T> {
     private final Class<? extends T> entityType;
     private final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
-    private final Map<String, MappedElement> sourceIndex = new HashMap<>();
-    private final Map<String, MappedElement> targetIndex = new HashMap<>();
+    private final Map<Integer, MappedElement> sourceIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
     private RulesExecutor<MappedResponse<T>> rulesExecutor;
@@ -214,8 +213,7 @@ public abstract class Mapping<T> {
                     type = MappedElement.class;
                 }
                 MappedElement me = MappedElement.read(node, type);
-                sourceIndex.put(me.getSourcePath(), me);
-                targetIndex.put(me.getTargetPath(), me);
+                sourceIndex.put(me.getSequence(), me);
                 if (me.getMappingType() == MappingType.Field) {
                     mapTransformer.add(me);
                 }
@@ -243,10 +241,11 @@ public abstract class Mapping<T> {
         T entity = mapper.convertValue(converted, entityType);
         response.entity(entity);
 
-        for (String path : sourceIndex.keySet()) {
-            MappedElement me = sourceIndex.get(path);
+        for (Integer index : sourceIndex.keySet()) {
+            MappedElement me = sourceIndex.get(index);
             if (me.getMappingType() == MappingType.Field) continue;
             Object value = null;
+            String path = me.getSourcePath();
             if (MappingReflectionHelper.isContextPrefixed(path)) {
                 value = findContextValue(context, path);
             } else {
