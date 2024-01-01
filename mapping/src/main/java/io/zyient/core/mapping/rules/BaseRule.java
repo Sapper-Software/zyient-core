@@ -105,7 +105,7 @@ public abstract class BaseRule<T> implements Rule<T> {
         EvaluationStatus status = new EvaluationStatus();
         try {
             Object response = doEvaluate(data);
-            status.response(response);
+            status.setResponse(response);
             RuleType rt = getRuleType();
             if (rt == RuleType.Filter || rt == RuleType.Condition) {
                 if (!(response instanceof Boolean)) {
@@ -118,26 +118,31 @@ public abstract class BaseRule<T> implements Rule<T> {
                 }
                 boolean r = (boolean) response;
                 if (rt == RuleType.Condition) {
-                    if (!r)
-                        return status.status(StatusCode.Failed);
+                    if (!r) {
+                        status.setStatus(StatusCode.Failed);
+                        return status;
+                    }
                 } else {
-                    if (r)
-                        return status.status(StatusCode.IgnoreRecord);
+                    if (r) {
+                        status.setStatus(StatusCode.IgnoreRecord);
+                        return status;
+                    }
                 }
             }
-            status.status(StatusCode.Success);
+            status.setStatus(StatusCode.Success);
             if (evaluator != null) {
                 evaluator.evaluate(data, status);
             }
-            if (status.errors() != null) {
-                return status.status(StatusCode.ValidationFailed);
+            if (status.getErrors() != null) {
+                status.setStatus(StatusCode.ValidationFailed);
             }
             return status;
         } catch (RuleValidationError ve) {
             if (terminateOnValidationError) {
                 throw ve;
             }
-            return status.error(ve).status(StatusCode.ValidationFailed);
+            status.error(ve).setStatus(StatusCode.ValidationFailed);
+            return status;
         }
     }
 

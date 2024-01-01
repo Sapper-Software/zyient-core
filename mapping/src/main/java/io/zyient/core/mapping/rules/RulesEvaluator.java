@@ -44,8 +44,8 @@ public class RulesEvaluator<T> {
         for (Rule<T> rule : rules) {
             try {
                 EvaluationStatus r = rule.evaluate(data);
-                if (r.errors() != null) {
-                    ValidationExceptions errors = r.errors();
+                if (r.getErrors() != null) {
+                    ValidationExceptions errors = r.getErrors();
                     for (ValidationException ve : errors.getErrors()) {
                         if (!(ve instanceof RuleValidationError)) {
                             throw new RuleEvaluationError(rule.name(),
@@ -63,13 +63,13 @@ public class RulesEvaluator<T> {
                 }
 
                 if (rule.getRuleType() == RuleType.Condition) {
-                    if (r.status() == StatusCode.Failed) {
-                        status.status(StatusCode.Failed);
+                    if (r.getStatus() == StatusCode.Failed) {
+                        status.setStatus(StatusCode.Failed);
                         break;
                     }
                 } else if (rule.getRuleType() == RuleType.Filter) {
-                    if (r.status() == StatusCode.IgnoreRecord) {
-                        status.status(StatusCode.IgnoreRecord);
+                    if (r.getStatus() == StatusCode.IgnoreRecord) {
+                        status.setStatus(StatusCode.IgnoreRecord);
                         break;
                     }
                 }

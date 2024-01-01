@@ -79,18 +79,18 @@ public class RuleGroup<T> implements Rule<T> {
         }
         EvaluationStatus status = new EvaluationStatus();
         try {
-            status.status(StatusCode.Success);
+            status.setStatus(StatusCode.Success);
             evaluator.evaluate(data, status);
-            if (status.errors() != null) {
-                return status.status(StatusCode.ValidationFailed);
+            if (status.getErrors() != null) {
+                status.setStatus(StatusCode.ValidationFailed);
             }
-            return status;
         } catch (RuleValidationError ve) {
             if (terminateOnValidationError) {
                 throw ve;
             }
-            return status.error(ve).status(StatusCode.ValidationFailed);
+            status.error(ve).setStatus(StatusCode.ValidationFailed);
         }
+        return status;
     }
 
     @Override

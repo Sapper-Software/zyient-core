@@ -16,16 +16,17 @@
 
 package io.zyient.core.mapping.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.core.mapping.rules.RuleValidationError;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class EvaluationStatus {
     private StatusCode status;
     private ValidationExceptions errors;

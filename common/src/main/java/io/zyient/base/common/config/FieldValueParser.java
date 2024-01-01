@@ -12,7 +12,7 @@ public interface FieldValueParser<T> {
 
         @Override
         public Object parse(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws ConfigurationException {
-            return null;
+            throw new ConfigurationException("Should not be called...");
         }
     }
 }

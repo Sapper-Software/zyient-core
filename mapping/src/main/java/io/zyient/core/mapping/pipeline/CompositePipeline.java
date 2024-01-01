@@ -16,13 +16,20 @@
 
 package io.zyient.core.mapping.pipeline;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.InputContentInfo;
+import io.zyient.core.mapping.model.RecordResponse;
 import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
 import io.zyient.core.mapping.readers.InputReader;
+import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
@@ -37,7 +44,7 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class CompositePipeline extends Pipeline {
+public abstract class CompositePipeline extends Pipeline {
     public static final String __CONFIG_PATH_PIPELINES = "pipelines";
     private Map<String, Pipeline> pipelines;
 
@@ -49,6 +56,7 @@ public class CompositePipeline extends Pipeline {
         try {
             configure(xmlConfig, dataStoreManager, CompositePipelineSettings.class);
             CompositePipelineSettings settings = (CompositePipelineSettings) settings();
+            settings.read(config());
             HierarchicalConfiguration<ImmutableNode> psConfig = config().configurationAt(__CONFIG_PATH_PIPELINES);
             List<HierarchicalConfiguration<ImmutableNode>> nodes
                     = psConfig.configurationsAt(PipelineBuilder.__CONFIG_NODE_PIPELINE);
@@ -63,10 +71,10 @@ public class CompositePipeline extends Pipeline {
                 pipelines.put(pipeline.name(), pipeline);
             }
             for (String key : settings.getPipelineContext().keySet()) {
-                String name = settings.getPipelineContext().get(key);
-                if (!pipelines.containsKey(name)) {
+                PipelineInfo pi = settings.getPipelineContext().get(key);
+                if (!pipelines.containsKey(pi.getPipeline())) {
                     throw new Exception(String.format("Pipeline definition missing. [path=%s][pipeline=%s]",
-                            key, name));
+                            key, pi.getPipeline()));
                 }
             }
             return this;
@@ -78,11 +86,101 @@ public class CompositePipeline extends Pipeline {
 
     @Override
     public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
-        return null;
+        CompositePipelineSettings settings = (CompositePipelineSettings) settings();
+        Preconditions.checkNotNull(settings);
+        DefaultLogger.info(String.format("Running pipeline for entity. [name=%s]", name()));
+        ReadResponse response = new ReadResponse();
+        ReadCursor cursor = reader.open();
+        while (true) {
+            RecordResponse r = new RecordResponse();
+            try {
+                SourceMap data = cursor.next();
+                if (data == null) break;
+                r.setSource(data);
+                response.incrementCount();
+                r = process(data, context);
+                response.add(r);
+            } catch (ValidationException | ValidationExceptions ex) {
+                String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
+                        reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
+                if (settings().isTerminateOnValidationError()) {
+                    DefaultLogger.stacktrace(ex);
+                    throw ex;
+                } else {
+                    DefaultLogger.warn(mesg);
+                    r = errorResponse(r, null, ex);
+                    response.add(r);
+                }
+            } catch (Exception e) {
+                DefaultLogger.stacktrace(e);
+                DefaultLogger.error(e.getLocalizedMessage());
+                throw e;
+            }
+        }
+        DefaultLogger.info(String.format("Processed [%d] records for entity. [name=%s]",
+                response.getRecordCount(), name()));
+        return response;
     }
 
     @Override
-    public void process(@NonNull SourceMap data, Context context) throws Exception {
+    @SuppressWarnings("unchecked")
+    public RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
+        CompositePipelineSettings settings = (CompositePipelineSettings) settings();
+        Preconditions.checkNotNull(settings);
+        Context ctx = reset(context);
+        RecordResponse response = null;
+        for (String path : settings.getPipelineContext().keySet()) {
+            PipelineInfo pi = settings.getPipelineContext().get(path);
+            if (pi.isResetContext()) {
+                ctx = reset(context);
+            }
+            Object value = evaluate(data, path);
+            if (value != null) {
+                Pipeline pipeline = pipelines.get(path);
+                Preconditions.checkNotNull(pipeline);
+                if (value instanceof List<?>) {
+                    List<Object> values = (List<Object>) value;
+                    for (Object v : values) {
+                        SourceMap d = new SourceMap((Map<String, ?>) v);
+                        response = pipeline.process(d, ctx);
+                        checkAndAddContext(response, pi, ctx);
+                    }
+                } else {
+                    SourceMap d = new SourceMap((Map<String, ?>) value);
+                    response = pipeline.process(data, ctx);
+                    checkAndAddContext(response, pi, ctx);
+                }
+            } else {
+                String mesg = String.format("No value found for path. [path=%s]", path);
+                if (!pi.isIgnorable()) {
+                    throw new Exception(mesg);
+                }
+                DefaultLogger.warn(mesg);
+            }
+        }
+        return response;
+    }
 
+    private void checkAndAddContext(RecordResponse response,
+                                    PipelineInfo pi,
+                                    Context context) {
+        Object ret = response.getEntity();
+        if (ret != null && pi.isAddToContext()) {
+            String key = ret.getClass().getSimpleName();
+            if (!Strings.isNullOrEmpty(pi.getContextKey())) {
+                key = pi.getContextKey();
+            }
+            context.put(key, ret);
+        }
+    }
+
+    protected abstract Object evaluate(SourceMap data, String expression) throws Exception;
+
+    private Context reset(Context context) throws Exception {
+        Context ctx = context.getClass()
+                .getDeclaredConstructor()
+                .newInstance();
+        ctx.setParams(context.getParams());
+        return ctx;
     }
 }

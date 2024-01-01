@@ -19,9 +19,10 @@ package io.zyient.core.mapping.pipeline;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.core.mapping.mapper.MapperFactory;
-import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.readers.ReadResponse;
@@ -60,12 +61,36 @@ public abstract class Pipeline {
         config = reader.config();
     }
 
+    protected RecordResponse errorResponse(RecordResponse response,
+                                           SourceMap source,
+                                           @NonNull Exception error) {
+        if (response == null) {
+            response = new RecordResponse();
+        }
+        if (source != null) {
+            response.setSource(source);
+        }
+        ValidationExceptions ex = null;
+        if (error instanceof ValidationExceptions) {
+            ex = (ValidationExceptions) error;
+        } else if (error instanceof ValidationException) {
+            ex = ValidationExceptions.add((ValidationException) error, ex);
+        } else {
+            ex = ValidationExceptions.add(new ValidationException(error), ex);
+        }
+        EvaluationStatus status = new EvaluationStatus();
+        status.setStatus(StatusCode.ValidationFailed);
+        status.setErrors(ex);
+        response.setStatus(status);
+        return response;
+    }
+
     public abstract Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                        @NonNull MapperFactory mapperFactory,
                                        @NonNull DataStoreManager dataStoreManager) throws ConfigurationException;
 
     public abstract ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception;
 
-    public abstract void process(@NonNull SourceMap data, Context context) throws Exception;
+    public abstract RecordResponse process(@NonNull SourceMap data, Context context) throws Exception;
 
 }

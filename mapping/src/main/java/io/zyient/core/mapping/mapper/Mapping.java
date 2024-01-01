@@ -233,7 +233,7 @@ public abstract class Mapping<T> {
                     DefaultLogger.trace("IGNORED RECORD", source);
                 }
                 EvaluationStatus status = new EvaluationStatus();
-                status.status(s);
+                status.setStatus(s);
                 response.setStatus(status);
                 return response;
             }
@@ -267,7 +267,7 @@ public abstract class Mapping<T> {
             status = rulesExecutor.evaluate(response);
         } else {
             status = new EvaluationStatus();
-            status.status(StatusCode.Success);
+            status.setStatus(StatusCode.Success);
         }
         response.setStatus(status);
         return response;

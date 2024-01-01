@@ -75,7 +75,7 @@ class SpELRuleTest {
                 MappedResponse<CustomersEntity> response = new MappedResponse<CustomersEntity>(new HashMap<>());
                 response.setEntity(entity);
                 EvaluationStatus status = rule.evaluate(response);
-                assertSame(status.status(), StatusCode.Success);
+                assertSame(status.getStatus(), StatusCode.Success);
             }
         } catch (Exception ex) {
             fail(ex);

@@ -193,8 +193,8 @@ public class MappingReflectionHelper {
                                    @NonNull PropertyModel property,
                                    @NonNull Object entity,
                                    Object value) throws Exception {
-        if (isSourcePrefixed(field) || isContextPrefixed(field)) {
-            throw new Exception(String.format("Cannot set value for Context/Source. [field=%s]", field));
+        if (isSourcePrefixed(field)) {
+            throw new Exception(String.format("Cannot set value for Source. [field=%s]", field));
         }
         if (property instanceof ExtendedPropertyModel) {
             PropertyBag pb = (PropertyBag) entity;
