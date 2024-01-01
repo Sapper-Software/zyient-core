@@ -17,8 +17,6 @@
 package io.zyient.core.mapping.pipeline;
 
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.ContentInfo;
@@ -40,7 +38,7 @@ public class PipelineBuilder {
     public static final String __CONFIG_PATH = "pipelines";
     public static final String __CONFIG_NODE_PIPELINE = "pipeline";
 
-    private final Map<String, TransformerPipeline<?, ?>> transformers = new HashMap<>();
+    private final Map<String, Pipeline> transformers = new HashMap<>();
     private MappingContextProvider contextProvider;
     private MapperFactory mapperFactory;
     private InputReaderFactory readerFactory;
@@ -63,9 +61,9 @@ public class PipelineBuilder {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
             List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(__CONFIG_NODE_PIPELINE);
             for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                Class<? extends TransformerPipeline<?, ?>> cls =
-                        (Class<? extends TransformerPipeline<?, ?>>) ConfigReader.readType(node);
-                TransformerPipeline<?, ?> pipeline = cls.getDeclaredConstructor()
+                Class<? extends Pipeline> cls =
+                        (Class<? extends Pipeline>) ConfigReader.readType(node);
+                Pipeline pipeline = cls.getDeclaredConstructor()
                         .newInstance()
                         .contextProvider(contextProvider)
                         .contentDir(mapperFactory.contentDir())
@@ -78,7 +76,7 @@ public class PipelineBuilder {
         }
     }
 
-    public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> build(@NonNull ContentInfo contentInfo) throws Exception {
+    public PipelineHandle build(@NonNull ContentInfo contentInfo) throws Exception {
         if (contentInfo instanceof InputContentInfo) {
             return buildInputPipeline((InputContentInfo) contentInfo);
         }
@@ -87,7 +85,7 @@ public class PipelineBuilder {
 
 
     @SuppressWarnings("unchecked")
-    public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> buildInputPipeline(@NonNull InputContentInfo inputContentInfo) throws Exception {
+    public PipelineHandle buildInputPipeline(@NonNull InputContentInfo inputContentInfo) throws Exception {
         inputContentInfo = contextProvider.inputContext(inputContentInfo);
         if (inputContentInfo == null) {
             throw new Exception("Failed to parse content info...");
@@ -97,8 +95,8 @@ public class PipelineBuilder {
             DefaultLogger.trace("Failed to get input reader", inputContentInfo);
             throw new Exception("Failed to get input reader...");
         }
-        TransformerPipeline<K, E> pipeline = (TransformerPipeline<K, E>) transformers.get(inputContentInfo.mapping());
-        return new PipelineHandle<K, E>()
+        Pipeline pipeline = transformers.get(inputContentInfo.mapping());
+        return new PipelineHandle()
                 .pipeline(pipeline)
                 .reader(reader);
     }

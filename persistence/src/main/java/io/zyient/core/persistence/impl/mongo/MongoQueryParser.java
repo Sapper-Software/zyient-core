@@ -49,6 +49,26 @@ public class MongoQueryParser<K extends IKey, E extends IEntity<K>> extends Quer
     }
 
     @Override
+    protected String buildSort(@NonNull Map<String, Boolean> sort) {
+        StringBuilder builder = new StringBuilder(" ORDER BY ");
+        boolean first = true;
+        for (String name : sort.keySet()) {
+            if (first) first = false;
+            else {
+                builder.append(", ");
+            }
+            String dir = "ASC";
+            if (!sort.get(name)) {
+                dir = "DESC";
+            }
+            builder.append(name)
+                    .append(" ")
+                    .append(dir);
+        }
+        return builder.toString();
+    }
+
+    @Override
     protected void process(AbstractDataStore.@NonNull Q query,
                            @NonNull Select select) throws Exception {
         PlainSelect ps = select.getSelectBody(PlainSelect.class);

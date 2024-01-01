@@ -55,8 +55,7 @@ public abstract class Mapping<T> {
     private final Class<? extends T> entityType;
     private final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
-    private final Map<String, MappedElement> sourceIndex = new HashMap<>();
-    private final Map<String, MappedElement> targetIndex = new HashMap<>();
+    private final Map<Integer, MappedElement> sourceIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
     private RulesExecutor<MappedResponse<T>> rulesExecutor;
@@ -214,8 +213,7 @@ public abstract class Mapping<T> {
                     type = MappedElement.class;
                 }
                 MappedElement me = MappedElement.read(node, type);
-                sourceIndex.put(me.getSourcePath(), me);
-                targetIndex.put(me.getTargetPath(), me);
+                sourceIndex.put(me.getSequence(), me);
                 if (me.getMappingType() == MappingType.Field) {
                     mapTransformer.add(me);
                 }
@@ -226,8 +224,8 @@ public abstract class Mapping<T> {
     }
 
     public MappedResponse<T> read(@NonNull SourceMap source, Context context) throws Exception {
-        MappedResponse<T> response = new MappedResponse<T>(source)
-                .context(context);
+        MappedResponse<T> response = new MappedResponse<T>(source);
+        response.setContext(context);
         if (filterChain != null) {
             StatusCode s = filterChain.evaluate(source);
             if (s == StatusCode.IgnoreRecord) {
@@ -235,18 +233,20 @@ public abstract class Mapping<T> {
                     DefaultLogger.trace("IGNORED RECORD", source);
                 }
                 EvaluationStatus status = new EvaluationStatus();
-                status.status(s);
-                return response.status(status);
+                status.setStatus(s);
+                response.setStatus(status);
+                return response;
             }
         }
         Map<String, Object> converted = mapTransformer.transform(source);
         T entity = mapper.convertValue(converted, entityType);
-        response.entity(entity);
+        response.setEntity(entity);
 
-        for (String path : sourceIndex.keySet()) {
-            MappedElement me = sourceIndex.get(path);
+        for (Integer index : sourceIndex.keySet()) {
+            MappedElement me = sourceIndex.get(index);
             if (me.getMappingType() == MappingType.Field) continue;
             Object value = null;
+            String path = me.getSourcePath();
             if (MappingReflectionHelper.isContextPrefixed(path)) {
                 value = findContextValue(context, path);
             } else {
@@ -267,16 +267,16 @@ public abstract class Mapping<T> {
             status = rulesExecutor.evaluate(response);
         } else {
             status = new EvaluationStatus();
-            status.status(StatusCode.Success);
+            status.setStatus(StatusCode.Success);
         }
-        response.status(status);
+        response.setStatus(status);
         return response;
     }
 
     private void setFieldValue(MappedElement element,
                                Object value,
                                MappedResponse<T> response) throws Exception {
-        T data = response.entity();
+        T data = response.getEntity();
         if (element.getMappingType() == MappingType.Property) {
             if (!(data instanceof PropertyBag)) {
                 throw new Exception(String.format("Custom mapping not supported for type. [type=%s]",

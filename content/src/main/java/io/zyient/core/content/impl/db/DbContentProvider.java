@@ -91,11 +91,13 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
                                                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                                                          boolean download,
+                                                                                                                                         int currentPage,
                                                                                                                                          int batchSize,
                                                                                                                                          DocumentContext context) throws DataStoreException {
         RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
         HibernateCursor<DocumentId, Document<E, K, D>> cursor = (HibernateCursor<DocumentId, Document<E, K, D>>) dataStore
                 .search(query,
+                        currentPage,
                         batchSize,
                         DocumentId.class,
                         entityType,

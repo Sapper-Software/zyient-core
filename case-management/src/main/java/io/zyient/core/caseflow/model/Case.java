@@ -33,6 +33,8 @@ import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.core.persistence.model.BaseEntity;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
+import io.zyient.core.sdk.model.caseflow.CaseEntity;
+import io.zyient.core.sdk.model.content.Content;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -315,6 +317,8 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         return errors;
     }
 
+    public abstract CaseEntity<P> as();
+
     /**
      * Copy the changes from the specified source entity
      * to this instance.
@@ -341,5 +345,29 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
     public void clone(@NonNull BaseEntity<CaseId> entity,
                       @NonNull EEntityState state) throws CopyException {
         super.clone(entity, state);
+    }
+
+    protected CaseEntity<P> as(@NonNull CaseEntity<P> caseEntity) {
+        caseEntity.setCaseId(id.getId());
+        caseEntity.setCaseState(caseState.getState());
+        caseEntity.setDescription(description);
+        caseEntity.setParentCaseId(parentId.getId());
+        caseEntity.setAssignedTo(assignedTo);
+        caseEntity.setCreatedBy(createdBy);
+        caseEntity.setProperties(properties);
+        caseEntity.setClosedBy(closedBy);
+        caseEntity.setExternalReferenceId(externalReferenceId);
+        caseEntity.setName(name);
+        if (artefacts != null) {
+            Set<Content> contents = new HashSet<>(artefacts.size());
+            for (CaseDocument<E, T> doc : artefacts) {
+                Content c = doc.as();
+                contents.add(c);
+            }
+            if (!contents.isEmpty()) {
+                caseEntity.setDocuments(contents);
+            }
+        }
+        return caseEntity;
     }
 }

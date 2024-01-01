@@ -80,7 +80,7 @@ public class FilterChain<T> {
         for (Rule<T> rule : chain) {
             try {
                 EvaluationStatus status = rule.evaluate(data);
-                if (status.status() == StatusCode.IgnoreRecord) {
+                if (status.getStatus() == StatusCode.IgnoreRecord) {
                     return StatusCode.IgnoreRecord;
                 }
             } catch (RuleValidationError ve) {

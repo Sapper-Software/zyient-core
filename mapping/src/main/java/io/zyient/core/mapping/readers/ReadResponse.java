@@ -16,27 +16,44 @@
 
 package io.zyient.core.mapping.readers;
 
-import io.zyient.base.common.model.ValidationExceptions;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.core.mapping.model.RecordResponse;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
 public class ReadResponse {
     private int recordCount = 0;
     private int errorCount = 0;
-    private List<ValidationExceptions> errors;
+    private int commitCount = 0;
+    private List<RecordResponse> records;
 
-    public void add(@NonNull ValidationExceptions error) {
-        if (errors == null) {
-            errors = new ArrayList<>();
+    public void add(@NonNull RecordResponse record) {
+        if (records == null) {
+            records = new ArrayList<>();
         }
-        errors.add(error);
+        records.add(record);
+    }
+
+    public ReadResponse incrementCount() {
+        recordCount++;
+        return this;
+    }
+
+    public ReadResponse incrementErrorCount() {
+        errorCount++;
+        return this;
+    }
+
+    public ReadResponse incrementCommitCount() {
+        commitCount++;
+        return this;
     }
 }

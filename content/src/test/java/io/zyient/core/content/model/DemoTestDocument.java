@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
+import io.zyient.core.sdk.model.content.Content;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 
@@ -30,6 +31,11 @@ import jakarta.persistence.Table;
 public class DemoTestDocument extends Document<DemoDocState, ReferenceKey, DemoTestDocument> {
     public DemoTestDocument() {
         super(new DemoDocState());
+    }
+
+    @Override
+    public Content as() {
+        return null;
     }
 
     @Override

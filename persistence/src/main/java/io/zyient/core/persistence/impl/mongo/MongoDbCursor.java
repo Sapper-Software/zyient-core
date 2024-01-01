@@ -34,7 +34,9 @@ public class MongoDbCursor<K extends IKey, E extends IEntity<K>> extends Cursor<
     public MongoDbCursor(@NonNull Class<? extends K> keyType,
                          @NonNull Class<? extends E> entityType,
                          @NonNull MongoDbDataStore dataStore,
-                         @NonNull String query) {
+                         @NonNull String query,
+                         int currentPage) {
+        super(currentPage);
         this.keyType = keyType;
         this.entityType = entityType;
         this.dataStore = dataStore;
@@ -42,6 +44,7 @@ public class MongoDbCursor<K extends IKey, E extends IEntity<K>> extends Cursor<
     }
 
     public MongoDbCursor(@NonNull MongoDbCursor<K, E> cursor) {
+        super(cursor.currentPage());
         this.keyType = cursor.keyType;
         this.entityType = cursor.entityType;
         this.dataStore = cursor.dataStore;
@@ -51,7 +54,7 @@ public class MongoDbCursor<K extends IKey, E extends IEntity<K>> extends Cursor<
     @Override
     protected List<E> next(int page) throws DataStoreException {
         int offset = page * pageSize();
-        return dataStore.doSearch(query, offset, pageSize(), keyType, entityType, null);
+        return dataStore.executeSearch(query, offset, pageSize(), keyType, entityType, null);
     }
 
     @Override

@@ -93,8 +93,8 @@ public class MapTransformer<T> {
                 return transformers.get(element.getRegex());
             } else if (create) {
                 RegexTransformer transformer = (RegexTransformer) new RegexTransformer()
+                        .withGroups(element.getGroups())
                         .regex(element.getRegex())
-                        .groups(element.getGroups())
                         .format(element.getFormat())
                         .replace(element.getReplace())
                         .configure(settings);

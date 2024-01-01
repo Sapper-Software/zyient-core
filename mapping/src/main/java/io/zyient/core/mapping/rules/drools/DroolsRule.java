@@ -107,7 +107,8 @@ public class DroolsRule<T> implements Rule<T> {
             session.insert(data);
             int r = session.fireAllRules();
             DefaultLogger.info(String.format("[rule=%s] Fired %d rules.", r));
-            return status.status(StatusCode.Success);
+            status.setStatus(StatusCode.Success);
+            return status;
         } catch (RuntimeException re) {
             throw new RuleEvaluationError(name(),
                     entityType,

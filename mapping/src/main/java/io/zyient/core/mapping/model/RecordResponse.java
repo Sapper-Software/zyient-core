@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,18 @@
  * limitations under the License.
  */
 
-package io.zyient.core.caseflow.model;
+package io.zyient.core.mapping.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.experimental.Accessors;
-
-import java.io.File;
 
 @Getter
 @Setter
-@Accessors(fluent = true)
-public class Artefact {
-    private String name;
-    private File file;
-    private String password;
-    private String mimeType;
-    private String sourceUrl;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class RecordResponse {
+    private Object entity;
+    private EvaluationStatus status;
+    private SourceMap source;
 }

@@ -30,62 +30,80 @@
         </settings>
         <mappings>
             <map source="_id">
+                <sequence>1</sequence>
                 <target>id.key</target>
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
             <map source="contactLastName">
+                <sequence>2</sequence>
                 <target>contact.name.last</target>
                 <type>Property</type>
             </map>
             <map source="contactFirstName">
+                <sequence>3</sequence>
                 <target>contact.name.first</target>
                 <type>Property</type>
             </map>
             <map source="phone" type="io.zyient.core.mapping.model.RegexMappedElement">
+                <sequence>4</sequence>
                 <name>phone-regex</name>
                 <target>contact.phoneNo</target>
                 <nullable>false</nullable>
                 <type>Field</type>
                 <regex>(\+?\d{1,3})(\d{1,4})(\d{3})(\d{4})</regex>
-                <groups>1,2,3,4</groups>
-                <format>{1}({2}) {3}-{4}</format>
+                <groups>1:1,1:2,1:3,1:4</groups>
+                <format>{1:1}({1:2}) {1:3}-{1:4}</format>
             </map>
             <map source="addressLine1">
+                <sequence>5</sequence>
                 <target>contact.address.line1</target>
                 <type>Cached</type>
             </map>
             <map source="addressLine2">
+                <sequence>6</sequence>
                 <target>contact.address.line2</target>
                 <type>Cached</type>
             </map>
             <map source="city">
+                <sequence>7</sequence>
                 <target>contact.address.city</target>
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
             <map source="state">
+                <sequence>8</sequence>
                 <target>contact.address.state</target>
                 <type>Field</type>
             </map>
             <map source="postalCode">
+                <sequence>9</sequence>
                 <target>contact.address.zipCode</target>
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
             <map source="country">
-                <target>contact.address.country</target>
+                <sequence>10</sequence>
+                <target>country</target>
                 <nullable>false</nullable>
-                <type>Field</type>
+                <type>Property</type>
             </map>
             <map source="creditLimit">
+                <sequence>11</sequence>
                 <target>creditLimit</target>
                 <type>Field</type>
             </map>
             <map source="context['source.URI']">
+                <sequence>12</sequence>
                 <target>source.URI</target>
                 <nullable>false</nullable>
                 <type>Property</type>
+            </map>
+            <map source="country">
+                <sequence>13</sequence>
+                <target>contact.address.country</target>
+                <nullable>false</nullable>
+                <type>Field</type>
             </map>
         </mappings>
         <filters>

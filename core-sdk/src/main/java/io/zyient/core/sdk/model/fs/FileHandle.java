@@ -17,7 +17,6 @@
 package io.zyient.core.sdk.model.fs;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.sdk.model.BaseUser;
 import lombok.Getter;
 import lombok.Setter;

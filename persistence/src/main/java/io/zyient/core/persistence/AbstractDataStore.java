@@ -42,6 +42,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
     @Accessors(fluent = true)
     public static class Q {
         private String where;
+        private Map<String, Boolean> sort;
         private String generatedQuery;
         private final Map<String, Object> parameters = new HashMap<>();
 
@@ -56,6 +57,14 @@ public abstract class AbstractDataStore<T> implements Closeable {
 
         public Q addAll(@NonNull Map<String, Object> parameters) {
             this.parameters.putAll(parameters);
+            return this;
+        }
+
+        public Q addSort(@NonNull String name, @NonNull Boolean asc) {
+            if (sort == null) {
+                sort = new HashMap<>();
+            }
+            sort.put(name, asc);
             return this;
         }
     }
@@ -173,6 +182,28 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                           Context context) throws
             DataStoreException;
 
+    public <E extends IEntity<?>> E upsert(@NonNull E entity, @NonNull Class<? extends E> type, Context context) throws
+            DataStoreException {
+        state.check(DataStoreState.EDataStoreState.Available);
+        try {
+            metrics.updateCounter().increment();
+            try (Timer t = new Timer(metrics.updateTimer())) {
+                if (entity instanceof BaseEntity<?>) {
+                    ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
+                }
+                return upsertEntity(entity, type, context);
+            }
+        } catch (Throwable t) {
+            metrics.updateCounterError().increment();
+            throw new DataStoreException(t);
+        }
+    }
+
+    public abstract <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                          @NonNull Class<? extends E> type,
+                                                          Context context) throws
+            DataStoreException;
+
     public <E extends IEntity<?>> boolean delete(@NonNull Object key,
                                                  @NonNull Class<? extends E> type,
                                                  Context context) throws
@@ -221,11 +252,27 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                                       @NonNull Class<? extends E> type,
                                                                       Context context) throws
             DataStoreException {
+        return search(query, 0, maxResults, keyType, type, context);
+    }
+
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> search(@NonNull Q query,
+                                                                      int currentPage,
+                                                                      int maxResults,
+                                                                      @NonNull Class<? extends K> keyType,
+                                                                      @NonNull Class<? extends E> type,
+                                                                      Context context) throws
+            DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
         try {
+            if (maxResults <= 0) {
+                maxResults = settings.getMaxResults();
+            }
+            if (currentPage < 0) {
+                currentPage = 0;
+            }
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return doSearch(query, maxResults, keyType, type, context);
+                return doSearch(query, currentPage, maxResults, keyType, type, context);
             }
         } catch (Throwable t) {
             metrics.searchCounterError().increment();
@@ -235,6 +282,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
 
 
     public abstract <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                                 int currentPage,
                                                                                  int maxResults,
                                                                                  @NonNull Class<? extends K> keyType,
                                                                                  @NonNull Class<? extends E> type,

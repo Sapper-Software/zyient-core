@@ -29,6 +29,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Setter
 @ConfigPath(path = "map")
 public class MappedElement {
+    @Config(name = "sequence", type = Integer.class)
+    private int sequence;
     @Config(name = "[@source]")
     private String sourcePath;
     @Config(name = "target")

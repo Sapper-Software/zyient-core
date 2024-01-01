@@ -89,11 +89,13 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Cursor<DocumentId, Document<E, K, D>> searchDocs(AbstractDataStore.@NonNull Q query,
                                                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                                                          boolean download,
+                                                                                                                                         int currentPage,
                                                                                                                                          int batchSize,
                                                                                                                                          DocumentContext context) throws DataStoreException {
         MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
         MongoDbCursor<DocumentId, Document<E, K, D>> cursor = (MongoDbCursor<DocumentId, Document<E, K, D>>) dataStore
                 .doSearch(query,
+                        currentPage,
                         batchSize,
                         DocumentId.class,
                         entityType,

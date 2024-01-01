@@ -39,12 +39,14 @@ public class SolrContentCursor<E extends DocumentState<?>, K extends IKey, D ext
     private final FileSystem fileSystem;
     private boolean download = false;
 
-    public SolrContentCursor(@NonNull SolrCursor<DocumentId, Document<E, K, D>> cursor,
+    public SolrContentCursor(@NonNull SolrCursor<DocumentId,
+            @NonNull Document<E, K, D>> cursor,
                              @NonNull FileSystem fileSystem) {
         super(cursor.entityType(),
                 cursor.dataStore(),
                 cursor.client(),
                 cursor.query(),
+                cursor.currentPage(),
                 cursor.batchSize(),
                 cursor.fetchChildren());
         this.fileSystem = fileSystem;

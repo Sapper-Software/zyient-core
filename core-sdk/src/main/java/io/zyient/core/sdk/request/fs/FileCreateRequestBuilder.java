@@ -21,9 +21,6 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
-import io.zyient.base.core.model.Actor;
-import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.sdk.model.fs.FileHandle;
 import io.zyient.core.sdk.model.fs.FileType;
 import io.zyient.core.sdk.response.fs.FileCreateResponse;
@@ -44,17 +41,6 @@ public class FileCreateRequestBuilder {
 
     public FileCreateRequestBuilder(@NonNull WebServiceClient client) {
         this.client = client;
-    }
-
-    public FileCreateRequestBuilder withCreator(@NonNull UserOrRole user) {
-        request.setUser(user);
-        return this;
-    }
-
-    public FileCreateRequestBuilder withCreator(@NonNull String name, @NonNull EUserOrRole type) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        request.setUser(new Actor(name, type));
-        return this;
     }
 
     public FileCreateRequestBuilder withDomain(@NonNull String domain) {

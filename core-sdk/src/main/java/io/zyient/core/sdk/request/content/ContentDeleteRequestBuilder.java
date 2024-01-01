@@ -18,7 +18,6 @@ package io.zyient.core.sdk.request.content;
 
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileUtils;
 import io.zyient.core.sdk.model.DeleteResponse;
 import io.zyient.core.sdk.model.content.ContentId;
@@ -37,10 +36,6 @@ public class ContentDeleteRequestBuilder {
         this.client = client;
     }
 
-    public ContentDeleteRequestBuilder withRequester(UserOrRole user) {
-        request.setUser(user);
-        return this;
-    }
 
     public ContentDeleteRequestBuilder withContentId(ContentId contentId) {
         request.setContentId(contentId);

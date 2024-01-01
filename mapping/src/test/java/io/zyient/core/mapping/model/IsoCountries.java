@@ -30,7 +30,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "tb_iso_country", schema = "test")
+@Table(name = "tb_iso_country")
 public class IsoCountries implements IEntity<IsoCountryKey> {
     @EmbeddedId
     private IsoCountryKey key;

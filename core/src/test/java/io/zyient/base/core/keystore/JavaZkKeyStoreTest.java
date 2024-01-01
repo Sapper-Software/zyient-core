@@ -44,8 +44,8 @@ class JavaZkKeyStoreTest {
     @Test
     void read() {
         try {
-            String keyName = "db-encryption-key";
-            String keyValue = "encrypted";
+            String keyName = "default-db-password";
+            String keyValue = "test1234";
             String password = "test1234";
 
             JavaKeyStoreUtil util = new JavaKeyStoreUtil();
