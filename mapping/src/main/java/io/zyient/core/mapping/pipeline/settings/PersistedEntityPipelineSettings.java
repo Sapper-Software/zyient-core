@@ -17,7 +17,6 @@
 package io.zyient.core.mapping.pipeline.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,7 +24,5 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class TransformerPipelineSettings extends PersistencePipelineSettings {
-    @Config(name = "mapping")
-    private String mapping;
+public class PersistedEntityPipelineSettings extends PersistencePipelineSettings {
 }

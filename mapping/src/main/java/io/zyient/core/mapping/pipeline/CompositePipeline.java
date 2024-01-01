@@ -20,17 +20,11 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
-import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.RecordResponse;
 import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
-import io.zyient.core.mapping.readers.InputReader;
-import io.zyient.core.mapping.readers.ReadCursor;
-import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
@@ -44,7 +38,7 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class CompositePipeline extends Pipeline {
+public abstract class CompositePipeline extends Pipeline  {
     public static final String __CONFIG_PATH_PIPELINES = "pipelines";
     private Map<String, Pipeline> pipelines;
 
@@ -84,43 +78,6 @@ public abstract class CompositePipeline extends Pipeline {
         }
     }
 
-    @Override
-    public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
-        CompositePipelineSettings settings = (CompositePipelineSettings) settings();
-        Preconditions.checkNotNull(settings);
-        DefaultLogger.info(String.format("Running pipeline for entity. [name=%s]", name()));
-        ReadResponse response = new ReadResponse();
-        ReadCursor cursor = reader.open();
-        while (true) {
-            RecordResponse r = new RecordResponse();
-            try {
-                SourceMap data = cursor.next();
-                if (data == null) break;
-                r.setSource(data);
-                response.incrementCount();
-                r = process(data, context);
-                response.add(r);
-            } catch (ValidationException | ValidationExceptions ex) {
-                String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
-                        reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
-                if (settings().isTerminateOnValidationError()) {
-                    DefaultLogger.stacktrace(ex);
-                    throw ex;
-                } else {
-                    DefaultLogger.warn(mesg);
-                    r = errorResponse(r, null, ex);
-                    response.add(r);
-                }
-            } catch (Exception e) {
-                DefaultLogger.stacktrace(e);
-                DefaultLogger.error(e.getLocalizedMessage());
-                throw e;
-            }
-        }
-        DefaultLogger.info(String.format("Processed [%d] records for entity. [name=%s]",
-                response.getRecordCount(), name()));
-        return response;
-    }
 
     @Override
     @SuppressWarnings("unchecked")

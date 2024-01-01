@@ -23,9 +23,10 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.model.InputContentInfo;
+import io.zyient.core.mapping.pipeline.Pipeline;
 import io.zyient.core.mapping.pipeline.PipelineBuilder;
 import io.zyient.core.mapping.pipeline.PipelineHandle;
-import io.zyient.core.mapping.pipeline.TransformerPipeline;
+import io.zyient.core.mapping.pipeline.PipelineSource;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.persistence.DataStoreManager;
@@ -98,7 +99,7 @@ public class MappingExecutor implements Closeable {
 
     public void read(@NonNull InputContentInfo contentInfo) throws Exception {
         checkState();
-        PipelineHandle<?, ?> handle = builder.buildInputPipeline(contentInfo);
+        PipelineHandle handle = builder.buildInputPipeline(contentInfo);
         if (handle == null) {
             throw new Exception(DefaultLogger.traceInfo("Failed to get pipeline.", contentInfo));
         }
@@ -148,16 +149,21 @@ public class MappingExecutor implements Closeable {
         return __instance.init(xmlConfig, dataStoreManager);
     }
 
-    private record Reader(TransformerPipeline<?, ?> pipeline,
+    private record Reader(Pipeline pipeline,
                           InputReader reader,
                           InputContentInfo contentInfo) implements Runnable {
 
         @Override
         public void run() {
             try {
+                if (!(pipeline instanceof PipelineSource)) {
+                    throw new Exception(String.format("Invalid pipeline, not a source pipeline. [name=%s][type=%s]",
+                            pipeline.name(), pipeline.getClass().getCanonicalName()));
+                }
                 DefaultLogger.info(String.format("Starting pipeline. [name=%s]", pipeline.name()));
                 DefaultLogger.trace(pipeline.name(), contentInfo);
-                ReadResponse response = pipeline.read(reader, contentInfo);
+
+                ReadResponse response = ((PipelineSource) pipeline).read(reader, contentInfo);
                 if (contentInfo.callback() != null) {
                     contentInfo.callback().onSuccess(contentInfo, response);
                 }

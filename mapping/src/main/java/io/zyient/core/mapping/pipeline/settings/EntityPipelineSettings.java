@@ -18,7 +18,8 @@ package io.zyient.core.mapping.pipeline.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.core.persistence.AbstractDataStore;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,11 +27,9 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class PersistencePipelineSettings extends EntityPipelineSettings {
-    @Config(name = "dataStore.name")
-    private String dataStore;
-    @Config(name = "dataStore.type", type = Class.class)
-    private Class<? extends AbstractDataStore<?>> dataStoreType;
-    @Config(name = "dataStore.commitBatchSize", required = false, type = Integer.class)
-    private int commitBatchSize = 256;
+public class EntityPipelineSettings extends ExecutablePipelineSettings {
+    @Config(name = "keyType", type = Class.class)
+    private Class<? extends IKey> keyType;
+    @Config(name = "entityType", type = Class.class)
+    private Class<? extends IEntity<?>> entityType;
 }

@@ -24,7 +24,6 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.mapping.model.EntityValidationError;
-import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.pipeline.settings.PersistencePipelineSettings;
 import io.zyient.core.mapping.rules.RuleValidationError;
 import io.zyient.core.persistence.AbstractDataStore;
@@ -41,8 +40,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class PersistencePipeline<K extends IKey, E extends IEntity<K>> extends Pipeline {
-    private Class<? extends MappedResponse<E>> responseType;
+public abstract class PersistencePipeline<K extends IKey, E extends IEntity<K>> extends ExecutablePipeline<E> {
     private Class<? extends E> entityType;
     private Class<? extends K> keyType;
     private AbstractDataStore<?> dataStore;
@@ -54,7 +52,6 @@ public abstract class PersistencePipeline<K extends IKey, E extends IEntity<K>> 
                              @NonNull Class<? extends PipelineSettings> settingsType) throws Exception {
         super.configure(xmlConfig, dataStoreManager, settingsType);
         PersistencePipelineSettings settings = (PersistencePipelineSettings) settings();
-        responseType = (Class<? extends MappedResponse<E>>) settings.getResponseType();
         entityType = (Class<? extends E>) settings.getEntityType();
         keyType = (Class<? extends K>) settings.getKeyType();
         dataStore = dataStoreManager.getDataStore(settings.getDataStore(), settings.getDataStoreType());

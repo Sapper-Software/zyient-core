@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,11 @@
 
 package io.zyient.core.mapping.pipeline;
 
+import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
+import io.zyient.core.mapping.readers.ReadResponse;
+import lombok.NonNull;
 
-@Getter
-@Setter
-@Accessors(fluent = true)
-public class PipelineHandle {
-    private Pipeline pipeline;
-    private InputReader reader;
+public interface PipelineSource {
+    ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception;
 }

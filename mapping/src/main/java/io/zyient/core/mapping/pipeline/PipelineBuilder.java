@@ -17,8 +17,6 @@
 package io.zyient.core.mapping.pipeline;
 
 import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.ContentInfo;
@@ -78,7 +76,7 @@ public class PipelineBuilder {
         }
     }
 
-    public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> build(@NonNull ContentInfo contentInfo) throws Exception {
+    public PipelineHandle build(@NonNull ContentInfo contentInfo) throws Exception {
         if (contentInfo instanceof InputContentInfo) {
             return buildInputPipeline((InputContentInfo) contentInfo);
         }
@@ -87,7 +85,7 @@ public class PipelineBuilder {
 
 
     @SuppressWarnings("unchecked")
-    public <K extends IKey, E extends IEntity<K>> PipelineHandle<K, E> buildInputPipeline(@NonNull InputContentInfo inputContentInfo) throws Exception {
+    public PipelineHandle buildInputPipeline(@NonNull InputContentInfo inputContentInfo) throws Exception {
         inputContentInfo = contextProvider.inputContext(inputContentInfo);
         if (inputContentInfo == null) {
             throw new Exception("Failed to parse content info...");
@@ -97,8 +95,8 @@ public class PipelineBuilder {
             DefaultLogger.trace("Failed to get input reader", inputContentInfo);
             throw new Exception("Failed to get input reader...");
         }
-        TransformerPipeline<K, E> pipeline = (TransformerPipeline<K, E>) transformers.get(inputContentInfo.mapping());
-        return new PipelineHandle<K, E>()
+        Pipeline pipeline = transformers.get(inputContentInfo.mapping());
+        return new PipelineHandle()
                 .pipeline(pipeline)
                 .reader(reader);
     }

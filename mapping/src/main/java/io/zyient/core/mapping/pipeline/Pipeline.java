@@ -22,10 +22,11 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.core.mapping.mapper.MapperFactory;
-import io.zyient.core.mapping.model.*;
-import io.zyient.core.mapping.readers.InputReader;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RecordResponse;
+import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.readers.MappingContextProvider;
-import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
@@ -88,8 +89,6 @@ public abstract class Pipeline {
     public abstract Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                        @NonNull MapperFactory mapperFactory,
                                        @NonNull DataStoreManager dataStoreManager) throws ConfigurationException;
-
-    public abstract ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception;
 
     public abstract RecordResponse process(@NonNull SourceMap data, Context context) throws Exception;
 
