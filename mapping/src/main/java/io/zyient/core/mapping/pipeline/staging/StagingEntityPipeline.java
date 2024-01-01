@@ -55,7 +55,7 @@ public class StagingEntityPipeline<K extends IKey, E extends IEntity<K>> extends
     }
 
     @Override
-    public RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
+    public RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
         RecordResponse response = new RecordResponse();
         response.setSource(data);
         MappedResponse<E> r = mapping().read(data, context);
