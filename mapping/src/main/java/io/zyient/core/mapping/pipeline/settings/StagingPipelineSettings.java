@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline;
+package io.zyient.core.mapping.pipeline.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -25,17 +24,5 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class PipelineInfo {
-    @Config(name = "expression")
-    private String expression;
-    @Config(name = "[@pipeline]")
-    private String pipeline;
-    @Config(name = "ignorable", required = false, type = Boolean.class)
-    private boolean ignorable = false;
-    @Config(name = "context.reset", required = false, type = Boolean.class)
-    private boolean resetContext = true;
-    @Config(name = "context.add", required = false, type = Boolean.class)
-    private boolean addToContext = false;
-    @Config(name = "context.key", required = false)
-    private String contextKey;
+public class StagingPipelineSettings extends ExecutablePipelineSettings {
 }

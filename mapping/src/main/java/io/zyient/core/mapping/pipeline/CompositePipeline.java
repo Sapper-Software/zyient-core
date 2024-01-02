@@ -34,6 +34,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,6 +56,7 @@ public abstract class CompositePipeline extends Pipeline {
             HierarchicalConfiguration<ImmutableNode> psConfig = config().configurationAt(__CONFIG_PATH_PIPELINES);
             List<HierarchicalConfiguration<ImmutableNode>> nodes
                     = psConfig.configurationsAt(PipelineBuilder.__CONFIG_NODE_PIPELINE);
+            pipelines = new HashMap<>();
             for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
                 Class<? extends Pipeline> cls =
                         (Class<? extends Pipeline>) ConfigReader.readType(node);
@@ -96,7 +98,7 @@ public abstract class CompositePipeline extends Pipeline {
             }
             Object value = evaluate(data, path);
             if (value != null) {
-                Pipeline pipeline = pipelines.get(path);
+                Pipeline pipeline = pipelines.get(pi.getPipeline());
                 Preconditions.checkNotNull(pipeline);
                 if (value instanceof List<?>) {
                     List<Object> values = (List<Object>) value;

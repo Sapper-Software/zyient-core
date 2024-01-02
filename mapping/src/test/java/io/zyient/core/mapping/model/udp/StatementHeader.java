@@ -14,18 +14,31 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.model.udp;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+public class StatementHeader {
+    private List<Month> months;
+    private List<Integer> years;
+
+    public void setMonthsFrom(List<String> months) throws Exception {
+        if (months != null && !months.isEmpty()) {
+            if (this.months == null) {
+                this.months = new ArrayList<>();
+            }
+            for (String m : months) {
+                Month month = Month.parse(m);
+                if (month == null) {
+                    throw new Exception(String.format("Invalid month value: [%s]", m));
+                }
+            }
+        }
+    }
 }

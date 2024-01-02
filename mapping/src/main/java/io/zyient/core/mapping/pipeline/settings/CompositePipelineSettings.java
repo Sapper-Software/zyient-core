@@ -19,7 +19,6 @@ package io.zyient.core.mapping.pipeline.settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.core.mapping.pipeline.PipelineInfo;
-import io.zyient.core.mapping.pipeline.PipelineSettings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

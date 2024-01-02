@@ -22,6 +22,7 @@ import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.mapper.Mapping;
 import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
+import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RulesExecutor;
 import io.zyient.core.persistence.DataStoreManager;

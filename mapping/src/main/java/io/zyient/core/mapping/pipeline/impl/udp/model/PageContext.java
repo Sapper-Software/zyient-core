@@ -14,21 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.impl;
+package io.zyient.core.mapping.pipeline.impl.udp.model;
 
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class PathFilter {
-    public static final String __CONFIG_PATH = "filter";
-
-    @Config(name = "name")
-    private String name;
-    @Config(name = "json.path")
-    private String path;
-    @Config(name = "json.filter", required = false)
-    private String filter;
+public class PageContext extends BaseUdpContext {
+    private DocumentContext parent;
+    private String id;
+    private String category;
+    private int pageNo;
 }

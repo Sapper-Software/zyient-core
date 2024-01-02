@@ -45,6 +45,8 @@ class UdpPipelineTest {
             f = filter.toString();
             Object ret = JsonPath.read(jMap, "$.documents[*].pages[?]", filter);
             assertNotNull(ret);
+            ret = JsonPath.read(jMap, "$.documents[*]");
+            assertNotNull(ret);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

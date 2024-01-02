@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.pipeline.impl.udp.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.core.mapping.annotations.EntityRef;
+import io.zyient.core.mapping.model.MappedResponse;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+import java.util.Map;
+
+@EntityRef(type = PageContext.class)
+public class PageContextResponse extends MappedResponse<PageContext> {
+    public PageContextResponse(Map<String, Object> source) {
+        super(source);
+    }
 }

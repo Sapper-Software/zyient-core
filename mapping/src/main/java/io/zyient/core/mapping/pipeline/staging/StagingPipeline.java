@@ -18,35 +18,27 @@ package io.zyient.core.mapping.pipeline.staging;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationExceptions;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.pipeline.ExecutablePipeline;
 import io.zyient.core.mapping.pipeline.Pipeline;
-import io.zyient.core.mapping.pipeline.settings.EntityPipelineSettings;
+import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public class StagingEntityPipeline<K extends IKey, E extends IEntity<K>> extends ExecutablePipeline<E> {
-    private Class<? extends E> entityType;
-    private Class<? extends K> keyType;
+public class StagingPipeline<E> extends ExecutablePipeline<E> {
 
     @Override
-    @SuppressWarnings("unchecked")
     public Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                               @NonNull MapperFactory mapperFactory,
                               @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
         try {
             withMapperFactory(mapperFactory);
-            super.configure(xmlConfig, dataStoreManager, EntityPipelineSettings.class);
-            EntityPipelineSettings settings = (EntityPipelineSettings) settings();
-            entityType = (Class<? extends E>) settings.getEntityType();
-            keyType = (Class<? extends K>) settings.getKeyType();
+            super.configure(xmlConfig, dataStoreManager, ExecutablePipelineSettings.class);
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

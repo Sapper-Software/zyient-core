@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.impl;
+package io.zyient.core.mapping.pipeline.impl.udp;
 
 import com.google.common.base.Strings;
 import com.jayway.jsonpath.Filter;
@@ -23,10 +23,10 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.SourceMap;
-import io.zyient.core.mapping.pipeline.CompositePipeline;
 import io.zyient.core.mapping.pipeline.Pipeline;
 import io.zyient.core.mapping.pipeline.PipelineInfo;
 import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
+import io.zyient.core.mapping.pipeline.source.SourceCompositePipeline;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
@@ -41,7 +41,7 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class UdpPipeline extends CompositePipeline {
+public class UdpPipeline extends SourceCompositePipeline {
     public static final String __CONFIG_PATH_FILTERS = "filters";
 
     private final Map<String, PathFilter> filters = new HashMap<>();
@@ -86,7 +86,11 @@ public class UdpPipeline extends CompositePipeline {
         if (Strings.isNullOrEmpty(f.getFilter())) {
             ret = JsonPath.read(data, f.getPath());
         } else {
-            Filter ff = Filter.parse(f.getFilter());
+            Filter ff = f.getJsonFilter();
+            if (ff == null) {
+                ff = Filter.parse(f.getFilter());
+                f.setJsonFilter(ff);
+            }
             ret = JsonPath.read(data, f.getPath(), ff);
         }
         if (ret == null) {

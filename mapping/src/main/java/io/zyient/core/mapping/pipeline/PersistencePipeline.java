@@ -25,6 +25,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.mapping.model.EntityValidationError;
 import io.zyient.core.mapping.pipeline.settings.PersistencePipelineSettings;
+import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.rules.RuleValidationError;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreManager;

@@ -14,18 +14,10 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.pipeline.impl.udp.nodes;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.core.mapping.pipeline.impl.udp.model.DocumentContext;
+import io.zyient.core.mapping.pipeline.staging.StagingPipeline;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+public class DocumentStagingPipeline extends StagingPipeline<DocumentContext> {
 }

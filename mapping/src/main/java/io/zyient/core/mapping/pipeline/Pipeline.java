@@ -28,6 +28,7 @@ import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.RecordResponse;
 import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;

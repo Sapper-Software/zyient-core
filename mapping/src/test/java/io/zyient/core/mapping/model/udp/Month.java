@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.model.udp;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.NonNull;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+public enum Month {
+    Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Spe, Oct, Nov, Dec;
+
+    public static Month parse(@NonNull String month) {
+        for (Month m : Month.values()) {
+            if (m.name().compareToIgnoreCase(month) == 0) {
+                return m;
+            }
+        }
+        return null;
+    }
 }
