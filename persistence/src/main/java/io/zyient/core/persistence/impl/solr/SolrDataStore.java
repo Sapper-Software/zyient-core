@@ -247,6 +247,13 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
         }
     }
 
+    @Override
+    public <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws DataStoreException {
+        return upsertEntity(entity, type, context);
+    }
+
     @SuppressWarnings("unchecked")
     private <E extends IEntity<?>> E checkEntity(E entity, SolrClient client) throws Exception {
         E current = (E) findEntity(entity.entityKey(), entity.getClass(), null);
@@ -633,6 +640,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
 
     @Override
     public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int currentPage,
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
@@ -653,7 +661,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             }
             SolrClient client = connection.connect(cname);
             EntityQueryBuilder.LuceneQuery q = (EntityQueryBuilder.LuceneQuery) query;
-            return new SolrCursor<>(type, this, client, q, maxResults, fetchChildren);
+            return new SolrCursor<>(type, this, client, q, maxResults, currentPage, fetchChildren);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new DataStoreException(ex);

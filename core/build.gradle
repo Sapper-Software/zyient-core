@@ -90,4 +90,6 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-log4j2:3.2.0'
     implementation 'org.springframework.boot:spring-boot-starter-actuator:3.2.0'
     implementation 'org.springframework.boot:spring-boot-starter-json:3.2.0'
+    // https://mvnrepository.com/artifact/org.springframework.security/spring-security-web
+    implementation 'org.springframework.security:spring-security-web:6.2.1'
 }

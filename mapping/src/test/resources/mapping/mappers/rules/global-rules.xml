@@ -19,6 +19,7 @@
     <global>
         <rules>
 
+
 <!--            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">-->
 <!--                <name>fetch-iso-country</name>-->
 <!--                <expression>key.name = ${contact.address.country}</expression>-->
@@ -59,6 +60,23 @@
 <!--                    </mapping>-->
 <!--                </fieldMappings>-->
 <!--            </rule>-->
+
+
+            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">
+                <name>fetch-iso-country</name>
+                <expression>key.name = ${property['country']}</expression>
+                <errorCode>1000001</errorCode>
+                <validationErrorCode>1500001</validationErrorCode>
+                <dataStore>test-rdbms</dataStore>
+                <keyType>io.zyient.core.mapping.model.IsoCountryKey</keyType>
+                <entityType>io.zyient.core.mapping.model.IsoCountries</entityType>
+                <fieldMappings>
+                    <mapping>
+                        <source>alpha3</source>
+                        <target>contact.address.countryCode</target>
+                    </mapping>
+                </fieldMappings>
+            </rule>
 
         </rules>
     </global>

@@ -29,8 +29,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
 
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,10 +38,12 @@ import java.util.regex.Pattern;
 @Accessors(fluent = true)
 public class RegexTransformer implements Transformer<String> {
 
+
     @Setter(AccessLevel.NONE)
     private Pattern pattern;
     private String name;
     private RegexMappedElement regexMappedElement;
+
 
     @Override
     public Transformer<String> configure(@NonNull MappingSettings settings, @NonNull MappedElement element) throws ConfigurationException {
@@ -62,7 +63,7 @@ public class RegexTransformer implements Transformer<String> {
         String replace = regexMappedElement.getReplace();
         String regex = regexMappedElement.getRegex();
         String format = regexMappedElement.getFormat();
-        Map<Integer, List<Integer>> groups = regexMappedElement.getGroups();
+         List<String> groups = regexMappedElement.getGroups();
         if (source instanceof String value) {
             if (!Strings.isNullOrEmpty(replace)) {
                 return ((String) source).replaceAll(regex, replace);
@@ -73,12 +74,15 @@ public class RegexTransformer implements Transformer<String> {
             }
             if (groups != null && !groups.isEmpty()) {
                 value = format;
-                int matchCount = 0;
+                int matchCount = 1;
                 while (m.find()) {
                     for (int ii = 1; ii <= m.groupCount(); ii++) {
-                        String k = String.format("{%d:%d}", matchCount, ii);
-                        String v = m.group(ii);
-                        value = value.replace(k, v);
+                        String k = String.format("%d:%d", matchCount, ii);
+                        if (groups.contains(k)) {
+                            String v = m.group(ii);
+                            String r = String.format("{%s}", k);
+                            value = value.replace(r, v);
+                        }
                     }
                     matchCount++;
                 }

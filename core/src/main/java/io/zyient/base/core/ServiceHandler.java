@@ -19,7 +19,7 @@ package io.zyient.base.core;
 import io.zyient.base.common.AbstractState;
 import lombok.NonNull;
 
-public interface ServiceHandler<E extends Enum<?>> {
+public interface ServiceHandler<E extends Enum<E>> {
     ServiceHandler<E> setConfigFile(@NonNull String path);
 
     ServiceHandler<E> setConfigSource(@NonNull String type);
@@ -35,4 +35,6 @@ public interface ServiceHandler<E extends Enum<?>> {
     String name();
 
     void checkState() throws Exception;
+
+    void checkPassKey(@NonNull String passKey) throws Exception;
 }

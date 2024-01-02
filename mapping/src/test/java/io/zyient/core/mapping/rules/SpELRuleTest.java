@@ -72,10 +72,10 @@ class SpELRuleTest {
             rule.setup(config);
             List<CustomersEntity> entities = createCustomers(5);
             for (CustomersEntity entity : entities) {
-                MappedResponse<CustomersEntity> response = new MappedResponse<CustomersEntity>(new HashMap<>())
-                        .entity(entity);
+                MappedResponse<CustomersEntity> response = new MappedResponse<CustomersEntity>(new HashMap<>());
+                response.setEntity(entity);
                 EvaluationStatus status = rule.evaluate(response);
-                assertSame(status.status(), StatusCode.Success);
+                assertSame(status.getStatus(), StatusCode.Success);
             }
         } catch (Exception ex) {
             fail(ex);

@@ -16,13 +16,8 @@
 
 package io.zyient.core.sdk.request.content;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.ws.WebServiceClient;
-import io.zyient.base.core.model.Actor;
-import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.utils.FileUtils;
 import io.zyient.core.sdk.model.DownloadResponse;
 import io.zyient.core.sdk.model.content.ContentId;
@@ -39,17 +34,6 @@ public class ContentGetRequestBuilder {
 
     public ContentGetRequestBuilder(@NonNull WebServiceClient client) {
         this.client = client;
-    }
-
-    public ContentGetRequestBuilder withRequester(UserOrRole user) {
-        request.setUser(user);
-        return this;
-    }
-
-    public ContentGetRequestBuilder withCreator(@NonNull String name, @NonNull EUserOrRole type) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        request.setUser(new Actor(name, type));
-        return this;
     }
 
     public ContentGetRequestBuilder withContentId(ContentId contentId) {

@@ -18,6 +18,7 @@ package io.zyient.core.mapping.pipeline;
 
 import io.zyient.base.core.model.IntegerKey;
 import io.zyient.core.mapping.model.Customer;
+import io.zyient.core.mapping.pipeline.source.SourceEntityPipeline;
 
-public class CustomerPipeline extends TransformerPipeline<IntegerKey, Customer> {
+public class CustomerPipeline extends SourceEntityPipeline<IntegerKey, Customer> {
 }

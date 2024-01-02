@@ -31,7 +31,7 @@ public abstract class MapFieldValueParser<V> implements FieldValueParser<Map<Str
         valueName = KEY_VALUE;
     }
 
-    public MapFieldValueParser(@NonNull String path,
+    public MapFieldValueParser(String path,
                                @NonNull String valuesPath,
                                @NonNull String keyName,
                                @NonNull String valueName) {
@@ -45,7 +45,7 @@ public abstract class MapFieldValueParser<V> implements FieldValueParser<Map<Str
     @Override
     public Map<String, V> parse(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws ConfigurationException {
         try {
-            if (ConfigReader.checkIfNodeExists(config, path)) {
+            if (Strings.isNullOrEmpty(path) || ConfigReader.checkIfNodeExists(config, path)) {
                 Map<String, V> map = new HashMap<>();
                 HierarchicalConfiguration<ImmutableNode> node = config.configurationAt(path);
                 List<HierarchicalConfiguration<ImmutableNode>> nodes = node.configurationsAt(valuesPath);

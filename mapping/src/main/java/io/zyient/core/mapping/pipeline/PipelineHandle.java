@@ -16,8 +16,6 @@
 
 package io.zyient.core.mapping.pipeline;
 
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
 import io.zyient.core.mapping.readers.InputReader;
 import lombok.Getter;
 import lombok.Setter;
@@ -26,7 +24,7 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class PipelineHandle <K extends IKey, E extends IEntity<K>> {
-    private TransformerPipeline<K, E> pipeline;
+public class PipelineHandle {
+    private Pipeline pipeline;
     private InputReader reader;
 }

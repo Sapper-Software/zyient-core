@@ -6,7 +6,7 @@ public class StringMapValueParser extends MapFieldValueParser<String>{
     public StringMapValueParser() {
     }
 
-    public StringMapValueParser(@NonNull String path,
+    public StringMapValueParser(String path,
                                 @NonNull String valuesPath,
                                 @NonNull String keyName,
                                 @NonNull String valueName) {

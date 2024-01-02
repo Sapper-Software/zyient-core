@@ -403,7 +403,7 @@ public abstract class ContentProvider implements Closeable {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return searchDocs(query, entityType, false, settings().getBatchSize(), context);
+                return searchDocs(query, entityType, false, 0, settings().getBatchSize(), context);
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -413,13 +413,14 @@ public abstract class ContentProvider implements Closeable {
     public <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> search(@NonNull AbstractDataStore.Q query,
                                                                                                                                   @NonNull Class<? extends Document<E, K, T>> entityType,
                                                                                                                                   boolean download,
+                                                                                                                                  int currentPage,
                                                                                                                                   int batchSize,
                                                                                                                                   DocumentContext context) throws DataStoreException {
         try {
             checkState(ProcessorState.EProcessorState.Running);
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return searchDocs(query, entityType, download, batchSize, context);
+                return searchDocs(query, entityType, download, currentPage, batchSize, context);
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -454,6 +455,7 @@ public abstract class ContentProvider implements Closeable {
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Cursor<DocumentId, Document<E, K, T>> searchDocs(@NonNull AbstractDataStore.Q query,
                                                                                                                                                   @NonNull Class<? extends Document<E, K, T>> entityType,
                                                                                                                                                   boolean download,
+                                                                                                                                                  int currentPage,
                                                                                                                                                   int batchSize,
                                                                                                                                                   DocumentContext context) throws DataStoreException;
 

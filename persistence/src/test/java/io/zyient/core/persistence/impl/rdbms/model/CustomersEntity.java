@@ -33,7 +33,7 @@ import java.util.UUID;
 @Getter
 @Setter
 @Entity
-@Table(name = "customers", schema = "test", catalog = "")
+@Table(name = "customers")
 public class CustomersEntity implements IEntity<IntegerKey> {
     @EmbeddedId
     private IntegerKey id;

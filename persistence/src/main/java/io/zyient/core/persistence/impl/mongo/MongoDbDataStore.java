@@ -264,6 +264,13 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     }
 
     @Override
+    public <E extends IEntity<?>> E upsertEntity(@NonNull E entity,
+                                                 @NonNull Class<? extends E> type,
+                                                 Context context) throws DataStoreException {
+        return updateEntity(entity, type, context);
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
                                                        @NonNull Class<? extends E> type,
@@ -370,6 +377,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     @SuppressWarnings("unchecked")
     @Override
     public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query,
+                                                                        int currentPage,
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
@@ -380,20 +388,19 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             MongoQueryParser<K, E> parser = (MongoQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
             String sql = query.generatedQuery();
-            return new MongoDbCursor<K, E>(keyType, type, this, sql)
+            return new MongoDbCursor<K, E>(keyType, type, this, sql, currentPage)
                     .pageSize(maxResults);
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
     }
 
-    @SuppressWarnings("unchecked")
-    public <K extends IKey, E extends IEntity<K>> List<E> doSearch(@NonNull String query,
-                                                                   int offset,
-                                                                   int maxResults,
-                                                                   @NonNull Class<? extends K> keyType,
-                                                                   @NonNull Class<? extends E> type,
-                                                                   Context context) throws DataStoreException {
+    public <K extends IKey, E extends IEntity<K>> List<E> executeSearch(@NonNull String query,
+                                                                        int offset,
+                                                                        int maxResults,
+                                                                        @NonNull Class<? extends K> keyType,
+                                                                        @NonNull Class<? extends E> type,
+                                                                        Context context) throws DataStoreException {
         checkState();
         try {
             MorphiaSession session = sessionManager().session();

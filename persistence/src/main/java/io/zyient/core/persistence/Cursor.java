@@ -35,6 +35,13 @@ public abstract class Cursor<K extends IKey, E extends IEntity<K>> implements Cl
     private int currentPage = 0;
     private boolean EOF = false;
 
+    protected Cursor(int currentPage) {
+        if (currentPage < 0) {
+            currentPage = 0;
+        }
+        this.currentPage = currentPage;
+    }
+
     public List<E> nextPage() throws DataStoreException {
         if (!EOF) {
             List<E> result = next(currentPage);

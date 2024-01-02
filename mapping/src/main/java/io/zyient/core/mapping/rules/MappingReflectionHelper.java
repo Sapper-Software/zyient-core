@@ -193,12 +193,14 @@ public class MappingReflectionHelper {
                                    @NonNull PropertyModel property,
                                    @NonNull Object entity,
                                    Object value) throws Exception {
-        if (isSourcePrefixed(field) || isContextPrefixed(field)) {
-            throw new Exception(String.format("Cannot set value for Context/Source. [field=%s]", field));
+        if (isSourcePrefixed(field)) {
+            throw new Exception(String.format("Cannot set value for Source. [field=%s]", field));
         }
         if (property instanceof ExtendedPropertyModel) {
-            MappedResponse<?> res = (MappedResponse<?>) entity;
-            PropertyBag pb = (PropertyBag)  res.entity();
+            if (entity instanceof MappedResponse<?>) {
+                entity = ((MappedResponse<?>) entity).getEntity();
+            }
+            PropertyBag pb = (PropertyBag)  entity;
             pb.setProperty(((ExtendedPropertyModel) property).key(), value);
         } else {
             ReflectionHelper.setFieldValue(value, entity, field);
@@ -209,19 +211,23 @@ public class MappingReflectionHelper {
                                      @NonNull PropertyModel property,
                                      @NonNull Object entity) throws Exception {
         if (property instanceof ExtendedPropertyModel) {
-            MappedResponse<?> res = (MappedResponse<?>) entity;
-            PropertyBag pb = (PropertyBag)  res.entity();
+
+            if (entity instanceof MappedResponse<?>) {
+                entity = ((MappedResponse<?>) entity).getEntity();
+            }
+            PropertyBag pb = (PropertyBag) entity;
+
             return pb.getProperty(((ExtendedPropertyModel) property).key());
         } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
-                return getSourceProperty(field, ((MappedResponse<?>) entity).source());
+                return getSourceProperty(field, ((MappedResponse<?>) entity).getSource());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));
             }
         } else if (isContextPrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
-                return getContextProperty(field, ((MappedResponse<?>) entity).context());
+                return getContextProperty(field, ((MappedResponse<?>) entity).getContext());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));

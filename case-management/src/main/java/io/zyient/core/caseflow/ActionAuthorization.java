@@ -38,4 +38,8 @@ public interface ActionAuthorization<P extends Enum<P>, S extends CaseState<P>> 
     void checkAssignment(@NonNull Case<P, S, ?, ?> caseObject,
                          @NonNull UserOrRole assignTo,
                          Context context) throws CaseAuthorizationError;
+
+    void authorizeRead(@NonNull CaseAction action,
+                       @NonNull UserOrRole actor,
+                       Context context) throws CaseAuthorizationError;
 }

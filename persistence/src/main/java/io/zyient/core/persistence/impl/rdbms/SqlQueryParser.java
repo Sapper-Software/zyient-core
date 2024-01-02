@@ -25,6 +25,7 @@ import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.QueryParser;
 import jakarta.persistence.*;
 import lombok.NonNull;
+import net.sf.jsqlparser.statement.select.OrderByElement;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 
@@ -40,11 +41,45 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
     }
 
     @Override
+    protected String buildSort(@NonNull Map<String, Boolean> sort) {
+        StringBuilder builder = new StringBuilder(" ORDER BY ");
+        boolean first = true;
+        for (String name : sort.keySet()) {
+            if (first) first = false;
+            else {
+                builder.append(", ");
+            }
+            String dir = "ASC";
+            if (!sort.get(name)) {
+                dir = "DESC";
+            }
+            builder.append(name)
+                    .append(" ")
+                    .append(dir);
+        }
+        return builder.toString();
+    }
+
+    @Override
     protected void process(AbstractDataStore.@NonNull Q query,
                            @NonNull Select select) throws Exception {
         PlainSelect ps = select.getSelectBody(PlainSelect.class);
         String hql = String.format("FROM %s WHERE %s",
                 ps.getFromItem().toString(), ps.getWhere().toString());
+        if (ps.getOrderByElements() != null) {
+            StringBuilder builder = new StringBuilder(hql)
+                    .append(" ORDER BY ");
+            boolean first = true;
+            for (OrderByElement oe : ps.getOrderByElements()) {
+                if (first) {
+                    first = false;
+                } else {
+                    builder.append(", ");
+                }
+                builder.append(oe.getExpression().toString());
+            }
+            hql = builder.toString();
+        }
         query.generatedQuery(hql);
     }
 

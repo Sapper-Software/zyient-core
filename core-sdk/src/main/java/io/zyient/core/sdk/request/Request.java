@@ -18,7 +18,6 @@ package io.zyient.core.sdk.request;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.ValidationException;
-import io.zyient.base.core.model.UserOrRole;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,16 +29,19 @@ import java.util.UUID;
         property = "@class")
 public abstract class Request {
     private String requestId;
-    private UserOrRole user;
     private long requestTimestamp;
 
     protected Request() {
         requestId = UUID.randomUUID().toString();
+        requestTimestamp = System.currentTimeMillis();
     }
 
     public void validate() throws ValidationException {
         ValidationException.check(this, "requestId");
-        ValidationException.check(this, "user");
         requestTimestamp = System.currentTimeMillis();
+    }
+
+    public static class VoidRequest extends Request {
+
     }
 }
