@@ -73,4 +73,13 @@ public enum SourceTypes {
         }
         return UNKNOWN;
     }
+
+    public static SourceTypes from(@NonNull String type) {
+        for(SourceTypes t : SourceTypes.values()) {
+            if (t.name().compareToIgnoreCase(type) == 0) {
+                return t;
+            }
+        }
+        return null;
+    }
 }

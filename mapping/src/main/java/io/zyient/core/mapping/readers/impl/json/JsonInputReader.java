@@ -26,6 +26,7 @@ import io.zyient.core.mapping.readers.settings.JsonReaderSettings;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class JsonInputReader extends JacksonInputReader {
@@ -46,23 +47,24 @@ public class JsonInputReader extends JacksonInputReader {
                         data.add((Map<String, Object>) a);
                     }
                 } else {
-                    if (Strings.isNullOrEmpty(((JsonReaderSettings) settings()).getBasePath())) {
-                        throw new IOException("Invalid Configuration: {basePath} not specified...");
-                    }
                     if (!(obj instanceof Map<?, ?>)) {
                         throw new IOException(String.format("Invalid JSON data. [type=%s]",
                                 obj.getClass().getCanonicalName()));
                     }
                     String path = ((JsonReaderSettings) settings()).getBasePath();
-                    Object node = findNode((Map<String, Object>) obj, path.split("\\."), 0);
-                    if (node != null) {
-                        if (node.getClass().isArray()) {
-                            Object[] array = (Object[]) node;
-                            data = new ArrayList<>(array.length);
-                            for (Object a : array) {
-                                data.add((Map<String, Object>) a);
+                    if (!Strings.isNullOrEmpty(path)) {
+                        Object node = findNode((Map<String, Object>) obj, path.split("\\."), 0);
+                        if (node != null) {
+                            if (node.getClass().isArray()) {
+                                Object[] array = (Object[]) node;
+                                data = new ArrayList<>(array.length);
+                                for (Object a : array) {
+                                    data.add((Map<String, Object>) a);
+                                }
                             }
                         }
+                    } else {
+                        data = List.of((Map<String, Object>) obj);
                     }
                 }
             }

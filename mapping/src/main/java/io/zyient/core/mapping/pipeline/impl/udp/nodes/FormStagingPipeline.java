@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.pipeline.impl.udp.nodes;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.base.common.model.Context;
+import io.zyient.core.mapping.model.RecordResponse;
+import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.pipeline.impl.udp.model.FormContext;
+import io.zyient.core.mapping.pipeline.staging.StagingPipeline;
+import lombok.NonNull;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+public class FormStagingPipeline extends StagingPipeline<FormContext> {
+
+    @Override
+    public RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
+        return super.execute(data, context);
+    }
 }

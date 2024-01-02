@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.pipeline.impl.udp.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.Config;
+import com.google.common.base.Strings;
+import io.zyient.base.core.utils.SourceTypes;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+public class DocumentContext extends BaseUdpContext {
+    private String caseId;
+    private String filename;
+    private SourceTypes type;
+
+    public void setDocumentType(String value) {
+        if (!Strings.isNullOrEmpty(value)) {
+            type = SourceTypes.from(value);
+        }
+    }
 }

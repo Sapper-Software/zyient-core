@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.settings;
+package io.zyient.core.mapping.pipeline.impl.udp;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.jayway.jsonpath.Filter;
 import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExecutablePipelineSettings extends PipelineSettings  {
-    @Config(name = "mapping")
-    private String mapping;
+public class PathFilter {
+    public static final String __CONFIG_PATH = "filter";
+
+    @Config(name = "name")
+    private String name;
+    @Config(name = "json.path")
+    private String path;
+    @Config(name = "json.filter", required = false)
+    private String filter;
+    private Filter jsonFilter;
 }
