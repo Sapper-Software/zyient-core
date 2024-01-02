@@ -35,6 +35,7 @@ public abstract class SourceCompositePipeline extends CompositePipeline implemen
 
     @Override
     public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
+        checkState();
         CompositePipelineSettings settings = (CompositePipelineSettings) settings();
         Preconditions.checkNotNull(settings);
         DefaultLogger.info(String.format("Running pipeline for entity. [name=%s]", name()));

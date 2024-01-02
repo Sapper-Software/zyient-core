@@ -41,7 +41,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class SpELRule<T> extends BaseRule<T> {
     public static final String FIELD_ROOT = "#root";
-    public static final String FIELD_RESULT = "result";
+    public static final String FIELD_RESULT = "__zy_result";
 
     private Expression spELRule;
     private PropertyModel property;

@@ -23,6 +23,7 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.pipeline.settings.PersistedEntityPipelineSettings;
@@ -52,16 +53,17 @@ public class EntityPipeline<K extends IKey, E extends IEntity<K>> extends Persis
         try {
             withMapperFactory(mapperFactory);
             super.configure(xmlConfig, dataStoreManager, PersistedEntityPipelineSettings.class);
-            PersistedEntityPipelineSettings settings = (PersistedEntityPipelineSettings) settings();
+            state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
+            state().error(ex);
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
     }
 
     @Override
-    public RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
+    public RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
         RecordResponse response = new RecordResponse();
         response.setSource(data);
         MappedResponse<E> r = mapping().read(data, context);

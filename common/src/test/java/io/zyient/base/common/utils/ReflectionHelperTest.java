@@ -118,9 +118,10 @@ class ReflectionHelperTest {
             for (int ii = 0; ii < 5; ii++) {
                 String key = String.format("KEY-%d", ii);
                 ReflectionHelper.setFieldValue(new NestedObject(), te, String.format("objects(%s)", key));
+                ReflectionHelper.getFieldValue(te, String.format("objects(%s).values[%d]", key, 7));
                 ReflectionHelper.setFieldValue(key, te, String.format("objects(%s).index", key));
                 for (int jj = 0; jj < 3; jj++) {
-                    ReflectionHelper.setFieldValue(String.format("VALUE-%d-%d", ii, jj), te, String.format("objects(%s).values[%d]", key, jj));
+                    ReflectionHelper.getFieldValue(te, String.format("objects(%s).values[%d]", key, jj));
                 }
             }
             System.out.println(JSONUtils.asString(te, te.getClass()));

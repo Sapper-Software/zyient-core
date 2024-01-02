@@ -21,6 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.RecordResponse;
 import io.zyient.core.mapping.model.SourceMap;
@@ -38,7 +39,7 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class CompositePipeline extends Pipeline  {
+public abstract class CompositePipeline extends Pipeline {
     public static final String __CONFIG_PATH_PIPELINES = "pipelines";
     private Map<String, Pipeline> pipelines;
 
@@ -71,8 +72,10 @@ public abstract class CompositePipeline extends Pipeline  {
                             key, pi.getPipeline()));
                 }
             }
+            state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
+            state().error(ex);
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
@@ -81,7 +84,7 @@ public abstract class CompositePipeline extends Pipeline  {
 
     @Override
     @SuppressWarnings("unchecked")
-    public RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
+    public RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
         CompositePipelineSettings settings = (CompositePipelineSettings) settings();
         Preconditions.checkNotNull(settings);
         Context ctx = reset(context);

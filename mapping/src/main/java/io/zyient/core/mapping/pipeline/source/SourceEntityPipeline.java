@@ -39,6 +39,7 @@ public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends 
     @Override
     @SuppressWarnings(("unchecked"))
     public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
+        checkState();
         PersistedEntityPipelineSettings settings = (PersistedEntityPipelineSettings) settings();
         Preconditions.checkNotNull(settings);
         DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType().getCanonicalName()));
