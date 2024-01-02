@@ -1110,7 +1110,7 @@ public class ReflectionHelper {
         if (value instanceof Class) {
             cv = (Class<?>) value;
         } else if (value instanceof String) {
-            Class.forName((String) value);
+            cv = Class.forName((String) value);
         } else {
             throw new Exception(String.format("Failed to convert to class. [type=%s]",
                     value.getClass().getCanonicalName()));

@@ -84,7 +84,7 @@ public class MapTransformer<T> {
             } else if (create) {
                 Transformer<?> transformer = element.getTransformerClass().getDeclaredConstructor()
                         .newInstance()
-                        .configure(settings);
+                        .configure(settings, element);
                 transformers.put(transformer.name(), transformer);
                 return transformer;
             }
@@ -93,11 +93,7 @@ public class MapTransformer<T> {
                 return transformers.get(element.getRegex());
             } else if (create) {
                 RegexTransformer transformer = (RegexTransformer) new RegexTransformer()
-                        .regex(element.getRegex())
-                        .groups(element.getGroups())
-                        .format(element.getFormat())
-                        .replace(element.getReplace())
-                        .configure(settings);
+                        .configure(settings, element);
                 transformers.put(transformer.name(), transformer);
                 return transformer;
             }

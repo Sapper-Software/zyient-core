@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.transformers;
 
 import io.zyient.core.mapping.mapper.MappingSettings;
+import io.zyient.core.mapping.model.MappedElement;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
@@ -26,6 +27,8 @@ public interface Transformer<T> {
 
     String name();
 
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
+    Transformer<T> configure(@NonNull MappingSettings settings, @NonNull MappedElement element) throws ConfigurationException;
+
+
     T read(@NonNull Object source) throws SerializationException;
 }
