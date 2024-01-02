@@ -26,6 +26,7 @@
                 <contentDir>src/test/resources/mapping/udp/rules</contentDir>
                 <mappings>
                     <test-document-node>doc-mapping.xml</test-document-node>
+                    <test-page-node>page-mapping.xml</test-page-node>
                 </mappings>
             </factory>
         </mappers>
@@ -47,10 +48,23 @@
                         </context>
                         <mapping>test-document-node</mapping>
                     </pipeline>
+                    <pipeline type="io.zyient.core.mapping.pipeline.impl.udp.nodes.PageStagingPipeline">
+                        <name>udp_sample_page</name>
+                        <responseType>io.zyient.core.mapping.pipeline.impl.udp.model.PageContextResponse</responseType>
+                        <context>
+                            <reset>false</reset>
+                            <add>true</add>
+                            <key>udp_sample_page</key>
+                        </context>
+                        <mapping>test-page-node</mapping>
+                    </pipeline>
                 </pipelines>
                 <mappings>
                     <mapping pipeline="udp_sample_document">
                         <expression>list-documents</expression>
+                    </mapping>
+                    <mapping pipeline="udp_sample_page">
+                        <expression>list-pages</expression>
                     </mapping>
                 </mappings>
                 <filters>
@@ -59,7 +73,17 @@
                         <json>
                             <path>
                                 <![CDATA[
-                                    $.['documents']
+                                    $.['documents[*]', 'documents']
+                                ]]>
+                            </path>
+                        </json>
+                    </filter>
+                    <filter>
+                        <name>list-pages</name>
+                        <json>
+                            <path>
+                                <![CDATA[
+                                    $.['pages[*]', 'pages']
                                 ]]>
                             </path>
                         </json>

@@ -15,10 +15,10 @@
   -->
 
 <configuration>
-    <mapping entity="io.zyient.core.mapping.pipeline.impl.udp.model.DocumentContext"
-             type="io.zyient.core.mapping.pipeline.impl.udp.mappings.DocumentMapping">
+    <mapping entity="io.zyient.core.mapping.pipeline.impl.udp.model.PageContext"
+             type="io.zyient.core.mapping.pipeline.impl.udp.mappings.PageMapping">
         <settings>
-            <name>test-document-node</name>
+            <name>test-page-node</name>
             <!--
             <currency>[ISO Currency Symbol]</currency>
             <format>
@@ -28,35 +28,30 @@
             -->
         </settings>
         <mappings>
-            <map source="caseId">
+            <map source="id">
                 <sequence>1</sequence>
-                <target>caseId</target>
+                <target>id</target>
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
-            <map source="docType">
+            <map source="category">
                 <sequence>2</sequence>
-                <target>document.type</target>
+                <target>category</target>
                 <nullable>false</nullable>
-                <type>Property</type>
+                <type>Field</type>
             </map>
-            <map source="fileName">
+            <map source="pageNo">
                 <sequence>3</sequence>
-                <target>filename</target>
+                <target>pageNo</target>
+                <nullable>false</nullable>
+                <type>Field</type>
+            </map>
+            <map source="context['udp_sample_document'">
+                <sequence>4</sequence>
+                <target>parent</target>
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
         </mappings>
-        <rules>
-            <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
-                <name>doc-type</name>
-                <expression>
-                    T(io.zyient.base.core.utils.SourceTypes).from(${property['document.type']})
-                </expression>
-                <field>type</field>
-                <errorCode>1000001</errorCode>
-                <validationErrorCode>1500001</validationErrorCode>
-            </rule>
-        </rules>
     </mapping>
 </configuration>
