@@ -17,10 +17,12 @@
 package io.zyient.core.mapping.pipeline;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.StateException;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.RecordResponse;
@@ -36,12 +38,15 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class Pipeline {
+public abstract class Pipeline implements Closeable {
+    private final ProcessorState state = new ProcessorState();
     private PipelineSettings settings;
     private MappingContextProvider contextProvider;
     private HierarchicalConfiguration<ImmutableNode> config;
@@ -86,10 +91,27 @@ public abstract class Pipeline {
         return response;
     }
 
+    protected void checkState() throws StateException {
+        if (!state.isAvailable()) {
+            throw new StateException(String.format("[%s] Pipeline not available. [state=%s]",
+                    name(), state.getState().name()));
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        state.setState(ProcessorState.EProcessorState.Stopped);
+    }
+
     public abstract Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                        @NonNull MapperFactory mapperFactory,
                                        @NonNull DataStoreManager dataStoreManager) throws ConfigurationException;
 
-    public abstract RecordResponse process(@NonNull SourceMap data, Context context) throws Exception;
+    public final RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
+        checkState();
+        return execute(data, context);
+    }
+
+    protected abstract RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception;
 
 }
