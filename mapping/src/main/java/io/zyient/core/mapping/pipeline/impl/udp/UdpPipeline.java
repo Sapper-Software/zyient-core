@@ -23,6 +23,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.pipeline.PathFilter;
 import io.zyient.core.mapping.pipeline.Pipeline;
 import io.zyient.core.mapping.pipeline.PipelineInfo;
 import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
@@ -42,63 +43,5 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public class UdpPipeline extends SourceCompositePipeline {
-    public static final String __CONFIG_PATH_FILTERS = "filters";
 
-    private final Map<String, PathFilter> filters = new HashMap<>();
-
-    @Override
-    public Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                              @NonNull MapperFactory mapperFactory,
-                              @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
-        super.configure(xmlConfig, mapperFactory, dataStoreManager);
-        try {
-            CompositePipelineSettings settings = (CompositePipelineSettings) settings();
-            readFilters();
-            for (String key : settings.getPipelineContext().keySet()) {
-                PipelineInfo pi = settings.getPipelineContext().get(key);
-                if (!filters.containsKey(key)) {
-                    throw new Exception(String.format("Missing pipeline expression. [name=%s]", key));
-                }
-            }
-            return this;
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            throw new ConfigurationException(ex);
-        }
-    }
-
-    private void readFilters() throws Exception {
-        HierarchicalConfiguration<ImmutableNode> config = config().configurationAt(__CONFIG_PATH_FILTERS);
-        List<HierarchicalConfiguration<ImmutableNode>> nodes = config.configurationsAt(PathFilter.__CONFIG_PATH);
-        for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-            PathFilter filter = ConfigReader.read(node, PathFilter.class);
-            filters.put(filter.getName(), filter);
-        }
-    }
-
-    @Override
-    protected Object evaluate(SourceMap data, String filter) throws Exception {
-        PathFilter f = filters.get(filter);
-        if (f == null) {
-            throw new Exception(String.format("Specified filter not found. [name=%s]", filter));
-        }
-        Object ret = null;
-        if (Strings.isNullOrEmpty(f.getFilter())) {
-            ret = JsonPath.read(data, f.getPath());
-        } else {
-            Filter ff = f.getJsonFilter();
-            if (ff == null) {
-                ff = Filter.parse(f.getFilter());
-                f.setJsonFilter(ff);
-            }
-            ret = JsonPath.read(data, f.getPath(), ff);
-        }
-        if (ret == null) {
-            DefaultLogger.debug(String.format("Filter returned null: [path=%s][filter=%s]",
-                    f.getPath(), f.getFilter()));
-        } else if (DefaultLogger.isTraceEnabled()) {
-            DefaultLogger.trace(String.format("[PATH=%s]", f.getPath()), ret);
-        }
-        return ret;
-    }
 }
