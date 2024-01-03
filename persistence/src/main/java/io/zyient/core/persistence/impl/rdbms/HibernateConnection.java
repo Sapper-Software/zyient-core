@@ -123,7 +123,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
             if (Strings.isNullOrEmpty(passwd)) {
                 throw new ConfigurationException(
                         String.format("DataStore password not found. [key=%s]", settings.getDbPassword()));
-            } //TODO vinay temp changes
+            }
             Properties properties = new Properties();
             properties.setProperty(Environment.DRIVER, settings.getDriver());
             properties.setProperty(Environment.URL, settings.getDbUrl());
