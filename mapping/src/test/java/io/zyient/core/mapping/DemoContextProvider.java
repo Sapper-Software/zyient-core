@@ -43,7 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class DemoContextProvider implements MappingContextProvider {
-    private static final String REGEX_CUSTOMER_FILE = "(.*customers_.+)\\.(.+)";
+    private static final String REGEX_CUSTOMER_FILE = "(.*Principal_.+)\\.(.+)";
     private static final String KEY_CUSTOMER_MAPPING = "customers";
 
     @Getter

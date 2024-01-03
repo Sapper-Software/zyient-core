@@ -14,20 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.core.mapping.mapper;
 
+import io.zyient.core.mapping.annotations.EntityRef;
+import io.zyient.core.mapping.model.Holding;
+import io.zyient.core.mapping.model.MappedResponse;
 
-import io.zyient.base.common.config.Config;
-import io.zyient.core.mapping.transformers.Transformer;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.Map;
 
-@Getter
-@Setter
-public class CustomMappedElement extends MappedElement {
-    @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends Transformer<?>> transformerClass;
-    @Config(name = "transformer.name", required = true)
-    private String transformer;
-
+@EntityRef(type = Holding.class)
+public class HoldingMappedResponse extends MappedResponse<Holding> {
+    public HoldingMappedResponse(Map<String, Object> source) {
+        super(source);
+    }
 }

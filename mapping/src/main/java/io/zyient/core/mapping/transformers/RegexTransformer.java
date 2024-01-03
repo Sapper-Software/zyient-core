@@ -16,8 +16,11 @@
 
 package io.zyient.core.mapping.transformers;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.core.mapping.mapper.MappingSettings;
+import io.zyient.core.mapping.model.MappedElement;
+import io.zyient.core.mapping.model.RegexMappedElement;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -26,9 +29,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,31 +37,33 @@ import java.util.regex.Pattern;
 @Setter
 @Accessors(fluent = true)
 public class RegexTransformer implements Transformer<String> {
-    private String regex;
-    private String replace;
-    private Set<String> groups;
-    private String format;
+
+
     @Setter(AccessLevel.NONE)
     private Pattern pattern;
     private String name;
+    private RegexMappedElement regexMappedElement;
 
-    public RegexTransformer withGroups(@NonNull Collection<String> groups) {
-        this.groups = new HashSet<>(groups);
-        return this;
-    }
 
     @Override
-    public Transformer<String> configure(@NonNull MappingSettings settings) throws ConfigurationException {
-        if (Strings.isNullOrEmpty(regex)) {
+    public Transformer<String> configure(@NonNull MappingSettings settings, @NonNull MappedElement element) throws ConfigurationException {
+        Preconditions.checkArgument(element instanceof RegexMappedElement);
+        regexMappedElement = (RegexMappedElement) element;
+
+        if (Strings.isNullOrEmpty(regexMappedElement.getRegex())) {
             throw new ConfigurationException("Regex not specified...");
         }
-        name = regex;
-        pattern = Pattern.compile(regex);
+
+        pattern = Pattern.compile(regexMappedElement.getRegex());
         return this;
     }
 
     @Override
     public String read(@NonNull Object source) throws SerializationException {
+        String replace = regexMappedElement.getReplace();
+        String regex = regexMappedElement.getRegex();
+        String format = regexMappedElement.getFormat();
+         List<String> groups = regexMappedElement.getGroups();
         if (source instanceof String value) {
             if (!Strings.isNullOrEmpty(replace)) {
                 return ((String) source).replaceAll(regex, replace);
