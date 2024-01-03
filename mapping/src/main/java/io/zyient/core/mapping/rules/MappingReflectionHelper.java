@@ -211,12 +211,10 @@ public class MappingReflectionHelper {
                                      @NonNull PropertyModel property,
                                      @NonNull Object entity) throws Exception {
         if (property instanceof ExtendedPropertyModel) {
-
             if (entity instanceof MappedResponse<?>) {
                 entity = ((MappedResponse<?>) entity).getEntity();
             }
             PropertyBag pb = (PropertyBag) entity;
-
             return pb.getProperty(((ExtendedPropertyModel) property).key());
         } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {

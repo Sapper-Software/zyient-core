@@ -186,7 +186,6 @@ public class ExcelInputReader extends InputReader {
         for (String format : dateFormats) {
             if (format.equalsIgnoreCase(dateStr)) {
                 return true;
-
             }
         }
         return false;

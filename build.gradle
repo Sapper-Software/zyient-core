@@ -6,8 +6,6 @@ plugins {
     id 'signing'
     id 'idea'
 }
-var repoDirSnapshot ='./repos'
-var repoDirRelease="./snapshots"
 repositories {
     mavenCentral()
 }

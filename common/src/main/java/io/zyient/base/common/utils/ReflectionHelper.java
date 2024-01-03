@@ -1232,9 +1232,7 @@ public class ReflectionHelper {
                                      @NonNull Field f,
                                      @NonNull Object value)
             throws Exception {
-
         Class<?> cv = asClass(value);
-
         setObjectValue(o, f, cv);
     }
 

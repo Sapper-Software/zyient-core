@@ -119,16 +119,16 @@ public class HibernateConnection extends AbstractConnection<Session> {
      */
     private void configure(@NonNull HibernateConnectionSettings settings) throws ConfigurationException {
         try {
-//            String passwd = env.keyStore().read(settings.getDbPassword());
-//            if (Strings.isNullOrEmpty(passwd)) {
-//                throw new ConfigurationException(
-//                        String.format("DataStore password not found. [key=%s]", settings.getDbPassword()));
-//            } //TODO vinay temp changes
+            String passwd = env.keyStore().read(settings.getDbPassword());
+            if (Strings.isNullOrEmpty(passwd)) {
+                throw new ConfigurationException(
+                        String.format("DataStore password not found. [key=%s]", settings.getDbPassword()));
+            } //TODO vinay temp changes
             Properties properties = new Properties();
             properties.setProperty(Environment.DRIVER, settings.getDriver());
             properties.setProperty(Environment.URL, settings.getDbUrl());
             properties.setProperty(Environment.USER, settings.getDbUser());
-            properties.setProperty(Environment.PASS, settings.getDbPassword());
+            properties.setProperty(Environment.PASS, passwd);
             properties.setProperty(Environment.DIALECT, settings.getDialect());
             properties.setProperty(Environment.AUTO_CLOSE_SESSION, "false");
             if (DefaultLogger.isTraceEnabled() || DefaultLogger.isDebugEnabled()) {

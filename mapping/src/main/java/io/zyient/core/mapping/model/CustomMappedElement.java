@@ -29,5 +29,4 @@ public class CustomMappedElement extends MappedElement {
     private Class<? extends Transformer<?>> transformerClass;
     @Config(name = "transformer.name", required = true)
     private String transformer;
-
 }
