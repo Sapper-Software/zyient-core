@@ -4,6 +4,7 @@ import io.zyient.base.core.model.IntegerKey;
 import io.zyient.base.core.model.LongKey;
 import io.zyient.core.mapping.model.Holding;
 import io.zyient.core.mapping.model.LongIDKey;
+import io.zyient.core.mapping.pipeline.source.SourceEntityPipeline;
 
-public class HoldingPipeline extends  TransformerPipeline<LongKey, Holding> {
+public class HoldingPipeline extends SourceEntityPipeline<LongKey, Holding> {
 }

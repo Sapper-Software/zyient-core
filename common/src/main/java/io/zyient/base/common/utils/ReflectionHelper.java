@@ -1233,17 +1233,7 @@ public class ReflectionHelper {
                                      @NonNull Object value)
             throws Exception {
 
-        Class<?> cv = null;
-        if (value instanceof Class) {
-            cv = (Class<?>) value;
-        } else if (value instanceof String) {
-            cv = Class.forName((String) value);
-        } else {
-            throw new Exception(String.format("Failed to convert to class. [type=%s]",
-                    value.getClass().getCanonicalName()));
-        }
-
-        cv = asClass(value);
+        Class<?> cv = asClass(value);
 
         setObjectValue(o, f, cv);
     }
