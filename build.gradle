@@ -9,6 +9,7 @@ plugins {
 
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 group 'io.zyient.framework'
@@ -31,39 +32,56 @@ configurations.all {
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = "io.zyient.framework"
-            from components.java
+    // publications {
+    //     mavenJava(MavenPublication) {
+    //         groupId = "io.zyient.framework"
+    //         from components.java
 
-            pom {
-                name = 'Zyient Java Core Framework'
-                description = 'Zyient Java - Core Framework Libraries.'
-                url = 'https://zyient.io/'
+    //         pom {
+    //             name = 'Zyient Java Core Framework'
+    //             description = 'Zyient Java - Core Framework Libraries.'
+    //             url = 'https://zyient.io/'
 
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'subhagho'
-                        name = 'Subho Ghosh'
-                        email = 'subho.ghosh@outlook.com'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git@github.com:subhagho/hcdc.git'
-                    developerConnection = 'scm:git:git@github.com:subhagho/hcdc.git'
-                    url = 'https://zyient.io'
+    //             licenses {
+    //                 license {
+    //                     name = 'The Apache License, Version 2.0'
+    //                     url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+    //                 }
+    //             }
+    //             developers {
+    //                 developer {
+    //                     id = 'subhagho'
+    //                     name = 'Subho Ghosh'
+    //                     email = 'subho.ghosh@outlook.com'
+    //                 }
+    //             }
+    //             scm {
+    //                 connection = 'scm:git:git@github.com:subhagho/hcdc.git'
+    //                 developerConnection = 'scm:git:git@github.com:subhagho/hcdc.git'
+    //                 url = 'https://zyient.io'
+    //             }
+    //         }
+    //     }
+    // }
+    repositories {
+        if (System.getenv("GIT_TOKEN")) {
+            maven {
+                url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
+                credentials {
+                    username = "zyient-core"
+                    password = System.getenv("GIT_TOKEN")
                 }
             }
         }
     }
-
+    publications {
+        gpr(MavenPublication) {
+            artifact jar
+        }
+    }
 }
+
+
 
 apply plugin: 'maven-publish'
 subprojects {
@@ -87,25 +105,53 @@ subprojects {
     repositories {
         mavenCentral()
         gradlePluginPortal()
-     
+        // maven {
+        //     url layout.buildDirectory.dir(repoDirSnapshot)
+        //     mavenContent {
+        //         snapshotsOnly()
+        //     }
+        // }
+        // maven {
+        //     url 'https://oss.sonatype.org/content/repositories/snapshots'
+        //     mavenContent {
+        //         snapshotsOnly()
+        //     }
+        // }
     }
 
     publishing {
-        publications {
-            "$project.name"(MavenPublication) {
-                groupId = project.group
-                artifactId = project.name
-                version = project.version
-                from components.java
-            }
-        }
+        // publications {
+        //     "$project.name"(MavenPublication) {
+        //         groupId = project.group
+        //         artifactId = project.name
+        //         version = project.version
+        //         from components.java
+        //     }
+        // }
+        // repositories {
+        //     maven {
+        //         def releasesRepoUrl = layout.buildDirectory.dir(repoDirRelease)
+        //         def snapshotsRepoUrl = layout.buildDirectory.dir(repoDirSnapshot)
+        //         url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        //     }
+        // }
         repositories {
-            maven {
-                def releasesRepoUrl = layout.buildDirectory.dir(repoDirRelease)
-                def snapshotsRepoUrl = layout.buildDirectory.dir(repoDirSnapshot)
-                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            if (System.getenv("GIT_TOKEN")) {
+                maven {
+                    url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
+                    credentials {
+                        username = "zyient-core"
+                        password = System.getenv("GIT_TOKEN")
+                    }
+                }
             }
         }
+        publications {
+            gpr(MavenPublication) {
+                artifact jar
+            }
+        }
+    
     }
 
     configurations.all {
