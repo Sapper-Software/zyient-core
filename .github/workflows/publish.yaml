@@ -2,7 +2,7 @@ name: v1.1
 on:
   push:
     branches: 
-      - "build" 
+      - "release_**" 
     paths:
       - '**'
       - "!.github/**"
