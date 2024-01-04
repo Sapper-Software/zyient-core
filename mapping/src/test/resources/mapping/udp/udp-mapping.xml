@@ -37,15 +37,26 @@
             <pipeline type="io.zyient.core.mapping.pipeline.impl.udp.UdpPipeline">
                 <name>udp_sample_base</name>
                 <responseType>io.zyient.core.mapping.pipeline.impl.udp.model.DocumentContextResponse</responseType>
+                <nested>true</nested>
                 <pipelines>
                     <pipeline type="io.zyient.core.mapping.pipeline.impl.udp.nodes.DocumentStagingPipeline">
                         <name>udp_sample_document</name>
-                        <responseType>io.zyient.core.mapping.pipeline.impl.udp.model.DocumentContextResponse</responseType>
+                        <responseType>io.zyient.core.mapping.pipeline.impl.udp.model.DocumentContextResponse
+                        </responseType>
                         <context>
                             <reset>false</reset>
                             <add>true</add>
-                            <key>udp_sample_document</key>
+                            <key>_udp_document</key>
                         </context>
+                        <filter>
+                            <json>
+                                <path>
+                                    <![CDATA[
+                                    $.documents[*]
+                                ]]>
+                                </path>
+                            </json>
+                        </filter>
                         <mapping>test-document-node</mapping>
                     </pipeline>
                     <pipeline type="io.zyient.core.mapping.pipeline.impl.udp.nodes.PageStagingPipeline">
@@ -54,41 +65,20 @@
                         <context>
                             <reset>false</reset>
                             <add>true</add>
-                            <key>udp_sample_page</key>
+                            <key>_udp_page</key>
                         </context>
+                        <filter>
+                            <json>
+                                <path>
+                                    <![CDATA[
+                                    $.pages[*]
+                                ]]>
+                                </path>
+                            </json>
+                        </filter>
                         <mapping>test-page-node</mapping>
                     </pipeline>
                 </pipelines>
-                <mappings>
-                    <mapping pipeline="udp_sample_document">
-                        <expression>list-documents</expression>
-                    </mapping>
-                    <mapping pipeline="udp_sample_page">
-                        <expression>list-pages</expression>
-                    </mapping>
-                </mappings>
-                <filters>
-                    <filter>
-                        <name>list-documents</name>
-                        <json>
-                            <path>
-                                <![CDATA[
-                                    $.['documents[*]', 'documents']
-                                ]]>
-                            </path>
-                        </json>
-                    </filter>
-                    <filter>
-                        <name>list-pages</name>
-                        <json>
-                            <path>
-                                <![CDATA[
-                                    $.['pages[*]', 'pages']
-                                ]]>
-                            </path>
-                        </json>
-                    </filter>
-                </filters>
             </pipeline>
         </pipelines>
         <readers>

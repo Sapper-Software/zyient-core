@@ -37,23 +37,21 @@ public class JsonInputReader extends JacksonInputReader {
         Preconditions.checkState(settings() instanceof JsonReaderSettings);
         try {
             ObjectMapper mapper = ((JsonReaderSettings) settings()).getObjectMapper();
-            Object obj = mapper.readValue(contentInfo().path(), Object.class);
-            if (obj != null) {
-                Class<?> type = obj.getClass();
-                if (((JsonReaderSettings) settings()).isArray()) {
+            if (((JsonReaderSettings) settings()).isArray()) {
+                Object obj = mapper.readValue(contentInfo().path(), Object.class);
+                if (obj != null) {
                     Object[] array = (Object[]) obj;
                     data = new ArrayList<>(array.length);
                     for (Object a : array) {
                         data.add((Map<String, Object>) a);
                     }
-                } else {
-                    if (!(obj instanceof Map<?, ?>)) {
-                        throw new IOException(String.format("Invalid JSON data. [type=%s]",
-                                obj.getClass().getCanonicalName()));
-                    }
+                }
+            } else {
+                Map<String, Object> obj = mapper.readValue(contentInfo().path(), Map.class);
+                if (obj != null) {
                     String path = ((JsonReaderSettings) settings()).getBasePath();
                     if (!Strings.isNullOrEmpty(path)) {
-                        Object node = findNode((Map<String, Object>) obj, path.split("\\."), 0);
+                        Object node = findNode(obj, path.split("\\."), 0);
                         if (node != null) {
                             if (node.getClass().isArray()) {
                                 Object[] array = (Object[]) node;
@@ -61,10 +59,12 @@ public class JsonInputReader extends JacksonInputReader {
                                 for (Object a : array) {
                                     data.add((Map<String, Object>) a);
                                 }
+                            } else {
+                                data = List.of((Map<String, Object>) node);
                             }
                         }
                     } else {
-                        data = List.of((Map<String, Object>) obj);
+                        data = List.of(obj);
                     }
                 }
             }

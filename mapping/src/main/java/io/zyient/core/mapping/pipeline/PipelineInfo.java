@@ -26,10 +26,8 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class PipelineInfo {
-    @Config(name = "expression")
-    private String expression;
-    @Config(name = "[@pipeline]")
-    private String pipeline;
+    private PathFilter expression;
+    private Pipeline pipeline;
     @Config(name = "ignorable", required = false, type = Boolean.class)
     private boolean ignorable = false;
     @Config(name = "context.reset", required = false, type = Boolean.class)

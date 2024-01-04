@@ -28,13 +28,13 @@
             -->
         </settings>
         <mappings>
-            <map source="caseId">
+            <map source="id">
                 <sequence>1</sequence>
                 <target>caseId</target>
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
-            <map source="docType">
+            <map source="documentType">
                 <sequence>2</sequence>
                 <target>document.type</target>
                 <nullable>false</nullable>

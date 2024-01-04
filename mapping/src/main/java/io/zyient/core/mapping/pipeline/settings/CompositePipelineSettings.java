@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.pipeline.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.core.mapping.pipeline.PipelineInfo;
 import lombok.Getter;
@@ -35,22 +36,6 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class CompositePipelineSettings extends PipelineSettings {
-    public static final String __CONFIG_PATH = "mappings";
-    public static final String __CONFIG_PATH_MAPPING = "mapping";
-
-    private Map<String, PipelineInfo> pipelineContext;
-
-    public void read(@NonNull HierarchicalConfiguration<ImmutableNode> config) throws ConfigurationException {
-        HierarchicalConfiguration<ImmutableNode> cfg = config.configurationAt(__CONFIG_PATH);
-        List<HierarchicalConfiguration<ImmutableNode>> nodes = cfg.configurationsAt(__CONFIG_PATH_MAPPING);
-        try {
-            pipelineContext = new HashMap<>();
-            for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
-                PipelineInfo pi = ConfigReader.read(node, PipelineInfo.class);
-                pipelineContext.put(pi.getExpression(), pi);
-            }
-        } catch (Exception ex) {
-            throw new ConfigurationException(ex);
-        }
-    }
+    @Config(name = "nested", required = false, type = Boolean.class)
+    private boolean nested = false;
 }

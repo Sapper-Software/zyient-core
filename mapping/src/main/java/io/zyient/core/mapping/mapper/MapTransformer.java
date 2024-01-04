@@ -46,6 +46,7 @@ public class MapTransformer<T> {
         private String targetPath;
         private Map<String, MapNode> nodes;
         private Transformer<?> transformer;
+        private boolean nullable;
     }
 
     private final Class<? extends T> type;
@@ -140,6 +141,12 @@ public class MapTransformer<T> {
                            Map<String, Object> data) throws Exception {
         if (source.containsKey(node.name)) {
             Object value = source.get(node.name);
+            if (value == null) {
+                if (!node.nullable) {
+                    throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
+                }
+                return;
+            }
             if (!Strings.isNullOrEmpty(node.targetPath)) {
                 Map<String, Object> map = getTargetNode(data, node.targetPath);
                 String[] parts = node.targetPath.split("\\.");
@@ -158,6 +165,10 @@ public class MapTransformer<T> {
                         transform((Map<String, Object>) value, node.nodes.get(key), data);
                     }
                 }
+            }
+        } else {
+            if (!node.nullable) {
+                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
             }
         }
     }
@@ -202,6 +213,7 @@ public class MapTransformer<T> {
                 node.name = parts[0];
                 node.targetPath = element.getTargetPath();
                 node.type = property.field().getType();
+                node.nullable = element.isNullable();
                 mapper.put(parts[0], node);
                 return node;
             }
@@ -238,6 +250,7 @@ public class MapTransformer<T> {
                                 nnode.type = property.field().getType();
                             nnode.name = name;
                             nnode.targetPath = element.getTargetPath();
+                            nnode.nullable = element.isNullable();
                             if (node.nodes == null) {
                                 node.nodes = new HashMap<>();
                             }

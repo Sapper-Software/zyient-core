@@ -19,6 +19,7 @@ package io.zyient.core.mapping.pipeline.staging;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.*;
 import io.zyient.core.mapping.pipeline.ExecutablePipeline;
@@ -39,8 +40,10 @@ public class StagingPipeline<E> extends ExecutablePipeline<E> {
         try {
             withMapperFactory(mapperFactory);
             super.configure(xmlConfig, dataStoreManager, ExecutablePipelineSettings.class);
+            state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
+            state().error(ex);
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }

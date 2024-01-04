@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.pipeline.impl.udp;
+package io.zyient.core.mapping.pipeline;
 
 import com.jayway.jsonpath.Filter;
 import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class PathFilter {
     public static final String __CONFIG_PATH = "filter";
 
-    @Config(name = "name")
-    private String name;
     @Config(name = "json.path")
     private String path;
     @Config(name = "json.filter", required = false)
