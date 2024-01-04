@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.pipeline.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.core.mapping.pipeline.PipelineInfo;
 import lombok.Getter;
@@ -35,5 +36,6 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class CompositePipelineSettings extends PipelineSettings {
-
+    @Config(name = "nested", required = false, type = Boolean.class)
+    private boolean nested = false;
 }

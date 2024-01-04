@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
+import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
@@ -39,14 +40,11 @@ public class JsonReaderSettings extends ReaderSettings {
     private String dateFormat = null;
 
     public ObjectMapper getObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = GlobalConstants.getJsonMapper();
         if (!Strings.isNullOrEmpty(dateFormat)) {
             SimpleDateFormat fmt = new SimpleDateFormat(dateFormat);
             mapper.setDateFormat(fmt);
         }
-        mapper.configure(DeserializationFeature.ACCEPT_EMPTY_ARRAY_AS_NULL_OBJECT, true)
-                .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
-                .configure(DeserializationFeature.USE_JAVA_ARRAY_FOR_JSON_ARRAY, true);
         return mapper;
     }
 }

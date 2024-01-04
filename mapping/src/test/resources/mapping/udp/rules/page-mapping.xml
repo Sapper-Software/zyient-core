@@ -46,12 +46,18 @@
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
-            <map source="context['udp_sample_document'">
-                <sequence>4</sequence>
-                <target>parent</target>
-                <nullable>false</nullable>
-                <type>Field</type>
-            </map>
         </mappings>
+        <rules>
+            <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                <name>set-parent</name>
+                <expression>
+                    (context.get('_udp_document'))
+                </expression>
+                <field>parent</field>
+                <ruleType>Transformation</ruleType>
+                <errorCode>1000001</errorCode>
+                <validationErrorCode>1500001</validationErrorCode>
+            </rule>
+        </rules>
     </mapping>
 </configuration>

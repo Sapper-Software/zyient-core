@@ -36,6 +36,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,7 @@ import java.util.Map;
 @Accessors(fluent = true)
 public abstract class CompositePipeline extends Pipeline {
     public static final String __CONFIG_PATH_PIPELINES = "pipelines";
-    private Map<String, PipelineInfo> pipelines;
+    private List<PipelineInfo> pipelines;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -53,11 +54,10 @@ public abstract class CompositePipeline extends Pipeline {
                               @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
         try {
             configure(xmlConfig, dataStoreManager, CompositePipelineSettings.class);
-            CompositePipelineSettings settings = (CompositePipelineSettings) settings();
             HierarchicalConfiguration<ImmutableNode> psConfig = config().configurationAt(__CONFIG_PATH_PIPELINES);
             List<HierarchicalConfiguration<ImmutableNode>> nodes
                     = psConfig.configurationsAt(PipelineBuilder.__CONFIG_NODE_PIPELINE);
-            pipelines = new HashMap<>();
+            pipelines = new ArrayList<>();
             for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
                 Class<? extends Pipeline> cls =
                         (Class<? extends Pipeline>) ConfigReader.readType(node);
@@ -75,7 +75,7 @@ public abstract class CompositePipeline extends Pipeline {
                     pf.setJsonFilter(filter);
                 }
                 pi.setExpression(pf);
-                pipelines.put(pipeline.name(), pi);
+                pipelines.add(pi);
             }
 
             state().setState(ProcessorState.EProcessorState.Running);
@@ -92,11 +92,20 @@ public abstract class CompositePipeline extends Pipeline {
     @SuppressWarnings("unchecked")
     public RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
         CompositePipelineSettings settings = (CompositePipelineSettings) settings();
+        if (settings.isNested()) {
+            return executeNested(data, context);
+        } else {
+            return executeSerial(data, context);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private RecordResponse executeSerial(@NonNull SourceMap data, Context context) throws Exception {
+        CompositePipelineSettings settings = (CompositePipelineSettings) settings();
         Preconditions.checkNotNull(settings);
         Context ctx = reset(context);
         RecordResponse response = null;
-        for (String path : pipelines.keySet()) {
-            PipelineInfo pi = pipelines.get(path);
+        for (PipelineInfo pi : pipelines) {
             if (pi.isResetContext()) {
                 ctx = reset(context);
             }
@@ -113,16 +122,59 @@ public abstract class CompositePipeline extends Pipeline {
                     }
                 } else {
                     SourceMap d = new SourceMap((Map<String, ?>) value);
-                    response = pipeline.process(data, ctx);
+                    response = pipeline.process(d, ctx);
                     checkAndAddContext(response, pi, ctx);
                 }
             } else {
-                String mesg = String.format("No value found for path. [path=%s]", path);
+                String mesg = String.format("No value found for path. [path=%s]", pi.getExpression());
                 if (!pi.isIgnorable()) {
                     throw new Exception(mesg);
                 }
                 DefaultLogger.warn(mesg);
             }
+        }
+        return response;
+    }
+
+    private RecordResponse executeNested(@NonNull SourceMap data, Context context) throws Exception {
+        CompositePipelineSettings settings = (CompositePipelineSettings) settings();
+        Preconditions.checkNotNull(settings);
+        Context ctx = reset(context);
+        return executeNested(data, ctx, 0);
+    }
+
+    @SuppressWarnings("unchecked")
+    private RecordResponse executeNested(SourceMap data, Context context, int index) throws Exception {
+        PipelineInfo pi = pipelines.get(index);
+        RecordResponse response = null;
+        Object value = evaluate(data, pi.getExpression());
+        if (value != null) {
+            Pipeline pipeline = pi.getPipeline();
+            Preconditions.checkNotNull(pipeline);
+            if (value instanceof List<?>) {
+                List<Object> values = (List<Object>) value;
+                for (Object v : values) {
+                    SourceMap d = new SourceMap((Map<String, ?>) v);
+                    response = pipeline.process(d, context);
+                    checkAndAddContext(response, pi, context);
+                    if (index < pipelines.size() - 1) {
+                        response = executeNested(d, context, index + 1);
+                    }
+                }
+            } else {
+                SourceMap d = new SourceMap((Map<String, ?>) value);
+                response = pipeline.process(d, context);
+                checkAndAddContext(response, pi, context);
+                if (index < pipelines.size() - 1) {
+                    response = executeNested(d, context, index + 1);
+                }
+            }
+        } else {
+            String mesg = String.format("No value found for path. [path=%s]", pi.getExpression());
+            if (!pi.isIgnorable()) {
+                throw new Exception(mesg);
+            }
+            DefaultLogger.warn(mesg);
         }
         return response;
     }

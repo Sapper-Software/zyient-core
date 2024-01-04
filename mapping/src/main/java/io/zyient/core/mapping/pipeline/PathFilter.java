@@ -20,9 +20,11 @@ import com.jayway.jsonpath.Filter;
 import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 public class PathFilter {
     public static final String __CONFIG_PATH = "filter";
 
