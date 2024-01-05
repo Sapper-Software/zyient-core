@@ -56,7 +56,7 @@ jobs:
         sudo apt-get install tree -y
         sudo tree .
         cat ./build/reports/dependency-check-report.html > zyient-core-report.html
-        cat .case-management/build/reports/dependency-check-report.html > case-management-report.html
+        cat ./case-management/build/reports/dependency-check-report.html > case-management-report.html
         
 
 
