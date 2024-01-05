@@ -40,8 +40,23 @@ jobs:
     - name: SCA Scan
       run: |
         chmod +x gradlew
-        ./gradlew dependencyCheckAnalyze
+        ./gradlew dependencyCheckAnalyze -x test
+        ./gradlew case-management:dependencyCheckAnalyze -x test && \
+        ./gradlew common:dependencyCheckAnalyze -x test && \
+        ./gradlew content:dependencyCheckAnalyze -x test && \
+        ./gradlew core-sdk:dependencyCheckAnalyze -x test && \
+        ./gradlew core:dependencyCheckAnalyze -x test && \
+        ./gradlew entity:dependencyCheckAnalyze -x test && \
+        ./gradlew file-system:dependencyCheckAnalyze -x test && \
+        ./gradlew intake:dependencyCheckAnalyze -x test && \
+        ./gradlew mapping:dependencyCheckAnalyze -x test && \
+        ./gradlew messaging:dependencyCheckAnalyze -x test && \
+        ./gradlew persistence:dependencyCheckAnalyze -x test
+        sudo apt-get update
+        sudo apt-get install tree -y
+        sudo tree .
         cat ./build/reports/dependency-check-report.html > zyient-core-report.html
+        
 
 
 
@@ -56,7 +71,7 @@ jobs:
       run: |
         current_tag="$(git describe --abbrev=0 --tags)"
         echo s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core_$current_tag/
-        aws s3 cp application-ingestion-service-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/application-ingestion-service_$current_tag/
+        aws s3 cp zyient-core-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
 
     - name: depcheck-report
       uses: actions/upload-artifact@v3
