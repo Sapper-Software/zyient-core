@@ -56,6 +56,7 @@ jobs:
         sudo apt-get install tree -y
         sudo tree .
         cat ./build/reports/dependency-check-report.html > zyient-core-report.html
+        cat .case-management/build/reports/dependency-check-report.html > case-management-report.html
         
 
 
@@ -72,6 +73,7 @@ jobs:
         current_tag="$(git describe --abbrev=0 --tags)"
         echo s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core_$current_tag/
         aws s3 cp zyient-core-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
+        aws s3 case-management-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
 
     - name: depcheck-report
       uses: actions/upload-artifact@v3
