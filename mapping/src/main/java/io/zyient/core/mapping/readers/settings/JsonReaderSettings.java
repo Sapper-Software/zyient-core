@@ -17,7 +17,6 @@
 package io.zyient.core.mapping.readers.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.zyient.base.common.GlobalConstants;
