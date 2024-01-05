@@ -1,0 +1,65 @@
+name: SCA scan
+
+on:
+  workflow_dispatch:
+    inputs:
+      s3_folder:
+        description: s3 folder name to store generated report
+        required: true
+ 
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps: 
+    - name: Checkout branch
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.ref }}
+        fetch-depth: '0'
+      
+    - uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'adopt'
+
+
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 7.5.1
+
+    - name: Graddle wrapper
+      run: gradle wrapper --gradle-version 7.5.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+    - name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+    
+    - name: SCA Scan
+      run: |
+        chmod +x gradlew
+        ./gradlew dependencyCheckAnalyze
+        cat ./build/reports/dependency-check-report.html > application-ingestion-service-report.html
+
+
+
+    # - name: Configure AWS credentials
+    #   uses: aws-actions/configure-aws-credentials@v1
+    #   with:
+    #     aws-access-key-id: ${{ secrets.EAAS_AWS_ACCESS_KEY }}
+    #     aws-secret-access-key: ${{ secrets.EAAS_AWS_ACCESS_SECRET }}
+    #     aws-region: ap-south-1
+
+    # - name: upload reports to s3
+    #   run: |
+    #     current_tag="$(git describe --abbrev=0 --tags)"
+    #     echo s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/application-ingestion-service_$current_tag/
+    #     aws s3 cp application-ingestion-service-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/application-ingestion-service_$current_tag/
+
+    # - name: depcheck-report
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: application-ingestion-service-report
+    #     path: application-ingestion-service-report.html
