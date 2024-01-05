@@ -26,6 +26,7 @@ import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
+import io.zyient.base.core.utils.SpringUtils;
 import io.zyient.core.persistence.AbstractConnection;
 import io.zyient.core.persistence.impl.settings.rdbms.HibernateConnectionSettings;
 import jakarta.persistence.Entity;
@@ -191,13 +192,24 @@ public class HibernateConnection extends AbstractConnection<Session> {
 
                 if (settings.getModelPackages() != null) {
                     for (String name : settings.getModelPackages()) {
-                        Set<Class<?>> classes = ReflectionHelper.findAllClasses(name);
-                        if (classes != null) {
+                        DefaultLogger.info(String.format("Scanning package: [%s]", name));
+                        Set<Class<?>> classes = null;
+                        if (settings.isUseSpringScanning()) {
+                            classes = SpringUtils.findAllEntityClassesInPackage(name, Entity.class);
+                        } else {
+                            classes = ReflectionHelper.findAllClasses(name, getClass());
+                        }
+                        if (classes != null && !classes.isEmpty()) {
                             for (Class<?> type : classes) {
                                 if (type.isAnnotationPresent(Entity.class)) {
                                     configuration.addAnnotatedClass(type);
+                                } else {
+                                    DefaultLogger.debug(String.format("Not an entity: [class=%s]",
+                                            type.getCanonicalName()));
                                 }
                             }
+                        } else {
+                            DefaultLogger.warn(String.format("No classes found for package: [%s]", name));
                         }
                     }
                 }

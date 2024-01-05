@@ -77,15 +77,18 @@ public class ReflectionHelper {
         return map;
     }
 
-    public static Set<Class<?>> findAllClasses(String packageName) throws IOException {
-        return ClassPath.from(ClassLoader.getSystemClassLoader())
+    public static Set<Class<?>> findAllClasses(@NonNull String packageName,
+                                               @NonNull Class<?> caller) throws IOException {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(packageName));
+        return ClassPath.from(caller.getClassLoader())
                 .getAllClasses()
                 .stream()
                 .filter(clazz -> clazz.getPackageName()
-                        .equalsIgnoreCase(packageName))
+                        .equals(packageName))
                 .map(ClassPath.ClassInfo::load)
                 .collect(Collectors.toSet());
     }
+
 
     public static Object[] convertToObjectArray(Object array) {
         Class<?> ofArray = array.getClass().getComponentType();
@@ -316,13 +319,14 @@ public class ReflectionHelper {
         return null;
     }
 
-    private static void getAllMethods(@NonNull Class<?> type, @NonNull List<Method> methods) {
+    public static void getAllMethods(@NonNull Class<?> type, @NonNull List<Method> methods) {
         methods.addAll(Arrays.asList(type.getDeclaredMethods()));
         Class<?> parent = type.getSuperclass();
         if (parent != null && !parent.equals(Object.class)) {
             getAllMethods(parent, methods);
         }
     }
+
 
     /**
      * Find the field with the specified name in this type or a parent type.
@@ -540,6 +544,11 @@ public class ReflectionHelper {
 
     public static boolean isMap(@NonNull Class<?> type) {
         return implementsInterface(Map.class, type);
+    }
+
+    public static <T> boolean isGeneric(@NonNull Class<T> type) {
+        TypeVariable<Class<T>>[] parans = type.getTypeParameters();
+        return (parans != null && parans.length > 0);
     }
 
     public static boolean isMap(@NonNull Field field) {

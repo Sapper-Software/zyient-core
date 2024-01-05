@@ -155,7 +155,7 @@ public class MapTransformer<T> {
                     value = node.transformer.read(value);
                 }
                 map.put(key, value);
-            } else if (value != null) {
+            } else {
                 if (!(value instanceof Map<?, ?>)) {
                     throw new Exception(String.format("Invalid node type: Expected Map<String, Object> [type=%s]",
                             value.getClass().getCanonicalName()));

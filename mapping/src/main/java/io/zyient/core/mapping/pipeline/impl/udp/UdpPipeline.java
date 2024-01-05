@@ -16,29 +16,9 @@
 
 package io.zyient.core.mapping.pipeline.impl.udp;
 
-import com.google.common.base.Strings;
-import com.jayway.jsonpath.Filter;
-import com.jayway.jsonpath.JsonPath;
-import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.core.mapping.mapper.MapperFactory;
-import io.zyient.core.mapping.model.SourceMap;
-import io.zyient.core.mapping.pipeline.PathFilter;
-import io.zyient.core.mapping.pipeline.Pipeline;
-import io.zyient.core.mapping.pipeline.PipelineInfo;
-import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
 import io.zyient.core.mapping.pipeline.source.SourceCompositePipeline;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)

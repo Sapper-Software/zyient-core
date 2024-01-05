@@ -23,6 +23,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.services.model.FileEntity;
 import io.zyient.base.core.services.model.FileEntityServiceResponse;
+import io.zyient.base.core.utils.SpringUtils;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.StreamingOutput;
@@ -42,9 +43,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 public class DemoFileService {
@@ -123,6 +122,31 @@ public class DemoFileService {
                         .body(fileStream);
             }
             throw new IOException(String.format("File Entity not found. [key=%s]", key));
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            return ResponseEntity.internalServerError()
+                    .body(null);
+        }
+    }
+
+    @RequestMapping(value = "/test/demo/classes",
+            method = RequestMethod.GET,
+            produces = {MediaType.APPLICATION_JSON})
+    public ResponseEntity<List<String>> getClasses() {
+        try {
+            // Set<Class<?>> classes = ReflectionHelper.findAllClasses("io.zyient.base.core.services.test.model",
+               //     getClass());
+            Set<Class<?>> classes = SpringUtils.findAllEntityClassesInPackage("io.zyient.base.core.services.test.model");
+            List<String> values = null;
+            if (classes != null && !classes.isEmpty()) {
+                values = new ArrayList<>(classes.size());
+                for (Class<?> cls : classes) {
+                    values.add(cls.getCanonicalName());
+                }
+            } else {
+                throw new Exception("No classes found...");
+            }
+            return ResponseEntity.ok(values);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             return ResponseEntity.internalServerError()
