@@ -75,4 +75,6 @@ public class HibernateConnectionSettings extends AbstractConnectionSettings {
     private String hibernateConfigSource;
     @Config(name = "model.packages", required = false, parser = StringListParser.class)
     private List<String> modelPackages;
+    @Config(name = "useSpringScanning", required = false, type = Boolean.class)
+    private boolean useSpringScanning = false;
 }
