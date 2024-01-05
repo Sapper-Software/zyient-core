@@ -216,7 +216,7 @@ public class WebServiceClient {
                     FormDataContentDisposition.name(fileVar)
                             .fileName(file.getName()).build());
             filePart.setMediaType(FileTypeDetector.as(st));
-            String json = JSONUtils.asString(request, request.getClass());
+            String json = JSONUtils.asString(request);
             try (FormDataMultiPart multipartEntity = (FormDataMultiPart) new FormDataMultiPart()
                     .field(entityVar, json, MediaType.APPLICATION_JSON_TYPE)
                     .bodyPart(filePart)) {

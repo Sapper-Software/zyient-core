@@ -60,7 +60,9 @@ public class MappingReflectionHelper {
             }
             fields.put(exp, var);
         }
-        return fields;
+        if (!fields.isEmpty())
+            return fields;
+        return null;
     }
 
     public static List<String> extractKey(@NonNull String name) {

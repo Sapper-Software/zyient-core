@@ -49,7 +49,7 @@ class MapTransformerTest {
             transformer.add(new MappedElement("nested.nested.values", "properties.doubles", false, List.class, null));
 
             Constants.Source source = new Constants.Source();
-            String json = JSONUtils.asString(source, Constants.Source.class);
+            String json = JSONUtils.asString(source);
             Object data = mapper.readValue(json, Object.class);
             assertTrue(data instanceof Map<?, ?>);
             Map<String, Object> output = transformer.transform((Map<String, Object>) data);

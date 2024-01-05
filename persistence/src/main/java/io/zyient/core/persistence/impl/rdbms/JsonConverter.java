@@ -40,7 +40,7 @@ public class JsonConverter<T> implements AttributeConverter<T, String> {
     public String convertToDatabaseColumn(T attribute) {
         try {
             if (attribute != null) {
-                return JSONUtils.asString(attribute, attribute.getClass());
+                return JSONUtils.asString(attribute);
             }
             return null;
         } catch (Exception ex) {

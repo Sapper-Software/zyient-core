@@ -113,11 +113,11 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                                                                                                                     @NonNull DocumentContext context) throws DataStoreException {
         try {
             FileInode fi = fileSystem.create(document.getId().getCollection(), getPath(document.getId()));
-            String idJson = JSONUtils.asString(document.getId(), DocumentId.class);
+            String idJson = JSONUtils.asString(document.getId());
             fi.attribute(Constants.ATTRIBUTE_DOC_ID, idJson);
             fi.attribute(Constants.ATTRIBUTE_DOC_TYPE, document.getClass().getCanonicalName());
             fi = (FileInode) fileSystem.updateInode(fi);
-            String uri = JSONUtils.asString(fi.getURI(), Map.class);
+            String uri = JSONUtils.asString(fi.getURI());
             document.setUri(uri);
             document.validate();
             if (dataStore instanceof TransactionDataStore<?, ?>) {

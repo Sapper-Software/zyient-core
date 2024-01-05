@@ -371,7 +371,14 @@ public class ReflectionHelper {
      * @return - Array of all defined fields.
      */
     public static Field[] getAllFields(@NonNull Class<?> type) {
-        List<Field> fields = CLASS_UTILS.getDeclaredFields(type, true);
+        Field[] pfs = null;
+        if (hasSuperClass(type)) {
+            pfs = getAllFields(type.getSuperclass());
+        }
+        List<Field> fields = new ArrayList<>();
+        if (pfs != null && pfs.length > 0) {
+            
+        }
         if (!fields.isEmpty()) {
             Field[] fa = new Field[fields.size()];
             for (int ii = 0; ii < fields.size(); ii++) {
@@ -380,6 +387,10 @@ public class ReflectionHelper {
             return fa;
         }
         return null;
+    }
+
+    public static boolean hasSuperClass(@NonNull Class<?> clazz) {
+        return !clazz.getSuperclass().equals(Object.class);
     }
 
     public static Map<String, Field> getFieldsMap(@NonNull Class<?> type) {

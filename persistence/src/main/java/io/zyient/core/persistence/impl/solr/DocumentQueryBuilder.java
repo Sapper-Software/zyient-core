@@ -61,7 +61,7 @@ public class DocumentQueryBuilder extends EntityQueryBuilder {
                                             @NonNull String collection,
                                             @NonNull Map<String, String> uri) throws Exception {
         DocumentQueryBuilder builder = new DocumentQueryBuilder(entityType, collection);
-        String json = JSONUtils.asString(uri, Map.class);
+        String json = JSONUtils.asString(uri);
         return builder.phraseQuery(SolrConstants.FIELD_SOLR_ID, json).build();
     }
 }

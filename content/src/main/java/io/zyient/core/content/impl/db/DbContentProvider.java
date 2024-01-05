@@ -59,7 +59,7 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
                                                                                                                   @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                                   DocumentContext context) throws DataStoreException {
         try {
-            String json = JSONUtils.asString(uri, Map.class);
+            String json = JSONUtils.asString(uri);
             String condition = "URI = :uri";
             Map<String, Object> params = Map.of("uri", json);
             AbstractDataStore.Q query = new AbstractDataStore.Q()

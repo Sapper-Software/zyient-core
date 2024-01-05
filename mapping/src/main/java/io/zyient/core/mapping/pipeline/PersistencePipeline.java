@@ -66,7 +66,7 @@ public abstract class PersistencePipeline<K extends IKey, E extends IEntity<K>> 
                      Context context) throws Exception {
         entity = dataStore().create(entity, entityType, context);
         if (DefaultLogger.isTraceEnabled()) {
-            String json = JSONUtils.asString(entity, entityType);
+            String json = JSONUtils.asString(entity);
             DefaultLogger.trace(json);
         }
         return entity;

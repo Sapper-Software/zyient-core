@@ -337,7 +337,7 @@ public class FileSystemManager implements Closeable {
         if (client.checkExists().forPath(path) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(path);
         }
-        byte[] data = JSONUtils.asBytes(settings, settings.getClass());
+        byte[] data = JSONUtils.asBytes(settings);
         client.setData().forPath(path, data);
     }
 

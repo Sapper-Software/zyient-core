@@ -58,9 +58,21 @@ public class ClassDef {
                     pd.accessible(Modifier.isPublic(field.getModifiers()));
                     properties.put(pd.name(), pd);
                 } else if (ReflectionHelper.isMap(field)) {
-
+                    MapPropertyDef pd = (MapPropertyDef) new MapPropertyDef()
+                            .owner(clazz);
+                    pd.from(field);
+                    pd.setter(findSetter(field));
+                    pd.getter(findGetter(field));
+                    pd.accessible(Modifier.isPublic(field.getModifiers()));
+                    properties.put(pd.name(), pd);
                 } else {
-
+                    ClassPropertyDef pd = (ClassPropertyDef) new ClassPropertyDef()
+                            .owner(clazz);
+                    pd.from(field);
+                    pd.setter(findSetter(field));
+                    pd.getter(findGetter(field));
+                    pd.accessible(Modifier.isPublic(field.getModifiers()));
+                    properties.put(pd.name(), pd);
                 }
             }
         }

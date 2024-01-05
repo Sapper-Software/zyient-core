@@ -77,13 +77,13 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
             processingState.setTimeUpdated(processingState().getTimeCreated());
             processingState.setOffset(txId);
             client.setData().forPath(zkAgentStatePath(),
-                    JSONUtils.asBytes(processingState, processingState.getClass()));
+                    JSONUtils.asBytes(processingState));
         } else {
             processingState = readState(type);
             if (txId != null) {
                 processingState.setOffset(txId);
                 client.setData().forPath(zkAgentStatePath(),
-                        JSONUtils.asBytes(processingState, processingState.getClass()));
+                        JSONUtils.asBytes(processingState));
             }
         }
         processingState.setInstance(moduleInstance());

@@ -59,7 +59,7 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                          DocumentContext context) throws DataStoreException {
         try {
-            String json = JSONUtils.asString(uri, Map.class);
+            String json = JSONUtils.asString(uri);
             String condition = String.format("URI = %s", json);
             AbstractDataStore.Q query = new AbstractDataStore.Q()
                     .where(condition);

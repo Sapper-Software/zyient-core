@@ -198,7 +198,7 @@ public class DistributedLockBuilder implements Closeable {
         if (client.checkExists().forPath(path) == null) {
             client.create().creatingParentsIfNeeded().forPath(path);
         }
-        String json = JSONUtils.asString(def, LockDef.class);
+        String json = JSONUtils.asString(def);
         client.setData().forPath(path, json.getBytes(StandardCharsets.UTF_8));
     }
 
