@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.persistence.Entity;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -136,7 +137,8 @@ public class DemoFileService {
         try {
             // Set<Class<?>> classes = ReflectionHelper.findAllClasses("io.zyient.base.core.services.test.model",
                //     getClass());
-            Set<Class<?>> classes = SpringUtils.findAllEntityClassesInPackage("io.zyient.base.core.services.test.model");
+            Set<Class<?>> classes = SpringUtils
+                    .findAllEntityClassesInPackage("io.zyient.base.core.services.test.model", Entity.class);
             List<String> values = null;
             if (classes != null && !classes.isEmpty()) {
                 values = new ArrayList<>(classes.size());
