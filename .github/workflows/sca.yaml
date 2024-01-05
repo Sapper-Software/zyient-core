@@ -57,8 +57,6 @@ jobs:
         sudo tree .
         cat ./build/reports/dependency-check-report.html > zyient-core-report.html
         cat ./case-management/build/reports/dependency-check-report.html > case-management-report.html
-<<<<<<< Updated upstream
-=======
         cat ./common/build/reports/dependency-check-report.html > common-report.html
         cat ./content/build/reports/dependency-check-report.html > content-report.html
         cat ./core-sdk/build/reports/dependency-check-report.html > core-sdk-report.html
@@ -70,7 +68,7 @@ jobs:
         cat ./messaging/build/reports/dependency-check-report.html > messaging-report.html
         cat ./persistence/build/reports/dependency-check-report.html > persistence-report.html
 
->>>>>>> Stashed changes
+
         
 
 
@@ -87,9 +85,8 @@ jobs:
         current_tag="$(git describe --abbrev=0 --tags)"
         echo s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core_$current_tag/
         aws s3 cp zyient-core-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
-<<<<<<< Updated upstream
+
         aws s3 cp case-management-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
-=======
         aws s3 cp case-management-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
         aws s3 cp common-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
         aws s3 cp content-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
@@ -101,7 +98,7 @@ jobs:
         aws s3 cp mapping-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
         aws s3 cp messaging-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
         aws s3 cp persistence-report.html s3://spread-v1-dev-s3-data/SCA_SCANS/${{ github.event.inputs.s3_folder }}/zyient-core-service_$current_tag/
->>>>>>> Stashed changes
+
 
     - name: depcheck-report
       uses: actions/upload-artifact@v3
