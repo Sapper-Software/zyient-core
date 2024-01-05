@@ -61,7 +61,7 @@ jobs:
         cat ./content/build/reports/dependency-check-report.html > content-report.html
         cat ./core-sdk/build/reports/dependency-check-report.html > core-sdk-report.html
         cat ./core/build/reports/dependency-check-report.html > core-report.html
-        cat ./file-system/build/reports/dependency-check-report.html > file-system-report.html
+        cat ./filesystem/build/reports/dependency-check-report.html > file-system-report.html
         cat ./mapping/build/reports/dependency-check-report.html > mapping-report.html
         cat ./messaging/build/reports/dependency-check-report.html > messaging-report.html
         cat ./persistence/build/reports/dependency-check-report.html > persistence-report.html
