@@ -351,7 +351,9 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         caseEntity.setCaseId(id.getId());
         caseEntity.setCaseState(caseState.getState());
         caseEntity.setDescription(description);
-        caseEntity.setParentCaseId(parentId.getId());
+        if(parentId!=null) {
+            caseEntity.setParentCaseId(parentId.getId());
+        }
         caseEntity.setAssignedTo(assignedTo);
         caseEntity.setCreatedBy(createdBy);
         caseEntity.setProperties(properties);
