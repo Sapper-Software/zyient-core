@@ -23,25 +23,25 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
 
-      - name: increment tag
-        id: gen_tag
-        run: |
-          current_branch=${{ github.ref }}
-          current_branch=${current_branch##*/}
-          branch_ver="$(cut -d'_' -f2 <<< $current_branch)"
+      # - name: increment tag
+      #   id: gen_tag
+      #   run: |
+      #     current_branch=${{ github.ref }}
+      #     current_branch=${current_branch##*/}
+      #     branch_ver="$(cut -d'_' -f2 <<< $current_branch)"
 
-          tag_check=$(git tag -l "$branch_ver.*") 
-          tag_ver=0
-          if [ "$tag_check" == "" ]; then
-            tag_ver=0
-            echo "creating new tag"
-          else
-            current_tag="$(git describe --abbrev=0 --tags)"
-            echo current_tag:$current_tag
-            tag_ver="$(cut -d'.' -f3 <<< $current_tag)"
-          fi
+      #     tag_check=$(git tag -l "$branch_ver.*") 
+      #     tag_ver=0
+      #     if [ "$tag_check" == "" ]; then
+      #       tag_ver=0
+      #       echo "creating new tag"
+      #     else
+      #       current_tag="$(git describe --abbrev=0 --tags)"
+      #       echo current_tag:$current_tag
+      #       tag_ver="$(cut -d'.' -f3 <<< $current_tag)"
+      #     fi
 
-          echo "new_tag=$branch_ver."$(( tag_ver+1 ))"" >> $GITHUB_OUTPUT
+      #     echo "new_tag=$branch_ver."$(( tag_ver+1 ))"" >> $GITHUB_OUTPUT
       
       - name: Setup Gradle
         uses: gradle/gradle-build-action@v2
@@ -60,10 +60,10 @@ jobs:
           GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # VERSION: ${{ steps.gen_tag.outputs.new_tag }}
 
-      - name: push tag
-        if: steps.publish.outcome == 'success'
-        run: | 
-          git config user.name "GitHub Actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git tag ${{ steps.gen_tag.outputs.new_tag }}
-          git push origin ${{ steps.gen_tag.outputs.new_tag }}
+      # - name: push tag
+      #   if: steps.publish.outcome == 'success'
+      #   run: | 
+      #     git config user.name "GitHub Actions"
+      #     git config user.email "github-actions@users.noreply.github.com"
+      #     git tag ${{ steps.gen_tag.outputs.new_tag }}
+      #     git push origin ${{ steps.gen_tag.outputs.new_tag }}
