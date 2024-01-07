@@ -18,7 +18,6 @@ package io.zyient.core.content.impl.mongo;
 
 import dev.morphia.transactions.MorphiaSession;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.content.ManagedContentProvider;
 import io.zyient.core.content.settings.ManagedProviderSettings;
@@ -36,7 +35,6 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.util.List;
-import java.util.Map;
 
 public class MongoContentProvider extends ManagedContentProvider<MorphiaSession> {
     public MongoContentProvider() {
@@ -54,13 +52,12 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull String uri,
                                                                                                          @NonNull String collection,
                                                                                                          @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                          DocumentContext context) throws DataStoreException {
         try {
-            String json = JSONUtils.asString(uri);
-            String condition = String.format("URI = %s", json);
+            String condition = String.format("URI = %s", uri);
             AbstractDataStore.Q query = new AbstractDataStore.Q()
                     .where(condition);
             MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();

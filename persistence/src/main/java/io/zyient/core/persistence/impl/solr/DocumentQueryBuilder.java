@@ -16,14 +16,11 @@
 
 package io.zyient.core.persistence.impl.solr;
 
-import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
 import lombok.NonNull;
 import org.apache.lucene.analysis.Analyzer;
-
-import java.util.Map;
 
 public class DocumentQueryBuilder extends EntityQueryBuilder {
     private final String collection;
@@ -59,9 +56,8 @@ public class DocumentQueryBuilder extends EntityQueryBuilder {
 
     public static AbstractDataStore.Q build(@NonNull Class<? extends Document<?, ?, ?>> entityType,
                                             @NonNull String collection,
-                                            @NonNull Map<String, String> uri) throws Exception {
+                                            @NonNull String uri) throws Exception {
         DocumentQueryBuilder builder = new DocumentQueryBuilder(entityType, collection);
-        String json = JSONUtils.asString(uri);
-        return builder.phraseQuery(SolrConstants.FIELD_SOLR_ID, json).build();
+        return builder.phraseQuery(SolrConstants.FIELD_DOC_URI, uri).build();
     }
 }

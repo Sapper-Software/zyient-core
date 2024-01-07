@@ -103,6 +103,14 @@ public class LocalPathInfo extends PathInfo {
         return dataSize();
     }
 
+    @Override
+    public String uri() throws IOException {
+        if (file == null) {
+            throw new IOException(String.format("Invalid path: missing file handle. [path=%s]", toString()));
+        }
+        return String.format("file://%s", file.getAbsolutePath());
+    }
+
     /**
      * Returns a string representation of the object. In general, the
      * {@code toString} method returns a string that
