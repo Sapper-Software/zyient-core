@@ -1,3 +1,16 @@
+buildscript {
+    repositories {
+        mavenCentral()
+		maven { url 'https://repo.spring.io/snapshot' }
+		maven { url 'https://repo.spring.io/milestone' }
+    }
+    dependencies {
+        classpath 'org.owasp:dependency-check-gradle:8.2.1'
+    }
+}
+plugins {
+    id 'org.owasp.dependencycheck' version '8.2.1'
+}  
 configurations.all {
     exclude module: "logback-classic"
     exclude module: "log4j-to-slf4j"
@@ -28,5 +41,5 @@ dependencies {
     implementation 'org.apache.lucene:lucene-analysis-common:9.7.0'
     implementation 'org.apache.solr:solr-solrj:9.4.0'
 
-    implementation 'dev.morphia.morphia:morphia-core:2.4.8-SNAPSHOT'
+    implementation 'dev.morphia.morphia:morphia-core:2.4.10'
 }

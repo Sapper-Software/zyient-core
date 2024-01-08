@@ -1,3 +1,16 @@
+buildscript {
+    repositories {
+        mavenCentral()
+		maven { url 'https://repo.spring.io/snapshot' }
+		maven { url 'https://repo.spring.io/milestone' }
+    }
+    dependencies {
+        classpath 'org.owasp:dependency-check-gradle:8.2.1'
+    }
+}
+plugins {
+    id 'org.owasp.dependencycheck' version '8.2.1'
+}  
 configurations.all {
     exclude module: "logback-classic"
     exclude module: "log4j-to-slf4j"
@@ -65,7 +78,7 @@ dependencies {
     implementation 'org.eclipse.angus:dsn:2.0.2'
     implementation 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.2.Final'
     implementation 'org.hibernate:hibernate-core:6.2.7.Final'
-    implementation 'dev.morphia.morphia:morphia-core:2.4.8-SNAPSHOT'
+    implementation 'dev.morphia.morphia:morphia-core:2.4.10'
     implementation 'org.apache.tika:tika-core:2.9.1'
     implementation 'org.apache.tika:tika-langdetect:2.9.1'
     implementation 'org.apache.tika:tika-parsers-standard-package:2.9.1'
