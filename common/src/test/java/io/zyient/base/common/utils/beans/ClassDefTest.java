@@ -65,7 +65,7 @@ class ClassDefTest {
     @Test
     void findSetter() {
         try {
-            ClassDef def = new ClassDef().from(Outer.class);
+            ClassDef def = BeanUtils.get(Outer.class);
             Field[] fields = ReflectionHelper.getAllFields(Outer.class);
             assertNotNull(fields);
             for (Field field : fields) {
@@ -84,7 +84,7 @@ class ClassDefTest {
     @Test
     void findGetter() {
         try {
-            ClassDef def = new ClassDef().from(Outer.class);
+            ClassDef def = BeanUtils.get(Outer.class);
             Field[] fields = ReflectionHelper.getAllFields(Outer.class);
             assertNotNull(fields);
             for (Field field : fields) {

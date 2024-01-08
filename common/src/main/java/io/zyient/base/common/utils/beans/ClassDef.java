@@ -1,6 +1,7 @@
 package io.zyient.base.common.utils.beans;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,8 +30,9 @@ public class ClassDef {
     private List<Method> methods;
 
     public ClassDef from(@NonNull Class<?> clazz) throws Exception {
-        name = clazz.getSimpleName();
-        type = clazz;
+        Preconditions.checkNotNull(type);
+        Preconditions.checkState(!Strings.isNullOrEmpty(name));
+
         abstractType = Modifier.isAbstract(clazz.getModifiers());
         generic = ReflectionHelper.isGeneric(clazz);
         methods = new ArrayList<>();
