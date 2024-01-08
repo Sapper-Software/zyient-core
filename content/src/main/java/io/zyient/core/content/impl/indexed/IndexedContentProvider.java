@@ -38,7 +38,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.solr.client.solrj.SolrClient;
 
 import java.util.List;
-import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
@@ -59,7 +58,7 @@ public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull String uri,
                                                                                                                   @NonNull String collection,
                                                                                                                   @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                                   DocumentContext context) throws DataStoreException {

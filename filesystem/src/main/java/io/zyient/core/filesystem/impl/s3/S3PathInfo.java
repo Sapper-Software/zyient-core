@@ -106,6 +106,11 @@ public class S3PathInfo extends PathInfo {
         return dataSize();
     }
 
+    @Override
+    public String uri() throws IOException {
+        return String.format("s3://%s/%s", bucket, fsPath());
+    }
+
     /**
      * @return
      */

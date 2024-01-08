@@ -17,7 +17,6 @@
 package io.zyient.core.content.impl.db;
 
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.content.ManagedContentProvider;
 import io.zyient.core.content.settings.ManagedProviderSettings;
@@ -54,14 +53,13 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull Map<String, String> uri,
+    protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull String uri,
                                                                                                                   @NonNull String collection,
                                                                                                                   @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                                   DocumentContext context) throws DataStoreException {
         try {
-            String json = JSONUtils.asString(uri, Map.class);
             String condition = "URI = :uri";
-            Map<String, Object> params = Map.of("uri", json);
+            Map<String, Object> params = Map.of("uri", uri);
             AbstractDataStore.Q query = new AbstractDataStore.Q()
                     .where(condition)
                     .addAll(params);

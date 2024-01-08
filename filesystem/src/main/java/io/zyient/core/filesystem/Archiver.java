@@ -149,7 +149,7 @@ public abstract class Archiver implements Closeable {
             di.setZkPath(path);
             di.setPath(container.getDomain());
 
-            client.setData().forPath(path, JSONUtils.asBytes(di, DirectoryInode.class));
+            client.setData().forPath(path, JSONUtils.asBytes(di));
             domains.put(container.getDomain(), di);
         }
     }

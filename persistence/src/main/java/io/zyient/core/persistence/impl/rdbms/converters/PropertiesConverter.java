@@ -37,7 +37,7 @@ public class PropertiesConverter implements AttributeConverter<Map<String, Objec
     public String convertToDatabaseColumn(Map<String, Object> attribute) {
         try {
             if (attribute != null) {
-                return JSONUtils.asString(attribute, Map.class);
+                return JSONUtils.asString(attribute);
             }
             return null;
         } catch (Exception ex) {

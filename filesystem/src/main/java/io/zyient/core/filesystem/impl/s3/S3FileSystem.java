@@ -207,7 +207,7 @@ public class S3FileSystem extends RemoteFileSystem {
                         DeleteObjectResponse r = client.deleteObject(dr);
                         SdkHttpResponse sr = r.sdkHttpResponse();
                         if (sr.statusCode() < 200 || sr.statusCode() >= 300) {
-                            String mesg = JSONUtils.asString(sr, sr.getClass());
+                            String mesg = JSONUtils.asString(sr);
                             throw new IOException(mesg);
                         }
                     }
@@ -222,7 +222,7 @@ public class S3FileSystem extends RemoteFileSystem {
                     if (sr.statusCode() >= 200 && sr.statusCode() < 300) {
                         return true;
                     } else {
-                        String mesg = JSONUtils.asString(sr, sr.getClass());
+                        String mesg = JSONUtils.asString(sr);
                         throw new IOException(mesg);
                     }
                 }

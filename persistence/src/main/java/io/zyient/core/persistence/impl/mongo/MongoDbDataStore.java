@@ -106,7 +106,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                     ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
                     ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
-                String json = JSONUtils.asString(entity, entity.getClass());
+                String json = JSONUtils.asString(entity);
                 Document doc = Document.parse(json);
                 doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.entityKey().stringKey());
                 doc.put(JsonFieldConstants.FIELD_DOC_TYPE, type.getCanonicalName());
@@ -227,7 +227,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                     ((BaseEntity<?>) entity).setUpdatedTime(System.nanoTime());
                     ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
                 }
-                String json = JSONUtils.asString(entity, entity.getClass());
+                String json = JSONUtils.asString(entity);
                 Document doc = Document.parse(json);
                 doc.put(JsonFieldConstants.FIELD_DOC_ID, entity.entityKey().stringKey());
                 doc.put(JsonFieldConstants.FIELD_DOC_TYPE, type.getCanonicalName());

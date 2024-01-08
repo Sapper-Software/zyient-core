@@ -257,7 +257,7 @@ public class AWSKeyStore extends KeyStore {
                         keys.put(name, value);
                     }
                 }
-                String value = JSONUtils.asString(keys, Map.class);
+                String value = JSONUtils.asString(keys);
                 UpdateSecretRequest  secretRequest = UpdateSecretRequest.builder()
                         .secretId(bucket)
                         .description(String.format("[keyStore=%s] Saved secret. [name=%s]", this.name, bucket))

@@ -33,7 +33,7 @@ public class GenericJsonConverter implements AttributeConverter<Object, String> 
     public String convertToDatabaseColumn(Object attribute) {
         try {
             if (attribute != null)
-                return JSONUtils.asString(attribute, attribute.getClass());
+                return JSONUtils.asString(attribute);
             return null;
         } catch (Exception ex) {
             throw new RuntimeException(ex);

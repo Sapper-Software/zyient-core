@@ -49,6 +49,8 @@ import java.util.*;
 @MappedSuperclass
 public abstract class Document<E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>>
         extends BaseEntity<DocumentId> implements PropertyBag {
+    public static final String PROPERTY_PATH_MAP = "__fs_path_info";
+
     @Transient
     @Field(SolrConstants.FIELD_SOLR_ID)
     private String searchId;
@@ -262,6 +264,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
      * @throws ValidationExceptions - On validation failure will throw exception.
      */
     @Override
+    @SuppressWarnings("unchecked")
     public ValidationExceptions doValidate(ValidationExceptions errors) throws ValidationExceptions {
         if (Strings.isNullOrEmpty(uri)) {
             errors = ValidationExceptions.add(new ValidationException("Missing required field: [uri]"), errors);
@@ -287,6 +290,10 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
                 errors = ValidationExceptions.add(new ValidationException(
                         String.format("Invalid reference ID: [type=%s]", type.getCanonicalName())), errors);
             }
+        }
+        Map<String, String> pathConfig = (Map<String, String>) getProperty(PROPERTY_PATH_MAP);
+        if (pathConfig == null || pathConfig.isEmpty()) {
+            errors = ValidationExceptions.add(new ValidationException("Document path config property not set."), errors);
         }
         return errors;
     }
@@ -315,6 +322,16 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
         }
         properties.put(name, value);
         return this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, String> pathConfig() throws Exception {
+        Map<String, String> map = (Map<String, String>) getProperty(Document.PROPERTY_PATH_MAP);
+        if (map == null) {
+            throw new Exception(String.format("Invalid document: path config property not found. [id=%s]",
+                    getId().stringKey()));
+        }
+        return map;
     }
 
     public Content as(@NonNull Content content) {
