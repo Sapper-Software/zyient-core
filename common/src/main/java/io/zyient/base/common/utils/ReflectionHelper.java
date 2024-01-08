@@ -376,9 +376,11 @@ public class ReflectionHelper {
             pfs = getAllFields(type.getSuperclass());
         }
         List<Field> fields = new ArrayList<>();
-        if (pfs != null && pfs.length > 0) {
-            
+        if (pfs != null) {
+            fields.addAll(Arrays.asList(pfs));
         }
+        pfs = type.getDeclaredFields();
+        fields.addAll(Arrays.asList(pfs));
         if (!fields.isEmpty()) {
             Field[] fa = new Field[fields.size()];
             for (int ii = 0; ii < fields.size(); ii++) {
@@ -390,6 +392,9 @@ public class ReflectionHelper {
     }
 
     public static boolean hasSuperClass(@NonNull Class<?> clazz) {
+        if (clazz.getSuperclass() == null) {
+            return false;
+        }
         return !clazz.getSuperclass().equals(Object.class);
     }
 
