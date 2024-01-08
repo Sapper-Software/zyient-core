@@ -157,7 +157,7 @@ public class FileSystemIndexer implements Closeable, PostOperationVisitor {
 
     private FileIndexerState save(FileIndexerState state) throws Exception {
         state.setTimeUpdated(System.currentTimeMillis());
-        String json = JSONUtils.asString(state, FileIndexerState.class);
+        String json = JSONUtils.asString(state);
         String path = getStatePath();
         CuratorFramework client = connection.client();
         if (client.checkExists().forPath(path) == null) {

@@ -35,7 +35,8 @@ public enum SourceTypes {
     PDF(FileUtils.MIME_TYPE_PDF, new String[]{"pdf"}),
     WORD("application/ms-word", new String[]{"doc", "docx"}),
     PPT("application/ms-powerpoint", new String[]{"ppt"}),
-    COMPRESSED(FileUtils.MIME_TYPE_ZIP, new String[]{"zip", "bzip", "bzip2", "tar", "gz", "7z", "rar"});
+    COMPRESSED(FileUtils.MIME_TYPE_ZIP, new String[]{"zip", "bzip", "bzip2", "tar", "gz", "7z", "rar"}),
+    DB("application/data", new String[]{});
 
     private final String mimeType;
     private final String[] extensions;
@@ -75,7 +76,7 @@ public enum SourceTypes {
     }
 
     public static SourceTypes from(@NonNull String type) {
-        for(SourceTypes t : SourceTypes.values()) {
+        for (SourceTypes t : SourceTypes.values()) {
             if (t.name().compareToIgnoreCase(type) == 0) {
                 return t;
             }

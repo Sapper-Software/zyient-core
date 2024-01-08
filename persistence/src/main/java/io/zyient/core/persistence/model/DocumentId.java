@@ -72,7 +72,7 @@ public class DocumentId implements IKey {
     @Override
     public String stringKey() {
         try {
-            return JSONUtils.asString(this, getClass());
+            return JSONUtils.asString(this);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

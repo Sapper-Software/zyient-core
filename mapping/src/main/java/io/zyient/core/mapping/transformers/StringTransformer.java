@@ -51,7 +51,7 @@ public class StringTransformer {
         } else if (value.getClass().isEnum()) {
             return ((Enum<?>) value).name();
         } else if (useJson) {
-            return JSONUtils.asString(value, value.getClass());
+            return JSONUtils.asString(value);
         } else if (value instanceof URI) {
             return ((URI) value).toString();
         } else if (value instanceof URL) {

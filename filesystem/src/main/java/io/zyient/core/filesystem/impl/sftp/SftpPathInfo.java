@@ -35,17 +35,21 @@ import java.util.Map;
 @Getter
 @Accessors(fluent = true)
 public class SftpPathInfo extends PathInfo {
+    private String host;
+    private String username;
     private File temp;
 
     protected SftpPathInfo(@NonNull FileSystem fs,
                            @NonNull Inode node) {
         super(fs, node);
+        init(fs);
     }
 
     protected SftpPathInfo(@NonNull FileSystem fs,
                            @NonNull String path,
                            @NonNull String domain) {
         super(fs, path, domain);
+        init(fs);
     }
 
     protected SftpPathInfo(@NonNull FileSystem fs,
@@ -54,13 +58,20 @@ public class SftpPathInfo extends PathInfo {
                            @NonNull InodeType type) {
         super(fs, path, domain);
         directory = (type == InodeType.Directory);
+        init(fs);
     }
 
     protected SftpPathInfo(@NonNull FileSystem fs,
                            @NonNull Map<String, String> config) {
         super(fs, config);
+        init(fs);
     }
 
+    private void  init(FileSystem fs) {
+        SftpFileSystemSettings settings = (SftpFileSystemSettings) fs.settings();
+        host = settings.getHost();
+        username = settings.getUsername();
+    }
 
     protected SftpPathInfo withTemp(@NonNull File temp) {
         this.temp = temp;
@@ -84,5 +95,10 @@ public class SftpPathInfo extends PathInfo {
             dataSize(sfs.size(this));
         }
         return dataSize();
+    }
+
+    @Override
+    public String uri() throws IOException {
+        return String.format("sftp://%s@%s/%s", username, host, fsPath());
     }
 }

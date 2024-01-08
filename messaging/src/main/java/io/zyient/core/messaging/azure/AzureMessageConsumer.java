@@ -140,7 +140,7 @@ public abstract class AzureMessageConsumer<M> extends MessageReceiver<String, M>
     }
 
     private void seek(AzureMessageOffsetValue offset, boolean next) throws Exception {
-        String json = JSONUtils.asString(offset, offset.getClass());
+        String json = JSONUtils.asString(offset);
         throw new MessagingError(String.format("Seek not supported. [seek offset=%s]", json));
     }
 

@@ -32,7 +32,7 @@ public class DocumentStateConverter implements AttributeConverter<DocumentState<
     @Override
     public String convertToDatabaseColumn(DocumentState<?> attribute) {
         try {
-            return JSONUtils.asString(attribute, attribute.getClass());
+            return JSONUtils.asString(attribute);
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         }

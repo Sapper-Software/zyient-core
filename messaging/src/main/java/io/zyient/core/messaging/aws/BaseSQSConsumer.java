@@ -204,7 +204,7 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
 
     private void seek(AwsSQSOffsetValue offset,
                       boolean next) throws Exception {
-        String json = JSONUtils.asString(offset, offset.getClass());
+        String json = JSONUtils.asString(offset);
         throw new MessagingError(String.format("Seek not supported. [seek offset=%s]", json));
     }
 
