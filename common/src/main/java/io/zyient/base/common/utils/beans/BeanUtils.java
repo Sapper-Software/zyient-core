@@ -17,12 +17,16 @@ public class BeanUtils {
                 Optional<ClassDef> o = __classDefs.get(clazz);
                 if (o.isPresent()) return o.get();
             }
-            ClassDef def = new ClassDef().from(clazz);
+            ClassDef def = new ClassDef();
+            def.name(clazz.getSimpleName());
+            def.type(clazz);
             __classDefs.put(def.type(), def);
+            def.from(clazz);
             return def;
         } finally {
             __cacheLock.unlock();
         }
     }
+
 
 }
