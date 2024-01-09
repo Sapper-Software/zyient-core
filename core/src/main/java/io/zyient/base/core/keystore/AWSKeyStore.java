@@ -89,7 +89,11 @@ public class AWSKeyStore extends KeyStore {
             config = configNode.configurationAt(__CONFIG_PATH);
             Preconditions.checkNotNull(config);
             name = config.getString(CONFIG_NAME);
-            excludeEnv = config.getBoolean(CONFIG_EXCLUDE_ENV);
+            excludeEnv = false;
+            if (config.configurationAt(CONFIG_EXCLUDE_ENV) != null) {
+                excludeEnv = config.getBoolean(CONFIG_EXCLUDE_ENV);
+            }
+
             ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
             String value = config.getString(CONFIG_REGION);
 
