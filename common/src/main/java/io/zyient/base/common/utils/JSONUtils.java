@@ -38,7 +38,7 @@ public class JSONUtils {
         return mapper;
     }
 
-    public static byte[] asBytes(@NonNull Object obj, @NonNull Class<?> type) throws JsonProcessingException {
+    public static byte[] asBytes(@NonNull Object obj) throws JsonProcessingException {
         String json = mapper.writeValueAsString(obj);
         if (!Strings.isNullOrEmpty(json)) {
             return json.getBytes(Charset.defaultCharset());
@@ -46,8 +46,14 @@ public class JSONUtils {
         return null;
     }
 
-    public static String asString(@NonNull Object obj, @NonNull Class<?> type) throws JsonProcessingException {
+    public static String asString(@NonNull Object obj) throws JsonProcessingException {
         return mapper.writeValueAsString(obj);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Map<String, Object> asMap(@NonNull Object obj) throws JsonProcessingException {
+        String json = asString(obj);
+        return read(json, Map.class);
     }
 
     public static <T> T read(byte[] data, Class<? extends T> type) throws Exception {
@@ -101,7 +107,7 @@ public class JSONUtils {
         if (client.checkExists().forPath(path) == null) {
             client.create().forPath(path);
         }
-        byte[] data = asBytes(value, value.getClass());
+        byte[] data = asBytes(value);
         client.setData().forPath(path, data);
     }
 

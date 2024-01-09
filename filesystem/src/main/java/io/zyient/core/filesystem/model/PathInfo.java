@@ -122,6 +122,8 @@ public abstract class PathInfo {
 
     public abstract long size() throws IOException;
 
+    public abstract String uri() throws IOException;
+
     public Map<String, String> pathConfig() {
         Map<String, String> config = new HashMap<>();
         config.put(CONFIG_KEY_TYPE, getClass().getCanonicalName());

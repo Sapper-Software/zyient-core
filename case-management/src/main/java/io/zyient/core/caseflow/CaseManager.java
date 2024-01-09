@@ -185,7 +185,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             if (change instanceof String) {
                 json = (String) change;
             } else
-                json = JSONUtils.asString(change, change.getClass());
+                json = JSONUtils.asString(change);
         }
         CaseHistoryId id = new CaseHistoryId();
         id.setCaseId(caseId.getId());

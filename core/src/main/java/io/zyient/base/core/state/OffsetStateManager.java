@@ -203,7 +203,7 @@ public abstract class OffsetStateManager<T extends Offset> {
                     if (client.checkExists().forPath(zp) == null) {
                         client.create().creatingParentContainersIfNeeded().forPath(zp);
                     }
-                    client.setData().forPath(zp, JSONUtils.asBytes(current, offsetType));
+                    client.setData().forPath(zp, JSONUtils.asBytes(current));
 
                     return current;
                 } finally {
@@ -244,7 +244,7 @@ public abstract class OffsetStateManager<T extends Offset> {
                     offset.setTimeUpdated(System.currentTimeMillis());
                     offset.setLastUpdatedBy(env.moduleInstance());
                     offset.getOffset().setTimeUpdated(System.currentTimeMillis());
-                    client.setData().forPath(zp, JSONUtils.asBytes(offset, offset.getClass()));
+                    client.setData().forPath(zp, JSONUtils.asBytes(offset));
 
                     return offset;
                 } finally {

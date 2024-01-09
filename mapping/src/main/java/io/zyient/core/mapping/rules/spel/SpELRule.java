@@ -105,7 +105,7 @@ public class SpELRule<T> extends BaseRule<T> {
                 if (!r) {
                     if (getRuleType() == RuleType.Validation) {
                         if (DefaultLogger.isTraceEnabled()) {
-                            String json = JSONUtils.asString(data, data.getClass());
+                            String json = JSONUtils.asString(data);
                             throw new RuleValidationError(name(),
                                     entityType(),
                                     getRuleType().name(),
@@ -130,7 +130,7 @@ public class SpELRule<T> extends BaseRule<T> {
             } else if (response != null) {
                 MappingReflectionHelper.setProperty(target, property, data, response);
             } else if (DefaultLogger.isTraceEnabled()) {
-                String json = JSONUtils.asString(data, data.getClass());
+                String json = JSONUtils.asString(data);
                 DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
             }
             return response;

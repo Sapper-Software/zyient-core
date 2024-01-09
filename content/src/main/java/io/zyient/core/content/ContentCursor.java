@@ -17,7 +17,6 @@
 package io.zyient.core.content;
 
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.Reader;
 import io.zyient.core.filesystem.model.FileInode;
@@ -32,11 +31,10 @@ import java.util.Map;
 
 public interface ContentCursor<E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> {
 
-    @SuppressWarnings("unchecked")
     static <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> fetch(@NonNull Document<E, K, D> doc,
                                                                                                              @NonNull FileSystem fileSystem) throws DataStoreException {
         try {
-            Map<String, String> map = JSONUtils.read(doc.getUri(), Map.class);
+            Map<String, String> map = doc.pathConfig();
             PathInfo pi = fileSystem.parsePathInfo(map);
             FileInode fi = (FileInode) fileSystem.getInode(pi);
             if (fi == null) {

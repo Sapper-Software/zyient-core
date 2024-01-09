@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 public class AWSKeyStore extends KeyStore {
+
     private enum KeyState {
         New, Updated, Synced, Deleted
     }
@@ -76,6 +77,9 @@ public class AWSKeyStore extends KeyStore {
     private Map<String, Key> keys;
     private long fetchedTimestamp = 0;
     private long cacheTimeout = CACHE_TIMEOUT;
+    private  static  String CONFIG_EXCLUDE_ENV = "excludeEnv";
+
+    private boolean excludeEnv;
 
 
     @Override
@@ -86,8 +90,10 @@ public class AWSKeyStore extends KeyStore {
             config = configNode.configurationAt(__CONFIG_PATH);
             Preconditions.checkNotNull(config);
             name = config.getString(CONFIG_NAME);
+            excludeEnv = config.getBoolean(CONFIG_EXCLUDE_ENV);
             ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
             String value = config.getString(CONFIG_REGION);
+
             ConfigReader.checkStringValue(value, getClass(), CONFIG_REGION);
             Region region = Region.of(value);
             client = SecretsManagerClient.builder()
@@ -97,7 +103,10 @@ public class AWSKeyStore extends KeyStore {
             if (!Strings.isNullOrEmpty(s)) {
                 cacheTimeout = Long.parseLong(s);
             }
-            bucket = String.format("%s/%s", env.name(), name);
+            bucket = name;
+            if(!excludeEnv) {
+                bucket = String.format("%s/%s", env.name(), name);
+            }
             fetch();
             Key key = keys.get(DEFAULT_KEY);
             password = key.getValue();
@@ -257,7 +266,7 @@ public class AWSKeyStore extends KeyStore {
                         keys.put(name, value);
                     }
                 }
-                String value = JSONUtils.asString(keys, Map.class);
+                String value = JSONUtils.asString(keys);
                 UpdateSecretRequest  secretRequest = UpdateSecretRequest.builder()
                         .secretId(bucket)
                         .description(String.format("[keyStore=%s] Saved secret. [name=%s]", this.name, bucket))

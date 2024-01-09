@@ -9,6 +9,7 @@ import lombok.experimental.Accessors;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,7 +56,20 @@ public class MapPropertyDef extends PropertyDef {
                 throw new Exception(String.format("Invalid Map TypeRefs: missing ref [%s]. [field=%s]",
                         REF_NAME_KEY, field.getName()));
             }
+            updateKeyType(keyRef.type());
+            TypeRef valueRef = findRef(REF_NAME_VALUE, refs);
+            if (valueRef == null) {
+                throw new Exception(String.format("Invalid Map TypeRefs: missing ref [%s]. [field=%s]",
+                        REF_NAME_VALUE, field.getName()));
+            }
+            updateValueType(valueRef.type());
+        } else {
+            updateKeyType(Object.class);
+            updateValueType(Object.class);
         }
+        valueType.getter(findGet());
+        valueType.setter(findPut());
+
         return this;
     }
 
@@ -66,14 +80,31 @@ public class MapPropertyDef extends PropertyDef {
         } else if (!type.equals(Object.class)) {
             ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__list_inner", type);
+            def.from("__map_key", type);
             keyType = def;
         } else {
             keyType = new PropertyDef();
             keyType.type(Object.class);
         }
-        keyType.name("__list_inner");
+        keyType.name("__map_key");
         keyType.generic(true);
+    }
+
+    private void updateValueType(Class<?> type) throws Exception {
+        if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
+            valueType = new PropertyDef(type);
+            valueType.accessible(false);
+        } else if (!type.equals(Object.class)) {
+            ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
+                    .owner(owner());
+            def.from("__map_value", type);
+            valueType = def;
+        } else {
+            valueType = new PropertyDef();
+            keyType.type(Object.class);
+        }
+        valueType.name("__map_value");
+        valueType.generic(true);
     }
 
     private TypeRef findRef(String name, TypeRefs refs) {
@@ -84,4 +115,49 @@ public class MapPropertyDef extends PropertyDef {
         }
         return null;
     }
+
+    private Method findPut() {
+        for (Method method : methods) {
+            if (method.getName().compareTo("put") == 0) {
+                Parameter[] params = method.getParameters();
+                if (params != null && params.length == 2) {
+                    Parameter p = params[0];
+                    Class<?> pt = p.getType();
+                    boolean keyMatch = false;
+                    if (pt.equals(Object.class) || keyType.type().isAssignableFrom(pt)) {
+                        if (Modifier.isPublic(method.getModifiers())) {
+                            keyMatch = true;
+                        }
+                    }
+                    if (keyMatch) {
+                        p = params[1];
+                        pt = p.getType();
+                        if (pt.equals(Object.class) || valueType.type().isAssignableFrom(pt)) {
+                            return method;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Method findGet() {
+        for (Method method : methods) {
+            if (method.getName().compareTo("get") == 0) {
+                Parameter[] params = method.getParameters();
+                if (params != null && params.length == 1) {
+                    Parameter p = params[0];
+                    Class<?> pt = p.getType();
+                    if (pt.equals(Object.class) || pt.equals(keyType.type())) {
+                        if (Modifier.isPublic(method.getModifiers())) {
+                            return method;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }
+

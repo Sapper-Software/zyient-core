@@ -195,7 +195,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 }
                 SolrJsonEntity je = new SolrJsonEntity();
                 je.setId(entity.entityKey().stringKey());
-                je.setJson(JSONUtils.asString(entity, entity.getClass()));
+                je.setJson(JSONUtils.asString(entity));
                 je.setCreatedTime(createdTimestamp);
                 je.setUpdatedTime(updatedTimestamp);
 
@@ -426,7 +426,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
             ur.setParam("json.command", "false");
         if (mime.compareToIgnoreCase(FileUtils.MIME_TYPE_XML) == 0)
             ur.setParam("xml.command", "false");
-        String json = JSONUtils.asString(entity, entity.getClass());
+        String json = JSONUtils.asString(entity);
         ur.setParam(LITERALS_PREFIX + SolrConstants.FIELD_SOLR_JSON_DATA, json);
         if (entity.getProperties() != null) {
             Map<String, Object> properties = entity.getProperties();

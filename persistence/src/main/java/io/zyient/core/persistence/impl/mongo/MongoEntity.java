@@ -139,14 +139,14 @@ public abstract class MongoEntity<K extends IKey> implements IEntity<K>, Version
     }
 
     public void postLoad() throws Exception {
-        String json = JSONUtils.asString(this, getClass());
+        String json = JSONUtils.asString(this);
         objectHash = ChecksumUtils.generateHash(json);
         state.setState(EEntityState.Synced);
     }
 
     public void preSave() throws Exception {
         validate();
-        String json = JSONUtils.asString(this, getClass());
+        String json = JSONUtils.asString(this);
         String hash = ChecksumUtils.generateHash(json);
         if (state.getState() == EEntityState.New || Strings.isNullOrEmpty(objectHash)) {
             objectHash = hash;

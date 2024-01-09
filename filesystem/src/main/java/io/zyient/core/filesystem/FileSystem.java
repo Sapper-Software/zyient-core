@@ -278,7 +278,7 @@ public abstract class FileSystem implements Closeable {
             di.setZkPath(path);
             di.setPath("/");
 
-            client.setData().forPath(path, JSONUtils.asBytes(di, DirectoryInode.class));
+            client.setData().forPath(path, JSONUtils.asBytes(di));
             domains.put(container.getDomain(), di);
         }
         Preconditions.checkNotNull(di);
@@ -333,7 +333,7 @@ public abstract class FileSystem implements Closeable {
         try {
             CuratorFramework client = zkConnection.client();
             try {
-                client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode, inode.getClass()));
+                client.setData().forPath(inode.getZkPath(), JSONUtils.asBytes(inode));
             } catch (Exception ex) {
                 throw new IOException(ex);
             }
@@ -499,7 +499,7 @@ public abstract class FileSystem implements Closeable {
                                 di.setZkPath(zpath);
                                 di.setPathInfo(pi);
 
-                                client.setData().forPath(zpath, JSONUtils.asBytes(di, DirectoryInode.class));
+                                client.setData().forPath(zpath, JSONUtils.asBytes(di));
                                 return di;
                             }
                         } else {
@@ -516,7 +516,7 @@ public abstract class FileSystem implements Closeable {
                             fi.setPathInfo(pi);
                             fi.setCompressed(settings.isCompressed());
                             fi.getState().setState(EFileState.New);
-                            client.setData().forPath(zpath, JSONUtils.asBytes(fi, FileInode.class));
+                            client.setData().forPath(zpath, JSONUtils.asBytes(fi));
                             return fi;
                         }
                     } finally {
@@ -550,7 +550,7 @@ public abstract class FileSystem implements Closeable {
                             dnode.setZkPath(zpath);
                             dnode.setPathInfo(pi);
 
-                            client.setData().forPath(zpath, JSONUtils.asBytes(dnode, DirectoryInode.class));
+                            client.setData().forPath(zpath, JSONUtils.asBytes(dnode));
                         } finally {
                             lock.unlock();
                         }

@@ -266,7 +266,7 @@ public abstract class BaseStateManager implements Closeable {
         if (client.checkExists().forPath(zkPath) == null) {
             client.create().creatingParentContainersIfNeeded().forPath(zkPath);
         }
-        client.setData().forPath(zkPath, JSONUtils.asBytes(settings, settings.getClass()));
+        client.setData().forPath(zkPath, JSONUtils.asBytes(settings));
     }
 
     @SuppressWarnings("unchecked")
@@ -395,7 +395,7 @@ public abstract class BaseStateManager implements Closeable {
             client.create().creatingParentContainersIfNeeded().forPath(path);
         }
         offset.setTimeUpdated(System.currentTimeMillis());
-        client.setData().forPath(path, JSONUtils.asBytes(offset, offset.getClass()));
+        client.setData().forPath(path, JSONUtils.asBytes(offset));
         return offset;
     }
 
@@ -439,7 +439,7 @@ public abstract class BaseStateManager implements Closeable {
                 }
                 heartbeat.setTimestamp(System.currentTimeMillis());
                 heartbeat.setModule(moduleInstance);
-                String json = JSONUtils.asString(heartbeat, Heartbeat.class);
+                String json = JSONUtils.asString(heartbeat);
                 client.setData().forPath(path, json.getBytes(StandardCharsets.UTF_8));
 
                 return heartbeat;
@@ -467,7 +467,7 @@ public abstract class BaseStateManager implements Closeable {
                     hb.setModule(moduleInstance);
                     hb.setState(state);
 
-                    String json = JSONUtils.asString(hb, Heartbeat.class);
+                    String json = JSONUtils.asString(hb);
                     client.setData().forPath(path, json.getBytes(StandardCharsets.UTF_8));
 
                     return hb;

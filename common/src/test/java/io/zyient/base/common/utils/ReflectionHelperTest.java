@@ -124,7 +124,7 @@ class ReflectionHelperTest {
                     ReflectionHelper.getFieldValue(te, String.format("objects(%s).values[%d]", key, jj));
                 }
             }
-            System.out.println(JSONUtils.asString(te, te.getClass()));
+            System.out.println(JSONUtils.asString(te));
         } catch (Exception ex) {
             ex.printStackTrace();
             fail(ex);

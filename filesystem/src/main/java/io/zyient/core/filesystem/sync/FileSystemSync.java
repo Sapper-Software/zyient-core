@@ -121,7 +121,7 @@ public abstract class FileSystemSync implements Closeable, Runnable {
 
     protected FileSystemSyncState save(@NonNull FileSystemSyncState state) throws Exception {
         state.setTimeUpdated(System.currentTimeMillis());
-        String json = JSONUtils.asString(state, state.getClass());
+        String json = JSONUtils.asString(state);
         CuratorFramework client = connection.client();
         String path = getStatePath();
         if (client.checkExists().forPath(path) == null) {

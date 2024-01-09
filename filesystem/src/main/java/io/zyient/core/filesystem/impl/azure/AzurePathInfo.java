@@ -119,6 +119,15 @@ public class AzurePathInfo extends LocalPathInfo {
         return config;
     }
 
+    @Override
+    public String uri() throws IOException {
+        AzureFileSystemSettings settings = (AzureFileSystemSettings) fs().settings();
+        return String.format("abfs://%s@%s.dfs.core.windows.net/%s",
+                container,
+                settings.getClientSettings().getAuthAccount(),
+                fsPath());
+    }
+
     /**
      * Returns a string representation of the object. In general, the
      * {@code toString} method returns a string that

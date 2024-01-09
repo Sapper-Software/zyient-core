@@ -84,7 +84,7 @@ public abstract class Settings {
                             Class<?> t = (Class<?>) v;
                             values.put(config.name(), t.getCanonicalName());
                         } else {
-                            String json = JSONUtils.asString(v, v.getClass());
+                            String json = JSONUtils.asString(v);
                             values.put(config.name(), json);
                         }
                     } else

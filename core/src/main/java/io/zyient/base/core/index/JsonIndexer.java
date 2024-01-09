@@ -22,6 +22,6 @@ import lombok.NonNull;
 public class JsonIndexer implements Indexer<Object> {
     @Override
     public String index(@NonNull Object value) throws Exception {
-        return JSONUtils.asString(value, value.getClass());
+        return JSONUtils.asString(value);
     }
 }

@@ -11,12 +11,15 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClassDefTest {
     public static interface Dated {
         Date getDate();
+
+        String getName();
     }
 
     @Getter
@@ -25,11 +28,23 @@ class ClassDefTest {
     public static class Nested implements Dated {
         private String name;
         private Date date;
+        @TypeRefs(refs = {
+                @TypeRef(value = MapPropertyDef.REF_NAME_KEY, type = String.class),
+                @TypeRef(value = MapPropertyDef.REF_NAME_VALUE, type = Dated.class)
+        })
+        private Map<String, Dated> dates;
 
         @Override
         public Date getDate() {
             return date;
         }
+
+        @Override
+        public String getName() {
+            return name;
+        }
+
+
     }
 
     @Getter
@@ -50,7 +65,7 @@ class ClassDefTest {
     @Test
     void findSetter() {
         try {
-            ClassDef def = new ClassDef().from(Outer.class);
+            ClassDef def = BeanUtils.get(Outer.class);
             Field[] fields = ReflectionHelper.getAllFields(Outer.class);
             assertNotNull(fields);
             for (Field field : fields) {
@@ -69,7 +84,7 @@ class ClassDefTest {
     @Test
     void findGetter() {
         try {
-            ClassDef def = new ClassDef().from(Outer.class);
+            ClassDef def = BeanUtils.get(Outer.class);
             Field[] fields = ReflectionHelper.getAllFields(Outer.class);
             assertNotNull(fields);
             for (Field field : fields) {

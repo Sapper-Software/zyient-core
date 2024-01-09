@@ -274,7 +274,7 @@ public class ConnectionManager implements Closeable {
                 client.create().creatingParentsIfNeeded().forPath(path);
             }
             connection.settings().setSource(ESettingsSource.ZooKeeper);
-            String json = JSONUtils.asString(connection.settings(), connection.settings().getClass());
+            String json = JSONUtils.asString(connection.settings());
             client.setData().forPath(path, json.getBytes(StandardCharsets.UTF_8));
             path = new PathUtils.ZkPathBuilder(basePath)
                     .withPath(Constants.PATH_ZK_CLASS)

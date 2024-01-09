@@ -42,7 +42,7 @@ public class ErrorKey implements IKey {
     @Override
     public String stringKey() {
         try {
-            return JSONUtils.asString(this, getClass());
+            return JSONUtils.asString(this);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new RuntimeException(ex);
