@@ -29,8 +29,7 @@ public class AWSKeyStoreTest {
     void read() {
         try {
 
-            System.setProperty("aws.accessKeyId","AKIA6AV5XLXV7QNLEYZ2");
-            System.setProperty("aws.secretAccessKey","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");
+
             String keyName = "test";
             String keyValue = "test1234";
             String password = "testasb";
