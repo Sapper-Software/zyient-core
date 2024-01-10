@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
 import io.zyient.base.common.model.PropertyModel;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import lombok.NonNull;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -709,25 +710,14 @@ public class ReflectionHelper {
      *
      * @param value    - String value to set.
      * @param source   - Object to set the attribute value.
-     * @param type     - Class type to set property for.
      * @param property - Property to set.
-     * @return - True if value was set.
+     * @return - Parsed object value from String.
      */
-    public static boolean setValueFromString(@NonNull String value,
-                                             @NonNull Object source,
-                                             @NonNull Class<?> type,
-                                             @NonNull String property) {
+    public static Object setValueFromString(@NonNull String value,
+                                            @NonNull Object source,
+                                            @NonNull String property) throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
-        Field f = findField(type, property);
-        if (f != null) {
-            try {
-                setValueFromString(value, source, f);
-                return true;
-            } catch (ReflectionException re) {
-                DefaultLogger.error(re.getLocalizedMessage(), re);
-            }
-        }
-        return false;
+        return BeanUtils.setValueFromString(source, property, value);
     }
 
     /**
@@ -1081,35 +1071,17 @@ public class ReflectionHelper {
     /**
      * Set the value of the specified field in the object to the value passed.
      *
-     * @param o        - Object to set value for.
+     * @param target   - Object to set value for.
      * @param property - Property name to set value for.
-     * @param type     - Class type
      * @param value    - Value to set to.
-     * @return - True, if value set.
      * @throws Exception
      */
-    public static boolean setObjectValue(@NonNull Object o,
-                                         @NonNull String property,
-                                         @NonNull Class<?> type,
-                                         Object value)
+    public static void setObjectValue(@NonNull Object target,
+                                      @NonNull String property,
+                                      Object value)
             throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
-
-        Field f = type.getField(property);
-        String method = "set" + StringUtils.capitalize(f.getName());
-        Method m = MethodUtils.getAccessibleMethod(o.getClass(), method,
-                f.getType());
-        if (m == null) {
-            method = f.getName();
-            m = MethodUtils.getAccessibleMethod(o.getClass(), method,
-                    f.getType());
-        }
-
-        if (m == null)
-            return false;
-
-        MethodUtils.invokeMethod(o, method, value);
-        return true;
+        BeanUtils.setValue(target, property, value);
     }
 
     /**

@@ -117,6 +117,30 @@ public class BeanUtils {
         }
     }
 
+    public static Object setValueFromString(@NonNull Object target,
+                                            @NonNull String path,
+                                            @NonNull String value) throws Exception {
+        ClassDef def = get(target.getClass());
+        FieldBuilder builder = new FieldBuilder(path);
+        Object current = target;
+        while (true) {
+            FieldDef fd = builder.next();
+            PropertyDef property = def.get(fd.name);
+            if (property == null) {
+                throw new Exception(String.format("Property not found. [type=%s][property=%s]",
+                        def.type().getCanonicalName(), fd.name));
+            }
+            if (!builder.hasNext()) {
+                Object v = ReflectionHelper.parseStringValue(property.type(), value);
+                setValue(current, fd, property, v);
+                return v;
+            } else {
+                current = setValue(current, fd, property, null);
+                def = get(current.getClass());
+            }
+        }
+    }
+
     private static Object setValue(Object target, FieldDef fd, PropertyDef pd, Object value) throws Exception {
         Method setter = pd.setter();
         if (setter == null) {

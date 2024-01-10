@@ -1,6 +1,7 @@
 package io.zyient.base.common.utils.beans;
 
 import com.google.common.base.Strings;
+import io.zyient.base.common.model.EReaderType;
 import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClassDefTest {
-    public static interface Dated {
+    public interface Dated {
         Date getDate();
 
         void setDate(Date date);
@@ -36,6 +37,7 @@ class ClassDefTest {
                 @TypeRef(value = MapPropertyDef.REF_NAME_VALUE, type = Nested.class)
         })
         private Map<String, Dated> dates;
+        private EReaderType type;
 
         @Override
         public Date getDate() {
@@ -121,6 +123,7 @@ class ClassDefTest {
                 for (int jj = 0; jj < 5; jj++) {
                     BeanUtils.setValue(outer, "nested[" + ii + "].dates(KEY-" + jj + ").name", "NESTED-KEY-" + jj);
                     BeanUtils.setValue(outer, "nested[" + ii + "].dates(KEY-" + jj + ").date", new Date(System.currentTimeMillis()));
+                    BeanUtils.setValueFromString(outer, "nested[" + ii + "].dates(KEY-" + jj + ").type", EReaderType.HTTPS.name());
                 }
             }
             assertEquals(3, outer.nested.size());
