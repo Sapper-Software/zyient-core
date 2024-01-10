@@ -103,7 +103,7 @@ public class ListPropertyDef extends PropertyDef {
                 if (params != null && params.length == 1) {
                     Parameter p = params[0];
                     Class<?> pt = p.getType();
-                    if (pt.equals(Integer.class)) {
+                    if (ReflectionHelper.isInt(pt)) {
                         if (Modifier.isPublic(method.getModifiers())) {
                             return method;
                         }
@@ -113,4 +113,6 @@ public class ListPropertyDef extends PropertyDef {
         }
         return null;
     }
+
+
 }

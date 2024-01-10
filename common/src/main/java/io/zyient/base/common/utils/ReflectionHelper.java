@@ -564,7 +564,7 @@ public class ReflectionHelper {
 
     public static <T> boolean isGeneric(@NonNull Class<T> type) {
         TypeVariable<Class<T>>[] parans = type.getTypeParameters();
-        return (parans != null && parans.length > 0);
+        return parans.length > 0;
     }
 
     public static boolean isMap(@NonNull Field field) {
@@ -808,6 +808,8 @@ public class ReflectionHelper {
                 ret = asClass(value);
             } else if (isChar(type)) {
                 ret = asChar(value);
+            } else if (type.equals(String.class)) {
+                ret = String.valueOf(value);
             }
         } else if (type.isEnum()) {
             ret = asEnum(value, (Class<? extends Enum<?>>) type);

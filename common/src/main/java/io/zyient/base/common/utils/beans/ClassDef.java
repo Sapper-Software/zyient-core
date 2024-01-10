@@ -9,10 +9,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +25,15 @@ public class ClassDef {
     private Boolean abstractType = null;
     private Boolean generic = null;
     private List<Method> methods;
+    private List<Constructor<?>> constructors;
+    private Constructor<?> emptyConstructor;
+
+    public PropertyDef get(@NonNull String name) {
+        if (properties != null) {
+            return properties.get(name);
+        }
+        return null;
+    }
 
     public ClassDef from(@NonNull Class<?> clazz) throws Exception {
         Preconditions.checkNotNull(type);
@@ -37,7 +43,18 @@ public class ClassDef {
         generic = ReflectionHelper.isGeneric(clazz);
         methods = new ArrayList<>();
         ReflectionHelper.getAllMethods(clazz, methods);
-
+        if (!abstractType) {
+            Constructor<?>[] ctors = clazz.getConstructors();
+            constructors = new ArrayList<>(ctors.length);
+            for (Constructor<?> ctor : ctors) {
+                if (ctor.getParameters() == null || ctor.getParameters().length == 0) {
+                    if (Modifier.isPublic(ctor.getModifiers())) {
+                        emptyConstructor = ctor;
+                    }
+                }
+                constructors.add(ctor);
+            }
+        }
         Field[] fields = ReflectionHelper.getAllFields(clazz);
         if (fields != null) {
             properties = new HashMap<>();
@@ -135,5 +152,31 @@ public class ClassDef {
             return true;
         }
         return field.compareTo(method.getName()) == 0;
+    }
+
+    public Constructor<?> getConstructor(Parameter... parameters) {
+        if (parameters == null) {
+            return emptyConstructor;
+        } else {
+            for (Constructor<?> ctor : constructors) {
+                if (checkParameters(ctor, parameters)) {
+                    return ctor;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean checkParameters(Constructor<?> ctor, Parameter... parameters) {
+        Parameter[] params = ctor.getParameters();
+        if (params.length == parameters.length) {
+            for (int ii = 0; ii < parameters.length; ii++) {
+                if (!parameters[ii].equals(params[ii])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

@@ -7,6 +7,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,5 +52,15 @@ public class ClassPropertyDef extends PropertyDef {
 
     public ClassPropertyDef from(@NonNull Field field) throws Exception {
         return from(field.getName(), field.getType());
+    }
+
+    @Override
+    public boolean canInitialize() {
+        if (!abstractType()) {
+            if (clazz.emptyConstructor() != null) {
+                return Modifier.isPublic(clazz.emptyConstructor().getModifiers());
+            }
+        }
+        return false;
     }
 }

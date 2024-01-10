@@ -5,9 +5,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.apache.commons.lang3.reflect.ConstructorUtils;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
@@ -51,12 +49,7 @@ public class PropertyDef {
             abstractType = Modifier.isAbstract(type.getModifiers());
         }
         if (!abstractType) {
-            if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-                return true;
-            } else {
-                Constructor<?> ctor = ConstructorUtils.getAccessibleConstructor(type);
-                return (ctor != null);
-            }
+            return ReflectionHelper.isPrimitiveTypeOrString(type);
         }
         return false;
     }

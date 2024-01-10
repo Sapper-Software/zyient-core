@@ -149,7 +149,7 @@ public class MapPropertyDef extends PropertyDef {
                 if (params != null && params.length == 1) {
                     Parameter p = params[0];
                     Class<?> pt = p.getType();
-                    if (pt.equals(Object.class) || pt.equals(keyType.type())) {
+                    if (pt.equals(Object.class) || keyType.type().isAssignableFrom(pt)) {
                         if (Modifier.isPublic(method.getModifiers())) {
                             return method;
                         }
