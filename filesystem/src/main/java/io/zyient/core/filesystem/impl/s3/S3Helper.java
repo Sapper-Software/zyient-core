@@ -128,8 +128,7 @@ public class S3Helper {
                     throw new IOException(mesg);
                 }
             }
-        } catch (
-                Throwable t) {
+        } catch (Throwable t) {
             throw new IOException(String.format("Delete failed. [bucket=%s][path=%s]",
                     bucket, path), t);
         }
