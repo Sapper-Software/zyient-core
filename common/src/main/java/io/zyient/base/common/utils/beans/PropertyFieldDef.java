@@ -61,9 +61,9 @@ public class PropertyFieldDef extends PropertyDef {
         return this;
     }
 
-    private Method findSetValue(List<Method> methods) {
+    private Method findGetValue(List<Method> methods) {
         for (Method method : methods) {
-            if (method.getName().compareTo(METHOD_SET_PROPERTY) == 0) {
+            if (method.getName().compareTo(METHOD_GET_PROPERTY) == 0) {
                 Parameter[] params = method.getParameters();
                 if (params != null && params.length == 1) {
                     Parameter p = params[0];
@@ -78,9 +78,9 @@ public class PropertyFieldDef extends PropertyDef {
         return null;
     }
 
-    private Method findGetValue(List<Method> methods) {
+    private Method findSetValue(List<Method> methods) {
         for (Method method : methods) {
-            if (method.getName().compareTo(METHOD_GET_PROPERTY) == 0) {
+            if (method.getName().compareTo(METHOD_SET_PROPERTY) == 0) {
                 Parameter[] params = method.getParameters();
                 if (params != null && params.length == 2) {
                     if (Modifier.isPublic(method.getModifiers())) {

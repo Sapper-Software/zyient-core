@@ -17,6 +17,9 @@
 package io.zyient.core.mapping;
 
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.beans.MapPropertyDef;
+import io.zyient.base.common.utils.beans.TypeRef;
+import io.zyient.base.common.utils.beans.TypeRefs;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Test;
@@ -52,12 +55,17 @@ class RuleElementTest {
     private static class RuleTest {
         private String name;
         private double value;
+        @TypeRef(type = Nested.class)
         private List<Nested> nested;
+        @TypeRefs(refs = {
+                @TypeRef(value = MapPropertyDef.REF_NAME_KEY, type = String.class),
+                @TypeRef(value = MapPropertyDef.REF_NAME_VALUE, type = Nested.class)
+        })
         private Map<String, Nested> map;
 
         public RuleTest() {
             Random rnd = new Random(System.nanoTime());
-            int count = rnd.nextInt(10);
+            int count = rnd.nextInt(1, 10);
             nested = new ArrayList<>(count);
             map = new HashMap<>(count);
             name = UUID.randomUUID().toString();

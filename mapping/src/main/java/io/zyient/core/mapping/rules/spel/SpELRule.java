@@ -50,7 +50,7 @@ public class SpELRule<T> extends BaseRule<T> {
     private void normalizeRule() throws Exception {
         String r = expression();
         Map<String, String> fields = MappingReflectionHelper.extractFields(r);
-        if (!fields.isEmpty()) {
+        if (fields != null && !fields.isEmpty()) {
             for (String exp : fields.keySet()) {
                 String var = fields.get(exp);
                 if (MappingReflectionHelper.isPropertyPrefixed(var)

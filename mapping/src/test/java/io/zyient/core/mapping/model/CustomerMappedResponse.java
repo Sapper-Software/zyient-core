@@ -16,8 +16,11 @@
 
 package io.zyient.core.mapping.model;
 
+import io.zyient.core.mapping.annotations.EntityRef;
+
 import java.util.Map;
 
+@EntityRef(type = CustomersEntity.class)
 public class CustomerMappedResponse extends MappedResponse<CustomersEntity> {
     public CustomerMappedResponse(Map<String, Object> source) {
         super(source);

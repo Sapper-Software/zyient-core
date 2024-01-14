@@ -80,6 +80,8 @@ public class ClassPropertyDef extends PropertyDef {
         if (index == parts.length - 1) {
             if (name.compareTo(name()) == 0) {
                 return this;
+            } else if (properties.containsKey(name)) {
+                return properties.get(name);
             }
         } else {
             if (properties != null && properties.containsKey(name)) {
