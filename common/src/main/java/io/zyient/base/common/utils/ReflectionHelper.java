@@ -26,7 +26,6 @@ import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.common.utils.beans.ClassDef;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import lombok.NonNull;
-import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 
@@ -106,127 +105,6 @@ public class ReflectionHelper {
         }
     }
 
-    public static Object getFieldValue(@NonNull Object source,
-                                       @NonNull String field) throws Exception {
-        return PropertyUtils.getProperty(source, field);
-    }
-
-
-    private static KeyValuePair<String, String> extractListFieldInfo(String name) {
-        int s = name.indexOf("[");
-        int e = name.indexOf("]");
-        if (s > 0 && e > s) {
-            String f = name.substring(0, s).trim();
-            String v = name.substring(s + 1, e).trim();
-            return new KeyValuePair<>(f, v);
-        }
-        return null;
-    }
-
-    private static KeyValuePair<String, String> extractMapFieldInfo(String name) {
-        int s = name.indexOf("(");
-        int e = name.indexOf(")");
-        if (s > 0 && e > s) {
-            String f = name.substring(0, s).trim();
-            String v = name.substring(s + 1, e).trim();
-            return new KeyValuePair<>(f, v);
-        }
-        return null;
-    }
-
-    public static void setFieldValue(@NonNull Object value,
-                                     @NonNull Object source,
-                                     @NonNull String field) throws Exception {
-        PropertyUtils.setProperty(source, field, value);
-    }
-
-    private static Map<?, ?> initMapValue(Object target, Field field) throws Exception {
-        if (isMap(field)) {
-            Map<?, ?> map = null;
-            if (field.getType().equals(Map.class)) {
-                map = new HashMap<>();
-            } else {
-                map = (Map<?, ?>) field.getType()
-                        .getDeclaredConstructor()
-                        .newInstance();
-            }
-            setObjectValue(target, field, map);
-            return map;
-        }
-        throw new Exception(String.format("Invalid map type: [type=%s]",
-                field.getType().getCanonicalName()));
-    }
-
-    private static Collection<?> initCollectionValue(Object target, Field field) throws Exception {
-        if (isCollection(field)) {
-            Collection<?> collection = null;
-            if (implementsInterface(List.class, field.getType())) {
-                if (field.getType().equals(List.class)) {
-                    collection = new ArrayList<>();
-                } else {
-                    collection = (List<?>) field.getType()
-                            .getDeclaredConstructor()
-                            .newInstance();
-                }
-            } else if (implementsInterface(Set.class, field.getType())) {
-                if (field.getType().equals(Set.class)) {
-                    collection = new HashSet<>();
-                } else {
-                    collection = (Set<?>) field.getType()
-                            .getDeclaredConstructor()
-                            .newInstance();
-                }
-            }
-            if (collection != null) {
-                setObjectValue(target, field, collection);
-                return collection;
-            }
-        }
-        throw new Exception(String.format("Invalid collection type: [type=%s]",
-                field.getType().getCanonicalName()));
-    }
-
-    /**
-     * Get the value of the specified field from the object passed.
-     * This assumes standard bean Getters/Setters.
-     *
-     * @param o     - Object to get field value from.
-     * @param field - Field value to extract.
-     * @return - Field value.
-     * @throws Exception
-     */
-    public static Object getFieldValue(@NonNull Object o, @NonNull Field field) throws Exception {
-        return getFieldValue(o, field, false);
-    }
-
-    public static Object getFieldValue(@NonNull Object o, @NonNull Field field, boolean ignore)
-            throws Exception {
-        String method = "get" + StringUtils.capitalize(field.getName());
-
-        Method m = MethodUtils.getAccessibleMethod(o.getClass(), method);
-        if (m == null) {
-            method = field.getName();
-            m = MethodUtils.getAccessibleMethod(o.getClass(), method);
-        }
-
-        if (m == null) {
-            Class<?> type = field.getType();
-            if (type.equals(boolean.class) || type.equals(Boolean.class)) {
-                method = "is" + StringUtils.capitalize(field.getName());
-                m = MethodUtils.getAccessibleMethod(o.getClass(), method);
-            }
-        }
-
-        if (m == null)
-            if (!ignore)
-                throw new Exception("No accessible method found for field. [field="
-                        + field.getName() + "][class="
-                        + o.getClass().getCanonicalName() + "]");
-            else return null;
-
-        return MethodUtils.invokeMethod(o, method);
-    }
-
     public static PropertyDef findProperty(@NonNull Class<?> type,
                                            @NonNull String property) throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
@@ -234,30 +112,6 @@ public class ReflectionHelper {
         return def.findField(property);
     }
 
-
-    public static List<Method> findMethod(@NonNull Class<?> type,
-                                          @NonNull String name,
-                                          boolean includeStatic) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-        List<Method> methods = new ArrayList<>();
-        getAllMethods(type, methods);
-        if (!methods.isEmpty()) {
-            List<Method> result = new ArrayList<>();
-            for (Method method : methods) {
-                if (method.getName().equals(name)) {
-                    if (includeStatic) {
-                        result.add(method);
-                    } else if (!Modifier.isStatic(method.getModifiers())) {
-                        result.add(method);
-                    }
-                }
-            }
-            if (!result.isEmpty()) {
-                return result;
-            }
-        }
-        return null;
-    }
 
     public static void getAllMethods(@NonNull Class<?> type, @NonNull List<Method> methods) {
         methods.addAll(Arrays.asList(type.getDeclaredMethods()));
@@ -268,41 +122,6 @@ public class ReflectionHelper {
     }
 
 
-    /**
-     * Find the field with the specified name in this type or a parent type.
-     *
-     * @param type - Class to find the field in.
-     * @param name - Field name.
-     * @return - Found Field or NULL
-     */
-    public static Field findField(@NonNull Class<?> type,
-                                  @NonNull String name) {
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(name));
-
-        if (name.indexOf('.') > 0) {
-            String[] parts = name.split("\\.");
-            int index = 0;
-            Class<?> current = type;
-            Field f = null;
-            while (index < parts.length) {
-                f = findField(current, parts[index]);
-                if (f == null) break;
-                current = f.getType();
-                index++;
-            }
-            return f;
-        } else {
-            Field[] fields = getAllFields(type);
-            if (fields != null) {
-                for (Field field : fields) {
-                    if (field.getName().compareTo(name) == 0) {
-                        return field;
-                    }
-                }
-            }
-        }
-        return null;
-    }
 
     /**
      * Recursively get all the declared fields for a type.

@@ -20,6 +20,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.common.utils.beans.FixedPropertyDef;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.common.utils.beans.PropertyFieldDef;
@@ -172,7 +173,7 @@ public class MappingReflectionHelper {
             PropertyBag pb = (PropertyBag) entity;
             pb.setProperty(((FixedPropertyDef) property).key(), value);
         } else {
-            ReflectionHelper.setFieldValue(value, entity, field);
+            BeanUtils.setValue(entity, field, value);
         }
     }
 
@@ -200,7 +201,7 @@ public class MappingReflectionHelper {
                         entity.getClass().getCanonicalName()));
             }
         }
-        return ReflectionHelper.getFieldValue(entity, field);
+        return BeanUtils.getValue(entity, field);
     }
 
     @SuppressWarnings("unchecked")

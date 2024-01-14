@@ -30,7 +30,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -182,12 +181,12 @@ public class MapTransformer<T> {
         Class<?> currentType = type;
         while (index < parts.length - 1) {
             String name = parts[index];
-            Field f = ReflectionHelper.findField(currentType, name);
+            PropertyDef f = ReflectionHelper.findProperty(currentType, name);
             if (f == null) {
                 throw new Exception(String.format("Field not found. [type=%s][name=%s]",
                         currentType.getCanonicalName(), name));
             }
-            currentType = f.getType();
+            currentType = f.type();
             if (current.containsKey(name)) {
                 current = (Map<String, Object>) current.get(name);
             } else {
