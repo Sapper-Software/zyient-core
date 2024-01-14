@@ -61,6 +61,7 @@ public class ExcelReaderConfig extends InputReaderConfig {
 
     @Override
     public InputReader createInstance(@NonNull InputContentInfo contentInfo) throws Exception {
-        return null;
+        return new ExcelInputReader().contentInfo(contentInfo)
+                .settings(settings());
     }
 }

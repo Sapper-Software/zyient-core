@@ -18,13 +18,18 @@ package io.zyient.core.mapping.mapper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.core.model.PropertyBag;
 import io.zyient.core.mapping.model.CustomMappedElement;
+import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.MappedElement;
 import io.zyient.core.mapping.model.RegexMappedElement;
+import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.mapping.transformers.RegexTransformer;
 import io.zyient.core.mapping.transformers.Transformer;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -125,12 +130,12 @@ public class MapTransformer<T> {
         return source;
     }
 
-    public Map<String, Object> transform(@NonNull Map<String, Object> source) throws Exception {
+    public Map<String, Object> transform(@NonNull Map<String, Object> source, @NotNull Context context) throws Exception {
         Preconditions.checkState(!mapper.isEmpty());
         Map<String, Object> data = new HashMap<>();
         for (String key : mapper.keySet()) {
             MapNode node = mapper.get(key);
-            transform(source, node, data);
+            transform(source, node, data, context.params);
         }
         return data;
     }
@@ -138,37 +143,54 @@ public class MapTransformer<T> {
     @SuppressWarnings("unchecked")
     private void transform(Map<String, Object> source,
                            MapNode node,
-                           Map<String, Object> data) throws Exception {
+                           Map<String, Object> data, Map<String, Object> context) throws Exception {
         if (source.containsKey(node.name)) {
-            Object value = source.get(node.name);
-            if (value == null) {
-                if (!node.nullable) {
-                    throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
-                }
-                return;
-            }
-            if (!Strings.isNullOrEmpty(node.targetPath)) {
-                Map<String, Object> map = getTargetNode(data, node.targetPath);
-                String[] parts = node.targetPath.split("\\.");
-                String key = parts[parts.length - 1];
-                if (node.transformer != null) {
-                    value = node.transformer.read(value);
-                }
-                map.put(key, value);
-            } else {
-                if (!(value instanceof Map<?, ?>)) {
-                    throw new Exception(String.format("Invalid node type: Expected Map<String, Object> [type=%s]",
-                            value.getClass().getCanonicalName()));
-                }
-                if (node.nodes != null && !node.nodes.isEmpty()) {
-                    for (String key : node.nodes.keySet()) {
-                        transform((Map<String, Object>) value, node.nodes.get(key), data);
-                    }
-                }
-            }
+            findValueFromSourceOrContext(source, node, data);
+        }  else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
+            findValueFromSourceOrContext(context, node, data);
         } else {
             if (!node.nullable) {
                 throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
+            }
+        }
+    }
+
+    private void findValueFromSourceOrContext(Map<String, Object> sourceOrContext,
+                                              MapNode node,
+                                              Map<String, Object> data) throws Exception {
+        String fieldName = node.name;
+        Object value = null;
+        if (MappingReflectionHelper.isContextPrefixed(fieldName)) {
+            Context dummyContext = new Context();
+            dummyContext.setParams(sourceOrContext);
+            value = MappingReflectionHelper.getContextProperty(fieldName, dummyContext);
+        } else {
+            value = sourceOrContext.get(node.name);
+        }
+
+        if (value == null) {
+            if (!node.nullable) {
+                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
+            }
+            return;
+        }
+        if (!Strings.isNullOrEmpty(node.targetPath)) {
+            Map<String, Object> map = getTargetNode(data, node.targetPath);
+            String[] parts = node.targetPath.split("\\.");
+            String key = parts[parts.length - 1];
+            if (node.transformer != null) {
+                value = node.transformer.read(value);
+            }
+            map.put(key, value);
+        } else {
+            if (!(value instanceof Map<?, ?>)) {
+                throw new Exception(String.format("Invalid node type: Expected Map<String, Object> [type=%s]",
+                        value.getClass().getCanonicalName()));
+            }
+            if (node.nodes != null && !node.nodes.isEmpty()) {
+                for (String key : node.nodes.keySet()) {
+                    transform((Map<String, Object>) value, node.nodes.get(key), data, sourceOrContext);
+                }
             }
         }
     }
@@ -206,28 +228,31 @@ public class MapTransformer<T> {
         String source = element.getSourcePath();
         String[] parts = source.split("\\.");
         if (parts.length == 1) {
-            if (mapper.containsKey(parts[0])) {
-                return mapper.get(parts[0]);
+            String sourceKey  = String.format("%s%d",parts[0],element.getSequence());
+            if (mapper.containsKey(sourceKey)) {
+                return mapper.get(sourceKey);
             } else {
                 MapNode node = new MapNode();
                 node.name = parts[0];
                 node.targetPath = element.getTargetPath();
                 node.type = property.field().getType();
                 node.nullable = element.isNullable();
-                mapper.put(parts[0], node);
+                mapper.put(sourceKey, node);
                 return node;
             }
         } else {
             MapNode node = null;
             for (int ii = 0; ii < parts.length; ii++) {
-                String name = parts[ii];
+
+                String name  = parts[ii];
+                String sourceKey  = String.format("%s%d",name,element.getSequence());
                 if (node == null) {
-                    if (mapper.containsKey(name)) {
-                        node = mapper.get(name);
+                    if (mapper.containsKey(sourceKey)) {
+                        node = mapper.get(sourceKey);
                     } else {
                         node = new MapNode();
                         node.name = name;
-                        mapper.put(name, node);
+                        mapper.put(sourceKey, node);
                     }
                 } else {
                     if (ii == parts.length - 1) {
