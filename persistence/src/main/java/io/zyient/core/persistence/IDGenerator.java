@@ -18,7 +18,9 @@ package io.zyient.core.persistence;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.core.model.LongKey;
 import io.zyient.core.persistence.annotations.EGeneratedType;
 import io.zyient.core.persistence.annotations.GeneratedId;
 import jakarta.persistence.EmbeddedId;

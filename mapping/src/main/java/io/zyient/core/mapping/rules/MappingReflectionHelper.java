@@ -199,7 +199,10 @@ public class MappingReflectionHelper {
             throw new Exception(String.format("Cannot set value for Source. [field=%s]", field));
         }
         if (property instanceof ExtendedPropertyModel) {
-            PropertyBag pb = (PropertyBag) entity;
+            if (entity instanceof MappedResponse<?>) {
+                entity = ((MappedResponse<?>) entity).getEntity();
+            }
+            PropertyBag pb = (PropertyBag)  entity;
             pb.setProperty(((ExtendedPropertyModel) property).key(), value);
         } else {
             ReflectionHelper.setFieldValue(value, entity, field);

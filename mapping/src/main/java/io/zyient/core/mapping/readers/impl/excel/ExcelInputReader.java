@@ -32,6 +32,9 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -155,12 +158,37 @@ public class ExcelInputReader extends InputReader {
     }
 
     private Object getCellValue(Cell cell) {
-        return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue();
-            case BOOLEAN -> cell.getBooleanCellValue();
-            case NUMERIC -> cell.getNumericCellValue();
-            default -> null;
+        Object o = null;
+        switch (cell.getCellType()) {
+            case STRING:
+                o = cell.getStringCellValue();
+                break;
+            case BOOLEAN:
+                o = cell.getBooleanCellValue();
+                break;
+            case NUMERIC:
+                if (cell.getCellStyle().getDataFormatString() != null &&
+                        isDateValid(cell.getCellStyle().getDataFormatString())) {
+                    return cell.toString();
+                }
+                o = cell.getNumericCellValue();
+                break;
+        }
+
+        return o;
+    }
+
+    private boolean isDateValid(String dateStr) {
+        dateStr = dateStr.replace("\\", "");
+        String[] dateFormats = {
+                "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yyyy", "yyyy/MM/dd", "M/dd/yy", "MM/dd/yy", "MM/d/yy", "M/d/yy","M/d/yyyy"
         };
+        for (String format : dateFormats) {
+            if (format.equalsIgnoreCase(dateStr)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean checkHeaderRow(Map<String, Object> record, ExcelReaderSettings settings) {

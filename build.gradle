@@ -18,7 +18,6 @@ plugins {
     id 'idea'
     id 'org.owasp.dependencycheck' version '8.2.1'
 }
-
 repositories {
     mavenCentral()
     gradlePluginPortal()
@@ -214,11 +213,11 @@ subprojects {
         // https://mvnrepository.com/artifact/com.beust/jcommander
         implementation group: 'com.beust', name: 'jcommander', version: '1.82'
 
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.2'
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.2'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.3'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.3'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.3'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.3'
 
         // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
         implementation 'com.google.protobuf:protobuf-java:3.21.5'
