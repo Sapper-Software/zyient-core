@@ -17,11 +17,11 @@
 package io.zyient.core.mapping.rules.db;
 
 import com.google.common.base.Preconditions;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.MappingExecutor;
 import io.zyient.core.mapping.rules.*;
@@ -45,10 +45,10 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     @Setter
     @Accessors(fluent = true)
     protected static class FieldProperty {
-        private PropertyModel property;
+        private PropertyDef property;
         private String field;
 
-        public FieldProperty(PropertyModel property, String field) {
+        public FieldProperty(PropertyDef property, String field) {
             this.property = property;
             this.field = field;
         }
@@ -84,7 +84,7 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 int index = 0;
                 for (String key : fs.keySet()) {
                     String f = fs.get(key);
-                    PropertyModel field = MappingReflectionHelper.findField(f, entityType());
+                    PropertyDef field = MappingReflectionHelper.findField(f, entityType());
                     if (field == null) {
                         throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
                                 entityType().getCanonicalName(), f));
@@ -102,13 +102,13 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                 sourceFields = new HashMap<>();
                 targetMappings = new HashMap<>();
                 for (String key : ((DBRuleConfig) config).getFieldMappings().keySet()) {
-                    PropertyModel source = ReflectionHelper.findProperty(refEntityType, key);
+                    PropertyDef source = ReflectionHelper.findProperty(refEntityType, key);
                     if (source == null) {
                         throw new Exception(String.format("[source] Property not found. [entity=%s][field=%s]",
                                 refEntityType.getCanonicalName(), key));
                     }
                     String tf = ((DBRuleConfig) config).getFieldMappings().get(key);
-                    PropertyModel target = MappingReflectionHelper.findField(tf, entityType());
+                    PropertyDef target = MappingReflectionHelper.findField(tf, entityType());
                     if (target == null) {
                         throw new Exception(String.format("[target] Property not found. [entity=%s][field=%s]",
                                 entityType().getCanonicalName(), tf));

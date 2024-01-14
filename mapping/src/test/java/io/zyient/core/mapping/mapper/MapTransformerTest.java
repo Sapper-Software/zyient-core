@@ -17,9 +17,9 @@
 package io.zyient.core.mapping.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.beans.UnknownPropertyDef;
 import io.zyient.core.mapping.model.MappedElement;
 import io.zyient.core.mapping.model.MappedResponse;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
@@ -51,14 +51,14 @@ class MapTransformerTest {
             Constants.Source source = new Constants.Source();
             String json = JSONUtils.asString(source);
             Object data = mapper.readValue(json, Object.class);
-            assertTrue(data instanceof Map<?, ?>);
+            assertInstanceOf(Map.class, data);
             Map<String, Object> output = transformer.transform((Map<String, Object>) data);
             assertNotNull(output);
             Constants.Target target = mapper.convertValue(output, Constants.Target.class);
             assertNotNull(target);
             MappedResponse<Constants.Target> response = new MappedResponse<>((Map<String, Object>) data);
-            Object r = MappingReflectionHelper.getProperty("source['nested'].['nested'].['id']", new PropertyModel(), response);
-            assertTrue(r instanceof String);
+            Object r = MappingReflectionHelper.getProperty("source['nested'].['nested'].['id']", new UnknownPropertyDef(), response);
+            assertInstanceOf(String.class, r);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

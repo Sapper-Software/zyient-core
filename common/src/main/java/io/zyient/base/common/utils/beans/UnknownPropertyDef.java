@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,21 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.base.common.model;
+package io.zyient.base.common.utils.beans;
 
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class PropertyModel {
-    private String property;
-    private Field field;
-    private Method setter;
-    private Method getter;
+public class UnknownPropertyDef extends PropertyDef {
+    public UnknownPropertyDef() {
+        type(Object.class);
+    }
+
+    @Override
+    public boolean canInitialize() {
+        return false;
+    }
 }

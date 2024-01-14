@@ -104,7 +104,7 @@ class ClassDefTest {
             Field[] fields = ReflectionHelper.getAllFields(Outer.class);
             assertNotNull(fields);
             for (Field field : fields) {
-                Method setter = def.findSetter(field);
+                Method setter = def.findSetter(field.getName(), field.getType());
                 if (field.getName().compareTo("version") == 0) {
                     assertNull(setter);
                 } else
@@ -140,7 +140,7 @@ class ClassDefTest {
             Field[] fields = ReflectionHelper.getAllFields(Outer.class);
             assertNotNull(fields);
             for (Field field : fields) {
-                Method getter = def.findGetter(field);
+                Method getter = def.findGetter(field.getName(), field.getType());
                 assertNotNull(getter);
             }
             Outer outer = new Outer(3);

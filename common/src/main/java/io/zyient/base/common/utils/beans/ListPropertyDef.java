@@ -41,15 +41,14 @@ public class ListPropertyDef extends PropertyDef {
         return false;
     }
 
-    public ListPropertyDef from(@NonNull Field field) throws Exception {
+    @Override
+    public ListPropertyDef from(@NonNull Field field,
+                                @NonNull Class<?> owner) throws Exception {
         Preconditions.checkArgument(ReflectionHelper.implementsInterface(List.class, field.getType()));
-        name(field.getName());
-        type(field.getType());
-        abstractType(Modifier.isAbstract(type().getModifiers()));
+        super.from(field, owner);
         generic(true);
         methods = new ArrayList<>();
         ReflectionHelper.getAllMethods(type(), methods);
-
         if (field.isAnnotationPresent(TypeRef.class)) {
             TypeRef ref = field.getAnnotation(TypeRef.class);
             updateInnerType(ref.type());
@@ -61,16 +60,17 @@ public class ListPropertyDef extends PropertyDef {
 
     private void updateInnerType(Class<?> type) throws Exception {
         if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-            innerType = new PropertyDef(type);
+            innerType = new PrimitivePropertyDef(type);
             innerType.accessible(false);
         } else if (!type.equals(Object.class)) {
-            ClassPropertyDef def  = (ClassPropertyDef) new ClassPropertyDef()
+            ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__list_inner", type);
+            def.from("__list_inner", type, owner());
             innerType = def;
+        } else if (type.isEnum()) {
+            innerType = new EnumPropertyDef(type);
         } else {
-            innerType = new PropertyDef();
-            innerType.type(Object.class);
+            innerType = new UnknownPropertyDef();
         }
         innerType.name("__list_inner");
         innerType.generic(true);
@@ -114,5 +114,18 @@ public class ListPropertyDef extends PropertyDef {
         return null;
     }
 
-
+    @Override
+    protected PropertyDef findField(@NonNull String[] parts, int index) {
+        String name = parts[index];
+        if (index == parts.length - 1) {
+            if (name.compareTo(name()) == 0) {
+                return this;
+            }
+        } else {
+            if (innerType instanceof ClassPropertyDef) {
+                return innerType.findField(parts, index + 1);
+            }
+        }
+        return null;
+    }
 }

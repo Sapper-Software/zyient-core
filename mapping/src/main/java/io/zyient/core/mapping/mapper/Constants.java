@@ -16,7 +16,7 @@
 
 package io.zyient.core.mapping.mapper;
 
-import io.zyient.base.core.model.PropertyBag;
+import io.zyient.base.common.model.entity.PropertyBag;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

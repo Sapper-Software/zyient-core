@@ -18,8 +18,8 @@ package io.zyient.core.mapping.mapper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.core.mapping.model.CustomMappedElement;
 import io.zyient.core.mapping.model.MappedElement;
 import io.zyient.core.mapping.model.RegexMappedElement;
@@ -60,7 +60,7 @@ public class MapTransformer<T> {
     }
 
     public MapTransformer<T> add(@NonNull MappedElement element) throws Exception {
-        PropertyModel pm = ReflectionHelper.findProperty(type, element.getTargetPath());
+        PropertyDef pm = ReflectionHelper.findProperty(type, element.getTargetPath());
         if (pm == null) {
             throw new Exception(String.format("Target field not found. [class=%s][field=%s]",
                     type.getCanonicalName(), element.getTargetPath()));
@@ -202,7 +202,7 @@ public class MapTransformer<T> {
     }
 
     private MapNode findNode(MappedElement element,
-                             PropertyModel property) throws Exception {
+                             PropertyDef property) throws Exception {
         String source = element.getSourcePath();
         String[] parts = source.split("\\.");
         if (parts.length == 1) {

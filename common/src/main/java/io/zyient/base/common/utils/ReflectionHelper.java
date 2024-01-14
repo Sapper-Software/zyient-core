@@ -22,8 +22,9 @@ import com.expediagroup.transformer.utils.ReflectionUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.reflect.ClassPath;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.beans.BeanUtils;
+import io.zyient.base.common.utils.beans.ClassDef;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import lombok.NonNull;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -226,75 +227,13 @@ public class ReflectionHelper {
         return MethodUtils.invokeMethod(o, method);
     }
 
-    public static PropertyModel findProperty(@NonNull Class<?> type,
-                                             @NonNull String property) {
+    public static PropertyDef findProperty(@NonNull Class<?> type,
+                                           @NonNull String property) throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(property));
-        if (property.indexOf('.') > 0) {
-            String[] parts = property.split("\\.");
-            int index = 0;
-            Class<?> current = type;
-            PropertyModel pm = null;
-            while (index < parts.length) {
-                Field field = findField(current, parts[index]);
-                if (index < parts.length - 1) {
-                    if (field == null) {
-                        Method getter = getGetterMethod(current, parts[index]);
-                        if (getter != null) {
-                            current = getter.getReturnType();
-                        } else {
-                            break;
-                        }
-                    } else {
-                        current = field.getType();
-                    }
-                } else if (index == parts.length - 1) {
-                    pm = new PropertyModel()
-                            .property(property)
-                            .field(field)
-                            .getter(getGetterMethod(current, parts[index]))
-                            .setter(getSetterMethod(current, parts[index]));
-
-                }
-                index++;
-            }
-            return pm;
-        } else {
-            Field field = findField(type, property);
-            return new PropertyModel()
-                    .property(property)
-                    .field(field)
-                    .getter(getGetterMethod(type, property))
-                    .setter(getSetterMethod(type, property));
-        }
+        ClassDef def = BeanUtils.get(type);
+        return def.findField(property);
     }
 
-    public static Method getSetterMethod(@NonNull Class<?> clazz, @NonNull String property) {
-        List<Method> setters = CLASS_UTILS.getSetterMethods(clazz);
-        if (setters != null && !setters.isEmpty()) {
-            for (Method setter : setters) {
-                String name = setter.getName();
-                String p = StringUtils.capitalize(property);
-                if (name.compareTo(String.format("set%s", p)) == 0) {
-                    return setter;
-                }
-            }
-        }
-        return null;
-    }
-
-    public static Method getGetterMethod(@NonNull Class<?> clazz, @NonNull String property) {
-        List<Method> getters = CLASS_UTILS.getGetterMethods(clazz);
-        if (getters != null && !getters.isEmpty()) {
-            for (Method getter : getters) {
-                String name = getter.getName();
-                String p = StringUtils.capitalize(property);
-                if (name.compareTo(String.format("get%s", p)) == 0) {
-                    return getter;
-                }
-            }
-        }
-        return null;
-    }
 
     public static List<Method> findMethod(@NonNull Class<?> type,
                                           @NonNull String name,

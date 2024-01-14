@@ -39,10 +39,9 @@ public class MapPropertyDef extends PropertyDef {
         return false;
     }
 
-    public MapPropertyDef from(@NonNull Field field) throws Exception {
-        name(field.getName());
-        type(field.getType());
-        abstractType(Modifier.isAbstract(type().getModifiers()));
+    public MapPropertyDef from(@NonNull Field field,
+                               @NonNull Class<?> owner) throws Exception {
+        super.from(field, owner);
         generic(true);
         methods = new ArrayList<>();
         ReflectionHelper.getAllMethods(type(), methods);
@@ -75,36 +74,36 @@ public class MapPropertyDef extends PropertyDef {
 
     private void updateKeyType(Class<?> type) throws Exception {
         if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-            keyType = new PropertyDef(type);
-            keyType.accessible(false);
+            keyType = new PrimitivePropertyDef(type);
         } else if (!type.equals(Object.class)) {
             ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__map_key", type);
+            def.from("__map_key", type, owner());
             keyType = def;
+        } else if (type.isEnum()) {
+            keyType = new EnumPropertyDef(type);
         } else {
-            keyType = new PropertyDef();
-            keyType.type(Object.class);
+            keyType = new UnknownPropertyDef();
         }
         keyType.name("__map_key");
-        keyType.generic(true);
+        keyType.accessible(false);
     }
 
     private void updateValueType(Class<?> type) throws Exception {
         if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-            valueType = new PropertyDef(type);
-            valueType.accessible(false);
+            valueType = new PrimitivePropertyDef(type);
+        } else if (type.isEnum()) {
+            valueType = new EnumPropertyDef(type);
         } else if (!type.equals(Object.class)) {
             ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__map_value", type);
+            def.from("__map_value", type, owner());
             valueType = def;
         } else {
-            valueType = new PropertyDef();
-            keyType.type(Object.class);
+            valueType = new UnknownPropertyDef();
         }
         valueType.name("__map_value");
-        valueType.generic(true);
+        valueType.accessible(false);
     }
 
     private TypeRef findRef(String name, TypeRefs refs) {
@@ -155,6 +154,21 @@ public class MapPropertyDef extends PropertyDef {
                         }
                     }
                 }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected PropertyDef findField(@NonNull String[] parts, int index) {
+        String name = parts[index];
+        if (index == parts.length - 1) {
+            if (name.compareTo(name()) == 0) {
+                return this;
+            }
+        } else {
+            if (valueType instanceof ClassPropertyDef) {
+                return valueType.findField(parts, index + 1);
             }
         }
         return null;

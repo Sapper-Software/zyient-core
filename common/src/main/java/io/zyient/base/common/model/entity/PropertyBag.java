@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.model;
+package io.zyient.base.common.model.entity;
 
 import lombok.NonNull;
 
 import java.util.Map;
 
 public interface PropertyBag {
+    String FIELD_KEY = "properties";
+
     Map<String, Object> getProperties();
 
     void setProperties(Map<String, Object> properties);
