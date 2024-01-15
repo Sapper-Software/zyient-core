@@ -29,8 +29,11 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +51,13 @@ public class ExcelInputReader extends InputReader {
     public ReadCursor open() throws IOException {
         try {
             stream = new FileInputStream(contentInfo().path());
-            workbook = new XSSFWorkbook(stream);
-
+            if(settings().isProtected()) {
+                String password = fetchPassword(settings().getDecryptionSecretName());
+                XSSFWorkbookFactory xssfWorkbookFactory = new XSSFWorkbookFactory();
+                workbook = xssfWorkbookFactory.create(stream, password);
+            } else {
+                workbook = new XSSFWorkbook(stream);
+            }
             return new ExcelReadCursor(this, settings().getReadBatchSize());
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -207,5 +215,15 @@ public class ExcelInputReader extends InputReader {
             stream.close();
             stream = null;
         }
+    }
+
+    private String fetchPassword(String filePath) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                return line;
+            }
+        }
+        throw new IOException("Password not found in the file.");
     }
 }

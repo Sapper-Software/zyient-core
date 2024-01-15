@@ -34,4 +34,12 @@ public class ReaderSettings extends Settings {
     private SourceTypes assumeType;
     @Config(name = "readBatchSize", required = false, type = Integer.class)
     private int readBatchSize = 512;
+    @Config(name = "protected", required = false, type = Boolean.class)
+    private boolean isProtected = false;
+    @Config(name = "encrypted", required = false, type = Boolean.class)
+    private boolean isEncrypted = false;
+    @Config(name = "decryptionKeyName", required = false)
+    private String decryptionKeyName;
+    @Config(name = "decryptionSecretName", required = false)
+    private String decryptionSecretName;
 }
