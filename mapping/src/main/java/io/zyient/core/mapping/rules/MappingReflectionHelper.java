@@ -89,12 +89,12 @@ public class MappingReflectionHelper {
                     throw new Exception(String.format("Property Bag definition not found. [type=%s]",
                             entityType.getCanonicalName()));
                 }
-                List<String> keys = ReflectionHelper.extractKey(name);
-                if (keys == null) {
+                String key = ReflectionHelper.extractKey(name);
+                if (Strings.isNullOrEmpty(key)) {
                     throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
                 }
                 FixedPropertyDef fd = new FixedPropertyDef(pd);
-                fd.key(keys.get(0));
+                fd.key(key);
                 return fd;
             } else {
                 if (isEntityPrefixed(name)) {
@@ -118,16 +118,11 @@ public class MappingReflectionHelper {
 
     public static String fieldToPropertyGetMethod(@NonNull String field) throws Exception {
         if (isPropertyPrefixed(field) || isEntityPropertyPrefixed(field)) {
-            List<String> keys = ReflectionHelper.extractKey(field);
-            if (keys != null && !keys.isEmpty()) {
-                if (keys.size() > 1) {
-                    throw new Exception(String.format("Invalid property: [name=%s]", field));
-                }
-                String key = keys.get(0);
-                return String.format("%s.%s(\"%s\")", FIELD_ENTITY, METHOD_GET_PROPERTY, key);
-            } else {
+            String key = ReflectionHelper.extractKey(field);
+            if (Strings.isNullOrEmpty(key)) {
                 throw new Exception(String.format("Invalid property: [name=%s]", field));
             }
+            return String.format("%s.%s(\"%s\")", FIELD_ENTITY, METHOD_GET_PROPERTY, key);
         }
         return null;
     }
@@ -176,7 +171,7 @@ public class MappingReflectionHelper {
 
     public static Object getContextProperty(@NonNull String field,
                                             @NonNull Context context) {
-        List<String> keys = ReflectionHelper.extractKey(field);
+        List<String> keys = ReflectionHelper.extractKeys(field);
         if (keys != null && !keys.isEmpty()) {
             String key = keys.get(0);
             if (!Strings.isNullOrEmpty(key)) {

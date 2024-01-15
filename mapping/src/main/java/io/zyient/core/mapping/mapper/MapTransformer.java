@@ -18,6 +18,7 @@ package io.zyient.core.mapping.mapper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.core.mapping.model.RegexMappedElement;
@@ -130,7 +131,7 @@ public class MapTransformer<T> {
                                          @NonNull Class<? extends T> entityType) throws Exception {
         Preconditions.checkState(!mapper.isEmpty());
         Map<String, Object> data = new HashMap<>();
-        data.put("@class", entityType.getTypeName());
+        JSONUtils.checkAndAddType(data, entityType);
         for (String key : mapper.keySet()) {
             MapNode node = mapper.get(key);
             transform(source, node, data);
@@ -143,8 +144,9 @@ public class MapTransformer<T> {
                            MapNode node,
                            Map<String, Object> data) throws Exception {
         Object value = null;
-
-        if (source.containsKey(node.name)) {
+        if (node.mappingType == MappingType.ConstField || node.mappingType == MappingType.ConstProperty) {
+            value = node.name;
+        } else if (source.containsKey(node.name)) {
             value = source.get(node.name);
             if (value == null) {
                 if (!node.nullable) {
@@ -152,16 +154,15 @@ public class MapTransformer<T> {
                 }
                 return;
             }
-        } else {
-            if (!node.nullable) {
-                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
-            }
         }
         if (value != null) {
             if (!Strings.isNullOrEmpty(node.targetPath)) {
                 Map<String, Object> map = getTargetNode(data, node.targetPath);
                 String[] parts = node.targetPath.split("\\.");
                 String key = parts[parts.length - 1];
+                if (key.contains("[")) {
+                    key = ReflectionHelper.extractKey(key);
+                }
                 if (node.transformer != null) {
                     value = node.transformer.read(value);
                 }
@@ -176,6 +177,10 @@ public class MapTransformer<T> {
                         transform((Map<String, Object>) value, node.nodes.get(key), data);
                     }
                 }
+            }
+        } else {
+            if (!node.nullable) {
+                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
             }
         }
     }
@@ -202,7 +207,7 @@ public class MapTransformer<T> {
                 current = (Map<String, Object>) current.get(name);
             } else {
                 Map<String, Object> nmap = new HashMap<>();
-                nmap.put("@class", currentType.getTypeName());
+                JSONUtils.checkAndAddType(nmap, currentType);
                 current.put(name, nmap);
                 current = nmap;
             }
@@ -214,7 +219,13 @@ public class MapTransformer<T> {
     private MapNode findNode(MappedElement element,
                              PropertyDef property) throws Exception {
         String source = element.getSourcePath();
-        String[] parts = source.split("\\.");
+        String[] parts = null;
+        if (element.getMappingType() == MappingType.ConstField
+                || element.getMappingType() == MappingType.ConstProperty) {
+            parts = new String[]{source};
+        } else {
+            parts = source.split("\\.");
+        }
         if (parts.length == 1) {
             if (mapper.containsKey(parts[0])) {
                 return mapper.get(parts[0]);

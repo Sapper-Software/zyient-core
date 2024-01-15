@@ -17,5 +17,5 @@
 package io.zyient.core.mapping.model.mapping;
 
 public enum MappingType {
-    Field, Property, Cached, Const, ConstField
+    Field, Property, Cached, ConstProperty, ConstField
 }

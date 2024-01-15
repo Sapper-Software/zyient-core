@@ -109,7 +109,7 @@
                 <sequence>13</sequence>
                 <target>constValue</target>
                 <nullable>false</nullable>
-                <type>Const</type>
+                <type>ConstField</type>
             </map>
         </mappings>
         <filters>

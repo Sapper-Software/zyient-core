@@ -63,7 +63,7 @@ public class ReflectionHelper {
     @SuppressWarnings("unchecked")
     public static Object getMapValue(@NonNull String field,
                                      Map<String, Object> source) {
-        List<String> keys = extractKey(field);
+        List<String> keys = extractKeys(field);
         if (keys != null && !keys.isEmpty()) {
             Map<String, Object> node = source;
             for (int ii = 0; ii < keys.size(); ii++) {
@@ -81,7 +81,7 @@ public class ReflectionHelper {
     }
 
 
-    public static List<String> extractKey(@NonNull String name) {
+    public static List<String> extractKeys(@NonNull String name) {
         List<String> keys = new ArrayList<>();
         Matcher m = PATTERN_KEY.matcher(name);
         while (m.find()) {
@@ -91,6 +91,14 @@ public class ReflectionHelper {
             return keys;
         }
         return null;
+    }
+
+    public static String extractKey(@NonNull String name) {
+        Matcher m = PATTERN_KEY.matcher(name);
+        while (m.find()) {
+            return m.group(1);
+        }
+        return name;
     }
 
     public static Map<String, String> mapFromString(@NonNull String value) throws Exception {

@@ -68,7 +68,7 @@ public class PropertyFieldDef extends PropertyDef {
     @Override
     protected PropertyDef findField(@NonNull String[] parts, int index) {
         if (index == parts.length - 1) {
-            List<String> keys = ReflectionHelper.extractKey(parts[index]);
+            List<String> keys = ReflectionHelper.extractKeys(parts[index]);
             if (keys != null && !keys.isEmpty()) {
                 return this;
             }

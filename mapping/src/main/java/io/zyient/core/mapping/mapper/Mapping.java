@@ -251,12 +251,13 @@ public abstract class Mapping<T> {
         for (Integer index : sourceIndex.keySet()) {
             Mapped m = sourceIndex.get(index);
             if (m instanceof MappedElement me) {
-                if (me.getMappingType() == MappingType.Field) continue;
+                if (me.getMappingType() == MappingType.Field
+                        || me.getMappingType() == MappingType.ConstField) continue;
                 Object value = null;
                 String path = me.getSourcePath();
                 if (MappingReflectionHelper.isContextPrefixed(path)) {
                     value = findContextValue(context, path);
-                } else if (me.getMappingType() == MappingType.Const) {
+                } else if (me.getMappingType() == MappingType.ConstProperty) {
                     value = me.getSourcePath();
                 } else {
                     String[] parts = path.split("\\.");
@@ -302,7 +303,7 @@ public abstract class Mapping<T> {
                 ((PropertyBag) data).setProperty(element.getTargetPath(), tv);
             }
         } else if (element.getMappingType() == MappingType.Cached ||
-                element.getMappingType() == MappingType.Const) {
+                element.getMappingType() == MappingType.ConstProperty) {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (!element.isNullable()) {
