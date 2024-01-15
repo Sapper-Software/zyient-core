@@ -21,13 +21,12 @@ import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;
+import io.zyient.core.mapping.readers.util.PgpDecryptionUtil;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -45,7 +44,16 @@ public class SeparatedInputReader extends InputReader {
         try {
             format = getReaderFormat(((SeparatedReaderSettings) settings()).getType());
             format = ((SeparatedReaderSettings) settings()).setup(format);
-            reader = new FileReader(contentInfo().path());
+            if (settings().isEncrypted()) {
+                InputStream stream = new FileInputStream(contentInfo().path());
+                InputStream privateKeyStream = new FileInputStream(settings().getDecryptionKeyName());
+                String password = fetchPassword(settings().getDecryptionSecretName());
+                PgpDecryptionUtil pgpDecryptionUtil = new PgpDecryptionUtil(privateKeyStream, password);
+                stream = pgpDecryptionUtil.decryptInputStream(stream);
+                reader = new InputStreamReader(stream);
+            } else {
+                reader = new FileReader(contentInfo().path());
+            }
             parser = new CSVParser(reader, format);
             iterator = parser.stream().iterator();
             return new SeparatedReadCursor(this, settings().getReadBatchSize());
@@ -142,5 +150,15 @@ public class SeparatedInputReader extends InputReader {
             reader.close();
             reader = null;
         }
+    }
+
+    private String fetchPassword(String filePath) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                return line;
+            }
+        }
+        throw new IOException("Password not found in the file.");
     }
 }
