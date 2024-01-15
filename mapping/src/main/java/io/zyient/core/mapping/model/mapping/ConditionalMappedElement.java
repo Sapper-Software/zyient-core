@@ -17,12 +17,22 @@
 package io.zyient.core.mapping.model.mapping;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Setter
 public class ConditionalMappedElement extends Mapped {
     private List<MappedElement> mappings;
+
+    public ConditionalMappedElement add(@NonNull MappedElement element) {
+        if (mappings == null) {
+            mappings  = new ArrayList<>();
+        }
+        mappings.add(element);
+        return this;
+    }
 }

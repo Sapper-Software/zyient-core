@@ -18,6 +18,7 @@ package io.zyient.core.mapping.pipeline;
 
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.ContentInfo;
 import io.zyient.core.mapping.model.InputContentInfo;
@@ -45,10 +46,11 @@ public class PipelineBuilder {
 
     @SuppressWarnings("unchecked")
     public PipelineBuilder configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                     @NonNull BaseEnv<?> env,
                                      @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
         try {
             mapperFactory = new MapperFactory()
-                    .init(xmlConfig);
+                    .init(xmlConfig, env);
             readerFactory = new InputReaderFactory()
                     .init(xmlConfig);
             HierarchicalConfiguration<ImmutableNode> cConfig =

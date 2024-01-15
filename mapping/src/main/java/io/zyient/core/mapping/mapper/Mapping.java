@@ -27,6 +27,9 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.decisions.EvaluationTree;
+import io.zyient.base.core.decisions.builder.EvaluationTreeBuilder;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.model.CurrencyValue;
 import io.zyient.core.mapping.model.EvaluationStatus;
@@ -69,7 +72,8 @@ public abstract class Mapping<T> {
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
     private StringTransformer stringTransformer;
-
+    private EvaluationTree<Map<String, Object>, ConditionalMappedElement> evaluationTree;
+    private BaseEnv<?> env;
 
     protected Mapping(@NonNull Class<? extends T> entityType,
                       @NonNull Class<? extends MappedResponse<T>> responseType) {
@@ -103,8 +107,10 @@ public abstract class Mapping<T> {
         return settings.getName();
     }
 
-    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkNotNull(entityType);
+        this.env = env;
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -207,9 +213,9 @@ public abstract class Mapping<T> {
         ConfigPath cp = Mapped.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
+        mapTransformer = new MapTransformer<>(entityType, settings);
         List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
-            mapTransformer = new MapTransformer<>(entityType, settings);
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
                 Class<? extends MappedElement> type = (Class<? extends MappedElement>) ConfigReader.readType(node);
                 if (type == null) {
@@ -224,8 +230,16 @@ public abstract class Mapping<T> {
                     }
                 }
             }
-        } else {
-            throw new Exception("No mappings found...");
+        }
+        if (ConfigReader.checkIfNodeExists(mNode, EvaluationTreeBuilder.__CONFIG_PATH)) {
+            HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
+            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type =
+                    (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
+            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder =
+                    type.getDeclaredConstructor()
+                            .newInstance()
+                            .configure(bNode, env);
+            evaluationTree = builder.build();
         }
     }
 
@@ -253,24 +267,15 @@ public abstract class Mapping<T> {
             if (m instanceof MappedElement me) {
                 if (me.getMappingType() == MappingType.Field
                         || me.getMappingType() == MappingType.ConstField) continue;
-                Object value = null;
-                String path = me.getSourcePath();
-                if (MappingReflectionHelper.isContextPrefixed(path)) {
-                    value = findContextValue(context, path);
-                } else if (me.getMappingType() == MappingType.ConstProperty) {
-                    value = me.getSourcePath();
-                } else {
-                    String[] parts = path.split("\\.");
-                    value = findSourceValue(source, parts, 0);
+                executeMapping(me, response, source, context);
+            }
+        }
+        if (evaluationTree != null) {
+            ConditionalMappedElement element = evaluationTree.evaluate(source);
+            if (element != null) {
+                for (MappedElement me : element.getMappings()) {
+                    executeMapping(me, response, source, context);
                 }
-                if (value == null) {
-                    if (!me.isNullable()) {
-                        throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
-                                me.getSourcePath(), me.getTargetPath()));
-                    }
-                    continue;
-                }
-                setFieldValue(me, value, response);
             }
         }
         EvaluationStatus status;
@@ -282,6 +287,30 @@ public abstract class Mapping<T> {
         }
         response.setStatus(status);
         return response;
+    }
+
+    private void executeMapping(MappedElement me,
+                                MappedResponse<T> response,
+                                SourceMap source,
+                                Context context) throws Exception {
+        Object value = null;
+        String path = me.getSourcePath();
+        if (MappingReflectionHelper.isContextPrefixed(path)) {
+            value = findContextValue(context, path);
+        } else if (me.getMappingType() == MappingType.ConstProperty) {
+            value = me.getSourcePath();
+        } else {
+            String[] parts = path.split("\\.");
+            value = findSourceValue(source, parts, 0);
+        }
+        if (value == null) {
+            if (!me.isNullable()) {
+                throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                        me.getSourcePath(), me.getTargetPath()));
+            }
+            return;
+        }
+        setFieldValue(me, value, response);
     }
 
     private void setFieldValue(MappedElement element,
