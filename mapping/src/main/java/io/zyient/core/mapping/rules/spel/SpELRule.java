@@ -177,7 +177,7 @@ public class SpELRule<T> extends BaseRule<T> {
         SpELRuleConfig spELRuleConfig = ((SpELRuleConfig) config);
         try {
             if (getRuleType() == RuleType.Transformation) {
-                if (Strings.isNullOrEmpty(spELRuleConfig.getTarget()) || (spELRuleConfig.getFieldMappings() != null && spELRuleConfig.getFieldMappings().isEmpty())) {
+                if (Strings.isNullOrEmpty(spELRuleConfig.getTarget()) && (spELRuleConfig.getFieldMappings() == null || spELRuleConfig.getFieldMappings().isEmpty())) {
                     throw new ConfigurationException(String.format("[rule=%s] FieldMappings or Target not specified.", name()));
                 }
             }

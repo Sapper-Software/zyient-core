@@ -18,6 +18,7 @@ package io.zyient.core.mapping.transformers;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.mapper.MappingSettings;
 import io.zyient.core.mapping.model.DateMappedElement;
@@ -56,15 +57,17 @@ public class DateIntegerTransformer implements Transformer<Integer> {
     @Override
     public Integer read(@NonNull Object source) throws SerializationException {
         if (source instanceof String value) {
+
             SimpleDateFormat df = new SimpleDateFormat(dateMappedElement.getSourceFormat());
             SimpleDateFormat targetFormatDf = new SimpleDateFormat(dateMappedElement.getTargetFormat());
             try {
                 return Integer.parseInt(targetFormatDf.format(df.parse(value)));
             } catch (Exception e) {
-                throw new SerializationException(String.format("Cannot transform to String. [source=%s]", source.getClass()));
+                DefaultLogger.warn(String.format("Cannot transform to String. [source=%s]", source.getClass()));
+                return 0;
             }
-
         }
-        throw new SerializationException(String.format("Cannot transform to String. [source=%s]", source.getClass()));
+        DefaultLogger.warn(String.format("Skipping date transformation. [source=%s]", source.getClass()));
+        return 0;
     }
 }

@@ -44,14 +44,14 @@ public class SpELRuleConfig extends BaseRuleConfig {
     public void validate() throws ConfigurationException {
         super.validate();
         if (getType() == RuleType.Transformation) {
-            if (Strings.isNullOrEmpty(target) || ( fieldMappings !=null && fieldMappings.isEmpty())) {
+            if (Strings.isNullOrEmpty(target) && (fieldMappings == null || fieldMappings.isEmpty())) {
                 throw new ConfigurationException(String.format("Missing required property [fieldMappings] or [target]. [rule=%s]",
                         getName()));
             }
         }
     }
 
-    public  <E> Rule<E> createInstance(@NonNull Class<? extends E> entityType) throws Exception {
+    public <E> Rule<E> createInstance(@NonNull Class<? extends E> entityType) throws Exception {
         return new SpELRule<E>();
     }
 }
