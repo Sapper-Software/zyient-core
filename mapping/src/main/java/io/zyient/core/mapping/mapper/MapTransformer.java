@@ -241,14 +241,13 @@ public class MapTransformer<T> {
             for (int ii = 0; ii < parts.length; ii++) {
 
                 String name  = parts[ii];
-                String sourceKey  = String.format("%s%d",name,element.getSequence());
                 if (node == null) {
-                    if (mapper.containsKey(sourceKey)) {
-                        node = mapper.get(sourceKey);
+                    if (mapper.containsKey(name)) {
+                        node = mapper.get(name);
                     } else {
                         node = new MapNode();
                         node.name = name;
-                        mapper.put(sourceKey, node);
+                        mapper.put(name, node);
                     }
                 } else {
                     if (ii == parts.length - 1) {

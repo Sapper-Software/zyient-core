@@ -61,7 +61,7 @@ public class SpELRule<T> extends BaseRule<T> {
     private void normalizeRule() throws Exception {
         String r = expression();
         Map<String, String> fields = MappingReflectionHelper.extractFields(r);
-        if (!fields.isEmpty()) {
+        if (fields != null && !fields.isEmpty()) {
             for (String exp : fields.keySet()) {
                 String var = fields.get(exp);
                 if (MappingReflectionHelper.isPropertyPrefixed(var)
@@ -191,25 +191,27 @@ public class SpELRule<T> extends BaseRule<T> {
             }
             fieldMaps = new ArrayList<>();
             if (spELRuleConfig.getTarget() != null) {
+                String target = MappingReflectionHelper.normalizeField(spELRuleConfig.getTarget());
                 PropertyModel property = MappingReflectionHelper.findField(spELRuleConfig.getTarget(), entityType());
                 if (property == null) {
                     throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
                             entityType().getCanonicalName(), spELRuleConfig.getTarget()));
                 }
-                fieldMaps.add(new FieldMap(spELRuleConfig.getTarget(),null,property));
+                fieldMaps.add(new FieldMap(target, null, property));
             }
             if (spELRuleConfig.getFieldMappings() != null) {
                 for (String fieldName : spELRuleConfig.getFieldMappings().keySet()) {
+                    String target = MappingReflectionHelper.normalizeField(fieldName);
                     PropertyModel property = MappingReflectionHelper.findField(fieldName, entityType());
                     if (property == null) {
                         throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
                                 entityType().getCanonicalName(), fieldName));
                     }
-                    fieldMaps.add(new FieldMap(spELRuleConfig.getTarget(),spELRuleConfig.getFieldMappings().get(fieldName),property));
+                    fieldMaps.add(new FieldMap(target, spELRuleConfig.getFieldMappings().get(fieldName), property));
                 }
             }
 
-            if (fieldMaps.isEmpty()) {
+            if (getRuleType() == RuleType.Transformation && fieldMaps.isEmpty()) {
                 throw new ConfigurationException(String.format("Either target or fieldMappings is required. [type=%s]",
                         entityType().getCanonicalName()));
             }

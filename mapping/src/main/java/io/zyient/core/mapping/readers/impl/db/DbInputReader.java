@@ -5,13 +5,14 @@ import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.pipeline.impl.udp.model.Field;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.DbReaderSettings;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
-import io.zyient.core.mapping.rules.db.DBRule;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.env.DataStoreEnv;
@@ -83,19 +84,20 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
         Map<String, FieldProperty> whereFields = null;
         String query = settings.getQuery();
         Map<String, String> fs = MappingReflectionHelper.extractFields(query);
-        if (!fs.isEmpty()) {
+        if (fs != null && !fs.isEmpty()) {
             whereFields = new HashMap<>();
             int index = 0;
             for (String key : fs.keySet()) {
                 String f = fs.get(key);
-                PropertyModel field = MappingReflectionHelper.findField(f, entityType());
+                List<String> keys = MappingReflectionHelper.extractKey(f);
+                f = keys.get(0);
+                PropertyModel field = ReflectionHelper.findProperty(this.entityType(), f);
                 if (field == null) {
                     throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
                             entityType().getCanonicalName(), f));
                 }
                 String param = String.format("param_%d", index);
                 query = query.replace(key, ":" + param);
-                f = MappingReflectionHelper.normalizeField(f);
                 whereFields.put(param, new FieldProperty(field, f));
                 index++;
             }
