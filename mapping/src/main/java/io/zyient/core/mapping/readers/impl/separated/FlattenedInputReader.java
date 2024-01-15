@@ -3,7 +3,7 @@ package io.zyient.core.mapping.readers.impl.separated;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.KeyValuePair;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.FlattenedInputReaderSettings;
 import lombok.Getter;

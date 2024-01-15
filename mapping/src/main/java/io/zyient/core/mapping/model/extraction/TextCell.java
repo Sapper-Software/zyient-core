@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,24 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.core.mapping.model.extraction;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
-public class SourceMap extends HashMap<String, Object> {
-    public SourceMap(int initialCapacity, float loadFactor) {
-        super(initialCapacity, loadFactor);
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class TextCell extends Cell<String> {
+    public TextCell() {
+        super();
     }
 
-    public SourceMap(int initialCapacity) {
-        super(initialCapacity);
-    }
-
-    public SourceMap() {
-    }
-
-    public SourceMap(Map<? extends String, ?> m) {
-        super(m);
+    public TextCell(@NonNull String parentId, int index) {
+        super(parentId, index);
     }
 }

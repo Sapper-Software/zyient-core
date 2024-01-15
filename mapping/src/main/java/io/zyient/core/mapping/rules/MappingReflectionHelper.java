@@ -25,10 +25,9 @@ import io.zyient.base.common.utils.beans.FixedPropertyDef;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.common.utils.beans.PropertyFieldDef;
 import io.zyient.core.mapping.annotations.EntityRef;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 import lombok.NonNull;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +43,6 @@ public class MappingReflectionHelper {
     public static final String FIELD_CONTEXT = "context";
     public static final String FIELD_REGEX = "(\\$\\{(.*?)\\})";
     public static final String KEY_REGEX = "\\['?(.*?)'?\\]";
-    public static final String METHOD_SET_PROPERTY = "setProperty";
     public static final String METHOD_GET_PROPERTY = "getProperty";
     private static final Pattern PATTERN_FIND_FIELD = Pattern.compile(FIELD_REGEX);
     private static final Pattern PATTERN_KEY = Pattern.compile(KEY_REGEX);
@@ -63,18 +61,6 @@ public class MappingReflectionHelper {
         }
         if (!fields.isEmpty())
             return fields;
-        return null;
-    }
-
-    public static List<String> extractKey(@NonNull String name) {
-        List<String> keys = new ArrayList<>();
-        Matcher m = PATTERN_KEY.matcher(name);
-        while (m.find()) {
-            keys.add(m.group(1));
-        }
-        if (!keys.isEmpty()) {
-            return keys;
-        }
         return null;
     }
 
@@ -103,7 +89,7 @@ public class MappingReflectionHelper {
                     throw new Exception(String.format("Property Bag definition not found. [type=%s]",
                             entityType.getCanonicalName()));
                 }
-                List<String> keys = extractKey(name);
+                List<String> keys = ReflectionHelper.extractKey(name);
                 if (keys == null) {
                     throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
                 }
@@ -130,25 +116,9 @@ public class MappingReflectionHelper {
         return field;
     }
 
-    public static String fieldToPropertySetMethod(@NonNull String field) throws Exception {
-        if (isPropertyPrefixed(field) || isEntityPropertyPrefixed(field)) {
-            List<String> keys = extractKey(field);
-            if (keys != null && !keys.isEmpty()) {
-                if (keys.size() > 1) {
-                    throw new Exception(String.format("Invalid property: [name=%s]", field));
-                }
-                String key = keys.get(0);
-                return String.format("%s.%s(\"%s\")", FIELD_ENTITY, METHOD_SET_PROPERTY, key);
-            } else {
-                throw new Exception(String.format("Invalid property: [name=%s]", field));
-            }
-        }
-        return null;
-    }
-
     public static String fieldToPropertyGetMethod(@NonNull String field) throws Exception {
         if (isPropertyPrefixed(field) || isEntityPropertyPrefixed(field)) {
-            List<String> keys = extractKey(field);
+            List<String> keys = ReflectionHelper.extractKey(field);
             if (keys != null && !keys.isEmpty()) {
                 if (keys.size() > 1) {
                     throw new Exception(String.format("Invalid property: [name=%s]", field));
@@ -188,7 +158,7 @@ public class MappingReflectionHelper {
             return pb.getProperty(((FixedPropertyDef) property).key());
         } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
-                return getSourceProperty(field, ((MappedResponse<?>) entity).getSource());
+                return ReflectionHelper.getMapValue(field, ((MappedResponse<?>) entity).getSource());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));
@@ -204,29 +174,9 @@ public class MappingReflectionHelper {
         return BeanUtils.getValue(entity, field);
     }
 
-    @SuppressWarnings("unchecked")
-    public static Object getSourceProperty(@NonNull String field,
-                                           Map<String, Object> source) {
-        List<String> keys = extractKey(field);
-        if (keys != null && !keys.isEmpty()) {
-            Map<String, Object> node = source;
-            for (int ii = 0; ii < keys.size(); ii++) {
-                String key = keys.get(ii);
-                if (ii == keys.size() - 1) {
-                    return node.get(key);
-                }
-                Object value = node.get(key);
-                if (value instanceof Map<?, ?>) {
-                    node = (Map<String, Object>) value;
-                }
-            }
-        }
-        return null;
-    }
-
     public static Object getContextProperty(@NonNull String field,
                                             @NonNull Context context) {
-        List<String> keys = extractKey(field);
+        List<String> keys = ReflectionHelper.extractKey(field);
         if (keys != null && !keys.isEmpty()) {
             String key = keys.get(0);
             if (!Strings.isNullOrEmpty(key)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.core.mapping.model.extraction;
 
-public enum CollectionType {
-    Array, Linked, Set
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class Tag {
+    private String label;
+    private double confidence;
 }

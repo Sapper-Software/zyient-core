@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,8 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.core.mapping.model.mapping;
 
-public enum MappingType {
-    Field, Property, Cached
+import io.zyient.base.common.config.Config;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class CollectionMappedElement extends MappedElement{
+    @Config(name = "separator", required = false)
+    private String separator = ",";
+    @Config(name = "collectionType", required = false, type = CollectionType.class)
+    private CollectionType collectionType = CollectionType.Array;
 }

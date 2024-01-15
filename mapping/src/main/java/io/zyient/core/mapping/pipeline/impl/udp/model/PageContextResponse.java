@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.pipeline.impl.udp.model;
 
 import io.zyient.core.mapping.annotations.EntityRef;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 
 import java.util.Map;
 

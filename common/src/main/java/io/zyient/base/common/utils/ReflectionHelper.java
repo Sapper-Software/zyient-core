@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.lang.reflect.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -44,6 +46,9 @@ import java.util.stream.Collectors;
  * 11:10:30 AM
  */
 public class ReflectionHelper {
+    public static final String KEY_REGEX = "\\['?(.*?)'?\\]";
+    private static final Pattern PATTERN_KEY = Pattern.compile(KEY_REGEX);
+
     private static final ClassUtils CLASS_UTILS = new ClassUtils();
     private static final ReflectionUtils REFLECTION_UTILS = new ReflectionUtils();
 
@@ -53,6 +58,39 @@ public class ReflectionHelper {
 
     public static ReflectionUtils reflectionUtils() {
         return REFLECTION_UTILS;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static Object getMapValue(@NonNull String field,
+                                     Map<String, Object> source) {
+        List<String> keys = extractKey(field);
+        if (keys != null && !keys.isEmpty()) {
+            Map<String, Object> node = source;
+            for (int ii = 0; ii < keys.size(); ii++) {
+                String key = keys.get(ii);
+                if (ii == keys.size() - 1) {
+                    return node.get(key);
+                }
+                Object value = node.get(key);
+                if (value instanceof Map<?, ?>) {
+                    node = (Map<String, Object>) value;
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public static List<String> extractKey(@NonNull String name) {
+        List<String> keys = new ArrayList<>();
+        Matcher m = PATTERN_KEY.matcher(name);
+        while (m.find()) {
+            keys.add(m.group(1));
+        }
+        if (!keys.isEmpty()) {
+            return keys;
+        }
+        return null;
     }
 
     public static Map<String, String> mapFromString(@NonNull String value) throws Exception {
@@ -120,7 +158,6 @@ public class ReflectionHelper {
             getAllMethods(parent, methods);
         }
     }
-
 
 
     /**

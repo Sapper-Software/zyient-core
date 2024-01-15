@@ -28,7 +28,10 @@ import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.core.mapping.DataException;
-import io.zyient.core.mapping.model.*;
+import io.zyient.core.mapping.model.CurrencyValue;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.model.mapping.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.mapping.transformers.*;
@@ -55,7 +58,7 @@ public abstract class Mapping<T> {
     private final Class<? extends T> entityType;
     private final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
-    private final Map<Integer, MappedElement> sourceIndex = new HashMap<>();
+    private final Map<Integer, Mapped> sourceIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
     private RulesExecutor<MappedResponse<T>> rulesExecutor;
@@ -201,7 +204,7 @@ public abstract class Mapping<T> {
     @SuppressWarnings("unchecked")
     private void readMappings(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         HierarchicalConfiguration<ImmutableNode> mNode = xmlConfig.configurationAt(__CONFIG_PATH_MAPPINGS);
-        ConfigPath cp = MappedElement.class.getAnnotation(ConfigPath.class);
+        ConfigPath cp = Mapped.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
         List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
@@ -212,10 +215,13 @@ public abstract class Mapping<T> {
                 if (type == null) {
                     type = MappedElement.class;
                 }
-                MappedElement me = MappedElement.read(node, type);
-                sourceIndex.put(me.getSequence(), me);
-                if (me.getMappingType() == MappingType.Field) {
-                    mapTransformer.add(me);
+                Mapped m = Mapped.read(node, type);
+                sourceIndex.put(m.getSequence(), m);
+                if (m instanceof MappedElement me) {
+                    if (me.getMappingType() == MappingType.Field
+                            || me.getMappingType() == MappingType.ConstField) {
+                        mapTransformer.add(me);
+                    }
                 }
             }
         } else {
@@ -238,29 +244,33 @@ public abstract class Mapping<T> {
                 return response;
             }
         }
-        Map<String, Object> converted = mapTransformer.transform(source);
+        Map<String, Object> converted = mapTransformer.transform(source, entityType);
         T entity = mapper.convertValue(converted, entityType);
         response.setEntity(entity);
 
         for (Integer index : sourceIndex.keySet()) {
-            MappedElement me = sourceIndex.get(index);
-            if (me.getMappingType() == MappingType.Field) continue;
-            Object value = null;
-            String path = me.getSourcePath();
-            if (MappingReflectionHelper.isContextPrefixed(path)) {
-                value = findContextValue(context, path);
-            } else {
-                String[] parts = path.split("\\.");
-                value = findSourceValue(source, parts, 0);
-            }
-            if (value == null) {
-                if (!me.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
-                            me.getSourcePath(), me.getTargetPath()));
+            Mapped m = sourceIndex.get(index);
+            if (m instanceof MappedElement me) {
+                if (me.getMappingType() == MappingType.Field) continue;
+                Object value = null;
+                String path = me.getSourcePath();
+                if (MappingReflectionHelper.isContextPrefixed(path)) {
+                    value = findContextValue(context, path);
+                } else if (me.getMappingType() == MappingType.Const) {
+                    value = me.getSourcePath();
+                } else {
+                    String[] parts = path.split("\\.");
+                    value = findSourceValue(source, parts, 0);
                 }
-                continue;
+                if (value == null) {
+                    if (!me.isNullable()) {
+                        throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                                me.getSourcePath(), me.getTargetPath()));
+                    }
+                    continue;
+                }
+                setFieldValue(me, value, response);
             }
-            setFieldValue(me, value, response);
         }
         EvaluationStatus status;
         if (rulesExecutor != null) {
@@ -291,7 +301,8 @@ public abstract class Mapping<T> {
             } else {
                 ((PropertyBag) data).setProperty(element.getTargetPath(), tv);
             }
-        } else if (element.getMappingType() == MappingType.Cached) {
+        } else if (element.getMappingType() == MappingType.Cached ||
+                element.getMappingType() == MappingType.Const) {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (!element.isNullable()) {

@@ -20,7 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.mapper.Mapping;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
 import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.rules.RuleConfigReader;

@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.base.core.decisions;
 
+import lombok.NonNull;
 
-import io.zyient.base.common.config.Config;
-import io.zyient.core.mapping.transformers.Transformer;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class CustomMappedElement extends MappedElement {
-    @Config(name = "transformer.class", required = true, type = Class.class)
-    private Class<? extends Transformer<?>> transformerClass;
-    @Config(name = "transformer.name", required = true)
-    private String transformer;
+public interface ConditionParser<T> {
+    Condition<T> parse(@NonNull String source,
+                       @NonNull String property,
+                       @NonNull Class<?> type) throws Exception;
 }

@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import lombok.Getter;
 import lombok.Setter;
 

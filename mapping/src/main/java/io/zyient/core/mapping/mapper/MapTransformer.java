@@ -20,9 +20,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
-import io.zyient.core.mapping.model.CustomMappedElement;
-import io.zyient.core.mapping.model.MappedElement;
 import io.zyient.core.mapping.model.RegexMappedElement;
+import io.zyient.core.mapping.model.mapping.CustomMappedElement;
+import io.zyient.core.mapping.model.mapping.MappedElement;
+import io.zyient.core.mapping.model.mapping.MappingType;
 import io.zyient.core.mapping.transformers.RegexTransformer;
 import io.zyient.core.mapping.transformers.Transformer;
 import lombok.Getter;
@@ -46,6 +47,7 @@ public class MapTransformer<T> {
         private Map<String, MapNode> nodes;
         private Transformer<?> transformer;
         private boolean nullable;
+        private MappingType mappingType;
     }
 
     private final Class<? extends T> type;
@@ -124,9 +126,11 @@ public class MapTransformer<T> {
         return source;
     }
 
-    public Map<String, Object> transform(@NonNull Map<String, Object> source) throws Exception {
+    public Map<String, Object> transform(@NonNull Map<String, Object> source,
+                                         @NonNull Class<? extends T> entityType) throws Exception {
         Preconditions.checkState(!mapper.isEmpty());
         Map<String, Object> data = new HashMap<>();
+        data.put("@class", entityType.getTypeName());
         for (String key : mapper.keySet()) {
             MapNode node = mapper.get(key);
             transform(source, node, data);
@@ -138,14 +142,22 @@ public class MapTransformer<T> {
     private void transform(Map<String, Object> source,
                            MapNode node,
                            Map<String, Object> data) throws Exception {
+        Object value = null;
+
         if (source.containsKey(node.name)) {
-            Object value = source.get(node.name);
+            value = source.get(node.name);
             if (value == null) {
                 if (!node.nullable) {
                     throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
                 }
                 return;
             }
+        } else {
+            if (!node.nullable) {
+                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
+            }
+        }
+        if (value != null) {
             if (!Strings.isNullOrEmpty(node.targetPath)) {
                 Map<String, Object> map = getTargetNode(data, node.targetPath);
                 String[] parts = node.targetPath.split("\\.");
@@ -165,10 +177,6 @@ public class MapTransformer<T> {
                     }
                 }
             }
-        } else {
-            if (!node.nullable) {
-                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
-            }
         }
     }
 
@@ -187,11 +195,14 @@ public class MapTransformer<T> {
                         currentType.getCanonicalName(), name));
             }
             currentType = f.type();
+            if (f.type() == null) {
+                throw new Exception(String.format("Property type is null. [property=%s]", f.name()));
+            }
             if (current.containsKey(name)) {
                 current = (Map<String, Object>) current.get(name);
             } else {
                 Map<String, Object> nmap = new HashMap<>();
-                nmap.put("@class", currentType.getCanonicalName());
+                nmap.put("@class", currentType.getTypeName());
                 current.put(name, nmap);
                 current = nmap;
             }
@@ -213,6 +224,7 @@ public class MapTransformer<T> {
                 node.targetPath = element.getTargetPath();
                 node.type = property.field().getType();
                 node.nullable = element.isNullable();
+                node.mappingType = element.getMappingType();
                 mapper.put(parts[0], node);
                 return node;
             }
@@ -250,6 +262,7 @@ public class MapTransformer<T> {
                             nnode.name = name;
                             nnode.targetPath = element.getTargetPath();
                             nnode.nullable = element.isNullable();
+                            nnode.mappingType = element.getMappingType();
                             if (node.nodes == null) {
                                 node.nodes = new HashMap<>();
                             }

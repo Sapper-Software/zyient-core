@@ -18,6 +18,7 @@ package io.zyient.base.common.utils.beans;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.PropertyBag;
+import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -50,6 +51,9 @@ public class PropertyFieldDef extends PropertyDef {
     }
 
     protected PropertyFieldDef init(@NonNull ClassDef parent) {
+        type(Map.class);
+        name("properties");
+
         setter(parent.findSetter(PropertyBag.FIELD_KEY, Map.class));
         Preconditions.checkNotNull(setter());
         getter(parent.findGetter(PropertyBag.FIELD_KEY, Map.class));
@@ -59,6 +63,17 @@ public class PropertyFieldDef extends PropertyDef {
         valueSetter = findSetValue(parent.methods());
         Preconditions.checkNotNull(valueSetter);
         return this;
+    }
+
+    @Override
+    protected PropertyDef findField(@NonNull String[] parts, int index) {
+        if (index == parts.length - 1) {
+            List<String> keys = ReflectionHelper.extractKey(parts[index]);
+            if (keys != null && !keys.isEmpty()) {
+                return this;
+            }
+        }
+        return null;
     }
 
     private Method findGetValue(List<Method> methods) {

@@ -105,6 +105,12 @@
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
+            <map source="129039.90">
+                <sequence>13</sequence>
+                <target>constValue</target>
+                <nullable>false</nullable>
+                <type>Const</type>
+            </map>
         </mappings>
         <filters>
             <rules>

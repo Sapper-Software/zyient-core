@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.core.mapping.model.mapping;
 
-import com.google.common.base.Preconditions;
-import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Map;
+import java.util.List;
 
 @Getter
 @Setter
-@SuppressWarnings("rawtypes")
-public class EnumMappedElement extends MappedElement {
-    @Config(name = "enum", type = Class.class)
-    private Class<? extends Enum> enumType;
-    @Config(name = "mappings", required = false, type = Map.class)
-    private Map<String, String> enumMappings;
-
-    public String getName() {
-        Preconditions.checkNotNull(enumType);
-        return enumType.getSimpleName();
-    }
+public class ConditionalMappedElement extends Mapped {
+    private List<MappedElement> mappings;
 }

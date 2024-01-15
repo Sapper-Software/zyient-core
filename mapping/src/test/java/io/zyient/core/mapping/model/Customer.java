@@ -44,9 +44,12 @@ public class Customer implements IEntity<IntegerKey>, PropertyBag {
     private Contact contact;
     @Column(name = "credit_limit")
     private double creditLimit;
+    @Column(name = "const_value")
+    private double constValue;
     @Convert(converter = PropertiesConverter.class)
     @Column(name = "properties")
     private Map<String, Object> properties;
+
     /**
      * Compare the entity key with the key specified.
      *

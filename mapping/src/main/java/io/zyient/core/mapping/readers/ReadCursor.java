@@ -16,7 +16,7 @@
 
 package io.zyient.core.mapping.readers;
 
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

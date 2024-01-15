@@ -19,6 +19,7 @@ package io.zyient.core.mapping.model;
 
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.lists.StringListParser;
+import io.zyient.core.mapping.model.mapping.MappedElement;
 import lombok.Getter;
 import lombok.Setter;
 

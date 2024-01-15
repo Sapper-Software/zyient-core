@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model;
+package io.zyient.core.mapping.model.mapping;
 
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.base.common.config.ConfigReader;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.tree.ImmutableNode;
 
 @Getter
 @Setter
-@ConfigPath(path = "map")
-public class MappedElement {
-    @Config(name = "sequence", type = Integer.class)
-    private int sequence;
+public class MappedElement extends Mapped {
     @Config(name = "[@source]")
     private String sourcePath;
     @Config(name = "target")
@@ -56,10 +49,5 @@ public class MappedElement {
         this.type = type;
         if (mappingType != null)
             this.mappingType = mappingType;
-    }
-
-    public static MappedElement read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                     @NonNull Class<? extends MappedElement> type) throws Exception {
-        return ConfigReader.read(xmlConfig, type);
     }
 }

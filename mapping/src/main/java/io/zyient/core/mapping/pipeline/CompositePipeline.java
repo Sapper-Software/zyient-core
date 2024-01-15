@@ -26,7 +26,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.RecordResponse;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
 import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;

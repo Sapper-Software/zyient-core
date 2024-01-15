@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.mapper;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.PropertyBag;
 import lombok.Getter;
 import lombok.NonNull;
@@ -30,6 +31,9 @@ public class Constants {
 
     @Getter
     @Setter
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS
+    )
     public static class Source implements PropertyBag {
         private TestEnum type;
         private String id;
@@ -81,6 +85,9 @@ public class Constants {
 
     @Getter
     @Setter
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS
+    )
     public static class Source1Nested {
         private String id;
         private Date date;
@@ -97,6 +104,9 @@ public class Constants {
 
     @Getter
     @Setter
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS
+    )
     public static class Source2Nested {
         private String id;
         private String parentId;
@@ -118,6 +128,9 @@ public class Constants {
 
     @Getter
     @Setter
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS
+    )
     public static class Target implements PropertyBag {
         private String sourceId;
         private Date created;
@@ -162,6 +175,9 @@ public class Constants {
 
     @Getter
     @Setter
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.CLASS
+    )
     public static class TargetNested {
         private String id;
         private TestEnum etype;

@@ -18,7 +18,7 @@ package io.zyient.core.mapping.pipeline.impl.udp.nodes;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.core.mapping.model.RecordResponse;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.impl.udp.model.FormContext;
 import io.zyient.core.mapping.pipeline.staging.StagingPipeline;
 import lombok.NonNull;
