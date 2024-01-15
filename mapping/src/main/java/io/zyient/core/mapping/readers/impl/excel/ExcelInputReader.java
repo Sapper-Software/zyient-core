@@ -160,19 +160,15 @@ public class ExcelInputReader extends InputReader {
     private Object getCellValue(Cell cell) {
         Object o = null;
         switch (cell.getCellType()) {
-            case STRING:
-                o = cell.getStringCellValue();
-                break;
-            case BOOLEAN:
-                o = cell.getBooleanCellValue();
-                break;
-            case NUMERIC:
+            case STRING -> o = cell.getStringCellValue().trim();
+            case BOOLEAN -> o = cell.getBooleanCellValue();
+            case NUMERIC -> {
                 if (cell.getCellStyle().getDataFormatString() != null &&
                         isDateValid(cell.getCellStyle().getDataFormatString())) {
                     return cell.toString();
                 }
                 o = cell.getNumericCellValue();
-                break;
+            }
         }
 
         return o;
