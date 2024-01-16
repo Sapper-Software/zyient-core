@@ -27,6 +27,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.decisions.EvaluationTree;
 import io.zyient.base.core.decisions.builder.EvaluationTreeBuilder;
@@ -300,7 +301,8 @@ public abstract class Mapping<T> {
         String path = me.getSourcePath();
         if (MappingReflectionHelper.isContextPrefixed(path)) {
             value = findContextValue(context, path);
-        } else if (me.getMappingType() == MappingType.ConstProperty) {
+        } else if (me.getMappingType() == MappingType.ConstProperty
+                || me.getMappingType() == MappingType.ConstField) {
             value = me.getSourcePath();
         } else {
             String[] parts = path.split("\\.");
@@ -344,6 +346,22 @@ public abstract class Mapping<T> {
                 }
             } else {
                 response.add(element.getTargetPath(), tv);
+            }
+        } else if (element.getMappingType() == MappingType.Field ||
+                element.getMappingType() == MappingType.ConstField) {
+            Object tv = transform(value, element, element.getType());
+            if (tv == null) {
+                if (!element.isNullable()) {
+                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                            element.getSourcePath(), element.getTargetPath()));
+                }
+            } else {
+                PropertyDef def = ReflectionHelper.findProperty(entityType, element.getTargetPath());
+                if (def == null) {
+                    throw new Exception(String.format("Property not found. [entity=%s][property=%s]",
+                            entityType.getCanonicalName(), element.getTargetPath()));
+                }
+                MappingReflectionHelper.setProperty(element.getTargetPath(), def, data, tv);
             }
         }
     }

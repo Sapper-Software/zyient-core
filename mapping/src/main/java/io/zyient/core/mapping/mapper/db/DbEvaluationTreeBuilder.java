@@ -98,7 +98,12 @@ public class DbEvaluationTreeBuilder implements EvaluationTreeBuilder<Map<String
             ConditionParser<Map<String, Object>> parser = (ConditionParser<Map<String, Object>>) settings.getParser()
                     .getDeclaredConstructor()
                     .newInstance();
+            int size = records.size();
+            int count = 0;
             while (!records.isEmpty()) {
+                if (count > 2 * size) {
+                    throw new Exception("Stuck in loop: condition graph might be incorrect...");
+                }
                 List<DBConditionDef> delete = new ArrayList<>();
                 for (String key : records.keySet()) {
                     DBConditionDef def = records.get(key);
@@ -121,15 +126,16 @@ public class DbEvaluationTreeBuilder implements EvaluationTreeBuilder<Map<String
                         nodes.put(def.getId().stringKey(), node);
                         delete.add(def);
                     } else {
-                        if (nodes.containsKey(def.getId().stringKey())) {
+                        if (nodes.containsKey(def.getParentId().stringKey())) {
                             EvaluationTree.Node<Map<String, Object>, ConditionalMappedElement> node
-                                    = nodes.get(def.getId().stringKey());
+                                    = nodes.get(def.getParentId().stringKey());
                             EvaluationTree.Node<Map<String, Object>, ConditionalMappedElement> cnode
                                     = node.add(condition, me);
                             nodes.put(def.getId().stringKey(), cnode);
                             delete.add(def);
                         }
                     }
+                    count++;
                 }
                 if (!delete.isEmpty()) {
                     for (DBConditionDef def : delete) {

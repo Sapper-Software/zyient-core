@@ -92,8 +92,8 @@ public class MapTransformer<T> {
                 return transformer;
             }
         } else if (elem instanceof RegexMappedElement element) {
-            if (transformers.containsKey(element.getRegex())) {
-                return transformers.get(element.getRegex());
+            if (transformers.containsKey(element.getName())) {
+                return transformers.get(element.getName());
             } else if (create) {
                 RegexTransformer transformer = (RegexTransformer) new RegexTransformer()
                         .withGroups(element.getGroups())
@@ -101,7 +101,7 @@ public class MapTransformer<T> {
                         .format(element.getFormat())
                         .replace(element.getReplace())
                         .configure(settings);
-                transformers.put(transformer.name(), transformer);
+                transformers.put(element.getName(), transformer);
                 return transformer;
             }
         }
@@ -110,14 +110,14 @@ public class MapTransformer<T> {
 
     public Object transform(@NonNull MappedElement element, @NonNull Object source) throws Exception {
         if (element instanceof CustomMappedElement) {
-            Transformer<?> transformer = findTransformer(element, false);
+            Transformer<?> transformer = findTransformer(element, true);
             if (transformer == null) {
                 throw new Exception(String.format("Transformer not found. [name=%s]",
                         ((CustomMappedElement) element).getTransformer()));
             }
             return transformer.read(source);
         } else if (element instanceof RegexMappedElement re) {
-            Transformer<?> transformer = findTransformer(re, false);
+            Transformer<?> transformer = findTransformer(re, true);
             if (transformer == null) {
                 throw new Exception(String.format("Transformer not found. [name=%s]",
                         re.getName()));
