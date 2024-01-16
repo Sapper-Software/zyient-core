@@ -25,7 +25,7 @@ repositories {
 }
 
 group 'io.zyient.framework'
-version '1.15-SNAPSHOT'
+version '1.16-SNAPSHOT'
 
 configurations.all {
     exclude module: "logback-classic"
@@ -105,7 +105,7 @@ subprojects {
     apply plugin: 'idea'
 
     group 'io.zyient.framework'
-    version '1.15-SNAPSHOT'
+    version '1.16-SNAPSHOT'
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
