@@ -19,6 +19,7 @@ package io.zyient.core.mapping.mapper.db;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.EDataTypes;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
@@ -28,6 +29,7 @@ import io.zyient.base.core.decisions.ConditionParser;
 import io.zyient.base.core.decisions.EvaluationTree;
 import io.zyient.base.core.decisions.builder.EvaluationTreeBuilder;
 import io.zyient.base.core.model.StringKey;
+import io.zyient.core.mapping.decisions.MappingConditionParser;
 import io.zyient.core.mapping.model.mapping.ConditionalMappedElement;
 import io.zyient.core.mapping.readers.impl.db.QueryBuilder;
 import io.zyient.core.persistence.AbstractDataStore;
@@ -85,6 +87,8 @@ public class DbEvaluationTreeBuilder implements EvaluationTreeBuilder<Map<String
             List<DBConditionDef> conditions = cursor.nextPage();
             if (conditions == null || conditions.isEmpty()) break;
             for (DBConditionDef condition : conditions) {
+                List<DBMapping> mappings = fetchMappings(condition);
+                condition.setMappings(mappings);
                 records.put(condition.getId().stringKey(), condition);
             }
         }
@@ -98,13 +102,16 @@ public class DbEvaluationTreeBuilder implements EvaluationTreeBuilder<Map<String
                 List<DBConditionDef> delete = new ArrayList<>();
                 for (String key : records.keySet()) {
                     DBConditionDef def = records.get(key);
+                    Context ctx = new Context();
+                    ctx.put(MappingConditionParser.CONTEXT_CONDITION_TYPE, def.getType());
                     Condition<Map<String, Object>> condition = parser.parse(def.getCondition(),
                             def.getField(),
-                            EDataTypes.asJavaType(def.getType()));
+                            EDataTypes.asJavaType(def.getDataType()),
+                            ctx);
                     ConditionalMappedElement me = null;
                     if (def.getMappings() != null && !def.getMappings().isEmpty()) {
                         me = new ConditionalMappedElement();
-                        for (DBMappingDef md : def.getMappings()) {
+                        for (DBMapping md : def.getMappings()) {
                             me.add(md.as());
                         }
                     }
@@ -142,5 +149,23 @@ public class DbEvaluationTreeBuilder implements EvaluationTreeBuilder<Map<String
             conditions = JSONUtils.read(settings.getCondition(), Map.class);
         }
         return builder.build(settings.getQuery(), conditions);
+    }
+
+    private List<DBMapping> fetchMappings(DBConditionDef def) throws Exception {
+        String condition = "id.conditionId = :id";
+        Map<String, Object> predicate = Map.of("id", def.getId().getKey());
+        AbstractDataStore.Q query = builder.build(condition, predicate);
+        Cursor<DBMappingId, DBMapping> cursor = dataStore.search(query,
+                DBMappingId.class,
+                DBMapping.class,
+                null);
+        List<DBMapping> mappings = new ArrayList<>();
+        while (true) {
+            List<DBMapping> result = cursor.nextPage();
+            if (result == null || result.isEmpty()) break;
+            mappings.addAll(result);
+        }
+        if (!mappings.isEmpty()) return mappings;
+        return null;
     }
 }

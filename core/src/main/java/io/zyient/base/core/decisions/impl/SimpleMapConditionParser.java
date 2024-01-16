@@ -17,6 +17,7 @@
 package io.zyient.base.core.decisions.impl;
 
 import com.google.common.base.Strings;
+import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.decisions.Condition;
 import io.zyient.base.core.decisions.ConditionParser;
@@ -34,7 +35,8 @@ public class SimpleMapConditionParser implements ConditionParser<Map<String, Obj
     @Override
     public Condition<Map<String, Object>> parse(@NonNull String source,
                                                 @NonNull String property,
-                                                @NonNull Class<?> type) throws Exception {
+                                                @NonNull Class<?> type,
+                                                Context context) throws Exception {
         Matcher matcher = PARSE_PATTERN.matcher(source);
         if (matcher.matches()) {
             String op = matcher.group(1);

@@ -16,22 +16,20 @@
 
 package io.zyient.core.mapping.mapper.db;
 
-import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EDataTypes;
-import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.core.mapping.model.mapping.MappedElement;
 import io.zyient.core.mapping.model.mapping.MappingType;
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "m_mapping_defs")
-public class DBMappingDef implements IEntity<DBMappingId> {
+public class DBMappingDef extends DBMapping {
     @EmbeddedId
     private DBMappingId id;
     @Column(name = "source_path")
@@ -42,10 +40,22 @@ public class DBMappingDef implements IEntity<DBMappingId> {
     @Column(name = "mapping_type")
     private MappingType mappingType;
     @Column(name = "nullable")
-    private boolean nullable;
+    private boolean nullable = true;
     @Enumerated(EnumType.STRING)
     @Column(name = "data_type")
     private EDataTypes dataType = EDataTypes.String;
+
+    public DBMappingDef() {
+    }
+
+    public DBMappingDef(@NonNull DBMappingDef source) {
+        id = source.id;
+        sourcePath = source.sourcePath;
+        targetPath = source.targetPath;
+        mappingType = source.mappingType;
+        nullable = source.nullable;
+        dataType = source.dataType;
+    }
 
     /**
      * Validate this entity instance.
@@ -70,61 +80,6 @@ public class DBMappingDef implements IEntity<DBMappingId> {
         if (errors != null) {
             throw errors;
         }
-    }
-
-    /**
-     * Compare the entity key with the key specified.
-     *
-     * @param key - Target Key.
-     * @return - Comparision.
-     */
-    @Override
-    public int compare(DBMappingId key) {
-        return id.compareTo(key);
-    }
-
-    /**
-     * Copy the changes from the specified source entity
-     * to this instance.
-     * <p>
-     * All properties other than the Key will be copied.
-     * Copy Type:
-     * Primitive - Copy
-     * String - Copy
-     * Enum - Copy
-     * Nested Entity - Copy Recursive
-     * Other Objects - Copy Reference.
-     *
-     * @param source  - Source instance to Copy from.
-     * @param context - Execution context.
-     * @return - Copied Entity instance.
-     * @throws CopyException
-     */
-    @Override
-    public IEntity<DBMappingId> copyChanges(IEntity<DBMappingId> source, Context context) throws CopyException {
-        throw new CopyException("Method not supported...");
-    }
-
-    /**
-     * Clone this instance of Entity.
-     *
-     * @param context - Clone Context.
-     * @return - Cloned Instance.
-     * @throws CopyException
-     */
-    @Override
-    public IEntity<DBMappingId> clone(Context context) throws CopyException {
-        throw new CopyException("Method not supported...");
-    }
-
-    /**
-     * Get the object instance Key.
-     *
-     * @return - Key
-     */
-    @Override
-    public DBMappingId entityKey() {
-        return id;
     }
 
     public MappedElement as() throws Exception {

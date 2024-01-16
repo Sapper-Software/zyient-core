@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,18 @@
 
 package io.zyient.core.mapping.model;
 
-
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.lists.StringListParser;
-import io.zyient.core.mapping.model.mapping.MappedElement;
+import io.zyient.core.mapping.mapper.db.DBConditionDef;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
-
 @Getter
 @Setter
-public class RegexMappedElement extends MappedElement {
-    @Config(name = "name")
+@Entity
+@Table(name = "m_condition_defs")
+public class DemoConditionDef extends DBConditionDef {
+    @Column(name = "name")
     private String name;
-    @Config(name = "regex", required = true)
-    private String regex;
-    @Config(name = "replaceWith", required = false)
-    private String replace;
-    @Config(name = "groups", required = false, parser = StringListParser.class)
-    private List<String> groups;
-    @Config(name = "format", required = false)
-    private String format;
 }

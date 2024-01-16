@@ -52,7 +52,7 @@ public abstract class StoreSessionManager<C, T> {
             long tid = Thread.currentThread().getId();
             if (sessions.containsKey(tid)) {
                 StoreSession<C, T> session = sessions.get(tid);
-                if (session.session != null) {
+                if (session.session != null && isAvailable(session.session)) {
                     long delta = System.currentTimeMillis() - session.timeLastUsed;
                     if (delta < sessionTimeout) {
                         session.timeLastUsed = System.currentTimeMillis();
@@ -68,6 +68,17 @@ public abstract class StoreSessionManager<C, T> {
             sessions.put(tid, ss);
             return session;
         }
+    }
+
+    public boolean remove() throws DataStoreException {
+        synchronized (sessions) {
+            long tid = Thread.currentThread().getId();
+            if (sessions.containsKey(tid)) {
+                sessions.remove(tid);
+                return true;
+            }
+        }
+        return false;
     }
 
     public void beingTransaction() throws DataStoreException {
@@ -154,6 +165,8 @@ public abstract class StoreSessionManager<C, T> {
     }
 
     protected abstract boolean isActive(@NonNull T transaction);
+
+    protected abstract boolean isAvailable(@NonNull C session);
 
     protected abstract C create() throws DataStoreException;
 

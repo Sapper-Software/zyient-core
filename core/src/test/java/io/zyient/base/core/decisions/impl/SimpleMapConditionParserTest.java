@@ -42,9 +42,9 @@ class SimpleMapConditionParserTest {
             data.put("inner", inner);
 
             SimpleMapConditionParser parser = new SimpleMapConditionParser();
-            Condition<Map<String, Object>> condition = parser.parse("< 'string-02'", "['string']", String.class);
+            Condition<Map<String, Object>> condition = parser.parse("< 'string-02'", "['string']", String.class, null);
             assertTrue(condition.evaluate(data));
-            condition = parser.parse(">= 'string-02'", "['inner'].['nested-string']", String.class);
+            condition = parser.parse(">= 'string-02'", "['inner'].['nested-string']", String.class, null);
             assertTrue(condition.evaluate(data));
         } catch (Exception ex) {
             ex.printStackTrace();

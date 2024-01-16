@@ -34,8 +34,8 @@ import java.util.Map;
 
 @Getter
 @Setter
-@Entity(name = "tb_customers")
-@Table(name = "tb_customers", schema = "test")
+@Entity
+@Table(name = "tb_customers")
 public class Customer implements IEntity<IntegerKey>, PropertyBag {
     @EmbeddedId
     private IntegerKey id;

@@ -50,4 +50,12 @@ public class MappedElement extends Mapped {
         if (mappingType != null)
             this.mappingType = mappingType;
     }
+
+    public MappedElement(@NonNull MappedElement source) {
+        sourcePath = source.sourcePath;
+        targetPath = source.targetPath;
+        nullable = source.nullable;
+        type = source.type;
+        mappingType = source.mappingType;
+    }
 }

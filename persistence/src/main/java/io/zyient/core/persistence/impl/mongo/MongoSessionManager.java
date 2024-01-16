@@ -40,6 +40,11 @@ public class MongoSessionManager extends StoreSessionManager<MorphiaSession, Mon
     }
 
     @Override
+    protected boolean isAvailable(@NonNull MorphiaSession session) {
+        return true;
+    }
+
+    @Override
     protected MorphiaSession create() throws DataStoreException {
         try {
             return connection.getConnection().startSession();

@@ -235,6 +235,9 @@ public abstract class Mapping<T> {
             HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
             Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type =
                     (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
+            if (type == null) {
+                throw new Exception("Evaluation Tree builder type not specified...");
+            }
             EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder =
                     type.getDeclaredConstructor()
                             .newInstance()

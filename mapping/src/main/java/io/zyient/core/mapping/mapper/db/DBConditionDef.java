@@ -22,14 +22,15 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EDataTypes;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.StringKey;
+import io.zyient.core.mapping.decisions.ConditionType;
 import io.zyient.core.mapping.model.mapping.MappingType;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -44,14 +45,16 @@ public abstract class DBConditionDef implements IEntity<StringKey> {
     private StringKey parentId;
     @Column(name = "source_field")
     private String field;
-    @Column(name = "condition")
+    @Column(name = "condition_string")
     private String condition;
     @Enumerated(EnumType.STRING)
     @Column(name = "data_type")
-    private EDataTypes type;
-    @OneToMany(cascade = CascadeType.ALL)
-    @JoinColumn(name = "id", referencedColumnName = "condition_id")
-    private Set<DBMappingDef> mappings;
+    private EDataTypes dataType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "condition_type")
+    private ConditionType type = ConditionType.Simple;
+    @Transient
+    private List<DBMapping> mappings;
 
     /**
      * Compare the entity key with the key specified.
@@ -118,27 +121,32 @@ public abstract class DBConditionDef implements IEntity<StringKey> {
         ValidationExceptions errors = null;
         errors = ValidationExceptions.checkValue(id.getKey(),
                 "Condition ID is null/empty", errors);
-        errors = ValidationExceptions.checkValue(field,
-                "Missing required field: [field]", errors);
+        errors = ValidationExceptions.chack(type != null,
+                "Condition type not set.", errors);
+        if (type == ConditionType.Simple)
+            errors = ValidationExceptions.checkValue(field,
+                    "Missing required field: [field]", errors);
         errors = ValidationExceptions.checkValue(condition,
                 "Missing required field: [condition]", errors);
-        errors = ValidationExceptions.chack(type != null,
+        errors = ValidationExceptions.chack(dataType != null,
                 "Missing required field: [type]", errors);
         if (errors != null)
             throw errors;
     }
 
-    public DBMappingDef add(@NonNull String sourcePath,
+    public DBMappingDef add(@NonNull Class<? extends DBMappingDef> type,
+                            String sourcePath,
                             @NonNull String targetPath,
                             @NonNull MappingType mappingType,
-                            boolean nullable) {
+                            boolean nullable) throws Exception {
         if (mappings == null) {
-            mappings = new HashSet<>();
+            mappings = new ArrayList<>();
         }
         DBMappingId id = new DBMappingId();
         id.setConditionId(this.id.getKey());
         id.setSequence(mappings.size());
-        DBMappingDef def = new DBMappingDef();
+        DBMappingDef def = type.getDeclaredConstructor()
+                        .newInstance();
         def.setId(id);
         def.setSourcePath(sourcePath);
         def.setTargetPath(targetPath);

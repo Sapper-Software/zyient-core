@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.decisions;
+package io.zyient.core.mapping.decisions;
 
-import io.zyient.base.common.model.Context;
-import lombok.NonNull;
-
-public interface ConditionParser<T> {
-    Condition<T> parse(@NonNull String source,
-                       String property,
-                       @NonNull Class<?> type,
-                       Context context) throws Exception;
+public enum ConditionType {
+    Simple, SpEL
 }

@@ -30,6 +30,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class RuleElementTest {
@@ -89,6 +90,23 @@ class RuleElementTest {
             Expression exp = parser.parseExpression(rule);
             Object value = exp.getValue(ctx);
             System.out.println(value);
+
+            Map<String, Object> root = new HashMap<>();
+            Map<String, Object> r1 = new HashMap<>();
+            root.put("r1", r1);
+            r1.put("name", "name-1");
+            r1.put("value", 1000);
+            Map<String, Object> r2 = new HashMap<>();
+            root.put("r2", r2);
+            r2.put("name", "name-2");
+            r2.put("value", 2000);
+            rule = "#root['r1'].#this['name'] == 'name-2' ? #root['r1'].#this['value'] : 2000";
+            exp = parser.parseExpression(rule);
+            ctx = new StandardEvaluationContext(root);
+            value = exp.getValue(ctx);
+            assertInstanceOf(Integer.class, value);
+            System.out.println(value);
+
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

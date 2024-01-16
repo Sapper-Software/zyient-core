@@ -20,7 +20,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import io.zyient.base.core.decisions.ConditionParser;
-import io.zyient.base.core.decisions.impl.SimpleMapConditionParser;
+import io.zyient.core.mapping.decisions.MappingConditionParser;
 import io.zyient.core.mapping.readers.impl.db.QueryBuilder;
 import io.zyient.core.persistence.AbstractDataStore;
 import lombok.Getter;
@@ -39,7 +39,7 @@ public class DbEvaluationTreeBuilderSettings extends Settings {
     @Config(name = "condition.class", type = Class.class)
     private Class<? extends DBConditionDef> conditionType;
     @Config(name = "condition.parser", required = false, type = Class.class)
-    private Class<? extends ConditionParser<?>> parser = SimpleMapConditionParser.class;
+    private Class<? extends ConditionParser<?>> parser = MappingConditionParser.class;
     @Config(name = "filter.query")
     private String query;
     @Config(name = "filter.condition", required = false)
