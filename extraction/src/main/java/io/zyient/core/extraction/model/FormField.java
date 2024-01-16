@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -25,14 +25,26 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Page extends Section {
-    private int number;
+public class FormField<T> extends Cell<T> {
+    private TextCell label;
+    private Cell<T> value;
 
-    public Page() {
+    public FormField() {
         super();
     }
 
-    public Page(@NonNull String parentId, int index) {
+    public FormField(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    public TextCell createLabelCell() {
+        label = new TextCell(getId(), 0);
+        return label;
+    }
+
+    public Cell<T> createValueCell(@NonNull Class<? extends Cell<T>> type) throws Exception {
+        value = type.getDeclaredConstructor(String.class, Integer.class)
+                .newInstance(getId(), 1);
+        return value;
     }
 }

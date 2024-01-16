@@ -14,23 +14,39 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class TextCell extends Cell<String> {
-    public TextCell() {
+public class Form extends Cell<String> {
+    private Map<String, FormField<?>> fields;
+
+    public Form() {
         super();
     }
 
-    public TextCell(@NonNull String parentId, int index) {
+    public Form(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    public <V> FormField<V> add(@NonNull Class<? extends Cell<V>> valueType) throws Exception {
+        if (fields == null) {
+            fields = new HashMap<>();
+        }
+        FormField<V> field = new FormField<>(getId(), fields.size());
+        field.createLabelCell();
+        field.createValueCell(valueType);
+        fields.put(field.getId(), field);
+        return field;
     }
 }

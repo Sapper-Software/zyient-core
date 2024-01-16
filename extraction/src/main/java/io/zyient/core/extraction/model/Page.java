@@ -14,14 +14,25 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class Tag {
-    private String label;
-    private double confidence;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class Page extends Section {
+    private int number;
+
+    public Page() {
+        super();
+    }
+
+    public Page(@NonNull String parentId, int index) {
+        super(parentId, index);
+    }
 }

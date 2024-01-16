@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.Context;

@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.model.Context;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -28,24 +30,35 @@ import java.util.List;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Section extends Cell<String> {
-    private List<Cell<?>> blocks;
+public class DocumentSection extends Cell<String> {
+    private List<Page> pages;
+    private Context metadata;
 
-    public Section() {
+    public DocumentSection() {
         super();
     }
 
-    public Section(@NonNull String parentId, int index) {
-        super(parentId, index);
+    public DocumentSection(int index) {
+        Preconditions.checkArgument(index >= 0);
+        setParentId(null);
+        setId(String.valueOf(index));
     }
 
-    public <T> Cell<T> add(@NonNull Class<? extends Cell<T>> type) throws Exception {
-        if (blocks == null) {
-            blocks = new ArrayList<>();
+    public Page add() {
+        if (pages == null) {
+            pages = new ArrayList<>();
         }
-        Cell<T> cell = type.getDeclaredConstructor(String.class, Integer.class)
-                .newInstance(getId(), blocks.size());
-        blocks.add(cell);
-        return cell;
+        Page page = new Page(getId(), pages.size());
+        pages.add(page);
+        return page;
+    }
+
+    public Context addMetadata(@NonNull String name,
+                               @NonNull Object value) {
+        if (metadata == null) {
+            metadata = new Context();
+        }
+        metadata.put(name, value);
+        return metadata;
     }
 }

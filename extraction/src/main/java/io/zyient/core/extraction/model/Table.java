@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
@@ -28,25 +28,24 @@ import java.util.Map;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Form extends Cell<String> {
-    private Map<String, FormField<?>> fields;
+public class Table extends Cell<String> {
+    private Map<String, Column> columns;
 
-    public Form() {
+    public Table() {
         super();
     }
 
-    public Form(@NonNull String parentId, int index) {
+    public Table(@NonNull String parentId, int index) {
         super(parentId, index);
     }
 
-    public <V> FormField<V> add(@NonNull Class<? extends Cell<V>> valueType) throws Exception {
-        if (fields == null) {
-            fields = new HashMap<>();
+    public Column add(@NonNull String name) {
+        if (columns == null) {
+            columns = new HashMap<>();
         }
-        FormField<V> field = new FormField<>(getId(), fields.size());
-        field.createLabelCell();
-        field.createValueCell(valueType);
-        fields.put(field.getId(), field);
-        return field;
+        Column column = new Column(getId(), columns.size());
+        column.setData(name);
+        columns.put(name, column);
+        return column;
     }
 }

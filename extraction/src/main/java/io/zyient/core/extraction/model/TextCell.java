@@ -14,38 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Table extends Cell<String> {
-    private Map<String, Column> columns;
-
-    public Table() {
+public class TextCell extends Cell<String> {
+    public TextCell() {
         super();
     }
 
-    public Table(@NonNull String parentId, int index) {
+    public TextCell(@NonNull String parentId, int index) {
         super(parentId, index);
-    }
-
-    public Column add(@NonNull String name) {
-        if (columns == null) {
-            columns = new HashMap<>();
-        }
-        Column column = new Column(getId(), columns.size());
-        column.setData(name);
-        columns.put(name, column);
-        return column;
     }
 }

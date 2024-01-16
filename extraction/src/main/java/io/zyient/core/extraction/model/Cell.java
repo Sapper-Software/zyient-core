@@ -14,39 +14,46 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Row extends Cell<Integer> {
-    private List<Cell<?>> cells;
-    private boolean header;
+public class Cell<T> {
+    private String id;
+    private String parentId;
+    private int index;
+    private BoundingBox boundingBox;
+    private T data;
+    private Map<String, Tag> tags;
+    private double confidence;
 
-    public Row() {
-        super();
+    public Cell() {
     }
 
-    public Row(@NonNull String parentId, int index) {
-        super(parentId, index);
+    public Cell(@NonNull String parentId, int index) {
+        id = String.format("%s.%d", parentId, index);
+        this.index = index;
     }
 
-    public <T> Cell<T> add(@NonNull Class<? extends Cell<T>> type) throws Exception {
-        if (cells == null) {
-            cells = new ArrayList<>();
-        }
-        Cell<T> cell = type.getDeclaredConstructor(String.class, Integer.class)
-                .newInstance(getId(), cells.size());
-        cells.add(cell);
-        return cell;
+    public Tag addTag(@NonNull String label, double confidence) {
+        Preconditions.checkArgument(confidence >= 0 && confidence <= 1);
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(label));
+        Tag tag = new Tag();
+        tag.setLabel(label);
+        tag.setConfidence(confidence);
+        tags.put(tag.getLabel(), tag);
+
+        return tag;
     }
 }

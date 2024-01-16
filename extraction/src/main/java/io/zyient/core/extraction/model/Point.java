@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.extraction;
+package io.zyient.core.extraction.model;
 
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class BoundingBox {
-    private Point start;
-    private Point end;
+public class Point {
+    private int offset = -1;
+    private double X;
+    private double Y;
 }
