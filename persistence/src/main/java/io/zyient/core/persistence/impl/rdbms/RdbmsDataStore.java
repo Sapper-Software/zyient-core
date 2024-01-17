@@ -147,13 +147,13 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-        StatelessSession statelessSession = session.getSessionFactory().openStatelessSession();
         session.setCacheMode(CacheMode.IGNORE);
+        session.clear();
 
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
-            Query qq = statelessSession.createQuery(query.generatedQuery(), type).setCacheable(false);
+            Query qq = session.createQuery(query.generatedQuery(), type).setCacheable(false);
             if (query.hasParameters()) {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));
