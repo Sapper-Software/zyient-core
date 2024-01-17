@@ -18,6 +18,7 @@ package io.zyient.core.persistence.impl.rdbms;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.EEntityState;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.StoreSessionManager;
 import io.zyient.core.persistence.model.BaseEntity;
@@ -61,6 +62,11 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     }
 
     @Override
+    protected boolean isAvailable(@NonNull Session session) {
+        return session.isOpen();
+    }
+
+    @Override
     protected Session create() throws DataStoreException {
         try {
             Session session = hibernateConnection.getConnection();
@@ -75,6 +81,10 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     protected void close(@NonNull Session session) throws DataStoreException {
         if (session.isOpen()) {
             session.close();
+        }
+        if (!remove()) {
+            long tid = Thread.currentThread().getId();
+            DefaultLogger.warn(String.format("[THREAD=%d] Failed to remove session...", tid));
         }
         clearCache();
     }
@@ -100,7 +110,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         }
         session.flush();
         transaction.commit();
-        clearCache();
+        close(session);
     }
 
     @Override
@@ -113,7 +123,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
             throw new DataStoreException("Transaction instance is not active...");
         }
         transaction.rollback();
-        clearCache();
+        close(session);
     }
 
     private void clearCache() throws DataStoreException {
@@ -154,7 +164,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
                             entity.getState().getState().name(), entity.entityKey().stringKey()));
     }
 
-    public BaseEntity<?> updateCache(@NonNull BaseEntity<?> entity, @NonNull  EEntityState state) throws DataStoreException {
+    public BaseEntity<?> updateCache(@NonNull BaseEntity<?> entity, @NonNull EEntityState state) throws DataStoreException {
         Preconditions.checkState(isInTransaction());
         Map<String, TransactionCacheElement> cache;
         synchronized (transactionCache) {

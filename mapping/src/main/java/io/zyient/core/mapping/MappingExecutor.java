@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.StateException;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.model.InputContentInfo;
@@ -30,6 +31,7 @@ import io.zyient.core.mapping.pipeline.PipelineSource;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.persistence.DataStoreManager;
+import io.zyient.core.persistence.env.DataStoreEnv;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -57,10 +59,13 @@ public class MappingExecutor implements Closeable {
     private ExecutorService executorService;
     private DataStoreManager dataStoreManager;
     private ConnectionManager connectionManager;
+    private DataStoreEnv<?> env;
 
     public MappingExecutor init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
-        this.dataStoreManager = dataStoreManager;
+                                @NonNull BaseEnv<?> env) throws ConfigurationException {
+        Preconditions.checkArgument(env instanceof DataStoreEnv<?>);
+        this.env = (DataStoreEnv<?>) env;
+        this.dataStoreManager = ((DataStoreEnv<?>) env).getDataStoreManager();
         this.connectionManager = dataStoreManager.connectionManager();
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
@@ -79,7 +84,7 @@ public class MappingExecutor implements Closeable {
             state.setState(ProcessorState.EProcessorState.Running);
 
             builder = new PipelineBuilder()
-                    .configure(config, dataStoreManager);
+                    .configure(config, env);
 
             __instance = this;
 
@@ -144,9 +149,9 @@ public class MappingExecutor implements Closeable {
     }
 
     public static MappingExecutor create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                         @NonNull DataStoreManager dataStoreManager) throws Exception {
+                                         @NonNull BaseEnv<?> env) throws Exception {
         __instance = new MappingExecutor();
-        return __instance.init(xmlConfig, dataStoreManager);
+        return __instance.init(xmlConfig, env);
     }
 
     private record Reader(Pipeline pipeline,

@@ -16,10 +16,9 @@
 
 package io.zyient.core.sdk.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-
 
 @Getter
 @Setter

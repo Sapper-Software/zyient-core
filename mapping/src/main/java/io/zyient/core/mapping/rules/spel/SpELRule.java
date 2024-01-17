@@ -18,9 +18,9 @@ package io.zyient.core.mapping.rules.spel;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Error;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.*;
@@ -44,13 +44,13 @@ public class SpELRule<T> extends BaseRule<T> {
     public static final String FIELD_RESULT = "__zy_result";
 
     private Expression spELRule;
-    private PropertyModel property;
+    private PropertyDef property;
     private String target;
 
     private void normalizeRule() throws Exception {
         String r = expression();
         Map<String, String> fields = MappingReflectionHelper.extractFields(r);
-        if (!fields.isEmpty()) {
+        if (fields != null && !fields.isEmpty()) {
             for (String exp : fields.keySet()) {
                 String var = fields.get(exp);
                 if (MappingReflectionHelper.isPropertyPrefixed(var)

@@ -16,12 +16,15 @@
 
 package io.zyient.core.filesystem.impl.s3;
 
+import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
+import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
@@ -29,6 +32,7 @@ import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 public class S3Helper {
     public static File download(@NonNull S3Client client,
@@ -82,6 +86,54 @@ public class S3Helper {
         }
     }
 
+    public static void delete(@NonNull S3Client client,
+                              @NonNull String bucket,
+                              @NonNull String path,
+                              boolean recursive) throws IOException {
+        try {
+            if (recursive) {
+                ListObjectsRequest request = ListObjectsRequest
+                        .builder()
+                        .bucket(bucket)
+                        .prefix(path)
+                        .build();
+
+                ListObjectsResponse res = client.listObjects(request);
+                List<S3Object> objects = res.contents();
+                for (S3Object obj : objects) {
+                    DeleteObjectRequest dr = DeleteObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(obj.key())
+                            .build();
+                    DeleteObjectResponse r = client.deleteObject(dr);
+                    SdkHttpResponse sr = r.sdkHttpResponse();
+                    if (sr.statusCode() < 200 || sr.statusCode() >= 300) {
+                        String mesg = JSONUtils.asString(sr);
+                        throw new IOException(mesg);
+                    } else {
+                        DefaultLogger.info(String.format("[bucket=%s] Deleted path: %s", bucket, path));
+                    }
+                }
+            } else {
+                DeleteObjectRequest dr = DeleteObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(path)
+                        .build();
+                DeleteObjectResponse r = client.deleteObject(dr);
+                SdkHttpResponse sr = r.sdkHttpResponse();
+                if (sr.statusCode() >= 200 && sr.statusCode() < 300) {
+                    DefaultLogger.info(String.format("[bucket=%s] Deleted file: %s", bucket, path));
+                } else {
+                    String mesg = JSONUtils.asString(sr);
+                    throw new IOException(mesg);
+                }
+            }
+        } catch (Throwable t) {
+            throw new IOException(String.format("Delete failed. [bucket=%s][path=%s]",
+                    bucket, path), t);
+        }
+    }
+
     public static HeadObjectResponse upload(@NonNull S3Client client,
                                             @NonNull String bucket,
                                             @NonNull String path,
@@ -93,36 +145,6 @@ public class S3Helper {
                     .build();
             PutObjectResponse response = client
                     .putObject(request, RequestBody.fromFile(source));
-            S3Waiter waiter = client.waiter();
-            HeadObjectRequest requestWait = HeadObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
-                    .build();
-
-            WaiterResponse<HeadObjectResponse> waiterResponse = waiter.waitUntilObjectExists(requestWait);
-            if (waiterResponse.matched().response().isEmpty()) {
-                throw new Exception("Failed to get valid response...");
-            }
-            return waiterResponse.matched().response().get();
-        } catch (Throwable t) {
-            throw new IOException(String.format("Download failed. [bucket=%s][path=%s]",
-                    bucket, path), t);
-        }
-    }
-
-    public static HeadObjectResponse upload(@NonNull S3Client client,
-                                            @NonNull String bucket,
-                                            @NonNull String path,
-                                            @NonNull String source,
-                                             @NonNull String contentType) throws IOException {
-        try {
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
-                    .contentType(contentType)
-                    .build();
-            PutObjectResponse response = client
-                    .putObject(request, RequestBody.fromString(source));
             S3Waiter waiter = client.waiter();
             HeadObjectRequest requestWait = HeadObjectRequest.builder()
                     .bucket(bucket)

@@ -18,7 +18,7 @@ package io.zyient.core.mapping.transformers;
 
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.mapper.MappingSettings;
-import io.zyient.core.mapping.model.EnumMappedElement;
+import io.zyient.core.mapping.model.mapping.EnumMappedElement;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;

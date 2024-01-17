@@ -53,7 +53,7 @@ class UdpMappingExecutorTest {
         env.connectionManager().save();
 
         XMLConfiguration mConfig = ConfigReader.readFromFile(__CONFIG_FILE_MAPPING);
-        MappingExecutor.create(mConfig, env.getDataStoreManager());
+        MappingExecutor.create(mConfig, env);
     }
 
     @AfterAll

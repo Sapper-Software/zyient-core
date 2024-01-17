@@ -1,0 +1,5 @@
+b09f278a-11aa-4cb5-a6f9-e40ff81d7fca,demo,7ba0d8e9-7c1a-468f-ba98-4e160a8b041f,['_id'],<= 50,Integer,Simple
+2e2c5484-5d22-4298-9133-b366fc48fd79,demo,1ae27992-8b16-4af5-a2dd-ed08b96901f2,['_id'],>= 100,Integer,Simple
+1ae27992-8b16-4af5-a2dd-ed08b96901f2,demo,7ba0d8e9-7c1a-468f-ba98-4e160a8b041f,['_id'],> 50,Integer,Simple
+7ba0d8e9-7c1a-468f-ba98-4e160a8b041f,demo,,['country'],== 'India',String,Simple
+7d29fec4-8c53-4283-abbc-e2687fcf0c6c,demo,1ae27992-8b16-4af5-a2dd-ed08b96901f2,['_id'],< 100,Integer,Simple

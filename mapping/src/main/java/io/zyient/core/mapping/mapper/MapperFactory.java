@@ -20,6 +20,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.rules.RulesCache;
 import lombok.Getter;
@@ -46,8 +47,11 @@ public class MapperFactory {
     private final Map<String, Mapping<?>> mappings = new HashMap<>();
     private final Map<Class<?>, RulesCache<?>> rulesCaches = new HashMap<>();
     private File contentDir;
+    private BaseEnv<?> env;
 
-    public MapperFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public MapperFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                              @NonNull BaseEnv<?> env) throws ConfigurationException {
+        this.env = env;
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(__CONFIG_PATH);
             HierarchicalConfiguration<ImmutableNode> factoryConfig = xmlConfig.configurationAt(__CONFIG_PATH_FACTORY);
@@ -91,7 +95,7 @@ public class MapperFactory {
                     rConfig.configurationAt(RulesCacheSettings.__CONFIG_PATH_GLOBAL);
             RulesCache<?> cache = createCache(cacheSettings.getEntityType())
                     .contentDir(contentDir)
-                    .configure(rNode, cacheSettings.getEntityType());
+                    .configure(rNode, env, cacheSettings.getEntityType());
             rulesCaches.put(cacheSettings.getEntityType(), cache);
         }
     }
@@ -118,7 +122,7 @@ public class MapperFactory {
             Mapping<?> mapping = createInstance(mConfig)
                     .withRulesCache(cache)
                     .withContentDir(contentDir)
-                    .configure(mConfig);
+                    .configure(mConfig, env);
             mappings.put(mapping.name(), mapping);
         }
     }

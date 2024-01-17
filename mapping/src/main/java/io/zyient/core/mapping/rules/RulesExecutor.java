@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.rules;
 
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.StatusCode;
 import lombok.AccessLevel;
@@ -41,13 +42,17 @@ public class RulesExecutor<T> {
     private File contentDir;
     private RulesEvaluator<T> evaluator;
     private boolean terminateOnValidationError;
+    private BaseEnv<?> env;
 
     public RulesExecutor(@NonNull Class<? extends T> type) {
         this.type = type;
     }
 
-    public RulesExecutor<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public RulesExecutor<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                      @NonNull BaseEnv<?> env) throws ConfigurationException {
+        this.env = env;
         RuleConfigReader<T> reader = new RuleConfigReader<T>()
+                .env(env)
                 .cache(cache)
                 .contentDir(contentDir)
                 .entityType(type);

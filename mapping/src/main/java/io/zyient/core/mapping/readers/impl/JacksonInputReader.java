@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.readers.impl;
 
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 
 import java.io.IOException;

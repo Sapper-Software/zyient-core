@@ -26,7 +26,7 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.core.model.PropertyBag;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.core.model.UserContext;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import io.zyient.core.persistence.impl.solr.SolrConstants;

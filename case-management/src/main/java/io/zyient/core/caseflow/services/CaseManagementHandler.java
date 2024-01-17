@@ -123,8 +123,8 @@ public abstract class CaseManagementHandler<P extends Enum<P>, S extends CaseSta
                     condition.append(" OR ");
                 }
                 String k = String.format("state_%d", count);
-                condition.append(String.format("caseState.state = :%s", k));
-                params.put(k, state);
+                condition.append(String.format("caseState = :%s", k));
+                params.put(k, state.name());
                 count++;
             }
             condition.append(")");

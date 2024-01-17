@@ -18,13 +18,13 @@ package io.zyient.core.mapping.pipeline;
 
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.ContentInfo;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderFactory;
 import io.zyient.core.mapping.readers.MappingContextProvider;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -45,10 +45,10 @@ public class PipelineBuilder {
 
     @SuppressWarnings("unchecked")
     public PipelineBuilder configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                     @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
+                                     @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             mapperFactory = new MapperFactory()
-                    .init(xmlConfig);
+                    .init(xmlConfig, env);
             readerFactory = new InputReaderFactory()
                     .init(xmlConfig);
             HierarchicalConfiguration<ImmutableNode> cConfig =
@@ -67,7 +67,7 @@ public class PipelineBuilder {
                         .newInstance()
                         .contextProvider(contextProvider)
                         .contentDir(mapperFactory.contentDir())
-                        .configure(node, mapperFactory, dataStoreManager);
+                        .configure(node, mapperFactory, env);
                 transformers.put(pipeline.name(), pipeline);
             }
             return this;

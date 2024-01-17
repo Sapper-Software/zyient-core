@@ -18,8 +18,8 @@ package io.zyient.base.common.utils;
 
 
 import com.google.common.base.Preconditions;
+import lombok.NonNull;
 
-import javax.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -28,6 +28,20 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class CollectionUtils {
+
+    public static <T> void setAtIndex(@NonNull List<T> array,
+                                      int index,
+                                      @NonNull T value) {
+        Preconditions.checkArgument(index > 0);
+        if (array.size() > index) {
+            array.set(index, value);
+        } else {
+            for (int ii = array.size(); ii <= index; ii++) {
+                array.add(null);
+            }
+            array.set(index, value);
+        }
+    }
 
     /**
      * Set the value of the specified field to a list of elements converted from the
@@ -51,9 +65,9 @@ public class CollectionUtils {
      * @param values - List of string values to convert from.
      * @throws Exception
      */
-    public static final void setListValues(@Nonnull Object source,
-                                           @Nonnull Field field,
-                                           @Nonnull List<String> values)
+    public static final void setListValues(@NonNull Object source,
+                                           @NonNull Field field,
+                                           @NonNull List<String> values)
             throws Exception {
 
         Class<?> type = field.getType();
@@ -208,9 +222,9 @@ public class CollectionUtils {
      * @param values - List of string values to convert from.
      * @throws Exception
      */
-    public static final void setSetValues(@Nonnull Object source,
-                                          @Nonnull Field field,
-                                          @Nonnull List<String> values)
+    public static final void setSetValues(@NonNull Object source,
+                                          @NonNull Field field,
+                                          @NonNull List<String> values)
             throws Exception {
         Preconditions.checkArgument(source != null);
         Preconditions.checkArgument(field != null);
@@ -349,13 +363,13 @@ public class CollectionUtils {
     }
 
 
-    public static <T> Collection<T> getRange(@Nonnull Collection<T> source, int batchSize, int offset) {
+    public static <T> Collection<T> getRange(@NonNull Collection<T> source, int batchSize, int offset) {
         if (batchSize <= 0 || batchSize > source.size()) batchSize = source.size();
         if (offset < 0) offset = 0;
         if (offset >= source.size()) return null;
         List<T> result = new ArrayList<>();
         int index = 0;
-        for(T t : source) {
+        for (T t : source) {
             if ((index + offset) >= source.size() || index >= batchSize) break;
             result.add(t);
             index++;
@@ -363,13 +377,13 @@ public class CollectionUtils {
         return result;
     }
 
-    public static <T> Collection<T> getRange(@Nonnull T[] source, int batchSize, int offset) {
+    public static <T> Collection<T> getRange(@NonNull T[] source, int batchSize, int offset) {
         if (batchSize <= 0 || batchSize > source.length) batchSize = source.length;
         if (offset < 0) offset = 0;
         if (offset >= source.length) return null;
         List<T> result = new ArrayList<>();
         int index = 0;
-        for(T t : source) {
+        for (T t : source) {
             if ((index + offset) >= source.length || index >= batchSize) break;
             result.add(t);
             index++;
