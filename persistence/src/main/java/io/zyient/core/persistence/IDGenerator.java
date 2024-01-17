@@ -54,7 +54,7 @@ public class IDGenerator {
                         ReflectionHelper.setStringValue(entity, field, UUID.randomUUID().toString());
                     } else {
                         Long value = dataStore.nextSequence(gi.sequence());
-                        ReflectionHelper.setStringValue(entity, field, value);
+                        ReflectionHelper.setLongValue(entity, field, value);
                     }
                 }
             } else {

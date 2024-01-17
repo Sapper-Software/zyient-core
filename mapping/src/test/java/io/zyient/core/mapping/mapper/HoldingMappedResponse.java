@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.transformers;
+package io.zyient.core.mapping.mapper;
 
-import io.zyient.core.mapping.mapper.MappingSettings;
-import io.zyient.core.mapping.model.MappedElement;
-import lombok.NonNull;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.lang3.SerializationException;
+import io.zyient.core.mapping.annotations.EntityRef;
+import io.zyient.core.mapping.model.Holding;
+import io.zyient.core.mapping.model.MappedResponse;
 
-public interface Transformer<T> {
-    String __CONFIG_PATH = "transformer";
+import java.util.Map;
 
-    String name();
-
-    Transformer<T> configure(@NonNull MappingSettings settings, @NonNull MappedElement element) throws ConfigurationException;
-
-
-    T read(@NonNull Object source) throws SerializationException;
+@EntityRef(type = Holding.class)
+public class HoldingMappedResponse extends MappedResponse<Holding> {
+    public HoldingMappedResponse(Map<String, Object> source) {
+        super(source);
+    }
 }

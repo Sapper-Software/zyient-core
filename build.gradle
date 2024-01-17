@@ -18,14 +18,13 @@ plugins {
     id 'idea'
     id 'org.owasp.dependencycheck' version '8.2.1'
 }
-
 repositories {
     mavenCentral()
     gradlePluginPortal()
 }
 
 group 'io.zyient.framework'
-version '1.17-SNAPSHOT'
+version '1.18-SNAPSHOT'
 
 configurations.all {
     exclude module: "logback-classic"
@@ -105,7 +104,7 @@ subprojects {
     apply plugin: 'idea'
 
     group 'io.zyient.framework'
-    version '1.17-SNAPSHOT'
+    version '1.18-SNAPSHOT'
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
@@ -214,11 +213,11 @@ subprojects {
         // https://mvnrepository.com/artifact/com.beust/jcommander
         implementation group: 'com.beust', name: 'jcommander', version: '1.82'
 
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.2'
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.2'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.3'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.3'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.3'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.3'
 
         // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
         implementation 'com.google.protobuf:protobuf-java:3.21.5'
@@ -234,6 +233,10 @@ subprojects {
         implementation 'io.prometheus:simpleclient_httpserver:0.16.0'
         implementation 'io.prometheus:simpleclient_pushgateway:0.16.0'
         implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
+
+        //Bouncy castle for decryption
+        implementation 'org.bouncycastle:bcpg-jdk18on:1.76'
+        implementation 'org.bouncycastle:bcprov-jdk18on:1.76'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

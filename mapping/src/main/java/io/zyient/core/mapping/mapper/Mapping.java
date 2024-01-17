@@ -238,7 +238,7 @@ public abstract class Mapping<T> {
                 return response;
             }
         }
-        Map<String, Object> converted = mapTransformer.transform(source);
+        Map<String, Object> converted = mapTransformer.transform(source, context);
         T entity = mapper.convertValue(converted, entityType);
         response.setEntity(entity);
 
@@ -247,20 +247,32 @@ public abstract class Mapping<T> {
             if (me.getMappingType() == MappingType.Field) continue;
             Object value = null;
             String path = me.getSourcePath();
-            if (MappingReflectionHelper.isContextPrefixed(path)) {
-                value = findContextValue(context, path);
-            } else {
-                String[] parts = path.split("\\.");
-                value = findSourceValue(source, parts, 0);
-            }
-            if (value == null) {
-                if (!me.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
-                            me.getSourcePath(), me.getTargetPath()));
+            if (path.equals("*") && ReflectionHelper.implementsInterface(PropertyBag.class,entityType)) {
+                T data = response.getEntity();
+                int valCount = 1;
+                for (String key : source.keySet()) {
+                    ((PropertyBag) data).setProperty(String.format("%s%d","VAL",valCount), source.get(key));
+                    valCount++;
                 }
-                continue;
+            } else {
+                if (MappingReflectionHelper.isContextPrefixed(path)) {
+                    value = findContextValue(context, path);
+                } else {
+                    String[] parts = path.split("\\.");
+                    value = findSourceValue(source, parts, 0);
+                }
+                if (value == null) {
+                    if (!me.isNullable()) {
+                        throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                                me.getSourcePath(), me.getTargetPath()));
+                    }
+                    continue;
+                }
+                setFieldValue(me, value, response);
             }
-            setFieldValue(me, value, response);
+
+
+
         }
         EvaluationStatus status;
         if (rulesExecutor != null) {
