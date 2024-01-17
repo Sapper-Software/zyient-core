@@ -95,7 +95,7 @@ public class MapperFactory {
                     rConfig.configurationAt(RulesCacheSettings.__CONFIG_PATH_GLOBAL);
             RulesCache<?> cache = createCache(cacheSettings.getEntityType())
                     .contentDir(contentDir)
-                    .configure(rNode, cacheSettings.getEntityType());
+                    .configure(rNode, env, cacheSettings.getEntityType());
             rulesCaches.put(cacheSettings.getEntityType(), cache);
         }
     }

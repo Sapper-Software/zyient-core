@@ -16,7 +16,9 @@
 
 package io.zyient.core.mapping.rules;
 
+import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.errors.Errors;
 import lombok.Getter;
 import lombok.NonNull;
@@ -41,9 +43,11 @@ public class RuleConfigReader<T> {
     private Class<? extends T> entityType;
     private RulesCache<T> cache;
     private File contentDir;
+    private BaseEnv<?> env;
 
     @SuppressWarnings("unchecked")
     public List<Rule<T>> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+        Preconditions.checkNotNull(env);
         try {
             if (Errors.getDefault() == null) {
                 throw new ConfigurationException("Errors cache not initialized...");
@@ -78,7 +82,7 @@ public class RuleConfigReader<T> {
                         Rule<T> rule = config.createInstance(entityType);
                         rule.withEntityType(entityType)
                                 .withContentDir(contentDir)
-                                .configure(config);
+                                .configure(config, env);
                         if (ConfigReader.checkIfNodeExists(node, __CONFIG_PATH)) {
                             if (rule.getRuleType() != RuleType.Group
                                     && rule.getRuleType() != RuleType.Condition) {
@@ -90,6 +94,15 @@ public class RuleConfigReader<T> {
                             if (subRules != null) {
                                 rule.addSubRules(subRules);
                             }
+                        }
+                        if (ConfigReader.checkIfNodeExists(node, RuleVisitor.__CONFIG_PATH)) {
+                            HierarchicalConfiguration<ImmutableNode> vnode = node.configurationAt(RuleVisitor.__CONFIG_PATH);
+                            Class<? extends RuleVisitor<T>> type
+                                    = (Class<? extends RuleVisitor<T>>) ConfigReader.readType(vnode);
+                            RuleVisitor<T> visitor = type.getDeclaredConstructor()
+                                    .newInstance()
+                                    .configure(vnode, env);
+                            rule.addVisitor(visitor);
                         }
                         rules.add(rule);
                     }

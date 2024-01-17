@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.rules;
 
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
@@ -47,9 +48,11 @@ public class FilterChain<T> {
         return this;
     }
 
-    public FilterChain<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public FilterChain<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                    @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             RuleConfigReader<T> reader = new RuleConfigReader<T>()
+                    .env(env)
                     .contentDir(contentDir)
                     .entityType(type);
             chain = reader.read(xmlConfig);

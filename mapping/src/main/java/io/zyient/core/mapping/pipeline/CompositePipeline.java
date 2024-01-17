@@ -23,12 +23,12 @@ import com.jayway.jsonpath.JsonPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.RecordResponse;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -50,9 +50,9 @@ public abstract class CompositePipeline extends Pipeline {
     @SuppressWarnings("unchecked")
     public Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                               @NonNull MapperFactory mapperFactory,
-                              @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
+                              @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
-            configure(xmlConfig, dataStoreManager, CompositePipelineSettings.class);
+            configure(xmlConfig, env, CompositePipelineSettings.class);
             HierarchicalConfiguration<ImmutableNode> psConfig = config().configurationAt(__CONFIG_PATH_PIPELINES);
             List<HierarchicalConfiguration<ImmutableNode>> nodes
                     = psConfig.configurationsAt(PipelineBuilder.__CONFIG_NODE_PIPELINE);
@@ -64,7 +64,7 @@ public abstract class CompositePipeline extends Pipeline {
                         .newInstance()
                         .contextProvider(contextProvider())
                         .contentDir(mapperFactory.contentDir())
-                        .configure(node, mapperFactory, dataStoreManager);
+                        .configure(node, mapperFactory, env);
                 PipelineInfo pi = ConfigReader.read(node, PipelineInfo.class);
                 pi.setPipeline(pipeline);
                 HierarchicalConfiguration<ImmutableNode> fnode = node.configurationAt(PathFilter.__CONFIG_PATH);

@@ -23,10 +23,10 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Errors;
-import io.zyient.core.mapping.MappingExecutor;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
+import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.impl.rdbms.RdbmsDataStore;
 import lombok.Getter;
 import lombok.NonNull;
@@ -68,10 +68,10 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     @SuppressWarnings("unchecked")
     public void setup(@NonNull RuleConfig cfg) throws ConfigurationException {
         Preconditions.checkArgument(cfg instanceof DBRuleConfig);
+        Preconditions.checkArgument(env() instanceof DataStoreEnv<?>);
         DBRuleConfig config = (DBRuleConfig) cfg;
         try {
-            dataStore = MappingExecutor.defaultInstance()
-                    .dataStoreManager()
+            dataStore = ((DataStoreEnv<?>) env()).dataStoreManager()
                     .getDataStore(((DBRuleConfig) config).getDataStore(), RdbmsDataStore.class);
             if (dataStore == null) {
                 throw new ConfigurationException(String.format("Data Store not found. [name=%s]",
@@ -79,7 +79,7 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             }
             query = config.getExpression();
             Map<String, String> fs = MappingReflectionHelper.extractFields(query);
-            if (!fs.isEmpty()) {
+            if (fs != null && !fs.isEmpty()) {
                 whereFields = new HashMap<>();
                 int index = 0;
                 for (String key : fs.keySet()) {

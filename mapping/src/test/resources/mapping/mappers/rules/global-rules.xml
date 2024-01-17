@@ -32,6 +32,9 @@
                         <target>contact.address.countryCode</target>
                     </mapping>
                 </fieldMappings>
+                <visitor type="io.zyient.core.mapping.rules.TestRuleVisitor">
+                   <name>TEST-RULE-VISITOR</name>
+                </visitor>
             </rule>
         </rules>
     </global>

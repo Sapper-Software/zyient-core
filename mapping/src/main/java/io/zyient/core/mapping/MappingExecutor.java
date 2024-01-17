@@ -84,7 +84,7 @@ public class MappingExecutor implements Closeable {
             state.setState(ProcessorState.EProcessorState.Running);
 
             builder = new PipelineBuilder()
-                    .configure(config, env, dataStoreManager);
+                    .configure(config, env);
 
             __instance = this;
 

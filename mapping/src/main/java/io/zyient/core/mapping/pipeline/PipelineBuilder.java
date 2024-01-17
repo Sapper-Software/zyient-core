@@ -25,7 +25,6 @@ import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderFactory;
 import io.zyient.core.mapping.readers.MappingContextProvider;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -46,8 +45,7 @@ public class PipelineBuilder {
 
     @SuppressWarnings("unchecked")
     public PipelineBuilder configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                     @NonNull BaseEnv<?> env,
-                                     @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
+                                     @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             mapperFactory = new MapperFactory()
                     .init(xmlConfig, env);
@@ -69,7 +67,7 @@ public class PipelineBuilder {
                         .newInstance()
                         .contextProvider(contextProvider)
                         .contentDir(mapperFactory.contentDir())
-                        .configure(node, mapperFactory, dataStoreManager);
+                        .configure(node, mapperFactory, env);
                 transformers.put(pipeline.name(), pipeline);
             }
             return this;

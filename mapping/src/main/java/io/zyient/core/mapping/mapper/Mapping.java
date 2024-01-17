@@ -148,7 +148,7 @@ public abstract class Mapping<T> {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(FilterChain.__CONFIG_PATH);
             filterChain = new FilterChain<>(SourceMap.class)
                     .withContentDir(contentDir)
-                    .configure(config);
+                    .configure(config, env);
         }
     }
 
@@ -204,7 +204,7 @@ public abstract class Mapping<T> {
                     .terminateOnValidationError(terminateOnValidationError)
                     .cache(rulesCache)
                     .contentDir(contentDir)
-                    .configure(xmlConfig);
+                    .configure(xmlConfig, env);
         }
     }
 
