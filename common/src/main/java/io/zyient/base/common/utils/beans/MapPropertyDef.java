@@ -160,4 +160,3 @@ public class MapPropertyDef extends PropertyDef {
         return null;
     }
 }
-

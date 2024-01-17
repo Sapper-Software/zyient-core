@@ -1,4 +1,4 @@
-# Zyient Core Libraries and Framework.
+# Zyient Core Libraries and Framework
 ## Zyient Core Libraries
 
     Common

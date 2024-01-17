@@ -109,34 +109,4 @@ public class S3Helper {
                     bucket, path), t);
         }
     }
-
-    public static HeadObjectResponse upload(@NonNull S3Client client,
-                                            @NonNull String bucket,
-                                            @NonNull String path,
-                                            @NonNull String source,
-                                             @NonNull String contentType) throws IOException {
-        try {
-            PutObjectRequest request = PutObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
-                    .contentType(contentType)
-                    .build();
-            PutObjectResponse response = client
-                    .putObject(request, RequestBody.fromString(source));
-            S3Waiter waiter = client.waiter();
-            HeadObjectRequest requestWait = HeadObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
-                    .build();
-
-            WaiterResponse<HeadObjectResponse> waiterResponse = waiter.waitUntilObjectExists(requestWait);
-            if (waiterResponse.matched().response().isEmpty()) {
-                throw new Exception("Failed to get valid response...");
-            }
-            return waiterResponse.matched().response().get();
-        } catch (Throwable t) {
-            throw new IOException(String.format("Download failed. [bucket=%s][path=%s]",
-                    bucket, path), t);
-        }
-    }
 }

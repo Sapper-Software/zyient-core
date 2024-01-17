@@ -1,16 +1,4 @@
-buildscript {
-    repositories {
-        mavenCentral()
-		maven { url 'https://repo.spring.io/snapshot' }
-		maven { url 'https://repo.spring.io/milestone' }
-    }
-    dependencies {
-        classpath 'org.owasp:dependency-check-gradle:8.2.1'
-    }
-}
-plugins {
-    id 'org.owasp.dependencycheck' version '8.2.1'
-} 
+
 idea {
     module {
         sourceDirs += file("${projectDir}/build/generated/source/main/java");
