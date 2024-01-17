@@ -76,7 +76,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
                 } else {
                     builder.append(", ");
                 }
-                builder.append(oe.getExpression().toString());
+                builder.append(oe.toString());
             }
             hql = builder.toString();
         }

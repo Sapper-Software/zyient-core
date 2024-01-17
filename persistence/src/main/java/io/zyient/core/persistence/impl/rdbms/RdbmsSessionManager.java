@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -68,7 +69,9 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     @Override
     protected Session create() throws DataStoreException {
         try {
-            return hibernateConnection.getConnection();
+            Session session = hibernateConnection.getConnection();
+            session.setCacheMode(CacheMode.IGNORE);
+            return session;
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }

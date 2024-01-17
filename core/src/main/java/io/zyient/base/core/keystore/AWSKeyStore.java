@@ -39,18 +39,19 @@ import java.util.List;
 import java.util.Map;
 
 public class AWSKeyStore extends KeyStore {
+
     private enum KeyState {
         New, Updated, Synced, Deleted
     }
 
     private static class Key {
         private final String name;
-        private String value;
+        private Object value;
         private KeyState state;
 
-        public Key(String name, String value) {
+        public Key(String name, Object value) {
             this.name = name;
-            setValue(value);
+            setValue(String.valueOf(value));
         }
 
         public void setValue(String value) {
@@ -58,7 +59,7 @@ public class AWSKeyStore extends KeyStore {
         }
 
         public String getValue() {
-            byte[] v = Base64.getDecoder().decode(value);
+            byte[] v = Base64.getDecoder().decode(String.valueOf(value));
             return new String(v, StandardCharsets.UTF_8);
         }
     }
@@ -76,6 +77,8 @@ public class AWSKeyStore extends KeyStore {
     private Map<String, Key> keys;
     private long fetchedTimestamp = 0;
     private long cacheTimeout = CACHE_TIMEOUT;
+    private static String CONFIG_EXCLUDE_ENV = "excludeEnv";
+    private boolean excludeEnv;
 
 
     @Override
@@ -86,8 +89,14 @@ public class AWSKeyStore extends KeyStore {
             config = configNode.configurationAt(__CONFIG_PATH);
             Preconditions.checkNotNull(config);
             name = config.getString(CONFIG_NAME);
+            excludeEnv = false;
+            if (config.configurationAt(CONFIG_EXCLUDE_ENV) != null) {
+                excludeEnv = config.getBoolean(CONFIG_EXCLUDE_ENV);
+            }
+
             ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
             String value = config.getString(CONFIG_REGION);
+
             ConfigReader.checkStringValue(value, getClass(), CONFIG_REGION);
             Region region = Region.of(value);
             client = SecretsManagerClient.builder()
@@ -97,7 +106,10 @@ public class AWSKeyStore extends KeyStore {
             if (!Strings.isNullOrEmpty(s)) {
                 cacheTimeout = Long.parseLong(s);
             }
-            bucket = String.format("%s/%s", env.name(), name);
+            bucket = name;
+            if (!excludeEnv) {
+                bucket = String.format("%s/%s", env.name(), name);
+            }
             fetch();
             Key key = keys.get(DEFAULT_KEY);
             password = key.getValue();
@@ -120,12 +132,12 @@ public class AWSKeyStore extends KeyStore {
             this.keys = new HashMap<>();
         String json = readInternal(bucket);
         if (!Strings.isNullOrEmpty(json)) {
-            Map<String, String> keys = JSONUtils.read(json, Map.class);
+            Map<String, Object> keys = JSONUtils.read(json, Map.class);
             if (!keys.containsKey(DEFAULT_KEY)) {
                 throw new Exception(String.format("Invalid Secrets: Default key not found. [name=%s]", bucket));
             }
             for (String name : keys.keySet()) {
-                String value = keys.get(name);
+                Object value = keys.get(name);
                 Key key = new Key(name, value);
                 key.state = KeyState.Synced;
                 this.keys.put(name, key);
@@ -258,7 +270,7 @@ public class AWSKeyStore extends KeyStore {
                     }
                 }
                 String value = JSONUtils.asString(keys);
-                UpdateSecretRequest  secretRequest = UpdateSecretRequest.builder()
+                UpdateSecretRequest secretRequest = UpdateSecretRequest.builder()
                         .secretId(bucket)
                         .description(String.format("[keyStore=%s] Saved secret. [name=%s]", this.name, bucket))
                         .secretString(value)
