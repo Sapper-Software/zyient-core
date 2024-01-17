@@ -105,6 +105,12 @@
                         <password>mongodb-password</password>
                         <driver>org.mariadb.jdbc.Driver</driver>
                         <dialect>MySQL</dialect>
+                        <pool>
+                            <enable>true</enable>
+                            <minSize>8</minSize>
+                            <maxSize>16</maxSize>
+                            <timeout>1800</timeout>
+                        </pool>
                         <model>
                             <packages>io.zyient.core.persistence.impl.rdbms.model</packages>
                         </model>

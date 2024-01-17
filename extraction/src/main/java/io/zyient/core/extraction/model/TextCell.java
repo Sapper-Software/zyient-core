@@ -26,7 +26,7 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class TextCell extends Cell<String> {
-    public static final String __PREFIX = "text.";
+    public static final String __PREFIX = "TC.";
 
     public TextCell() {
         super();

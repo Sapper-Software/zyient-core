@@ -26,7 +26,7 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class FormField<T> extends Cell<T> {
-    public static final String __PREFIX = "form:field.";
+    public static final String __PREFIX = "FF.";
 
     private TextCell label;
     private Cell<T> value;

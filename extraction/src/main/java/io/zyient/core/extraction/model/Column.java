@@ -31,7 +31,7 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Column extends Cell<String> {
-    public static final String __PREFIX = "column.";
+    public static final String __PREFIX = "CL.";
 
     private List<Cell<?>> values;
     private Map<String, Column> subColumns;
