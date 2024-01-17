@@ -23,6 +23,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.*;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.processing.ProcessorState;
@@ -170,7 +171,7 @@ public abstract class ContentProvider implements Closeable {
                     Map<String, Object> values = context.customFields();
                     for (String field : values.keySet()) {
                         Object v = values.get(field);
-                        ReflectionHelper.setFieldValue(v, document, field);
+                        BeanUtils.setValue(document, field, v);
                     }
                 }
                 document = createDoc(document, context);

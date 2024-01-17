@@ -19,7 +19,7 @@ package io.zyient.core.mapping.rules.db;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
-import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
@@ -46,7 +46,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends DB
                         FieldProperty target = targetMappings.get(key);
                         FieldProperty source = sourceFields.get(key);
                         Preconditions.checkNotNull(source);
-                        Object value = ReflectionHelper.getFieldValue(entity, source.field());
+                        Object value = BeanUtils.getValue(entity, source.field());
                         if (value != null) {
                             MappingReflectionHelper.setProperty(target.field(), target.property(), response, value);
                         }

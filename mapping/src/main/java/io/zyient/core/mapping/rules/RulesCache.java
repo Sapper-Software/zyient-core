@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.rules;
 
+import io.zyient.base.core.BaseEnv;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -47,10 +48,12 @@ public class RulesCache<T> {
 
     @SuppressWarnings("unchecked")
     public RulesCache<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> node,
+                                   @NonNull BaseEnv<?> env,
                                    Class<?> type) throws ConfigurationException {
         this.type = (Class<? extends T>) type;
         try {
             RuleConfigReader<T> reader = new RuleConfigReader<T>()
+                    .env(env)
                     .cache(this)
                     .contentDir(contentDir)
                     .entityType(this.type);

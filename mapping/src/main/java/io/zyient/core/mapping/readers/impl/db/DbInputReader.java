@@ -5,7 +5,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.DbReaderSettings;
@@ -13,10 +13,12 @@ import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +30,12 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
     private Class<? extends E> entityType;
     private Cursor<K, E> cursor;
     private QueryBuilder builder;
+    private Map<String, Object> predicates;
 
+    public DbInputReader<K, E> withPredicates(@NonNull Map<String, Object> predicates) {
+        this.predicates = predicates;
+        return this;
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -66,6 +73,29 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
         Map<String, Object> conditions = null;
         if (!Strings.isNullOrEmpty(settings.getCondition())) {
             conditions = JSONUtils.read(settings.getCondition(), Map.class);
+            Map<String, Object> updated = new HashMap<>();
+            for (String key : conditions.keySet()) {
+                Object value = conditions.get(key);
+                if (value instanceof String str) {
+                    if (str.startsWith(":")) {
+                        String name = str.substring(1);
+                        if (predicates == null) {
+                            throw new Exception(String.format("Predicate values expected for condition. [condition=%s]",
+                                    settings.getCondition()));
+                        }
+                        value = predicates.get(key);
+                        if (value == null) {
+                            throw new Exception(String.format("Missing predicate value. [predicate=%s]", name));
+                        }
+                        updated.put(key, value);
+                    }
+                }
+            }
+            if (!updated.isEmpty()) {
+                for (String key : updated.keySet()) {
+                    conditions.put(key, updated.get(key));
+                }
+            }
         }
         AbstractDataStore.Q query = builder.build(settings.getQuery(), conditions);
         cursor = dataStore.search(query,

@@ -24,11 +24,18 @@ import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.model.PropertyBag;
+import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.decisions.EvaluationTree;
+import io.zyient.base.core.decisions.builder.EvaluationTreeBuilder;
 import io.zyient.core.mapping.DataException;
-import io.zyient.core.mapping.model.*;
+import io.zyient.core.mapping.model.CurrencyValue;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.model.mapping.*;
 import io.zyient.core.mapping.readers.MappingContextProvider;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.mapping.transformers.*;
@@ -55,7 +62,7 @@ public abstract class Mapping<T> {
     private final Class<? extends T> entityType;
     private final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
-    private final Map<Integer, MappedElement> sourceIndex = new HashMap<>();
+    private final Map<Integer, Mapped> sourceIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
     private RulesExecutor<MappedResponse<T>> rulesExecutor;
@@ -66,7 +73,8 @@ public abstract class Mapping<T> {
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
     private StringTransformer stringTransformer;
-
+    private EvaluationTree<Map<String, Object>, ConditionalMappedElement> evaluationTree;
+    private BaseEnv<?> env;
 
     protected Mapping(@NonNull Class<? extends T> entityType,
                       @NonNull Class<? extends MappedResponse<T>> responseType) {
@@ -100,8 +108,10 @@ public abstract class Mapping<T> {
         return settings.getName();
     }
 
-    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
+    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkNotNull(entityType);
+        this.env = env;
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -138,7 +148,7 @@ public abstract class Mapping<T> {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig.configurationAt(FilterChain.__CONFIG_PATH);
             filterChain = new FilterChain<>(SourceMap.class)
                     .withContentDir(contentDir)
-                    .configure(config);
+                    .configure(config, env);
         }
     }
 
@@ -194,32 +204,46 @@ public abstract class Mapping<T> {
                     .terminateOnValidationError(terminateOnValidationError)
                     .cache(rulesCache)
                     .contentDir(contentDir)
-                    .configure(xmlConfig);
+                    .configure(xmlConfig, env);
         }
     }
 
     @SuppressWarnings("unchecked")
     private void readMappings(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         HierarchicalConfiguration<ImmutableNode> mNode = xmlConfig.configurationAt(__CONFIG_PATH_MAPPINGS);
-        ConfigPath cp = MappedElement.class.getAnnotation(ConfigPath.class);
+        ConfigPath cp = Mapped.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
+        mapTransformer = new MapTransformer<>(entityType, settings);
         List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
-            mapTransformer = new MapTransformer<>(entityType, settings);
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
                 Class<? extends MappedElement> type = (Class<? extends MappedElement>) ConfigReader.readType(node);
                 if (type == null) {
                     type = MappedElement.class;
                 }
-                MappedElement me = MappedElement.read(node, type);
-                sourceIndex.put(me.getSequence(), me);
-                if (me.getMappingType() == MappingType.Field) {
-                    mapTransformer.add(me);
+                Mapped m = Mapped.read(node, type);
+                sourceIndex.put(m.getSequence(), m);
+                if (m instanceof MappedElement me) {
+                    if (me.getMappingType() == MappingType.Field
+                            || me.getMappingType() == MappingType.ConstField) {
+                        mapTransformer.add(me);
+                    }
                 }
             }
-        } else {
-            throw new Exception("No mappings found...");
+        }
+        if (ConfigReader.checkIfNodeExists(mNode, EvaluationTreeBuilder.__CONFIG_PATH)) {
+            HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
+            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type =
+                    (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
+            if (type == null) {
+                throw new Exception("Evaluation Tree builder type not specified...");
+            }
+            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder =
+                    type.getDeclaredConstructor()
+                            .newInstance()
+                            .configure(bNode, env);
+            evaluationTree = builder.build();
         }
     }
 
@@ -238,29 +262,25 @@ public abstract class Mapping<T> {
                 return response;
             }
         }
-        Map<String, Object> converted = mapTransformer.transform(source);
+        Map<String, Object> converted = mapTransformer.transform(source, entityType);
         T entity = mapper.convertValue(converted, entityType);
         response.setEntity(entity);
 
         for (Integer index : sourceIndex.keySet()) {
-            MappedElement me = sourceIndex.get(index);
-            if (me.getMappingType() == MappingType.Field) continue;
-            Object value = null;
-            String path = me.getSourcePath();
-            if (MappingReflectionHelper.isContextPrefixed(path)) {
-                value = findContextValue(context, path);
-            } else {
-                String[] parts = path.split("\\.");
-                value = findSourceValue(source, parts, 0);
+            Mapped m = sourceIndex.get(index);
+            if (m instanceof MappedElement me) {
+                if (me.getMappingType() == MappingType.Field
+                        || me.getMappingType() == MappingType.ConstField) continue;
+                executeMapping(me, response, source, context);
             }
-            if (value == null) {
-                if (!me.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
-                            me.getSourcePath(), me.getTargetPath()));
+        }
+        if (evaluationTree != null) {
+            ConditionalMappedElement element = evaluationTree.evaluate(source);
+            if (element != null) {
+                for (MappedElement me : element.getMappings()) {
+                    executeMapping(me, response, source, context);
                 }
-                continue;
             }
-            setFieldValue(me, value, response);
         }
         EvaluationStatus status;
         if (rulesExecutor != null) {
@@ -271,6 +291,31 @@ public abstract class Mapping<T> {
         }
         response.setStatus(status);
         return response;
+    }
+
+    private void executeMapping(MappedElement me,
+                                MappedResponse<T> response,
+                                SourceMap source,
+                                Context context) throws Exception {
+        Object value = null;
+        String path = me.getSourcePath();
+        if (MappingReflectionHelper.isContextPrefixed(path)) {
+            value = findContextValue(context, path);
+        } else if (me.getMappingType() == MappingType.ConstProperty
+                || me.getMappingType() == MappingType.ConstField) {
+            value = me.getSourcePath();
+        } else {
+            String[] parts = path.split("\\.");
+            value = findSourceValue(source, parts, 0);
+        }
+        if (value == null) {
+            if (!me.isNullable()) {
+                throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                        me.getSourcePath(), me.getTargetPath()));
+            }
+            return;
+        }
+        setFieldValue(me, value, response);
     }
 
     private void setFieldValue(MappedElement element,
@@ -291,7 +336,8 @@ public abstract class Mapping<T> {
             } else {
                 ((PropertyBag) data).setProperty(element.getTargetPath(), tv);
             }
-        } else if (element.getMappingType() == MappingType.Cached) {
+        } else if (element.getMappingType() == MappingType.Cached ||
+                element.getMappingType() == MappingType.ConstProperty) {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (!element.isNullable()) {
@@ -300,6 +346,22 @@ public abstract class Mapping<T> {
                 }
             } else {
                 response.add(element.getTargetPath(), tv);
+            }
+        } else if (element.getMappingType() == MappingType.Field ||
+                element.getMappingType() == MappingType.ConstField) {
+            Object tv = transform(value, element, element.getType());
+            if (tv == null) {
+                if (!element.isNullable()) {
+                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                            element.getSourcePath(), element.getTargetPath()));
+                }
+            } else {
+                PropertyDef def = ReflectionHelper.findProperty(entityType, element.getTargetPath());
+                if (def == null) {
+                    throw new Exception(String.format("Property not found. [entity=%s][property=%s]",
+                            entityType.getCanonicalName(), element.getTargetPath()));
+                }
+                MappingReflectionHelper.setProperty(element.getTargetPath(), def, data, tv);
             }
         }
     }

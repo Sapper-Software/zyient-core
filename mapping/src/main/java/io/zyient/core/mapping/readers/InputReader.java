@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.readers;
 
 import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.Getter;
 import lombok.Setter;

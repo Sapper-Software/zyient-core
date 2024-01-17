@@ -24,7 +24,7 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.core.model.Actor;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.processing.ProcessorState;
@@ -234,7 +234,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     Map<String, Object> values = ctx.customFields();
                     for (String field : values.keySet()) {
                         Object v = values.get(field);
-                        ReflectionHelper.setFieldValue(v, caseObject, field);
+                        BeanUtils.setValue(caseObject, field, v);
                     }
                 }
             }
@@ -713,7 +713,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     Map<String, Object> values = ctx.customFields();
                     for (String field : values.keySet()) {
                         Object v = values.get(field);
-                        ReflectionHelper.setFieldValue(v, caseObject, field);
+                        BeanUtils.setValue(caseObject, field, v);
                     }
                 }
             }

@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.rules;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
@@ -36,6 +37,7 @@ public class RuleGroup<T> implements Rule<T> {
     private Class<? extends T> entityType;
     private int errorCode;
     private boolean terminateOnValidationError = true;
+    private RuleVisitor<T> visitor;
 
     @Override
     public String name() {
@@ -61,7 +63,8 @@ public class RuleGroup<T> implements Rule<T> {
     }
 
     @Override
-    public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
+    public Rule<T> configure(@NonNull RuleConfig config,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof RuleGroupConfig);
         settings = (RuleGroupConfig) config;
         if (config.getErrorCode() != null)
@@ -84,11 +87,22 @@ public class RuleGroup<T> implements Rule<T> {
             if (status.getErrors() != null) {
                 status.setStatus(StatusCode.ValidationFailed);
             }
+            if (visitor != null) {
+                visitor.onSuccess(data, status);
+            }
         } catch (RuleValidationError ve) {
+            if (visitor != null) {
+                visitor.onError(ve, data);
+            }
             if (terminateOnValidationError) {
                 throw ve;
             }
             status.error(ve).setStatus(StatusCode.ValidationFailed);
+        } catch (Throwable t) {
+            if (visitor != null) {
+                visitor.onError(t, data);
+            }
+            throw t;
         }
         return status;
     }
@@ -120,5 +134,11 @@ public class RuleGroup<T> implements Rule<T> {
         else {
             this.rules.addAll(rules);
         }
+    }
+
+    @Override
+    public Rule<T> addVisitor(@NonNull RuleVisitor<T> visitor) {
+        this.visitor = visitor;
+        return this;
     }
 }
