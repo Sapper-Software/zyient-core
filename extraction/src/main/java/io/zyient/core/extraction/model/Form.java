@@ -29,6 +29,8 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Form extends Cell<String> {
+    public static final String __PREFIX = "form.";
+
     private Map<String, FormField<?>> fields;
 
     public Form() {
@@ -39,11 +41,35 @@ public class Form extends Cell<String> {
         super(parentId, index);
     }
 
-    public <V> FormField<V> add(@NonNull Class<? extends Cell<V>> valueType) throws Exception {
+    @Override
+    protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
+        if (checkId(parentId, paths, index)) {
+            if (index == paths.length - 1) {
+                return this;
+            } else if (fields != null) {
+                for (String key : fields.keySet()) {
+                    FormField<?> field = fields.get(key);
+                    Cell<?> ret = field.find(getId(), paths, index + 1);
+                    if (ret != null) {
+                        return ret;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String parseId(int index) {
+        return String.format("%s%d", __PREFIX, index);
+    }
+
+    public <V> FormField<V> add(@NonNull Class<? extends Cell<V>> valueType,
+                                int index) throws Exception {
         if (fields == null) {
             fields = new HashMap<>();
         }
-        FormField<V> field = new FormField<>(getId(), fields.size());
+        FormField<V> field = new FormField<>(getId(), index);
         field.createLabelCell();
         field.createValueCell(valueType);
         fields.put(field.getId(), field);

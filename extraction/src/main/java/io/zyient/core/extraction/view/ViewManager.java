@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.LocalizationUtils;
 import io.zyient.base.core.BaseEnv;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,6 +30,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.lang.reflect.Field;
+import java.util.Locale;
 import java.util.ResourceBundle;
 
 @Getter
@@ -36,6 +38,7 @@ import java.util.ResourceBundle;
 public class ViewManager {
     private ResourceBundle resourceBundle;
     private ViewManagerSettings settings;
+    private Locale locale = Locale.getDefault();
 
     public ViewManager configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                  @NonNull BaseEnv<?> env) throws ConfigurationException {
@@ -44,8 +47,9 @@ public class ViewManager {
             reader.read();
             settings = (ViewManagerSettings) reader.settings();
             if (!Strings.isNullOrEmpty(settings.getOverrideLocale())) {
-
+                locale = LocalizationUtils.parseLocale(settings.getOverrideLocale());
             }
+            resourceBundle = ResourceBundle.getBundle(settings.getBundleName(), locale);
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -57,7 +61,7 @@ public class ViewManager {
         Preconditions.checkNotNull(resourceBundle);
         String text = field.getName();
         if (field.isAnnotationPresent(ViewAttribute.class)) {
-            ViewAttribute attr  = field.getAnnotation(ViewAttribute.class);
+            ViewAttribute attr = field.getAnnotation(ViewAttribute.class);
             if (!Strings.isNullOrEmpty(attr.value())) {
                 text = attr.value();
                 String rs = resourceBundle.getString(text);

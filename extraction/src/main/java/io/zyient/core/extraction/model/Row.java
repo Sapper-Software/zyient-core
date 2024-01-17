@@ -17,6 +17,7 @@
 package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -29,6 +30,8 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Row extends Cell<Integer> {
+    public static final String __PREFIX = "row.";
+
     private List<Cell<?>> cells;
     private boolean header;
 
@@ -40,13 +43,33 @@ public class Row extends Cell<Integer> {
         super(parentId, index);
     }
 
-    public <T> Cell<T> add(@NonNull Class<? extends Cell<T>> type) throws Exception {
+    @Override
+    protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
+        if (checkId(parentId, paths, index)) {
+            if (cells != null) {
+                for (Cell<?> cell : cells) {
+                    Cell<?> ret = cell.find(getId(), paths, index + 1);
+                    if (ret != null) {
+                        return ret;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String parseId(int index) {
+        return String.format("%s%d", __PREFIX, index);
+    }
+
+    public <T> Cell<T> add(@NonNull Class<? extends Cell<T>> type, int index) throws Exception {
         if (cells == null) {
             cells = new ArrayList<>();
         }
         Cell<T> cell = type.getDeclaredConstructor(String.class, Integer.class)
-                .newInstance(getId(), cells.size());
-        cells.add(cell);
+                .newInstance(getId(), index);
+        CollectionUtils.setAtIndex(cells, index, cell);
         return cell;
     }
 }

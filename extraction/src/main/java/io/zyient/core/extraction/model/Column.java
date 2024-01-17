@@ -31,6 +31,8 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Column extends Cell<String> {
+    public static final String __PREFIX = "column.";
+
     private List<Cell<?>> values;
     private Map<String, Column> subColumns;
 
@@ -40,6 +42,43 @@ public class Column extends Cell<String> {
 
     public Column(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    @Override
+    protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
+        if (checkId(parentId, paths, index)) {
+            if (index == paths.length - 1) {
+                return this;
+            } else {
+                String name = paths[index + 1];
+                if (name.startsWith(__PREFIX)) {
+                    if (subColumns != null) {
+                        for (String key : subColumns.keySet()) {
+                            Column column = subColumns.get(key);
+                            Cell<?> ret = column.find(getId(), paths, index + 1);
+                            if (ret != null) {
+                                return ret;
+                            }
+                        }
+                    }
+                } else {
+                    if (values != null) {
+                        for (Cell<?> value : values) {
+                            Cell<?> ret = value.find(getId(), paths, index + 1);
+                            if (ret != null) {
+                                return ret;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String parseId(int index) {
+        return String.format("%s%d", __PREFIX, index);
     }
 
     public <T> Cell<T> addValue(@NonNull Class<? extends Cell<T>> type,
@@ -63,11 +102,11 @@ public class Column extends Cell<String> {
         return cell;
     }
 
-    public Column addSubColumn(@NonNull String name) {
+    public Column addSubColumn(@NonNull String name, int index) {
         if (subColumns == null) {
             subColumns = new HashMap<>();
         }
-        Column column = new Column(getId(), subColumns.size());
+        Column column = new Column(getId(), index);
         column.setData(name);
         subColumns.put(name, column);
         return column;

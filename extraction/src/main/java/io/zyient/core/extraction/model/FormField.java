@@ -26,6 +26,8 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class FormField<T> extends Cell<T> {
+    public static final String __PREFIX = "form:field.";
+
     private TextCell label;
     private Cell<T> value;
 
@@ -35,6 +37,31 @@ public class FormField<T> extends Cell<T> {
 
     public FormField(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    @Override
+    protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
+        if (checkId(parentId, paths, index)) {
+            if (index == paths.length - 1) {
+                return this;
+            } else {
+                if (label != null) {
+                    Cell<?> ret = label.find(getId(), paths, index + 1);
+                    if (ret != null) {
+                        return ret;
+                    }
+                }
+                if (value != null) {
+                    return value.find(getId(), paths, index + 1);
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String parseId(int index) {
+        return String.format("%s%d", __PREFIX, index);
     }
 
     public TextCell createLabelCell() {

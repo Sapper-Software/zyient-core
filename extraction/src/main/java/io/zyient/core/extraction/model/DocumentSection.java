@@ -19,6 +19,7 @@ package io.zyient.core.extraction.model;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -31,11 +32,35 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class DocumentSection extends Cell<String> {
+    public static final String __PREFIX = "document.";
+
     private List<Page> pages;
     private Context metadata;
 
     public DocumentSection() {
         super();
+    }
+
+    @Override
+    protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
+        if (checkId(parentId, paths, index)) {
+            if (index == paths.length - 1) {
+                return this;
+            } else if (pages != null) {
+                for (Page page : pages) {
+                    Cell<?> ret = page.find(getId(), paths, index + 1);
+                    if (ret != null) {
+                        return ret;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String parseId(int index) {
+        return String.format("%s%d", __PREFIX, index);
     }
 
     public DocumentSection(int index) {
@@ -44,12 +69,12 @@ public class DocumentSection extends Cell<String> {
         setId(String.valueOf(index));
     }
 
-    public Page add() {
+    public Page add(int index) {
         if (pages == null) {
             pages = new ArrayList<>();
         }
-        Page page = new Page(getId(), pages.size());
-        pages.add(page);
+        Page page = new Page(getId(), index);
+        CollectionUtils.setAtIndex(pages, index, page);
         return page;
     }
 

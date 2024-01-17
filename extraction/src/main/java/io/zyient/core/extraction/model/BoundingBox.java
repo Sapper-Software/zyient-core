@@ -22,6 +22,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class BoundingBox {
+    private int page;
     private Point start;
     private Point end;
 }

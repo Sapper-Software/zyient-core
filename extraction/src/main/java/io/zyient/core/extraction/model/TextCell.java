@@ -26,11 +26,28 @@ import lombok.Setter;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class TextCell extends Cell<String> {
+    public static final String __PREFIX = "text.";
+
     public TextCell() {
         super();
     }
 
     public TextCell(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    @Override
+    protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
+        if (index == paths.length - 1) {
+            if (checkId(parentId, paths, index)) {
+                return this;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected String parseId(int index) {
+        return String.format("%s%d", __PREFIX, index);
     }
 }

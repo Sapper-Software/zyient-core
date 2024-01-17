@@ -18,6 +18,7 @@ package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -29,7 +30,7 @@ import java.util.List;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Source extends Cell<String> {
+public class Source {
     private String referenceId;
     private String sourceURI;
     private List<DocumentSection> documents;
@@ -54,12 +55,26 @@ public class Source extends Cell<String> {
         return metadata;
     }
 
-    public DocumentSection create() {
+    public DocumentSection create(int index) {
         if (documents == null) {
             documents = new ArrayList<>();
         }
-        DocumentSection doc = new DocumentSection(documents.size());
-        documents.add(doc);
+        DocumentSection doc = new DocumentSection(index);
+        CollectionUtils.setAtIndex(documents, index, doc);
         return doc;
+    }
+
+
+    public Cell<?> find(@NonNull String path) {
+        if (documents != null) {
+            String[] paths = path.split("/");
+            for (DocumentSection doc : documents) {
+                Cell<?> ret = doc.find(null, paths, 0);
+                if (ret != null) {
+                    return ret;
+                }
+            }
+        }
+        return null;
     }
 }

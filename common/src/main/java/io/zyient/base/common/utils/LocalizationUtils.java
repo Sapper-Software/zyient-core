@@ -14,32 +14,23 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.base.common.utils;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
+import com.google.common.base.Strings;
 import lombok.NonNull;
-import lombok.Setter;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class Page extends Section {
-    public static final String __PREFIX = "page.";
+import java.util.Locale;
 
-    private int number;
+public class LocalizationUtils {
 
-    public Page() {
-        super();
-    }
-
-    public Page(@NonNull String parentId, int index) {
-        super(parentId, index);
-    }
-
-    @Override
-    protected String parseId(int index) {
-        return String.format("%s%d", __PREFIX, index);
+    public static Locale parseLocale(@NonNull String value) throws Exception {
+        String[] parts = value.split(",");
+        String language = parts[0].trim();
+        String country = parts[1].trim();
+        if (Strings.isNullOrEmpty(country) || Strings.isNullOrEmpty(language)) {
+            throw new Exception(String.format("Invalid locale specified. [format=<country>,<language>][value=%s]",
+                    value));
+        }
+        return new Locale(language, country);
     }
 }

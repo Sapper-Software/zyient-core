@@ -24,4 +24,5 @@ import java.lang.annotation.*;
 public @interface ViewAttribute {
     String value() default "";
     ViewType type() default ViewType.TEXT;
+    int sequence();
 }
