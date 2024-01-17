@@ -30,6 +30,8 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class Cell<T> {
+    public static final String SEPARATOR = "/";
+
     private String id;
     private String parentId;
     private int index;
@@ -42,7 +44,7 @@ public abstract class Cell<T> {
     }
 
     public Cell(@NonNull String parentId, int index) {
-        id = String.format("%s/%s", parentId, parseId(index));
+        id = String.format("%s%s%s", parentId, SEPARATOR, parseId(index));
         this.index = index;
     }
 
@@ -60,7 +62,7 @@ public abstract class Cell<T> {
     protected boolean checkId(String parentId, @NonNull String[] paths, int index) {
         String key = paths[index];
         if (!Strings.isNullOrEmpty(parentId)) {
-            key = String.format("%s/%s", parentId, key);
+            key = String.format("%s%s%s", parentId, SEPARATOR, key);
         }
         return id.compareTo(key) == 0;
     }
