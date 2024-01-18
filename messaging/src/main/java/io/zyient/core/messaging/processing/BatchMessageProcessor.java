@@ -34,7 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset>
+public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset<?>>
         extends MessageProcessor<K, M, E, O, MO> {
     private final ExecutorService executor = Executors.newFixedThreadPool(1);
 
@@ -64,7 +64,7 @@ public abstract class BatchMessageProcessor<T, K, M, E extends Enum<?>, O extend
                     responses.wait(100);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    System.err.println("Thread Interrupted");
+                    DefaultLogger.warn("Thread Interrupted");
                 }
             }
             if (checkResponses(responses, processorState)) {

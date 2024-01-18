@@ -17,23 +17,26 @@
 package io.zyient.core.extraction.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import io.zyient.base.common.json.ClassNameDeSerializer;
+import io.zyient.base.common.json.ClassNameSerializer;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class ExtractionView<K extends IKey, T extends IEntity<K>> {
-    private String sourceReferenceId;
-    private K entityKey;
-    private Class<? extends K> ketType;
+public class CellMapper<T> {
+    @JsonSerialize(keyUsing = ClassNameSerializer.class)
+    @JsonDeserialize(using = ClassNameDeSerializer.class)
     private Class<? extends T> entityType;
-
+    private Map<String, List<CellPointer>> cellIndex = new HashMap<>();
     @JsonIgnore
     private T entity;
+
 
 }

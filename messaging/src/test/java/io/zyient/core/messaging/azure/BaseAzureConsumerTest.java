@@ -42,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BaseAzureConsumerTest {
     private static final String __CONFIG_FILE = "src/test/resources/azure/azure-queue-test.xml";
-    private static final String __PRODUCER_NAME = "test-queue-producer";
-    private static final String __CONSUMER_NAME = "test-queue-consumer";
     private static final String __MESSAGE_FILE = "src/test/resources/test-message.xml";
     private static XMLConfiguration xmlConfiguration = null;
     private static DemoEnv env;
