@@ -298,7 +298,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         checkState();
         try {
             CaseId id = new CaseId(caseId);
-            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+            Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(id, settings.getCaseType(), context);
             if (caseObject == null) {
                 throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                         caseId, settings.getCaseType().getCanonicalName()));
