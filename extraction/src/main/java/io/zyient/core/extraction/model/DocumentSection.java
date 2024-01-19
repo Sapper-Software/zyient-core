@@ -32,7 +32,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class DocumentSection extends Cell<String> {
-    public static final String __PREFIX = "document.";
+    public static final String __PREFIX = "DS.";
 
     private List<Page> pages;
     private Context metadata;

@@ -30,7 +30,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Row extends Cell<Integer> {
-    public static final String __PREFIX = "row.";
+    public static final String __PREFIX = "RO.";
 
     private List<Cell<?>> cells;
     private boolean header;

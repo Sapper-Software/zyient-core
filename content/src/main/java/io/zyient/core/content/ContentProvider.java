@@ -428,6 +428,8 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
+    public abstract void endSession() throws DataStoreException;
+    
     protected abstract void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> createDoc(@NonNull Document<E, K, T> document,

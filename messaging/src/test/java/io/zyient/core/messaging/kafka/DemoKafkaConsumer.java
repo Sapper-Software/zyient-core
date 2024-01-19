@@ -14,32 +14,18 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.core.messaging.kafka;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import io.zyient.base.common.messaging.MessagingError;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class Page extends Section {
-    public static final String __PREFIX = "PG.";
+import java.nio.charset.StandardCharsets;
 
-    private int number;
-
-    public Page() {
-        super();
-    }
-
-    public Page(@NonNull String parentId, int index) {
-        super(parentId, index);
-    }
-
+public class DemoKafkaConsumer extends BaseKafkaConsumer<String>{
     @Override
-    protected String parseId(int index) {
-        return String.format("%s%d", __PREFIX, index);
+    protected String deserialize(byte[] message) throws MessagingError {
+        if (message != null && message.length > 0) {
+            return new String(message, StandardCharsets.UTF_8);
+        }
+        return null;
     }
 }

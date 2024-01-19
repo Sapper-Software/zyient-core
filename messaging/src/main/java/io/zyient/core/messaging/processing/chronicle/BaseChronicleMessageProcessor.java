@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,27 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.messaging.kafka;
+package io.zyient.core.messaging.processing.chronicle;
 
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.core.messaging.MessagingProcessorSettings;
-import io.zyient.core.messaging.processing.MessageProcessor;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.experimental.Accessors;
 
-@Getter
-@Accessors(fluent = true)
-public abstract class KafkaMessageProcessor<E extends Enum<?>, O extends Offset, M>
-        extends MessageProcessor<String, M, E, O, KafkaOffset> {
-
-    protected KafkaMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
-                                    @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
+public abstract class BaseChronicleMessageProcessor<E extends Enum<?>, O extends Offset, M>
+        extends ChronicleMessageProcessor<String, E, O, M> {
+    protected BaseChronicleMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
+                                            @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
         super(stateType, settingsType);
     }
 
-    protected KafkaMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
+    protected BaseChronicleMessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
         super(stateType);
     }
 }

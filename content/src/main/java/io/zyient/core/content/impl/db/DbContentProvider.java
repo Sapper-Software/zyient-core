@@ -16,7 +16,9 @@
 
 package io.zyient.core.content.impl.db;
 
+import io.zyient.base.common.StateException;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.content.ManagedContentProvider;
 import io.zyient.core.content.settings.ManagedProviderSettings;
@@ -48,6 +50,17 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
         if (!(dataStore() instanceof RdbmsDataStore)) {
             throw new ConfigurationException(String.format("Invalid Data Store type. [type=%s]",
                     dataStore().getClass().getCanonicalName()));
+        }
+    }
+
+    @Override
+    public void endSession() throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
+            dataStore.endSession();
+        } catch (StateException se) {
+            throw new DataStoreException(se);
         }
     }
 
