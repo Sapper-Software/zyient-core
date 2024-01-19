@@ -30,7 +30,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Section extends Cell<String> {
-    public static final String __PREFIX = "section.";
+    public static final String __PREFIX = "SC.";
     private List<Cell<?>> blocks;
 
     public Section() {

@@ -29,7 +29,7 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Form extends Cell<String> {
-    public static final String __PREFIX = "form.";
+    public static final String __PREFIX = "FO.";
 
     private Map<String, FormField<?>> fields;
 

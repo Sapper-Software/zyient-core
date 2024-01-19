@@ -32,7 +32,7 @@ import java.util.Map;
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public class Table extends Cell<String> {
-    public static final String __PREFIX = "table.";
+    public static final String __PREFIX = "TB.";
 
     private Map<String, Column> header;
     private List<Row> rows;

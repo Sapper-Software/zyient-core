@@ -70,6 +70,24 @@ public abstract class StoreSessionManager<C, T> {
         }
     }
 
+    public C openedSession() {
+        synchronized (sessions) {
+            long tid = Thread.currentThread().getId();
+            if (sessions.containsKey(tid)) {
+                StoreSession<C, T> session = sessions.get(tid);
+                return session.session;
+            }
+            return null;
+        }
+    }
+
+    public void endSession() throws DataStoreException {
+        C session = openedSession();
+        if (session != null) {
+            close(session);
+        }
+    }
+
     public boolean remove() throws DataStoreException {
         synchronized (sessions) {
             long tid = Thread.currentThread().getId();

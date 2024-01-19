@@ -14,32 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.base.common.json;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.NonNull;
-import lombok.Setter;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class Page extends Section {
-    public static final String __PREFIX = "PG.";
+import java.io.IOException;
 
-    private int number;
-
-    public Page() {
-        super();
-    }
-
-    public Page(@NonNull String parentId, int index) {
-        super(parentId, index);
-    }
-
+public class ClassNameSerializer extends JsonSerializer<Class<?>> {
     @Override
-    protected String parseId(int index) {
-        return String.format("%s%d", __PREFIX, index);
+    public void serialize(@NonNull Class<?> value,
+                          JsonGenerator jgen,
+                          SerializerProvider provider) throws IOException, JsonProcessingException {
+        jgen.writeFieldName(value.getCanonicalName());
     }
 }

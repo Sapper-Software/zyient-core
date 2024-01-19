@@ -17,7 +17,9 @@
 package io.zyient.core.content.impl.mongo;
 
 import dev.morphia.transactions.MorphiaSession;
+import io.zyient.base.common.StateException;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.content.DocumentContext;
 import io.zyient.core.content.ManagedContentProvider;
 import io.zyient.core.content.settings.ManagedProviderSettings;
@@ -39,6 +41,17 @@ import java.util.List;
 public class MongoContentProvider extends ManagedContentProvider<MorphiaSession> {
     public MongoContentProvider() {
         super(ManagedProviderSettings.class);
+    }
+
+    @Override
+    public void endSession() throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
+            dataStore.endSession();
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
     }
 
     @Override

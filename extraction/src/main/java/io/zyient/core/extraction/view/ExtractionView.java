@@ -14,32 +14,26 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.core.extraction.view;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Page extends Section {
-    public static final String __PREFIX = "PG.";
+public class ExtractionView<K extends IKey, T extends IEntity<K>> {
+    private String sourceReferenceId;
+    private K entityKey;
+    private Class<? extends K> ketType;
+    private Class<? extends T> entityType;
 
-    private int number;
+    @JsonIgnore
+    private T entity;
 
-    public Page() {
-        super();
-    }
-
-    public Page(@NonNull String parentId, int index) {
-        super(parentId, index);
-    }
-
-    @Override
-    protected String parseId(int index) {
-        return String.format("%s%d", __PREFIX, index);
-    }
 }

@@ -67,7 +67,7 @@ public class Source {
 
     public Cell<?> find(@NonNull String path) {
         if (documents != null) {
-            String[] paths = path.split("/");
+            String[] paths = path.split(Cell.SEPARATOR);
             for (DocumentSection doc : documents) {
                 Cell<?> ret = doc.find(null, paths, 0);
                 if (ret != null) {

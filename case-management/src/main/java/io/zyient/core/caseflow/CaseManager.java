@@ -497,6 +497,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         } catch (Throwable t) {
             dataStore.rollback(false);
             throw t;
+        } finally {
+            contentProvider.endSession();
         }
     }
 
@@ -554,6 +556,12 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseFatalError(ex);
+        } finally {
+            try {
+                contentProvider.endSession();
+            } catch (DataStoreException e) {
+                throw new CaseFatalError(e);
+            }
         }
     }
 
@@ -744,6 +752,12 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseFatalError(ex);
+        } finally {
+            try {
+                endSession();
+            } catch (DataStoreException e) {
+                throw new CaseFatalError(e);
+            }
         }
     }
 
@@ -926,54 +940,67 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     }
 
     protected void fetchDocuments(@NonNull Case<P, S, E, T> caseObject) throws DataStoreException, CaseActionException {
-        if (caseObject.getArtefactReferences() != null) {
-            Set<CaseDocument<E, T>> docs = new HashSet<>();
-            for (ArtefactReference ref : caseObject.getArtefactReferences()) {
-                CaseDocument<E, T> doc = (CaseDocument<E, T>) contentProvider
-                        .find(ref.getId().getDocumentId(), documentType, false, null);
-                if (doc == null) {
-                    throw new CaseActionException(String.format("[case id=%s] Referenced document not found. [doc id=%s]",
-                            caseObject.getId().stringKey(), ref.getId().getDocumentId().stringKey()));
+        try {
+            if (caseObject.getArtefactReferences() != null) {
+                Set<CaseDocument<E, T>> docs = new HashSet<>();
+                for (ArtefactReference ref : caseObject.getArtefactReferences()) {
+                    CaseDocument<E, T> doc = (CaseDocument<E, T>) contentProvider
+                            .find(ref.getId().getDocumentId(), documentType, false, null);
+                    if (doc == null) {
+                        throw new CaseActionException(String.format("[case id=%s] Referenced document not found. [doc id=%s]",
+                                caseObject.getId().stringKey(), ref.getId().getDocumentId().stringKey()));
+                    }
+                    docs.add(doc);
                 }
-                docs.add(doc);
+                caseObject.setArtefacts(docs);
             }
-            caseObject.setArtefacts(docs);
+        } finally {
+            contentProvider.endSession();
         }
     }
 
     @SuppressWarnings("unchecked")
     private Case<P, S, E, T> save(Case<P, S, E, T> caseObject, UserOrRole user, Context context) throws Exception {
-        DocumentContext docCtx = null;
-        if (context != null) {
-            docCtx = new DocumentContext(context);
-        } else {
-            docCtx = new DocumentContext();
-        }
-        docCtx.user(user.asPrincipal());
-        if (caseObject.getState().getState() == EEntityState.New) {
-            if (caseObject.getArtefacts() != null) {
-                for (CaseDocument<E, T> document : caseObject.getArtefacts()) {
-                    contentProvider.create(document, docCtx);
-                }
+        try {
+            DocumentContext docCtx = null;
+            if (context != null) {
+                docCtx = new DocumentContext(context);
+            } else {
+                docCtx = new DocumentContext();
             }
-            caseObject = dataStore.create(caseObject, caseObject.getClass(), context);
-        } else {
-            if (caseObject.getArtefacts() != null) {
-                for (CaseDocument<E, T> document : caseObject.getArtefacts()) {
-                    if (document.getState().getState() == EEntityState.New)
+            docCtx.user(user.asPrincipal());
+            if (caseObject.getState().getState() == EEntityState.New) {
+                if (caseObject.getArtefacts() != null) {
+                    for (CaseDocument<E, T> document : caseObject.getArtefacts()) {
                         contentProvider.create(document, docCtx);
+                    }
                 }
-            }
-            if (caseObject.getDeleted() != null) {
-                for (CaseDocument<E, T> doc : caseObject.getDeleted()) {
-                    doc.setReferenceId(null);
-                    doc.getState().setState(EEntityState.Updated);
-                    contentProvider.update(doc, docCtx);
+                caseObject = dataStore.create(caseObject, caseObject.getClass(), context);
+            } else {
+                if (caseObject.getArtefacts() != null) {
+                    for (CaseDocument<E, T> document : caseObject.getArtefacts()) {
+                        if (document.getState().getState() == EEntityState.New)
+                            contentProvider.create(document, docCtx);
+                    }
                 }
+                if (caseObject.getDeleted() != null) {
+                    for (CaseDocument<E, T> doc : caseObject.getDeleted()) {
+                        doc.setReferenceId(null);
+                        doc.getState().setState(EEntityState.Updated);
+                        contentProvider.update(doc, docCtx);
+                    }
+                }
+                caseObject = dataStore.update(caseObject, caseObject.getClass(), context);
             }
-            caseObject = dataStore.update(caseObject, caseObject.getClass(), context);
+            return caseObject;
+        } finally {
+            contentProvider.endSession();
         }
-        return caseObject;
+    }
+
+    public void endSession() throws CaseActionException, DataStoreException {
+        checkState();
+        dataStore.endSession();
     }
 
     @Override

@@ -14,32 +14,18 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.core.messaging.kafka.builders;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
+import io.zyient.core.messaging.builders.MessageSenderSettings;
+import io.zyient.core.messaging.kafka.DemoKafkaProducer;
 import lombok.NonNull;
-import lombok.Setter;
 
-@Getter
-@Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class Page extends Section {
-    public static final String __PREFIX = "PG.";
-
-    private int number;
-
-    public Page() {
-        super();
+public class DemoKafkaProducerBuilder extends KafkaProducerBuilder<String> {
+    public DemoKafkaProducerBuilder(@NonNull Class<? extends MessageSenderSettings> settingsType) {
+        super(DemoKafkaProducer.class, settingsType);
     }
 
-    public Page(@NonNull String parentId, int index) {
-        super(parentId, index);
-    }
-
-    @Override
-    protected String parseId(int index) {
-        return String.format("%s%d", __PREFIX, index);
+    public DemoKafkaProducerBuilder() {
+        super(DemoKafkaProducer.class);
     }
 }
