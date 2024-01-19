@@ -73,6 +73,10 @@ public abstract class TransactionDataStore<C, T> extends AbstractDataStore<C> {
         sessionManager().rollback();
     }
 
+    public void endSession() throws DataStoreException {
+        sessionManager.endSession();
+    }
+
     public void closeSession() throws DataStoreException {
         sessionManager.close();
     }

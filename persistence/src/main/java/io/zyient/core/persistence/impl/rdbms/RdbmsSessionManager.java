@@ -107,7 +107,6 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         }
         session.flush();
         transaction.commit();
-        close(session);
     }
 
     @Override
@@ -120,7 +119,6 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
             throw new DataStoreException("Transaction instance is not active...");
         }
         transaction.rollback();
-        close(session);
     }
 
     private void clearCache() throws DataStoreException {
