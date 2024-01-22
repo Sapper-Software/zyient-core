@@ -19,7 +19,7 @@ package io.zyient.core.mapping.pipeline.settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 import lombok.Getter;
 import lombok.Setter;
 

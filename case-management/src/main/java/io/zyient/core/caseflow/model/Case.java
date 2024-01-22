@@ -24,9 +24,9 @@ import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.core.model.Actor;
 import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.caseflow.errors.CaseModelException;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
@@ -351,9 +351,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         caseEntity.setCaseId(id.getId());
         caseEntity.setCaseState(caseState.getState());
         caseEntity.setDescription(description);
-        if(parentId!=null) {
-            caseEntity.setParentCaseId(parentId.getId());
-        }
+        caseEntity.setParentCaseId(parentId.getId());
         caseEntity.setAssignedTo(assignedTo);
         caseEntity.setCreatedBy(createdBy);
         caseEntity.setProperties(properties);

@@ -189,7 +189,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
                         configuration.addAnnotatedClass(cls);
                     }
                 }
-                DefaultLogger.info("scanning packages...");
+
                 if (settings.getModelPackages() != null) {
                     for (String name : settings.getModelPackages()) {
                         DefaultLogger.info(String.format("Scanning package: [%s]", name));
@@ -201,9 +201,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
                         }
                         if (classes != null && !classes.isEmpty()) {
                             for (Class<?> type : classes) {
-                                DefaultLogger.info(String.format("checking @Entity for class %s", type.getCanonicalName()));
                                 if (type.isAnnotationPresent(Entity.class)) {
-                                    DefaultLogger.info(String.format("registered class %s", type.getName()));
                                     configuration.addAnnotatedClass(type);
                                 } else {
                                     DefaultLogger.debug(String.format("Not an entity: [class=%s]",

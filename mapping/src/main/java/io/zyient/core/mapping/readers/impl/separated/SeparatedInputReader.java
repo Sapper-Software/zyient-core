@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.readers.impl.separated;
 
 import com.google.common.base.Preconditions;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;

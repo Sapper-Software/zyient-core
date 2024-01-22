@@ -20,8 +20,8 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.core.model.IntegerKey;
-import io.zyient.base.core.model.PropertyBag;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;
 import jakarta.persistence.Column;
 import jakarta.persistence.*;
@@ -34,8 +34,8 @@ import java.util.Map;
 
 @Getter
 @Setter
-@Entity(name = "tb_customers")
-@Table(name = "tb_customers", schema = "test")
+@Entity
+@Table(name = "tb_customers")
 public class Customer implements IEntity<IntegerKey>, PropertyBag {
     @EmbeddedId
     private IntegerKey id;
@@ -44,9 +44,12 @@ public class Customer implements IEntity<IntegerKey>, PropertyBag {
     private Contact contact;
     @Column(name = "credit_limit")
     private double creditLimit;
+    @Column(name = "const_value")
+    private double constValue;
     @Convert(converter = PropertiesConverter.class)
     @Column(name = "properties")
     private Map<String, Object> properties;
+
     /**
      * Compare the entity key with the key specified.
      *

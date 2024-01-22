@@ -18,16 +18,16 @@ package io.zyient.core.mapping.rules;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.PropertyModel;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.model.PropertyBag;
+import io.zyient.base.common.utils.beans.BeanUtils;
+import io.zyient.base.common.utils.beans.FixedPropertyDef;
+import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.base.common.utils.beans.PropertyFieldDef;
 import io.zyient.core.mapping.annotations.EntityRef;
-import io.zyient.core.mapping.model.ExtendedPropertyModel;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 import lombok.NonNull;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +43,6 @@ public class MappingReflectionHelper {
     public static final String FIELD_CONTEXT = "context";
     public static final String FIELD_REGEX = "(\\$\\{(.*?)\\})";
     public static final String KEY_REGEX = "\\['?(.*?)'?\\]";
-    public static final String METHOD_SET_PROPERTY = "setProperty";
     public static final String METHOD_GET_PROPERTY = "getProperty";
     private static final Pattern PATTERN_FIND_FIELD = Pattern.compile(FIELD_REGEX);
     private static final Pattern PATTERN_KEY = Pattern.compile(KEY_REGEX);
@@ -65,20 +64,8 @@ public class MappingReflectionHelper {
         return null;
     }
 
-    public static List<String> extractKey(@NonNull String name) {
-        List<String> keys = new ArrayList<>();
-        Matcher m = PATTERN_KEY.matcher(name);
-        while (m.find()) {
-            keys.add(m.group(1));
-        }
-        if (!keys.isEmpty()) {
-            return keys;
-        }
-        return null;
-    }
-
-    public static PropertyModel findField(@NonNull String name,
-                                          @NonNull Class<?> entityType) throws Exception {
+    public static PropertyDef findField(@NonNull String name,
+                                        @NonNull Class<?> entityType) throws Exception {
         if (ReflectionHelper.isSuperType(MappedResponse.class, entityType)) {
             if (!entityType.isAnnotationPresent(EntityRef.class)) {
                 throw new Exception(String.format("Entity reference annotation not present. [type=%s]",
@@ -97,48 +84,18 @@ public class MappingReflectionHelper {
                     throw new Exception(String.format("Cannot set custom property for type. [type=%s]",
                             entityType.getCanonicalName()));
                 }
-                ExtendedPropertyModel pm = new ExtendedPropertyModel();
-                pm.property(name);
-                List<String> keys = extractKey(name);
-                if (keys == null) {
-                    throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
-                }
-                pm.key(keys.get(0));
-                List<Method> setters = ReflectionHelper.findMethod(inner,
-                        METHOD_SET_PROPERTY,
-                        false);
-                if (setters != null) {
-                    for (Method m : setters) {
-                        Class<?>[] params = m.getParameterTypes();
-                        if (params.length == 2) {
-                            if (params[0].equals(String.class)) {
-                                if (params[1].equals(Object.class)) {
-                                    pm.setter(m);
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                List<Method> getters = ReflectionHelper.findMethod(inner,
-                        METHOD_GET_PROPERTY,
-                        false);
-                if (getters != null) {
-                    for (Method m : getters) {
-                        Class<?>[] params = m.getParameterTypes();
-                        if (params.length == 1) {
-                            if (params[0].equals(String.class)) {
-                                pm.getter(m);
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (pm.getter() == null || pm.setter() == null) {
-                    throw new Exception(String.format("Property Getter/Setter method not found. [type=%s]",
+                PropertyFieldDef pd = (PropertyFieldDef) ReflectionHelper.findProperty(inner, PropertyBag.FIELD_KEY);
+                if (pd == null) {
+                    throw new Exception(String.format("Property Bag definition not found. [type=%s]",
                             entityType.getCanonicalName()));
                 }
-                return pm;
+                String key = ReflectionHelper.extractKey(name);
+                if (Strings.isNullOrEmpty(key)) {
+                    throw new Exception(String.format("Failed to extract property key. [name=%s]", name));
+                }
+                FixedPropertyDef fd = new FixedPropertyDef(pd);
+                fd.key(key);
+                return fd;
             } else {
                 if (isEntityPrefixed(name)) {
                     name = removePrefix(name, FIELD_ENTITY);
@@ -159,68 +116,50 @@ public class MappingReflectionHelper {
         return field;
     }
 
-    public static String fieldToPropertySetMethod(@NonNull String field) throws Exception {
-        if (isPropertyPrefixed(field) || isEntityPropertyPrefixed(field)) {
-            List<String> keys = extractKey(field);
-            if (keys != null && !keys.isEmpty()) {
-                if (keys.size() > 1) {
-                    throw new Exception(String.format("Invalid property: [name=%s]", field));
-                }
-                String key = keys.get(0);
-                return String.format("%s.%s(\"%s\")", FIELD_ENTITY, METHOD_SET_PROPERTY, key);
-            } else {
-                throw new Exception(String.format("Invalid property: [name=%s]", field));
-            }
-        }
-        return null;
-    }
-
     public static String fieldToPropertyGetMethod(@NonNull String field) throws Exception {
         if (isPropertyPrefixed(field) || isEntityPropertyPrefixed(field)) {
-            List<String> keys = extractKey(field);
-            if (keys != null && !keys.isEmpty()) {
-                if (keys.size() > 1) {
-                    throw new Exception(String.format("Invalid property: [name=%s]", field));
-                }
-                String key = keys.get(0);
-                return String.format("%s.%s(\"%s\")", FIELD_ENTITY, METHOD_GET_PROPERTY, key);
-            } else {
+            String key = ReflectionHelper.extractKey(field);
+            if (Strings.isNullOrEmpty(key)) {
                 throw new Exception(String.format("Invalid property: [name=%s]", field));
             }
+            return String.format("%s.%s(\"%s\")", FIELD_ENTITY, METHOD_GET_PROPERTY, key);
         }
         return null;
     }
 
     public static void setProperty(@NonNull String field,
-                                   @NonNull PropertyModel property,
+                                   @NonNull PropertyDef property,
                                    @NonNull Object entity,
                                    Object value) throws Exception {
         if (isSourcePrefixed(field)) {
             throw new Exception(String.format("Cannot set value for Source. [field=%s]", field));
         }
-        if (property instanceof ExtendedPropertyModel) {
-            if (entity instanceof MappedResponse<?>) {
-                entity = ((MappedResponse<?>) entity).getEntity();
-            }
-            PropertyBag pb = (PropertyBag)  entity;
-            pb.setProperty(((ExtendedPropertyModel) property).key(), value);
-        } else {
-            ReflectionHelper.setFieldValue(value, entity, field);
-        }
-    }
-
-    public static Object getProperty(@NonNull String field,
-                                     @NonNull PropertyModel property,
-                                     @NonNull Object entity) throws Exception {
-        if (property instanceof ExtendedPropertyModel) {
+        if (property instanceof PropertyFieldDef) {
             if (entity instanceof MappedResponse<?>) {
                 entity = ((MappedResponse<?>) entity).getEntity();
             }
             PropertyBag pb = (PropertyBag) entity;
-            return pb.getProperty(((ExtendedPropertyModel) property).key());
+            pb.setProperty(((PropertyFieldDef) property).name(), value);
+        } else if (property instanceof FixedPropertyDef) {
+            PropertyBag pb = (PropertyBag) entity;
+            pb.setProperty(((FixedPropertyDef) property).key(), value);
+        } else {
+            BeanUtils.setValue(entity, field, value);
+        }
+    }
+
+    public static Object getProperty(@NonNull String field,
+                                     @NonNull PropertyDef property,
+                                     @NonNull Object entity) throws Exception {
+        if (property instanceof FixedPropertyDef) {
+            if (entity instanceof MappedResponse<?>) {
+                entity = ((MappedResponse<?>) entity).getEntity();
+            }
+            PropertyBag pb = (PropertyBag) entity;
+            return pb.getProperty(((FixedPropertyDef) property).key());
         } else if (isSourcePrefixed(field)) {
             if (entity instanceof MappedResponse<?>) {
-                return getSourceProperty(field, ((MappedResponse<?>) entity).getSource());
+                return ReflectionHelper.getMapValue(field, ((MappedResponse<?>) entity).getSource());
             } else {
                 throw new Exception(String.format("Source fields not present. [type=%s]",
                         entity.getClass().getCanonicalName()));
@@ -233,32 +172,12 @@ public class MappingReflectionHelper {
                         entity.getClass().getCanonicalName()));
             }
         }
-        return ReflectionHelper.getFieldValue(entity, field);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static Object getSourceProperty(@NonNull String field,
-                                           Map<String, Object> source) {
-        List<String> keys = extractKey(field);
-        if (keys != null && !keys.isEmpty()) {
-            Map<String, Object> node = source;
-            for (int ii = 0; ii < keys.size(); ii++) {
-                String key = keys.get(ii);
-                if (ii == keys.size() - 1) {
-                    return node.get(key);
-                }
-                Object value = node.get(key);
-                if (value instanceof Map<?, ?>) {
-                    node = (Map<String, Object>) value;
-                }
-            }
-        }
-        return null;
+        return BeanUtils.getValue(entity, field);
     }
 
     public static Object getContextProperty(@NonNull String field,
                                             @NonNull Context context) {
-        List<String> keys = extractKey(field);
+        List<String> keys = ReflectionHelper.extractKeys(field);
         if (keys != null && !keys.isEmpty()) {
             String key = keys.get(0);
             if (!Strings.isNullOrEmpty(key)) {

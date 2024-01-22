@@ -114,7 +114,10 @@
                         <driver>org.postgresql.Driver</driver>
                         <dialect>PostgreSQL</dialect>
                         <model>
-                            <packages>io.zyient.core.persistence.impl.rdbms.model, io.zyient.core.mapping.model
+                            <packages>
+                                io.zyient.core.persistence.impl.rdbms.model,
+                                io.zyient.core.mapping.model,
+                                io.zyient.core.mapping.mapper.db
                             </packages>
                         </model>
                     </hibernate>

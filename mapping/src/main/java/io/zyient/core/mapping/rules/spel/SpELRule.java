@@ -16,23 +16,19 @@
 
 package io.zyient.core.mapping.rules.spel;
 
-import com.fasterxml.jackson.databind.deser.impl.FieldProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Error;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.*;
-import io.zyient.core.mapping.rules.db.DBRule;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.kie.api.definition.rule.All;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.SpelParserConfiguration;
@@ -40,7 +36,9 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
@@ -55,7 +53,7 @@ public class SpELRule<T> extends BaseRule<T> {
     static class FieldMap {
         String targetField;
         String targetValue;
-        PropertyModel property;
+        PropertyDef property;
     }
 
     private void normalizeRule() throws Exception {
@@ -192,7 +190,7 @@ public class SpELRule<T> extends BaseRule<T> {
             fieldMaps = new ArrayList<>();
             if (spELRuleConfig.getTarget() != null) {
                 String target = MappingReflectionHelper.normalizeField(spELRuleConfig.getTarget());
-                PropertyModel property = MappingReflectionHelper.findField(spELRuleConfig.getTarget(), entityType());
+                PropertyDef property = MappingReflectionHelper.findField(spELRuleConfig.getTarget(), entityType());
                 if (property == null) {
                     throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
                             entityType().getCanonicalName(), spELRuleConfig.getTarget()));
@@ -202,7 +200,7 @@ public class SpELRule<T> extends BaseRule<T> {
             if (spELRuleConfig.getFieldMappings() != null) {
                 for (String fieldName : spELRuleConfig.getFieldMappings().keySet()) {
                     String target = MappingReflectionHelper.normalizeField(fieldName);
-                    PropertyModel property = MappingReflectionHelper.findField(fieldName, entityType());
+                    PropertyDef property = MappingReflectionHelper.findField(fieldName, entityType());
                     if (property == null) {
                         throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
                                 entityType().getCanonicalName(), fieldName));

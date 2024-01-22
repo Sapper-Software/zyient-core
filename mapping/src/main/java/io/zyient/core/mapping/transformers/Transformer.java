@@ -17,7 +17,7 @@
 package io.zyient.core.mapping.transformers;
 
 import io.zyient.core.mapping.mapper.MappingSettings;
-import io.zyient.core.mapping.model.MappedElement;
+import io.zyient.core.mapping.model.mapping.MappedElement;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;

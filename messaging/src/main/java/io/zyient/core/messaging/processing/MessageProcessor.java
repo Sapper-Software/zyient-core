@@ -37,7 +37,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.io.IOException;
 import java.util.List;
 
-public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset> extends Processor<E, O> {
+public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset<?>> extends Processor<E, O> {
     protected MessageReceiver<K, M> receiver;
     protected MessageSender<K, M> errorLogger;
     protected MessagingProcessorConfig receiverConfig;
@@ -200,7 +200,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
             try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_EVENTS_TIME))) {
                 process(message, processorState);
                 metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_PROCESSED).increment();
-            } catch (InvalidMessageError me) {
+            } catch (InvalidMessageError | MessageProcessingError me) {
                 metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
                 DefaultLogger.stacktrace(me);
                 DefaultLogger.warn(LOG, me.getLocalizedMessage());

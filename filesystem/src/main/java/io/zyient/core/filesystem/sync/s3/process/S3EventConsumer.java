@@ -98,7 +98,6 @@ public class S3EventConsumer {
                 List<S3Event> events = new ArrayList<>(records.size());
                 synchronized (messages) {
                     for (Message record : records) {
-                        final Map<String, MessageAttributeValue> attributes = record.messageAttributes();
                         MessageHandle m = new MessageHandle();
                         m.id = record.messageId();
                         m.receiptId = record.receiptHandle();

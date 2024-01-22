@@ -1,23 +1,19 @@
 package io.zyient.core.mapping.readers.impl.db;
 
 import com.google.common.base.Strings;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.core.mapping.model.SourceMap;
-import io.zyient.core.mapping.pipeline.impl.udp.model.Field;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.DbReaderSettings;
-import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import lombok.Getter;
-import lombok.Setter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
@@ -34,18 +30,11 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
     private Class<? extends E> entityType;
     private Cursor<K, E> cursor;
     private QueryBuilder builder;
+    private Map<String, Object> predicates;
 
-    @Getter
-    @Setter
-    @Accessors(fluent = true)
-    protected static class FieldProperty {
-        private PropertyModel property;
-        private String field;
-
-        public FieldProperty(PropertyModel property, String field) {
-            this.property = property;
-            this.field = field;
-        }
+    public DbInputReader<K, E> withPredicates(@NonNull Map<String, Object> predicates) {
+        this.predicates = predicates;
+        return this;
     }
 
     @Override
@@ -81,42 +70,40 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
 
     @SuppressWarnings("unchecked")
     private void fetchQuery(DbReaderSettings settings) throws Exception {
-        Map<String, FieldProperty> whereFields = null;
-        String query = settings.getQuery();
-        Map<String, String> fs = MappingReflectionHelper.extractFields(query);
-        if (fs != null && !fs.isEmpty()) {
-            whereFields = new HashMap<>();
-            int index = 0;
-            for (String key : fs.keySet()) {
-                String f = fs.get(key);
-                List<String> keys = MappingReflectionHelper.extractKey(f);
-                f = keys.get(0);
-                PropertyModel field = ReflectionHelper.findProperty(this.entityType(), f);
-                if (field == null) {
-                    throw new Exception(String.format("Field not found. [entity=%s][field=%s]",
-                            entityType().getCanonicalName(), f));
+        Map<String, Object> conditions = null;
+        if (!Strings.isNullOrEmpty(settings.getCondition())) {
+            conditions = JSONUtils.read(settings.getCondition(), Map.class);
+            Map<String, Object> updated = new HashMap<>();
+            for (String key : conditions.keySet()) {
+                Object value = conditions.get(key);
+                if (value instanceof String str) {
+                    if (str.startsWith(":")) {
+                        String name = str.substring(1);
+                        if (predicates == null) {
+                            throw new Exception(String.format("Predicate values expected for condition. [condition=%s]",
+                                    settings.getCondition()));
+                        }
+                        value = predicates.get(key);
+                        if (value == null) {
+                            throw new Exception(String.format("Missing predicate value. [predicate=%s]", name));
+                        }
+                        updated.put(key, value);
+                    }
                 }
-                String param = String.format("param_%d", index);
-                query = query.replace(key, ":" + param);
-                whereFields.put(param, new FieldProperty(field, f));
-                index++;
+            }
+            if (!updated.isEmpty()) {
+                for (String key : updated.keySet()) {
+                    conditions.put(key, updated.get(key));
+                }
             }
         }
-        if (whereFields != null && !whereFields.isEmpty()) {
-            Map<String, Object> params = new HashMap<>();
-            for (String key : whereFields.keySet()) {
-                FieldProperty field = whereFields.get(key);
-                Object value = MappingReflectionHelper.getProperty(field.field(), field.property(), contentInfo().params);
-                params.put(key, value);
-            }
-            AbstractDataStore.Q queryDataStore = builder.build(query, params);
-            cursor = dataStore.search(queryDataStore,
-                    0,
-                    settings.getReadBatchSize(),
-                    keyType,
-                    entityType,
-                    null);
-        }
+        AbstractDataStore.Q queryDataStore = builder.build(settings.getQuery(), conditions);
+        cursor = dataStore.search(queryDataStore,
+                0,
+                settings.getReadBatchSize(),
+                keyType,
+                entityType,
+                null);
 
     }
 

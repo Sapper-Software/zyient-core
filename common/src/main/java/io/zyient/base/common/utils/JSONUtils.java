@@ -16,6 +16,7 @@
 
 package io.zyient.base.common.utils;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -143,5 +144,17 @@ public class JSONUtils {
         JsonNode pn = mapper.valueToTree(previous);
         JsonNode diff = JsonDiff.asJson(cn, pn);
         return mapper.writeValueAsString(diff);
+    }
+
+    public static void checkAndAddType(@NonNull Map<String, Object> map,
+                                       @NonNull Class<?> type) {
+        if (type.isAnnotationPresent(JsonTypeInfo.class)) {
+            JsonTypeInfo ti = type.getAnnotation(JsonTypeInfo.class);
+            String key = ti.property();
+            if (Strings.isNullOrEmpty(key)) {
+                key = ti.use().getDefaultPropertyName();
+            }
+            map.put(key, type.getTypeName());
+        }
     }
 }

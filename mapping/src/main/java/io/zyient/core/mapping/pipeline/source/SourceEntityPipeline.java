@@ -24,7 +24,7 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.RecordResponse;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.EntityPipeline;
 import io.zyient.core.mapping.pipeline.PipelineSource;
 import io.zyient.core.mapping.pipeline.settings.PersistedEntityPipelineSettings;
