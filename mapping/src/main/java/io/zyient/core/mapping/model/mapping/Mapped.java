@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package io.zyient.core.mapping.model.mapping;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.core.BaseEnv;
+import io.zyient.core.mapping.mapper.MappingVisitor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -31,9 +33,20 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 public abstract class Mapped {
     @Config(name = "sequence", type = Integer.class)
     private int sequence;
+    @Config(name = "visitor", required = false, type = Class.class)
+    private Class<? extends MappingVisitor<?>> visitorType;
+    private MappingVisitor<?> visitor;
 
     public static Mapped read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                     @NonNull Class<? extends Mapped> type) throws Exception {
-        return ConfigReader.read(xmlConfig, type);
+                              @NonNull Class<? extends Mapped> type,
+                              @NonNull BaseEnv<?> env) throws Exception {
+        Mapped mapped = ConfigReader.read(xmlConfig, type);
+        if (mapped.visitorType != null) {
+            HierarchicalConfiguration<ImmutableNode> node = xmlConfig.configurationAt(MappingVisitor.__CONFIG_PATH);
+            mapped.visitor = mapped.visitorType.getDeclaredConstructor()
+                    .newInstance()
+                    .configure(node, env);
+        }
+        return mapped;
     }
 }
