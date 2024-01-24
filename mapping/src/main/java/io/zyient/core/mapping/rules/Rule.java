@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.rules;
 
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -36,7 +37,8 @@ public interface Rule<T> {
 
     Rule<T> withTerminateOnValidationError(boolean terminate);
 
-    Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException;
+    Rule<T> configure(@NonNull RuleConfig config,
+                      @NonNull BaseEnv<?> env) throws ConfigurationException;
 
     EvaluationStatus evaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError;
 
@@ -49,4 +51,8 @@ public interface Rule<T> {
     int validationErrorCode();
 
     void addSubRules(@NonNull List<Rule<T>> rules) throws Exception;
+
+    Rule<T> addVisitor(@NonNull RuleVisitor<T> visitor);
+
+    RuleVisitor<T> visitor();
 }

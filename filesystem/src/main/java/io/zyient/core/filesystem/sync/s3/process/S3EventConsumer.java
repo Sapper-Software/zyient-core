@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,7 +98,6 @@ public class S3EventConsumer {
                 List<S3Event> events = new ArrayList<>(records.size());
                 synchronized (messages) {
                     for (Message record : records) {
-                        final Map<String, MessageAttributeValue> attributes = record.messageAttributes();
                         MessageHandle m = new MessageHandle();
                         m.id = record.messageId();
                         m.receiptId = record.receiptHandle();

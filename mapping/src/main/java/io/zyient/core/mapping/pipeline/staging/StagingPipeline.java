@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,17 @@ package io.zyient.core.mapping.pipeline.staging;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
-import io.zyient.core.mapping.model.*;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RecordResponse;
+import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.ExecutablePipeline;
 import io.zyient.core.mapping.pipeline.Pipeline;
 import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -36,10 +40,10 @@ public class StagingPipeline<E> extends ExecutablePipeline<E> {
     @Override
     public Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                               @NonNull MapperFactory mapperFactory,
-                              @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
+                              @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             withMapperFactory(mapperFactory);
-            super.configure(xmlConfig, dataStoreManager, ExecutablePipelineSettings.class);
+            super.configure(xmlConfig, env, ExecutablePipelineSettings.class);
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {

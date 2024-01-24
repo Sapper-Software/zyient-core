@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BaseAzureConsumerTest {
     private static final String __CONFIG_FILE = "src/test/resources/azure/azure-queue-test.xml";
-    private static final String __PRODUCER_NAME = "test-queue-producer";
-    private static final String __CONSUMER_NAME = "test-queue-consumer";
     private static final String __MESSAGE_FILE = "src/test/resources/test-message.xml";
     private static XMLConfiguration xmlConfiguration = null;
     private static DemoEnv env;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <!--
-  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~ Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@
 
             <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">
                 <name>fetch-iso-country</name>
-                <expression>key.name = ${property['country']}</expression>
+                <expression>key.name = ${contact.address.country}</expression>
                 <errorCode>1000001</errorCode>
                 <validationErrorCode>1500001</validationErrorCode>
                 <dataStore>test-rdbms</dataStore>
@@ -76,6 +76,9 @@
                         <target>contact.address.countryCode</target>
                     </mapping>
                 </fieldMappings>
+                <visitor type="io.zyient.core.mapping.rules.TestRuleVisitor">
+                   <name>TEST-RULE-VISITOR</name>
+                </visitor>
             </rule>
 
         </rules>

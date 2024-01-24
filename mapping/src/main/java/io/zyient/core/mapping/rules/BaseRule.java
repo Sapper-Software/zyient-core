@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.zyient.core.mapping.rules;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.spel.SpELRule;
@@ -43,6 +44,8 @@ public abstract class BaseRule<T> implements Rule<T> {
     private RuleConfig config;
     private boolean terminateOnValidationError = true;
     private RulesEvaluator<T> evaluator;
+    private BaseEnv<?> env;
+    private RuleVisitor<T> visitor;
 
     @Override
     public Rule<T> withEntityType(@NonNull Class<? extends T> type) {
@@ -71,12 +74,14 @@ public abstract class BaseRule<T> implements Rule<T> {
     }
 
     @Override
-    public Rule<T> configure(@NonNull RuleConfig cfg) throws ConfigurationException {
+    public Rule<T> configure(@NonNull RuleConfig cfg,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkArgument(cfg instanceof BaseRuleConfig);
         BaseRuleConfig config = (BaseRuleConfig) cfg;
         if (entityType == null) {
             throw new ConfigurationException("Entity type not specified...");
         }
+        this.env = env;
         try {
             name = config.getName();
             expression = config.getExpression();
@@ -130,6 +135,9 @@ public abstract class BaseRule<T> implements Rule<T> {
                 }
             }
             status.setStatus(StatusCode.Success);
+            if (visitor != null) {
+                visitor.onSuccess(data, status);
+            }
             if (evaluator != null) {
                 evaluator.evaluate(data, status);
             }
@@ -138,12 +146,26 @@ public abstract class BaseRule<T> implements Rule<T> {
             }
             return status;
         } catch (RuleValidationError ve) {
+            if (visitor != null) {
+                visitor.onError(ve, data);
+            }
             if (terminateOnValidationError) {
                 throw ve;
             }
             status.error(ve).setStatus(StatusCode.ValidationFailed);
             return status;
+        } catch (Throwable t) {
+            if (visitor != null) {
+                visitor.onError(t, data);
+            }
+            throw t;
         }
+    }
+
+    @Override
+    public Rule<T> addVisitor(@NonNull RuleVisitor<T> visitor) {
+        this.visitor = visitor;
+        return this;
     }
 
     protected abstract Object doEvaluate(@NonNull T data) throws RuleValidationError,

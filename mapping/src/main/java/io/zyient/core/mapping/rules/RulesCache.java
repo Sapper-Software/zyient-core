@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.rules;
 
+import io.zyient.base.core.BaseEnv;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -47,10 +48,12 @@ public class RulesCache<T> {
 
     @SuppressWarnings("unchecked")
     public RulesCache<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> node,
+                                   @NonNull BaseEnv<?> env,
                                    Class<?> type) throws ConfigurationException {
         this.type = (Class<? extends T>) type;
         try {
             RuleConfigReader<T> reader = new RuleConfigReader<T>()
+                    .env(env)
                     .cache(this)
                     .contentDir(contentDir)
                     .entityType(this.type);

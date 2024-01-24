@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.zyient.core.mapping.rules.drools;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.*;
@@ -47,6 +48,7 @@ public class DroolsRule<T> implements Rule<T> {
     private KieContainer container;
     private boolean terminateOnValidationError = true;
     private int errorCode;
+    private RuleVisitor<T> visitor;
 
     @Override
     public String name() {
@@ -73,7 +75,8 @@ public class DroolsRule<T> implements Rule<T> {
     }
 
     @Override
-    public Rule<T> configure(@NonNull RuleConfig config) throws ConfigurationException {
+    public Rule<T> configure(@NonNull RuleConfig config,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof DroolsConfig);
         this.config = (DroolsConfig) config;
         errorCode = config.getErrorCode();
@@ -106,10 +109,17 @@ public class DroolsRule<T> implements Rule<T> {
         try {
             session.insert(data);
             int r = session.fireAllRules();
-            DefaultLogger.info(String.format("[rule=%s] Fired %d rules.", r));
+            DefaultLogger.info(String.format("[rule=%s] Fired %d rules.", name(), r));
+            status.setResponse(r);
             status.setStatus(StatusCode.Success);
+            if (visitor != null) {
+                visitor.onSuccess(data, status);
+            }
             return status;
-        } catch (RuntimeException re) {
+        } catch (Throwable re) {
+            if (visitor != null) {
+                visitor.onError(re, data);
+            }
             throw new RuleEvaluationError(name(),
                     entityType,
                     getRuleType().name(),
@@ -139,5 +149,11 @@ public class DroolsRule<T> implements Rule<T> {
     @Override
     public void addSubRules(@NonNull List<Rule<T>> rules) throws Exception {
         throw new Exception("Not supported...");
+    }
+
+    @Override
+    public Rule<T> addVisitor(@NonNull RuleVisitor<T> visitor) {
+        this.visitor = visitor;
+        return this;
     }
 }

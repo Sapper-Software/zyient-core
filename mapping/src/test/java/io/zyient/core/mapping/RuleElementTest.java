@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,9 @@
 package io.zyient.core.mapping;
 
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.beans.MapPropertyDef;
+import io.zyient.base.common.utils.beans.TypeRef;
+import io.zyient.base.common.utils.beans.TypeRefs;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,7 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class RuleElementTest {
@@ -52,12 +56,17 @@ class RuleElementTest {
     private static class RuleTest {
         private String name;
         private double value;
+        @TypeRef(type = Nested.class)
         private List<Nested> nested;
+        @TypeRefs(refs = {
+                @TypeRef(value = MapPropertyDef.REF_NAME_KEY, type = String.class),
+                @TypeRef(value = MapPropertyDef.REF_NAME_VALUE, type = Nested.class)
+        })
         private Map<String, Nested> map;
 
         public RuleTest() {
             Random rnd = new Random(System.nanoTime());
-            int count = rnd.nextInt(10);
+            int count = rnd.nextInt(1, 10);
             nested = new ArrayList<>(count);
             map = new HashMap<>(count);
             name = UUID.randomUUID().toString();
@@ -81,6 +90,23 @@ class RuleElementTest {
             Expression exp = parser.parseExpression(rule);
             Object value = exp.getValue(ctx);
             System.out.println(value);
+
+            Map<String, Object> root = new HashMap<>();
+            Map<String, Object> r1 = new HashMap<>();
+            root.put("r1", r1);
+            r1.put("name", "name-1");
+            r1.put("value", 1000);
+            Map<String, Object> r2 = new HashMap<>();
+            root.put("r2", r2);
+            r2.put("name", "name-2");
+            r2.put("value", 2000);
+            rule = "#root['r1'].#this['name'] == 'name-2' ? #root['r1'].#this['value'] : 2000";
+            exp = parser.parseExpression(rule);
+            ctx = new StandardEvaluationContext(root);
+            value = exp.getValue(ctx);
+            assertInstanceOf(Integer.class, value);
+            System.out.println(value);
+
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

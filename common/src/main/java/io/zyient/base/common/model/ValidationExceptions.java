@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,9 @@
 package io.zyient.base.common.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -56,41 +58,6 @@ public class ValidationExceptions extends Exception
     public ValidationExceptions(List<ValidationException> errors) {
         super(__MESG__);
         this.errors = errors;
-    }
-
-    /**
-     * Add a error instance to the Errors handle. Will check and create a errors
-     * instance if required.
-     *
-     * @param error  - Error handle.
-     * @param errors - Errors collection instance.
-     * @return - Errors Collection.
-     */
-    public static ValidationExceptions add(@Nonnull ValidationException error,
-                                           ValidationExceptions errors) {
-        if (errors == null) {
-            errors = new ValidationExceptions();
-        }
-        errors.add(error);
-        return errors;
-    }
-
-    /**
-     * Copy all the validation errors from the source to the target.
-     *
-     * @param source - Source Error Collection.
-     * @param target - Target Error Collection.
-     * @return - Error Collection.
-     */
-    public static ValidationExceptions copy(@Nonnull ValidationExceptions source,
-                                            ValidationExceptions target) {
-        if (target == null) {
-            return source;
-        }
-        if (source.errors != null && !source.errors.isEmpty()) {
-            target = target.addAll(source.errors);
-        }
-        return target;
     }
 
     /**
@@ -209,5 +176,60 @@ public class ValidationExceptions extends Exception
         if (errors != null) {
             errors.clear();
         }
+    }
+
+
+    /**
+     * Copy all the validation errors from the source to the target.
+     *
+     * @param source - Source Error Collection.
+     * @param target - Target Error Collection.
+     * @return - Error Collection.
+     */
+    public static ValidationExceptions copy(@Nonnull ValidationExceptions source,
+                                            ValidationExceptions target) {
+        if (target == null) {
+            return source;
+        }
+        if (source.errors != null && !source.errors.isEmpty()) {
+            target = target.addAll(source.errors);
+        }
+        return target;
+    }
+
+
+    /**
+     * Add a error instance to the Errors handle. Will check and create a errors
+     * instance if required.
+     *
+     * @param error  - Error handle.
+     * @param errors - Errors collection instance.
+     * @return - Errors Collection.
+     */
+    public static ValidationExceptions add(@Nonnull ValidationException error,
+                                           ValidationExceptions errors) {
+        if (errors == null) {
+            errors = new ValidationExceptions();
+        }
+        errors.add(error);
+        return errors;
+    }
+
+    public static ValidationExceptions checkValue(String value,
+                                                  @NonNull String mesg,
+                                                  ValidationExceptions errors) {
+        if (Strings.isNullOrEmpty(value)) {
+            errors = ValidationExceptions.add(new ValidationException(mesg), errors);
+        }
+        return errors;
+    }
+
+    public static ValidationExceptions chack(boolean condition,
+                                             @NonNull String mesg,
+                                             ValidationExceptions errors) {
+        if (!condition) {
+            errors = ValidationExceptions.add(new ValidationException(mesg), errors);
+        }
+        return errors;
     }
 }

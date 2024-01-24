@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1" ?>
 <!--
-  ~ Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+  ~ Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@
                 <target>contact.name.first</target>
                 <type>Property</type>
             </map>
-            <map source="phone" type="io.zyient.core.mapping.model.RegexMappedElement">
+            <map source="phone" type="io.zyient.core.mapping.model.mapping.RegexMappedElement">
                 <sequence>4</sequence>
                 <name>phone-regex</name>
                 <target>contact.phoneNo</target>
@@ -105,6 +105,25 @@
                 <nullable>false</nullable>
                 <type>Field</type>
             </map>
+            <map source="129039.90">
+                <sequence>13</sequence>
+                <target>constValue</target>
+                <nullable>false</nullable>
+                <type>ConstField</type>
+            </map>
+            <builder type="io.zyient.core.mapping.mapper.db.DbEvaluationTreeBuilder">
+                <condition>
+                    <class>io.zyient.core.mapping.model.DemoConditionDef</class>
+                </condition>
+                <dataStore>
+                    <name>test-rdbms</name>
+                    <type>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</type>
+                </dataStore>
+                <filter>
+                    <query>name = 'demo'</query>
+                    <builder>io.zyient.core.mapping.readers.impl.db.HQLQueryBuilder</builder>
+                </filter>
+            </builder>
         </mappings>
         <filters>
             <rules>

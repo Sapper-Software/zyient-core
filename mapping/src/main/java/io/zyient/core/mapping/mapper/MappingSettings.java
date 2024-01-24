@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.utils.LocalizationUtils;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -52,14 +53,7 @@ public class MappingSettings extends Settings {
 
     public void postLoad() throws Exception {
         if (!Strings.isNullOrEmpty(localeStr)) {
-            String[] parts = localeStr.split(",");
-            String language = parts[0].trim();
-            String country = parts[1].trim();
-            if (Strings.isNullOrEmpty(country) || Strings.isNullOrEmpty(language)) {
-                throw new Exception(String.format("Invalid locale specified. [format=<country>,<language>][value=%s]",
-                        localeStr));
-            }
-            locale = new Locale(language, country);
+            locale = LocalizationUtils.parseLocale(localeStr);
             DateFormat fmt = DateFormat.getDateInstance(DateFormat.DEFAULT, locale);
             dateFormat = fmt.toString();
         }

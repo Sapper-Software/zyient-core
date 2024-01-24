@@ -1,0 +1,6 @@
+1ae27992-8b16-4af5-a2dd-ed08b96901f2,0,Australia,contact.address.country,ConstField,false,String
+2e2c5484-5d22-4298-9133-b366fc48fd79,0,Germany,contact.address.country,ConstField,false,String
+2e2c5484-5d22-4298-9133-b366fc48fd79,2,GR-93884,contact.address.zipCode,ConstField,false,String
+2e2c5484-5d22-4298-9133-b366fc48fd79,1,Berlin,contact.address.city,ConstField,false,String
+1ae27992-8b16-4af5-a2dd-ed08b96901f2,1,Perth,contact.address.city,ConstField,false,String
+1ae27992-8b16-4af5-a2dd-ed08b96901f2,2,AU-12938,contact.address.zipCode,ConstField,false,String

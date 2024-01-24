@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,10 @@
 
 package io.zyient.base.common.utils;
 
+import io.zyient.base.common.utils.beans.BeanUtils;
+import io.zyient.base.common.utils.beans.MapPropertyDef;
+import io.zyient.base.common.utils.beans.TypeRef;
+import io.zyient.base.common.utils.beans.TypeRefs;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Test;
@@ -32,6 +36,7 @@ class ReflectionHelperTest {
     @Setter
     public static class NestedObject {
         private String index;
+        @TypeRef(type = String.class)
         private List<String> values = new ArrayList<>();
 
         public NestedObject() {
@@ -57,6 +62,10 @@ class ReflectionHelperTest {
     @Setter
     public static class TestObject {
         private long id;
+        @TypeRefs(refs = {
+                @TypeRef(value = MapPropertyDef.REF_NAME_KEY, type = String.class),
+                @TypeRef(value = MapPropertyDef.REF_NAME_VALUE, type = NestedObject.class)
+        })
         private Map<String, NestedObject> objects = new HashMap<>();
         private TestEnum ev;
 
@@ -88,17 +97,17 @@ class ReflectionHelperTest {
             }
             for (int ii = 0; ii < count; ii++) {
                 TestObject te = objects.get(ii);
-                Object ret = ReflectionHelper.getFieldValue(te, "ev");
+                Object ret = BeanUtils.getValue(te, "ev");
                 assertNotNull(te);
                 if (ii > 0) {
                     for (String key : te.objects.keySet()) {
-                        Object o = ReflectionHelper.getFieldValue(te, String.format("objects(%s).index", key));
+                        Object o = BeanUtils.getValue(te, String.format("objects(%s).index", key));
                         assertInstanceOf(String.class, o);
                         assertEquals(key, o);
                         if (te.objects.get(key).values != null) {
                             int jj = te.objects.get(key).values.size() - 1;
                             if (jj >= 0) {
-                                o = ReflectionHelper.getFieldValue(te, String.format("objects(%s).values[%d]", key, jj));
+                                o = BeanUtils.getValue(te, String.format("objects(%s).values[%d]", key, jj));
                                 assertInstanceOf(String.class, o);
                             }
                         }
@@ -117,11 +126,13 @@ class ReflectionHelperTest {
             TestObject te = new TestObject();
             for (int ii = 0; ii < 5; ii++) {
                 String key = String.format("KEY-%d", ii);
-                ReflectionHelper.setFieldValue(new NestedObject(), te, String.format("objects(%s)", key));
-                ReflectionHelper.getFieldValue(te, String.format("objects(%s).values[%d]", key, 7));
-                ReflectionHelper.setFieldValue(key, te, String.format("objects(%s).index", key));
+                BeanUtils.setValue(te, String.format("objects(%s)", key), new NestedObject(10));
+                Object val = BeanUtils.getValue(te, String.format("objects(%s).values[%d]", key, 7));
+                assertNotNull(val);
+                BeanUtils.setValue(te, String.format("objects(%s).index", key), key);
                 for (int jj = 0; jj < 3; jj++) {
-                    ReflectionHelper.getFieldValue(te, String.format("objects(%s).values[%d]", key, jj));
+                    val = BeanUtils.getValue(te, String.format("objects(%s).values[%d]", key, jj));
+                    assertNotNull(val);
                 }
             }
             System.out.println(JSONUtils.asString(te));

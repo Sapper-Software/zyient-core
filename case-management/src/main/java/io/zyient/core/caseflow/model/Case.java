@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.core.model.Actor;
 import io.zyient.base.core.model.EUserOrRole;
-import io.zyient.base.core.model.PropertyBag;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.core.caseflow.errors.CaseModelException;
 import io.zyient.core.persistence.impl.rdbms.converters.PropertiesConverter;

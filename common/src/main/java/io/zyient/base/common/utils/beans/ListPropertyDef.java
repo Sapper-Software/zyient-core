@@ -1,3 +1,19 @@
+/*
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.zyient.base.common.utils.beans;
 
 import com.google.common.base.Preconditions;
@@ -41,15 +57,14 @@ public class ListPropertyDef extends PropertyDef {
         return false;
     }
 
-    public ListPropertyDef from(@NonNull Field field) throws Exception {
+    @Override
+    public ListPropertyDef from(@NonNull Field field,
+                                @NonNull Class<?> owner) throws Exception {
         Preconditions.checkArgument(ReflectionHelper.implementsInterface(List.class, field.getType()));
-        name(field.getName());
-        type(field.getType());
-        abstractType(Modifier.isAbstract(type().getModifiers()));
+        super.from(field, owner);
         generic(true);
         methods = new ArrayList<>();
         ReflectionHelper.getAllMethods(type(), methods);
-
         if (field.isAnnotationPresent(TypeRef.class)) {
             TypeRef ref = field.getAnnotation(TypeRef.class);
             updateInnerType(ref.type());
@@ -61,16 +76,17 @@ public class ListPropertyDef extends PropertyDef {
 
     private void updateInnerType(Class<?> type) throws Exception {
         if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-            innerType = new PropertyDef(type);
+            innerType = new PrimitivePropertyDef(type);
             innerType.accessible(false);
         } else if (!type.equals(Object.class)) {
-            ClassPropertyDef def  = (ClassPropertyDef) new ClassPropertyDef()
+            ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__list_inner", type);
+            def.from("__list_inner", type, owner());
             innerType = def;
+        } else if (type.isEnum()) {
+            innerType = new EnumPropertyDef(type);
         } else {
-            innerType = new PropertyDef();
-            innerType.type(Object.class);
+            innerType = new UnknownPropertyDef();
         }
         innerType.name("__list_inner");
         innerType.generic(true);
@@ -103,12 +119,27 @@ public class ListPropertyDef extends PropertyDef {
                 if (params != null && params.length == 1) {
                     Parameter p = params[0];
                     Class<?> pt = p.getType();
-                    if (pt.equals(Integer.class)) {
+                    if (ReflectionHelper.isInt(pt)) {
                         if (Modifier.isPublic(method.getModifiers())) {
                             return method;
                         }
                     }
                 }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    protected PropertyDef findField(@NonNull String[] parts, int index) {
+        String name = parts[index];
+        if (index == parts.length - 1) {
+            if (name.compareTo(name()) == 0) {
+                return this;
+            }
+        } else {
+            if (innerType instanceof ClassPropertyDef) {
+                return innerType.findField(parts, index + 1);
             }
         }
         return null;

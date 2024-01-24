@@ -1,41 +1,21 @@
-/*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package io.zyient.core.mapping.mapper;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.model.Context;
-import io.zyient.base.common.model.PropertyModel;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.model.PropertyBag;
-import io.zyient.core.mapping.model.CustomMappedElement;
-import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.MappedElement;
-import io.zyient.core.mapping.model.RegexMappedElement;
-import io.zyient.core.mapping.rules.MappingReflectionHelper;
+import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.core.mapping.model.mapping.CustomMappedElement;
+import io.zyient.core.mapping.model.mapping.MappedElement;
+import io.zyient.core.mapping.model.mapping.MappingType;
+import io.zyient.core.mapping.model.mapping.RegexMappedElement;
 import io.zyient.core.mapping.transformers.RegexTransformer;
 import io.zyient.core.mapping.transformers.Transformer;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,6 +32,7 @@ public class MapTransformer<T> {
         private Map<String, MapNode> nodes;
         private Transformer<?> transformer;
         private boolean nullable;
+        private MappingType mappingType;
     }
 
     private final Class<? extends T> type;
@@ -65,7 +46,7 @@ public class MapTransformer<T> {
     }
 
     public MapTransformer<T> add(@NonNull MappedElement element) throws Exception {
-        PropertyModel pm = ReflectionHelper.findProperty(type, element.getTargetPath());
+        PropertyDef pm = ReflectionHelper.findProperty(type, element.getTargetPath());
         if (pm == null) {
             throw new Exception(String.format("Target field not found. [class=%s][field=%s]",
                     type.getCanonicalName(), element.getTargetPath()));
@@ -90,17 +71,21 @@ public class MapTransformer<T> {
             } else if (create) {
                 Transformer<?> transformer = element.getTransformerClass().getDeclaredConstructor()
                         .newInstance()
-                        .configure(settings, element);
+                        .configure(settings);
                 transformers.put(transformer.name(), transformer);
                 return transformer;
             }
         } else if (elem instanceof RegexMappedElement element) {
-            if (transformers.containsKey(element.getRegex())) {
-                return transformers.get(element.getRegex());
+            if (transformers.containsKey(element.getName())) {
+                return transformers.get(element.getName());
             } else if (create) {
                 RegexTransformer transformer = (RegexTransformer) new RegexTransformer()
-                        .configure(settings, element);
-                transformers.put(transformer.name(), transformer);
+                        .withGroups(element.getGroups())
+                        .regex(element.getRegex())
+                        .format(element.getFormat())
+                        .replace(element.getReplace())
+                        .configure(settings);
+                transformers.put(element.getName(), transformer);
                 return transformer;
             }
         }
@@ -109,14 +94,14 @@ public class MapTransformer<T> {
 
     public Object transform(@NonNull MappedElement element, @NonNull Object source) throws Exception {
         if (element instanceof CustomMappedElement) {
-            Transformer<?> transformer = findTransformer(element, false);
+            Transformer<?> transformer = findTransformer(element, true);
             if (transformer == null) {
                 throw new Exception(String.format("Transformer not found. [name=%s]",
                         ((CustomMappedElement) element).getTransformer()));
             }
             return transformer.read(source);
         } else if (element instanceof RegexMappedElement re) {
-            Transformer<?> transformer = findTransformer(re, false);
+            Transformer<?> transformer = findTransformer(re, true);
             if (transformer == null) {
                 throw new Exception(String.format("Transformer not found. [name=%s]",
                         re.getName()));
@@ -126,12 +111,14 @@ public class MapTransformer<T> {
         return source;
     }
 
-    public Map<String, Object> transform(@NonNull Map<String, Object> source, @NotNull Context context) throws Exception {
+    public Map<String, Object> transform(@NonNull Map<String, Object> source,
+                                         @NonNull Class<? extends T> entityType) throws Exception {
         Preconditions.checkState(!mapper.isEmpty());
         Map<String, Object> data = new HashMap<>();
+        JSONUtils.checkAndAddType(data, entityType);
         for (String key : mapper.keySet()) {
             MapNode node = mapper.get(key);
-            transform(source, node, data, context.params);
+            transform(source, node, data);
         }
         return data;
     }
@@ -139,54 +126,45 @@ public class MapTransformer<T> {
     @SuppressWarnings("unchecked")
     private void transform(Map<String, Object> source,
                            MapNode node,
-                           Map<String, Object> data, Map<String, Object> context) throws Exception {
-        if (source.containsKey(node.name)) {
-            findValueFromSourceOrContext(source, node, data);
-        }  else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
-            findValueFromSourceOrContext(context, node, data);
-        } else {
-            if (!node.nullable) {
-                throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
-            }
-        }
-    }
-
-    private void findValueFromSourceOrContext(Map<String, Object> sourceOrContext,
-                                              MapNode node,
-                                              Map<String, Object> data) throws Exception {
-        String fieldName = node.name;
+                           Map<String, Object> data) throws Exception {
         Object value = null;
-        if (MappingReflectionHelper.isContextPrefixed(fieldName)) {
-            Context dummyContext = new Context();
-            dummyContext.setParams(sourceOrContext);
-            value = MappingReflectionHelper.getContextProperty(fieldName, dummyContext);
-        } else {
-            value = sourceOrContext.get(node.name);
+        if (node.mappingType == MappingType.ConstField || node.mappingType == MappingType.ConstProperty) {
+            value = node.name;
+        } else if (source.containsKey(node.name)) {
+            value = source.get(node.name);
+            if (value == null) {
+                if (!node.nullable) {
+                    throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
+                }
+                return;
+            }
         }
-
-        if (value == null) {
+        if (value != null) {
+            if (!Strings.isNullOrEmpty(node.targetPath)) {
+                Map<String, Object> map = getTargetNode(data, node.targetPath);
+                String[] parts = node.targetPath.split("\\.");
+                String key = parts[parts.length - 1];
+                if (key.contains("[")) {
+                    key = ReflectionHelper.extractKey(key);
+                }
+                if (node.transformer != null) {
+                    value = node.transformer.read(value);
+                }
+                map.put(key, value);
+            } else {
+                if (!(value instanceof Map<?, ?>)) {
+                    throw new Exception(String.format("Invalid node type: Expected Map<String, Object> [type=%s]",
+                            value.getClass().getCanonicalName()));
+                }
+                if (node.nodes != null && !node.nodes.isEmpty()) {
+                    for (String key : node.nodes.keySet()) {
+                        transform((Map<String, Object>) value, node.nodes.get(key), data);
+                    }
+                }
+            }
+        } else {
             if (!node.nullable) {
                 throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
-            }
-            return;
-        }
-        if (!Strings.isNullOrEmpty(node.targetPath)) {
-            Map<String, Object> map = getTargetNode(data, node.targetPath);
-            String[] parts = node.targetPath.split("\\.");
-            String key = parts[parts.length - 1];
-            if (node.transformer != null) {
-                value = node.transformer.read(value);
-            }
-            map.put(key, value);
-        } else {
-            if (!(value instanceof Map<?, ?>)) {
-                throw new Exception(String.format("Invalid node type: Expected Map<String, Object> [type=%s]",
-                        value.getClass().getCanonicalName()));
-            }
-            if (node.nodes != null && !node.nodes.isEmpty()) {
-                for (String key : node.nodes.keySet()) {
-                    transform((Map<String, Object>) value, node.nodes.get(key), data, sourceOrContext);
-                }
             }
         }
     }
@@ -200,17 +178,20 @@ public class MapTransformer<T> {
         Class<?> currentType = type;
         while (index < parts.length - 1) {
             String name = parts[index];
-            Field f = ReflectionHelper.findField(currentType, name);
+            PropertyDef f = ReflectionHelper.findProperty(currentType, name);
             if (f == null) {
                 throw new Exception(String.format("Field not found. [type=%s][name=%s]",
                         currentType.getCanonicalName(), name));
             }
-            currentType = f.getType();
+            currentType = f.type();
+            if (f.type() == null) {
+                throw new Exception(String.format("Property type is null. [property=%s]", f.name()));
+            }
             if (current.containsKey(name)) {
                 current = (Map<String, Object>) current.get(name);
             } else {
                 Map<String, Object> nmap = new HashMap<>();
-                nmap.put("@class", currentType.getCanonicalName());
+                JSONUtils.checkAndAddType(nmap, currentType);
                 current.put(name, nmap);
                 current = nmap;
             }
@@ -220,27 +201,32 @@ public class MapTransformer<T> {
     }
 
     private MapNode findNode(MappedElement element,
-                             PropertyModel property) throws Exception {
+                             PropertyDef property) throws Exception {
         String source = element.getSourcePath();
-        String[] parts = source.split("\\.");
+        String[] parts = null;
+        if (element.getMappingType() == MappingType.ConstField
+                || element.getMappingType() == MappingType.ConstProperty) {
+            parts = new String[]{source};
+        } else {
+            parts = source.split("\\.");
+        }
         if (parts.length == 1) {
-            String sourceKey  = String.format("%s%d",parts[0],element.getSequence());
-            if (mapper.containsKey(sourceKey)) {
-                return mapper.get(sourceKey);
+            if (mapper.containsKey(parts[0])) {
+                return mapper.get(parts[0]);
             } else {
                 MapNode node = new MapNode();
                 node.name = parts[0];
                 node.targetPath = element.getTargetPath();
                 node.type = property.field().getType();
                 node.nullable = element.isNullable();
-                mapper.put(sourceKey, node);
+                node.mappingType = element.getMappingType();
+                mapper.put(parts[0], node);
                 return node;
             }
         } else {
             MapNode node = null;
             for (int ii = 0; ii < parts.length; ii++) {
-
-                String name  = parts[ii];
+                String name = parts[ii];
                 if (node == null) {
                     if (mapper.containsKey(name)) {
                         node = mapper.get(name);
@@ -271,6 +257,7 @@ public class MapTransformer<T> {
                             nnode.name = name;
                             nnode.targetPath = element.getTargetPath();
                             nnode.nullable = element.isNullable();
+                            nnode.mappingType = element.getMappingType();
                             if (node.nodes == null) {
                                 node.nodes = new HashMap<>();
                             }

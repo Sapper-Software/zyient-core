@@ -1,8 +1,8 @@
 buildscript {
     repositories {
         mavenCentral()
-		maven { url 'https://repo.spring.io/snapshot' }
-		maven { url 'https://repo.spring.io/milestone' }
+        maven { url 'https://repo.spring.io/snapshot' }
+        maven { url 'https://repo.spring.io/milestone' }
     }
     dependencies {
         classpath 'org.owasp:dependency-check-gradle:8.2.1'
@@ -43,37 +43,6 @@ configurations.all {
 }
 
 publishing {
-    // publications {
-    //     mavenJava(MavenPublication) {
-    //         groupId = "io.zyient.framework"
-    //         from components.java
-
-    //         pom {
-    //             name = 'Zyient Java Core Framework'
-    //             description = 'Zyient Java - Core Framework Libraries.'
-    //             url = 'https://zyient.io/'
-
-    //             licenses {
-    //                 license {
-    //                     name = 'The Apache License, Version 2.0'
-    //                     url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-    //                 }
-    //             }
-    //             developers {
-    //                 developer {
-    //                     id = 'subhagho'
-    //                     name = 'Subho Ghosh'
-    //                     email = 'subho.ghosh@outlook.com'
-    //                 }
-    //             }
-    //             scm {
-    //                 connection = 'scm:git:git@github.com:subhagho/hcdc.git'
-    //                 developerConnection = 'scm:git:git@github.com:subhagho/hcdc.git'
-    //                 url = 'https://zyient.io'
-    //             }
-    //         }
-    //     }
-    // }
     repositories {
         if (System.getenv("GIT_TOKEN")) {
             maven {
@@ -161,7 +130,7 @@ subprojects {
                 artifact jar
             }
         }
-    
+
     }
 
     configurations.all {
@@ -183,10 +152,10 @@ subprojects {
             if (details.requested.name == 'curator-client') {
                 details.useTarget 'org.apache.curator:curator-client:5.4.0'
             }
-            /*
-            if (details.requested.name == "antlr4-runtime") {
-                details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
+            if (details.requested.name == "commons-codec") {
+                details.useTarget 'commons-codec:commons-codec:1.16.0'
             }
+            /*
             if (details.requested.name == "antlr-runtime") {
                 details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
             }
@@ -208,6 +177,7 @@ subprojects {
         implementation 'org.projectlombok:lombok:1.18.24'
         implementation 'commons-beanutils:commons-beanutils:1.9.4'
         implementation 'commons-io:commons-io:2.11.0'
+        implementation 'commons-codec:commons-codec:1.16.0'
 
         implementation 'org.apache.commons:commons-configuration2:2.7'
         // https://mvnrepository.com/artifact/com.beust/jcommander

@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package io.zyient.core.mapping.pipeline.impl.udp.nodes;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.core.mapping.model.RecordResponse;
-import io.zyient.core.mapping.model.SourceMap;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.impl.udp.model.FormContext;
 import io.zyient.core.mapping.pipeline.staging.StagingPipeline;
 import lombok.NonNull;

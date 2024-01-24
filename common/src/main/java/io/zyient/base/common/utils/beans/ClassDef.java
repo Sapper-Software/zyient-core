@@ -1,7 +1,24 @@
+/*
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.zyient.base.common.utils.beans;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.ReflectionHelper;
 import lombok.Getter;
 import lombok.NonNull;
@@ -9,10 +26,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.lang3.StringUtils;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.Parameter;
+import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,10 +38,31 @@ import java.util.Map;
 public class ClassDef {
     private String name;
     private Class<?> type;
-    private Map<String, PropertyDef> properties;
+    private Map<String, PropertyDef> properties = new HashMap<>();
     private Boolean abstractType = null;
     private Boolean generic = null;
     private List<Method> methods;
+    private List<Constructor<?>> constructors;
+    private Constructor<?> emptyConstructor;
+
+    public PropertyDef get(@NonNull String name) {
+        if (properties != null) {
+            return properties.get(name);
+        }
+        return null;
+    }
+
+    public PropertyDef findField(@NonNull String name) {
+        if (name.contains(".")) {
+            String[] parts = name.split("\\.");
+            if (properties.containsKey(parts[0])) {
+                return properties.get(parts[0]).findField(parts, 1);
+            }
+        } else if (properties.containsKey(name)) {
+            return properties.get(name);
+        }
+        return null;
+    }
 
     public ClassDef from(@NonNull Class<?> clazz) throws Exception {
         Preconditions.checkNotNull(type);
@@ -37,54 +72,58 @@ public class ClassDef {
         generic = ReflectionHelper.isGeneric(clazz);
         methods = new ArrayList<>();
         ReflectionHelper.getAllMethods(clazz, methods);
-
+        if (!abstractType) {
+            Constructor<?>[] ctors = clazz.getConstructors();
+            constructors = new ArrayList<>(ctors.length);
+            for (Constructor<?> ctor : ctors) {
+                if (ctor.getParameters() == null || ctor.getParameters().length == 0) {
+                    if (Modifier.isPublic(ctor.getModifiers())) {
+                        emptyConstructor = ctor;
+                    }
+                }
+                constructors.add(ctor);
+            }
+        }
         Field[] fields = ReflectionHelper.getAllFields(clazz);
         if (fields != null) {
-            properties = new HashMap<>();
             for (Field field : fields) {
+                PropertyDef pd = null;
                 if (ReflectionHelper.isPrimitiveTypeOrString(field)) {
-                    PropertyDef pd = new PropertyDef(field.getType());
-                    pd.name(field.getName());
-                    pd.owner(clazz);
+                    pd = (PrimitivePropertyDef) new PrimitivePropertyDef(field.getType())
+                            .from(field, clazz);
                     pd.generic(false);
-                    pd.setter(findSetter(field));
-                    pd.getter(findGetter(field));
-                    pd.accessible(Modifier.isPublic(field.getModifiers()));
-                    properties.put(pd.name(), pd);
                 } else if (ReflectionHelper.implementsInterface(List.class, field.getType())) {
-                    ListPropertyDef pd = (ListPropertyDef) new ListPropertyDef()
-                            .owner(clazz);
-                    pd.from(field);
-                    pd.setter(findSetter(field));
-                    pd.getter(findGetter(field));
-                    pd.accessible(Modifier.isPublic(field.getModifiers()));
-                    properties.put(pd.name(), pd);
+                    pd = (ListPropertyDef) new ListPropertyDef()
+                            .from(field, clazz);
+                    pd.generic(true);
                 } else if (ReflectionHelper.isMap(field)) {
-                    MapPropertyDef pd = (MapPropertyDef) new MapPropertyDef()
-                            .owner(clazz);
-                    pd.from(field);
-                    pd.setter(findSetter(field));
-                    pd.getter(findGetter(field));
-                    pd.accessible(Modifier.isPublic(field.getModifiers()));
-                    properties.put(pd.name(), pd);
+                    pd = (MapPropertyDef) new MapPropertyDef()
+                            .from(field, clazz);
+                    pd.generic(true);
+                } else if (field.isEnumConstant()) {
+                    pd = (EnumPropertyDef) new EnumPropertyDef()
+                            .from(field, clazz);
+                    pd.generic(false);
                 } else {
-                    ClassPropertyDef pd = (ClassPropertyDef) new ClassPropertyDef()
-                            .owner(clazz);
-                    pd.from(field);
-                    pd.setter(findSetter(field));
-                    pd.getter(findGetter(field));
-                    pd.accessible(Modifier.isPublic(field.getModifiers()));
-                    properties.put(pd.name(), pd);
+                    pd = (ClassPropertyDef) new ClassPropertyDef()
+                            .from(field, clazz);
                 }
+                pd.setter(findSetter(field.getName(), field.getType()));
+                pd.getter(findGetter(field.getName(), field.getType()));
+                properties.put(pd.name(), pd);
             }
+        }
+        if (ReflectionHelper.implementsInterface(PropertyBag.class, clazz)) {
+           PropertyFieldDef pd = new PropertyFieldDef()
+                   .init(this);
+           properties.put(pd.name(), pd);
         }
         return this;
     }
 
-    public Method findSetter(@NonNull Field field) {
+    public Method findSetter(@NonNull String name,
+                             @NonNull Class<?> type) {
         Preconditions.checkNotNull(methods);
-        String name = field.getName();
-        Class<?> type = field.getType();
         for (Method method : methods) {
             if (isValidSetter(name, method)) {
                 Parameter[] params = method.getParameters();
@@ -101,10 +140,9 @@ public class ClassDef {
         return null;
     }
 
-    public Method findGetter(@NonNull Field field) {
+    public Method findGetter(@NonNull String name,
+                             @NonNull Class<?> type) {
         Preconditions.checkNotNull(methods);
-        String name = field.getName();
-        Class<?> type = field.getType();
         for (Method method : methods) {
             if (isValidGetter(name, method)) {
                 Class<?> rt = method.getReturnType();
@@ -135,5 +173,31 @@ public class ClassDef {
             return true;
         }
         return field.compareTo(method.getName()) == 0;
+    }
+
+    public Constructor<?> getConstructor(Parameter... parameters) {
+        if (parameters == null) {
+            return emptyConstructor;
+        } else {
+            for (Constructor<?> ctor : constructors) {
+                if (checkParameters(ctor, parameters)) {
+                    return ctor;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean checkParameters(Constructor<?> ctor, Parameter... parameters) {
+        Parameter[] params = ctor.getParameters();
+        if (params.length == parameters.length) {
+            for (int ii = 0; ii < parameters.length; ii++) {
+                if (!parameters[ii].equals(params[ii])) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 }

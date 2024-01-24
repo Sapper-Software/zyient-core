@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.entity.EEntityState;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.*;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.processing.ProcessorState;
@@ -170,7 +171,7 @@ public abstract class ContentProvider implements Closeable {
                     Map<String, Object> values = context.customFields();
                     for (String field : values.keySet()) {
                         Object v = values.get(field);
-                        ReflectionHelper.setFieldValue(v, document, field);
+                        BeanUtils.setValue(document, field, v);
                     }
                 }
                 document = createDoc(document, context);
@@ -427,6 +428,8 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
+    public abstract void endSession() throws DataStoreException;
+    
     protected abstract void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> createDoc(@NonNull Document<E, K, T> document,

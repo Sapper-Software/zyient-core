@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,11 @@
 package io.zyient.core.mapping.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zyient.base.common.model.PropertyModel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
-import io.zyient.core.mapping.model.MappedElement;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.base.common.utils.beans.UnknownPropertyDef;
+import io.zyient.core.mapping.model.mapping.MappedElement;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import org.junit.jupiter.api.Test;
 
@@ -46,19 +46,19 @@ class MapTransformerTest {
             transformer.add(new MappedElement("type", "inner.etype", false, Constants.TestEnum.class, null));
             transformer.add(new MappedElement("values", "inner.strings", false, List.class, null));
             transformer.add(new MappedElement("nested.nested.values", "inner.doubles", false, List.class, null));
-            transformer.add(new MappedElement("nested.nested.values", "properties.doubles", false, List.class, null));
+            transformer.add(new MappedElement("nested.nested.values", "properties.['doubles']", false, List.class, null));
 
             Constants.Source source = new Constants.Source();
             String json = JSONUtils.asString(source);
             Object data = mapper.readValue(json, Object.class);
-            assertTrue(data instanceof Map<?, ?>);
-            Map<String, Object> output = transformer.transform((Map<String, Object>) data);
+            assertInstanceOf(Map.class, data);
+            Map<String, Object> output = transformer.transform((Map<String, Object>) data, Constants.Target.class);
             assertNotNull(output);
             Constants.Target target = mapper.convertValue(output, Constants.Target.class);
             assertNotNull(target);
             MappedResponse<Constants.Target> response = new MappedResponse<>((Map<String, Object>) data);
-            Object r = MappingReflectionHelper.getProperty("source['nested'].['nested'].['id']", new PropertyModel(), response);
-            assertTrue(r instanceof String);
+            Object r = MappingReflectionHelper.getProperty("source['nested'].['nested'].['id']", new UnknownPropertyDef(), response);
+            assertInstanceOf(String.class, r);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

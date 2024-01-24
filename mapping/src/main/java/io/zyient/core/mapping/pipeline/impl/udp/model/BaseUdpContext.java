@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 package io.zyient.core.mapping.pipeline.impl.udp.model;
 
-import io.zyient.base.core.model.PropertyBag;
+import io.zyient.base.common.model.entity.PropertyBag;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

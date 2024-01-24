@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,15 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
-import io.zyient.core.mapping.model.*;
+import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RecordResponse;
+import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.PersistedEntityPipelineSettings;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -49,10 +53,10 @@ public class EntityPipeline<K extends IKey, E extends IEntity<K>> extends Persis
 
     public EntityPipeline<K, E> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                           @NonNull MapperFactory mapperFactory,
-                                          @NonNull DataStoreManager dataStoreManager) throws ConfigurationException {
+                                          @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             withMapperFactory(mapperFactory);
-            super.configure(xmlConfig, dataStoreManager, PersistedEntityPipelineSettings.class);
+            super.configure(xmlConfig, env, PersistedEntityPipelineSettings.class);
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {

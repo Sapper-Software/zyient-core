@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package io.zyient.core.mapping.pipeline;
 
+import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
@@ -23,13 +24,14 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EntityValidationError;
 import io.zyient.core.mapping.pipeline.settings.PersistencePipelineSettings;
 import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.rules.RuleValidationError;
 import io.zyient.core.persistence.AbstractDataStore;
-import io.zyient.core.persistence.DataStoreManager;
 import io.zyient.core.persistence.TransactionDataStore;
+import io.zyient.core.persistence.env.DataStoreEnv;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -49,13 +51,15 @@ public abstract class PersistencePipeline<K extends IKey, E extends IEntity<K>> 
     @Override
     @SuppressWarnings("unchecked")
     protected void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                             @NonNull DataStoreManager dataStoreManager,
+                             @NonNull BaseEnv<?> env,
                              @NonNull Class<? extends PipelineSettings> settingsType) throws Exception {
-        super.configure(xmlConfig, dataStoreManager, settingsType);
+        Preconditions.checkArgument(env instanceof DataStoreEnv<?>);
+        super.configure(xmlConfig, env, settingsType);
         PersistencePipelineSettings settings = (PersistencePipelineSettings) settings();
         entityType = (Class<? extends E>) settings.getEntityType();
         keyType = (Class<? extends K>) settings.getKeyType();
-        dataStore = dataStoreManager.getDataStore(settings.getDataStore(), settings.getDataStoreType());
+        dataStore = ((DataStoreEnv<?>) env).dataStoreManager()
+                .getDataStore(settings.getDataStore(), settings.getDataStoreType());
         if (dataStore == null) {
             throw new ConfigurationException(String.format("DataStore not found. [name=%s][type=%s]",
                     settings.getDataStore(), settings.getDataStoreType().getCanonicalName()));

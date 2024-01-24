@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package io.zyient.core.mapping.pipeline;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.mapper.Mapping;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
 import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.rules.RuleConfigReader;
 import io.zyient.core.mapping.rules.RulesExecutor;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -51,10 +51,10 @@ public abstract class ExecutablePipeline<E> extends Pipeline {
     @Override
     @SuppressWarnings("unchecked")
     protected void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                             @NonNull DataStoreManager dataStoreManager,
+                             @NonNull BaseEnv<?> env,
                              @NonNull Class<? extends PipelineSettings> settingsType) throws Exception {
         Preconditions.checkNotNull(mapperFactory);
-        super.configure(xmlConfig, dataStoreManager, settingsType);
+        super.configure(xmlConfig, env, settingsType);
         ExecutablePipelineSettings settings = (ExecutablePipelineSettings) settings();
         responseType = (Class<? extends MappedResponse<E>>) settings().getResponseType();
         mapping = mapperFactory.getMapping(settings.getMapping());
@@ -74,7 +74,7 @@ public abstract class ExecutablePipeline<E> extends Pipeline {
             postProcessor = (RulesExecutor<MappedResponse<E>>) new RulesExecutor<>(responseType)
                     .terminateOnValidationError(settings().isTerminateOnValidationError())
                     .contentDir(contentDir())
-                    .configure(xmlConfig);
+                    .configure(xmlConfig, env());
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,15 +22,15 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.RecordResponse;
-import io.zyient.core.mapping.model.SourceMap;
 import io.zyient.core.mapping.model.StatusCode;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
 import io.zyient.core.mapping.readers.MappingContextProvider;
-import io.zyient.core.persistence.DataStoreManager;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -52,6 +52,7 @@ public abstract class Pipeline implements Closeable {
     private MappingContextProvider contextProvider;
     private HierarchicalConfiguration<ImmutableNode> config;
     private File contentDir;
+    private BaseEnv<?> env;
 
     public String name() {
         Preconditions.checkNotNull(settings);
@@ -59,12 +60,12 @@ public abstract class Pipeline implements Closeable {
     }
 
     protected void configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                             @NonNull DataStoreManager dataStoreManager,
+                             @NonNull BaseEnv<?> env,
                              @NonNull Class<? extends PipelineSettings> settingsType) throws Exception {
+        this.env = env;
         ConfigReader reader = new ConfigReader(xmlConfig, null, settingsType);
         reader.read();
         settings = (PipelineSettings) reader.settings();
-
         config = reader.config();
     }
 
@@ -106,7 +107,7 @@ public abstract class Pipeline implements Closeable {
 
     public abstract Pipeline configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                        @NonNull MapperFactory mapperFactory,
-                                       @NonNull DataStoreManager dataStoreManager) throws ConfigurationException;
+                                       @NonNull BaseEnv<?> env) throws ConfigurationException;
 
     public final RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
         checkState();

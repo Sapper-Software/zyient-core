@@ -1,3 +1,19 @@
+/*
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.zyient.base.common.utils.beans;
 
 import io.zyient.base.common.utils.ReflectionHelper;
@@ -39,10 +55,9 @@ public class MapPropertyDef extends PropertyDef {
         return false;
     }
 
-    public MapPropertyDef from(@NonNull Field field) throws Exception {
-        name(field.getName());
-        type(field.getType());
-        abstractType(Modifier.isAbstract(type().getModifiers()));
+    public MapPropertyDef from(@NonNull Field field,
+                               @NonNull Class<?> owner) throws Exception {
+        super.from(field, owner);
         generic(true);
         methods = new ArrayList<>();
         ReflectionHelper.getAllMethods(type(), methods);
@@ -75,36 +90,36 @@ public class MapPropertyDef extends PropertyDef {
 
     private void updateKeyType(Class<?> type) throws Exception {
         if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-            keyType = new PropertyDef(type);
-            keyType.accessible(false);
+            keyType = new PrimitivePropertyDef(type);
         } else if (!type.equals(Object.class)) {
             ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__map_key", type);
+            def.from("__map_key", type, owner());
             keyType = def;
+        } else if (type.isEnum()) {
+            keyType = new EnumPropertyDef(type);
         } else {
-            keyType = new PropertyDef();
-            keyType.type(Object.class);
+            keyType = new UnknownPropertyDef();
         }
         keyType.name("__map_key");
-        keyType.generic(true);
+        keyType.accessible(false);
     }
 
     private void updateValueType(Class<?> type) throws Exception {
         if (ReflectionHelper.isPrimitiveTypeOrString(type)) {
-            valueType = new PropertyDef(type);
-            valueType.accessible(false);
+            valueType = new PrimitivePropertyDef(type);
+        } else if (type.isEnum()) {
+            valueType = new EnumPropertyDef(type);
         } else if (!type.equals(Object.class)) {
             ClassPropertyDef def = (ClassPropertyDef) new ClassPropertyDef()
                     .owner(owner());
-            def.from("__map_value", type);
+            def.from("__map_value", type, owner());
             valueType = def;
         } else {
-            valueType = new PropertyDef();
-            keyType.type(Object.class);
+            valueType = new UnknownPropertyDef();
         }
         valueType.name("__map_value");
-        valueType.generic(true);
+        valueType.accessible(false);
     }
 
     private TypeRef findRef(String name, TypeRefs refs) {
@@ -149,7 +164,7 @@ public class MapPropertyDef extends PropertyDef {
                 if (params != null && params.length == 1) {
                     Parameter p = params[0];
                     Class<?> pt = p.getType();
-                    if (pt.equals(Object.class) || pt.equals(keyType.type())) {
+                    if (pt.equals(Object.class) || keyType.type().isAssignableFrom(pt)) {
                         if (Modifier.isPublic(method.getModifiers())) {
                             return method;
                         }
@@ -159,5 +174,19 @@ public class MapPropertyDef extends PropertyDef {
         }
         return null;
     }
-}
 
+    @Override
+    protected PropertyDef findField(@NonNull String[] parts, int index) {
+        String name = parts[index];
+        if (index == parts.length - 1) {
+            if (name.compareTo(name()) == 0) {
+                return this;
+            }
+        } else {
+            if (valueType instanceof ClassPropertyDef) {
+                return valueType.findField(parts, index + 1);
+            }
+        }
+        return null;
+    }
+}
