@@ -44,7 +44,7 @@ jobs:
           fi
 
           echo "new_tag=$branch_ver."$(( tag_ver+1 ))"" >> $GITHUB_OUTPUT
-          echo newtag:${{ steps.gen_tag.outputs.new_tag }}
+          echo $branch_ver."$(( tag_ver+1 ))"
 
       
       - name: Setup Gradle
