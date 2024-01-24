@@ -137,10 +137,10 @@ subprojects {
             if (details.requested.name == 'curator-client') {
                 details.useTarget 'org.apache.curator:curator-client:5.4.0'
             }
-            /*
-            if (details.requested.name == "antlr4-runtime") {
-                details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
+            if (details.requested.name == "commons-codec") {
+                details.useTarget 'commons-codec:commons-codec:1.16.0'
             }
+            /*
             if (details.requested.name == "antlr-runtime") {
                 details.useTarget 'org.antlr:antlr4-runtime:4.7.1'
             }
@@ -162,6 +162,7 @@ subprojects {
         implementation 'org.projectlombok:lombok:1.18.24'
         implementation 'commons-beanutils:commons-beanutils:1.9.4'
         implementation 'commons-io:commons-io:2.11.0'
+        implementation 'commons-codec:commons-codec:1.16.0'
 
         implementation 'org.apache.commons:commons-configuration2:2.7'
         // https://mvnrepository.com/artifact/com.beust/jcommander

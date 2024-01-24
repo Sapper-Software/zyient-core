@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package io.zyient.core.extraction.model;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.CollectionUtils;
+import io.zyient.base.core.utils.SourceTypes;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -33,8 +34,9 @@ import java.util.List;
 public class Source {
     private String referenceId;
     private String sourceURI;
+    private SourceTypes type;
     private List<DocumentSection> documents;
-    private Context metadata;
+    private DocumentMetadata metadata = new DocumentMetadata();
 
     public Source() {
         super();
@@ -46,11 +48,8 @@ public class Source {
         this.sourceURI = sourceURI;
     }
 
-    public Context addMetadata(@NonNull String name,
+    public DocumentMetadata addMetadata(@NonNull String name,
                                @NonNull Object value) {
-        if (metadata == null) {
-            metadata = new Context();
-        }
         metadata.put(name, value);
         return metadata;
     }
