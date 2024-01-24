@@ -39,7 +39,7 @@ jobs:
           else
             current_tag="$(git describe --abbrev=0 --tags)"
             echo current_tag:$current_tag
-            tag_ver="$(cut -d'.' -f3 <<< $current_tag)"
+            tag_ver="$(cut -d'.' -f4 <<< $current_tag)"
             echo $tag_ver
           fi
 
