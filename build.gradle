@@ -24,7 +24,7 @@ repositories {
 }
 
 group 'io.zyient.framework'
-version '2.5-SNAPSHOT'
+version '2.7-SNAPSHOT'
 
 configurations.all {
     exclude module: "logback-classic"
