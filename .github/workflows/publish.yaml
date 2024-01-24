@@ -40,10 +40,11 @@ jobs:
             current_tag="$(git describe --abbrev=0 --tags)"
             echo current_tag:$current_tag
             tag_ver="$(cut -d'.' -f3 <<< $current_tag)"
+            echo $tag_ver
           fi
 
           echo "new_tag=$branch_ver."$(( tag_ver+1 ))"" >> $GITHUB_OUTPUT
-          echo $new_tag
+          echo newtag:$new_tag
 
       
       - name: Setup Gradle
