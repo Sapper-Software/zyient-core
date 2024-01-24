@@ -3,6 +3,7 @@ package io.zyient.core.mapping.model;
 import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
+import io.zyient.core.mapping.model.mapping.CustomMappedElement;
 
 @Getter
 @Setter

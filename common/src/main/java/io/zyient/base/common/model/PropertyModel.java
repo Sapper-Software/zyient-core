@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.transformers;
+package io.zyient.base.common.model;
 
-import io.zyient.core.mapping.mapper.MappingSettings;
-import lombok.NonNull;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.lang3.SerializationException;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 
-public interface Transformer<T> {
-    String __CONFIG_PATH = "transformer";
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
-    String name();
-
-    Transformer<T> configure(@NonNull MappingSettings settings) throws ConfigurationException;
-    T read(@NonNull Object source) throws SerializationException;
+@Getter
+@Setter
+@Accessors(fluent = true)
+public class PropertyModel {
+    private String property;
+    private Field field;
+    private Method setter;
+    private Method getter;
 }

@@ -2,6 +2,7 @@ package io.zyient.core.mapping.rules.collection;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.PropertyModel;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
@@ -15,7 +16,7 @@ import java.io.File;
 @Accessors(fluent = true)
 public class ListRule<T> extends BaseRule<T> {
 
-    private PropertyModel property;
+    private PropertyDef property;
     private String target;
 
     @Override

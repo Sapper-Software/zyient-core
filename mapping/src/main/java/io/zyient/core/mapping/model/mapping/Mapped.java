@@ -34,8 +34,8 @@ public abstract class Mapped {
     @Config(name = "sequence", type = Integer.class)
     private int sequence;
     @Config(name = "visitor", required = false, type = Class.class)
-    private Class<? extends MappingVisitor<?>> visitorType;
-    private MappingVisitor<?> visitor;
+    private Class<? extends MappingVisitor> visitorType;
+    private MappingVisitor visitor;
 
     public static Mapped read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                               @NonNull Class<? extends Mapped> type,

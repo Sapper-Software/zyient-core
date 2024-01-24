@@ -128,7 +128,7 @@ public class MappingReflectionHelper {
     }
 
     public static void setProperty(@NonNull String field,
-                                   @NonNull PropertyDef property,
+                                   PropertyDef property,
                                    @NonNull Object entity,
                                    Object value) throws Exception {
         if (isSourcePrefixed(field)) {
@@ -143,7 +143,7 @@ public class MappingReflectionHelper {
     }
 
     public static Object getProperty(@NonNull String field,
-                                     @NonNull PropertyDef property,
+                                     PropertyDef property,
                                      @NonNull Object entity) throws Exception {
         if (property instanceof FixedPropertyDef) {
             if (entity instanceof MappedResponse<?>) {

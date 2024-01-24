@@ -2,6 +2,7 @@ package io.zyient.core.mapping.rules.collection;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.PropertyModel;
+import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
@@ -16,8 +17,8 @@ import java.util.Map;
 @Accessors(fluent = true)
 public class ReplaceRule<T> extends BaseRule<T> {
 
-    private PropertyModel sourceProperty;
-    private PropertyModel targetProperty;
+    private PropertyDef sourceProperty;
+    private PropertyDef targetProperty;
     private String target;
     private String field;
 
