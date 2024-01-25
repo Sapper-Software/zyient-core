@@ -18,6 +18,7 @@ package io.zyient.core.persistence.impl.rdbms;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.EEntityState;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.StoreSessionManager;
 import io.zyient.core.persistence.model.BaseEntity;
@@ -75,6 +76,10 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     protected void close(@NonNull Session session) throws DataStoreException {
         if (session.isOpen()) {
             session.close();
+        }
+        if (!remove()) {
+            long tid = Thread.currentThread().getId();
+            DefaultLogger.warn(String.format("[THREAD=%d] Failed to remove session...", tid));
         }
         clearCache();
     }
