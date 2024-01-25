@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -222,7 +222,7 @@ public abstract class Mapping<T> {
                 if (type == null) {
                     type = MappedElement.class;
                 }
-                Mapped m = Mapped.read(node, type);
+                Mapped m = Mapped.read(node, type, env);
                 sourceIndex.put(m.getSequence(), m);
                 if (m instanceof MappedElement me) {
                     if (me.getMappingType() == MappingType.Field
@@ -324,6 +324,9 @@ public abstract class Mapping<T> {
             return;
         }
         setFieldValue(me, value, response);
+        if (me.getVisitor() != null) {
+            me.getVisitor().visit(me, response, source, context);
+        }
     }
 
     private void setFieldValue(MappedElement element,

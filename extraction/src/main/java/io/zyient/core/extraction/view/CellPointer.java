@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class CellPointer {
-    private String cellId;
+    private String id;
     @JsonSerialize(keyUsing = ClassNameSerializer.class)
     @JsonDeserialize(using = ClassNameDeSerializer.class)
     private Class<? extends Cell<?>> cellType;
     private String value;
+    private String editedValue;
 }
