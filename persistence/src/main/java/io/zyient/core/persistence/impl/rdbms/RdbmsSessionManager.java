@@ -109,6 +109,17 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     }
 
     @Override
+    public Session session() throws DataStoreException {
+        Session session = super.session();
+        if(!session.isOpen()) {
+            close(session);
+        }else {
+            return session;
+        }
+        return super.session();
+    }
+
+    @Override
     protected void rollback(@NonNull Session session, @NonNull Transaction transaction) throws DataStoreException {
         Preconditions.checkArgument(session.isOpen());
         if (!session.isJoinedToTransaction()) {
