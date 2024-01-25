@@ -149,7 +149,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Session session = sessionManager.session();
         session.setCacheMode(CacheMode.IGNORE);
         session.clear();
-
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
@@ -159,7 +158,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                     qq.setParameter(key, query.parameters().get(key));
             }
             ScrollableResults<E> results = qq.scroll();
-            HibernateCursor<K, E> cursor = new HibernateCursor<>(results, currentPage);
+            HibernateCursor<K, E> cursor = new HibernateCursor<>(session, results, currentPage);
             return cursor.pageSize(maxResults);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
