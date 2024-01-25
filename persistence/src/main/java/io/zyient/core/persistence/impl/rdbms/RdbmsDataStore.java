@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,12 +25,10 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.*;
 import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
+import jakarta.persistence.CacheStoreMode;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.hibernate.CacheMode;
-import org.hibernate.ScrollableResults;
-import org.hibernate.Session;
-import org.hibernate.Transaction;
+import org.hibernate.*;
 import org.hibernate.query.Query;
 
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
@@ -51,6 +49,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
+        session.setCacheMode(CacheMode.IGNORE);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -84,6 +83,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
+        session.setCacheMode(CacheMode.IGNORE);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -123,6 +123,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
+        session.setCacheMode(CacheMode.IGNORE);
         E entity = session.find(type, key);
         if (doRefresh(context)) {
             session.evict(entity);
@@ -151,7 +152,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
-            Query qq = session.createQuery(query.generatedQuery(), type);
+            Query qq = session.createQuery(query.generatedQuery(), type).setCacheable(false);
             if (query.hasParameters()) {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));

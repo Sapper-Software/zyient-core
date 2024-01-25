@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.zyient.core.persistence.impl.rdbms;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.EEntityState;
-import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.StoreSessionManager;
 import io.zyient.core.persistence.model.BaseEntity;
@@ -26,6 +25,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -61,14 +61,11 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     }
 
     @Override
-    protected boolean isAvailable(@NonNull Session session) {
-        return session.isOpen();
-    }
-
-    @Override
     protected Session create() throws DataStoreException {
         try {
-            return hibernateConnection.getConnection();
+            Session session = hibernateConnection.getConnection();
+            session.setCacheMode(CacheMode.IGNORE);
+            return session;
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
@@ -78,10 +75,6 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     protected void close(@NonNull Session session) throws DataStoreException {
         if (session.isOpen()) {
             session.close();
-        }
-        if (!remove()) {
-            long tid = Thread.currentThread().getId();
-            DefaultLogger.warn(String.format("[THREAD=%d] Failed to remove session...", tid));
         }
         clearCache();
     }
@@ -107,6 +100,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         }
         session.flush();
         transaction.commit();
+        clearCache();
     }
 
     @Override
@@ -119,6 +113,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
             throw new DataStoreException("Transaction instance is not active...");
         }
         transaction.rollback();
+        clearCache();
     }
 
     private void clearCache() throws DataStoreException {
@@ -159,7 +154,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
                             entity.getState().getState().name(), entity.entityKey().stringKey()));
     }
 
-    public BaseEntity<?> updateCache(@NonNull BaseEntity<?> entity, @NonNull EEntityState state) throws DataStoreException {
+    public BaseEntity<?> updateCache(@NonNull BaseEntity<?> entity, @NonNull  EEntityState state) throws DataStoreException {
         Preconditions.checkState(isInTransaction());
         Map<String, TransactionCacheElement> cache;
         synchronized (transactionCache) {

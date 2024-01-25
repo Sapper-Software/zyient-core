@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ public class SqlQueryParser<K extends IKey, E extends IEntity<K>> extends QueryP
                 } else {
                     builder.append(", ");
                 }
-                builder.append(oe.getExpression().toString());
+                builder.append(oe.toString());
             }
             hql = builder.toString();
         }

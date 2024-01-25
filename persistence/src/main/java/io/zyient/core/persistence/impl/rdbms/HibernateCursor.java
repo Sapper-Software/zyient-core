@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,18 @@ public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Curso
     private final ScrollableResults<E> results;
     private final Session session;
 
-    public HibernateCursor(@NonNull Session session, @NonNull ScrollableResults<E> results,
+    public HibernateCursor(@NonNull Session session,
+                           @NonNull ScrollableResults<E> results,
                            int currentPage) {
         super(currentPage);
-        this.results = results;
         this.session = session;
+        this.results = results;
     }
 
     public HibernateCursor(@NonNull HibernateCursor<K, E> cursor) {
         super(cursor.currentPage());
-        results = cursor.results;
         session = cursor.session;
+        results = cursor.results;
     }
 
     @Override
@@ -72,6 +73,6 @@ public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Curso
     @Override
     public void close() throws IOException {
         results.close();
-        session.close();
+        //session.close();
     }
 }

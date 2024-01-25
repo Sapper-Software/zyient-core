@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+ * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.common.utils.beans.BeanUtils;
-import io.zyient.base.common.utils.beans.ClassDef;
-import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.utils.FileUtils;
 import io.zyient.core.persistence.*;
 import io.zyient.core.persistence.impl.settings.solr.SolrDbSettings;
@@ -449,24 +446,19 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     }
 
     private static void setDocumentFields(ContentStreamUpdateRequest request, Document<?, ?, ?> document) throws Exception {
-        ClassDef def = BeanUtils.get(document.getClass());
-        Map<String, PropertyDef> fields = def.properties();
+        Field[] fields = ReflectionHelper.getAllFields(document.getClass());
         Preconditions.checkNotNull(fields);
-        for (String key : fields.keySet()) {
-            PropertyDef prop = fields.get(key);
-            if (prop.field() != null) {
-                Field field = prop.field();
-                if (field.isAnnotationPresent(org.apache.solr.client.solrj.beans.Field.class)) {
-                    org.apache.solr.client.solrj.beans.Field f =
-                            field.getAnnotation(org.apache.solr.client.solrj.beans.Field.class);
-                    String name = f.value();
-                    if (Strings.isNullOrEmpty(name)) {
-                        name = field.getName();
-                    }
-                    Object value = BeanUtils.getValue(document, prop.name());
-                    if (value != null) {
-                        request.setParam(LITERALS_PREFIX + name, String.valueOf(value));
-                    }
+        for (Field field : fields) {
+            if (field.isAnnotationPresent(org.apache.solr.client.solrj.beans.Field.class)) {
+                org.apache.solr.client.solrj.beans.Field f =
+                        field.getAnnotation(org.apache.solr.client.solrj.beans.Field.class);
+                String name = f.value();
+                if (Strings.isNullOrEmpty(name)) {
+                    name = field.getName();
+                }
+                Object value = ReflectionHelper.getFieldValue(document, field, true);
+                if (value != null) {
+                    request.setParam(LITERALS_PREFIX + name, String.valueOf(value));
                 }
             }
         }
