@@ -22,14 +22,15 @@ import io.zyient.core.extraction.model.LanguageCode;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class OCRTest {
     private static final String __INPUT = "src/test/resources/input/table-view-01.png";
-    private static final String __INPUT_PDF = "src/test/resources/input/sec-filing-sample-01.pdf";
+    private static final String __INPUT_PDF = "src/test/resources/input/sec-filing-sample-02.pdf";
     private static final String __INPUT_CHINESE_01 = "src/test/resources/input/chinese-invoice-sample-01.png";
-    private static final String __DATA_PATH = "/usr/share/tesseract-ocr/4.00/tessdata";
+    private static final String __DATA_PATH = "/usr/share/tesseract-ocr/5/tessdata";
 
     @Test
     void run() {
@@ -37,12 +38,18 @@ class OCRTest {
             File ourDir = PathUtils.getTempDir();
             DefaultLogger.info(String.format("Using output directory : [%s]", ourDir.getAbsolutePath()));
             File input = new File(__INPUT_PDF);
-            TesseractOCR ocr = new TesseractOCR(OCRFileType.PDF, input.getAbsolutePath(), ourDir.getAbsolutePath(), __DATA_PATH);
-            ocr.outputType(OCRFileType.Alto)
-                    .detectLanguage(false)
-                    .show(false)
-                    .language(LanguageCode.ENGLISH);
-            ocr.run();
+            try (TesseractOCR ocr = new TesseractOCR(OCRFileType.PDF,
+                    input.getAbsolutePath(),
+                    ourDir.getAbsolutePath(),
+                    __DATA_PATH,
+                    UUID.randomUUID().toString(),
+                    input.toURI().toString())) {
+                ocr.outputType(OCRFileType.Alto)
+                        .greyscale(false)
+                        .show(true)
+                        .language(LanguageCode.ENGLISH);
+                ocr.run();
+            }
             DefaultLogger.info("Finished....");
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

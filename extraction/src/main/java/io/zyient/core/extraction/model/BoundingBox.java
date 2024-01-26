@@ -25,4 +25,20 @@ public class BoundingBox {
     private int page;
     private Point start;
     private Point end;
+
+    public BoundingBox start(double x, double y) {
+        start = new Point();
+        start.setX(x);
+        start.setY(y);
+
+        return this;
+    }
+
+    public BoundingBox end(double x, double y) {
+        end = new Point();
+        end.setX(x);
+        end.setY(y);
+
+        return this;
+    }
 }

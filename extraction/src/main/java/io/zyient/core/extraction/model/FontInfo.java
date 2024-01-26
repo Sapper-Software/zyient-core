@@ -16,31 +16,16 @@
 
 package io.zyient.core.extraction.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class Page extends Section {
-    public static final String __PREFIX = "PG.";
-
-    private int number;
-    private int pixelSize;
-
-    public Page() {
-        super();
-    }
-
-    public Page(@NonNull String parentId, int index) {
-        super(parentId, index);
-    }
-
-    @Override
-    protected String parseId(int index) {
-        return String.format("%s%d", __PREFIX, index);
-    }
+public class FontInfo {
+    private String name;
+    private int fontId;
+    private double size;
+    private boolean bold;
+    private boolean underlined;
+    private boolean italics;
 }

@@ -17,18 +17,21 @@
 package io.zyient.core.extraction.utils.ocr;
 
 import com.google.common.base.Strings;
+import com.sun.jna.NativeLong;
+import com.sun.jna.Pointer;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.extraction.ExtractionConvertor;
-import io.zyient.core.extraction.model.LanguageCode;
-import io.zyient.core.extraction.model.Source;
+import io.zyient.core.extraction.model.*;
+import io.zyient.core.extraction.utils.CellDetector;
 import io.zyient.core.extraction.utils.LanguageUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import net.sourceforge.tess4j.*;
+import net.sourceforge.tess4j.util.ImageIOHelper;
 import nu.pattern.OpenCV;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -48,17 +51,19 @@ import org.opencv.imgproc.Imgproc;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+
+import static net.sourceforge.tess4j.ITessAPI.FALSE;
+import static net.sourceforge.tess4j.ITessAPI.TRUE;
 
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class TesseractOCR implements ExtractionConvertor<String> {
+public class TesseractOCR implements ExtractionConvertor<String>, Closeable {
     static {
         OpenCV.loadLocally();
     }
@@ -68,19 +73,24 @@ public class TesseractOCR implements ExtractionConvertor<String> {
     private final File sourcePath;
     private final File outputPath;
     private final File dataPath;
+    private final String sourceReferenceId;
+    private final String sourceUri;
     private LanguageCode language = LanguageCode.ENGLISH;
-    private boolean detectLanguage = false;
     private boolean show = false;
-    private Tesseract tesseract;
+    private boolean greyscale = true;
     private File tempDir;
-    private List<ITesseract.RenderedFormat> formats = new ArrayList<>();
+    private ITessAPI.TessBaseAPI handle;
 
     public TesseractOCR(@NonNull OCRFileType sourceType,
                         @NonNull String sourcePath,
                         @NonNull String outputPath,
-                        @NonNull String dataPath) throws Exception {
+                        @NonNull String dataPath,
+                        @NonNull String sourceReferenceId,
+                        @NonNull String sourceUri) throws Exception {
         this.sourceType = sourceType;
         this.sourcePath = new File(sourcePath);
+        this.sourceReferenceId = sourceReferenceId;
+        this.sourceUri = sourceUri;
         if (!this.sourcePath.exists()) {
             throw new IOException(String.format("Input file not found. [path=%s]", this.sourcePath.getAbsolutePath()));
         }
@@ -98,50 +108,137 @@ public class TesseractOCR implements ExtractionConvertor<String> {
                         this.outputPath.getAbsolutePath()));
             }
         }
+        handle = TessAPI1.TessBaseAPICreate();
     }
 
-    private void runWithImage(File source) throws Exception {
-        File outf = convertToGreyscale(source);
-        if (detectLanguage) {
-            LanguageCode code = detect(outf);
-            if (code != null) {
-                String lang = code.getTesseractLang();
-                if (!Strings.isNullOrEmpty(lang))
-                    tesseract.setLanguage(lang);
-                else {
-                    DefaultLogger.warn(String.format("Failed to detect language. [file=%s]", source.getAbsolutePath()));
-                }
-            } else {
-                DefaultLogger.warn(String.format("Failed to detect language. [file=%s]", source.getAbsolutePath()));
-            }
+    private void runWithImage(File input,
+                              Source source,
+                              DocumentSection doc,
+                              int index) throws Exception {
+        CellDetector detector = new CellDetector();
+        File outf = input;
+        if (greyscale) {
+            outf = convertToGreyscale(input, detector);
+        } else {
+            Mat src = Imgcodecs.imread(outf.getAbsolutePath());
+            detector.image(src);
         }
-        String name = FilenameUtils.getName(source.getAbsolutePath());
-        name = FilenameUtils.removeExtension(name);
-        String path = String.format("%s/%s", outputPath.getAbsolutePath(), name);
-
-        OCRResult result = tesseract.createDocumentsWithResults(outf.getAbsolutePath(),
-                path,
-                formats,
-                ITessAPI.TessPageIteratorLevel.RIL_WORD);
+        if (doc == null) {
+            doc = source.create(0);
+            index = 0;
+        }
+        runOcr(outf.getAbsolutePath(),
+                language.getTesseractLang(),
+                doc,
+                detector,
+                index);
         if (show) {
-            showOutput(result, outf);
+            showOutput(detector);
         }
     }
 
-    private void showOutput(OCRResult result, File source) throws Exception {
-        Mat img = Imgcodecs.imread(source.getAbsolutePath());
-        for (Word word : result.getWords()) {
-            Rectangle rect = word.getBoundingBox();
-            Point xy = new Point(rect.x, rect.y);
-            Point wh = new Point(rect.x + rect.width, rect.y + rect.height);
-            Imgproc.rectangle(img, xy, wh, new Scalar(0, 255, 0));
-        }
+    private void runOcr(String path,
+                        String language,
+                        DocumentSection doc,
+                        CellDetector detector,
+                        int index) throws Exception {
+        Page page = doc.add(index);
+        File imgfile = new File(path);
+        BufferedImage image = ImageIO.read(new FileInputStream(imgfile));
+        ByteBuffer buf = ImageIOHelper.convertImageData(image);
+        int bpp = image.getColorModel().getPixelSize();
+        int bytespp = bpp / 8;
+        int bytespl = (int) Math.ceil(image.getWidth() * bpp / 8.0);
+        page.setPixelSize(bpp);
+        page.setBoundingBox(new BoundingBox()
+                .start(0, 0)
+                .end(image.getWidth(), image.getHeight()));
+        TessAPI1.TessBaseAPIInit3(handle, dataPath.getAbsolutePath(), language);
+        TessAPI1.TessBaseAPISetPageSegMode(handle, ITessAPI.TessPageSegMode.PSM_AUTO);
+        TessAPI1.TessBaseAPISetImage(handle, buf, image.getWidth(), image.getHeight(), bytespp, bytespl);
+        ITessAPI.ETEXT_DESC monitor = new ITessAPI.ETEXT_DESC();
+        ITessAPI.TimeVal timeout = new ITessAPI.TimeVal();
+        timeout.tv_sec = new NativeLong(0L); // time > 0 causes blank ouput
+        monitor.end_time = timeout;
+        TessAPI1.TessBaseAPIRecognize(handle, monitor);
+        ITessAPI.TessResultIterator ri = TessAPI1.TessBaseAPIGetIterator(handle);
+        ITessAPI.TessPageIterator pi = TessAPI1.TessResultIteratorGetPageIterator(ri);
+        TessAPI1.TessPageIteratorBegin(pi);
+        int level = ITessAPI.TessPageIteratorLevel.RIL_WORD;
+        int offset = 0;
+        do {
+            Pointer ptr = TessAPI1.TessResultIteratorGetUTF8Text(ri, level);
+            String word = ptr.getString(0);
+            TessAPI1.TessDeleteText(ptr);
+            float confidence = TessAPI1.TessResultIteratorConfidence(ri, level);
+            IntBuffer leftB = IntBuffer.allocate(1);
+            IntBuffer topB = IntBuffer.allocate(1);
+            IntBuffer rightB = IntBuffer.allocate(1);
+            IntBuffer bottomB = IntBuffer.allocate(1);
+            TessAPI1.TessPageIteratorBoundingBox(pi, level, leftB, topB, rightB, bottomB);
+            int left = leftB.get();
+            int top = topB.get();
+            int right = rightB.get();
+            int bottom = bottomB.get();
+            DefaultLogger.debug(String.format("%s %d %d %d %d %f", word, left, top, right, bottom, confidence));
+            BoundingBox box = new BoundingBox();
+            box.start(left, top)
+                    .end(right, bottom)
+                    .setPage(page.getNumber());
+            IntBuffer boldB = IntBuffer.allocate(1);
+            IntBuffer italicB = IntBuffer.allocate(1);
+            IntBuffer underlinedB = IntBuffer.allocate(1);
+            IntBuffer monospaceB = IntBuffer.allocate(1);
+            IntBuffer serifB = IntBuffer.allocate(1);
+            IntBuffer smallcapsB = IntBuffer.allocate(1);
+            IntBuffer pointSizeB = IntBuffer.allocate(1);
+            IntBuffer fontIdB = IntBuffer.allocate(1);
+            String fontName = TessAPI1.TessResultIteratorWordFontAttributes(ri, boldB, italicB, underlinedB,
+                    monospaceB, serifB, smallcapsB, pointSizeB, fontIdB);
+            boolean bold = boldB.get() == TRUE;
+            boolean italic = italicB.get() == TRUE;
+            boolean underlined = underlinedB.get() == TRUE;
+            boolean monospace = monospaceB.get() == TRUE;
+            boolean serif = serifB.get() == TRUE;
+            boolean smallcaps = smallcapsB.get() == TRUE;
+            int pointSize = pointSizeB.get();
+            int fontId = fontIdB.get();
 
-        HighGui.imshow(source.getName(), img);
-        HighGui.waitKey(60000);
+            FontInfo fi = new FontInfo();
+            fi.setName(fontName);
+            fi.setFontId(fontId);
+            fi.setSize(pointSize);
+            fi.setBold(bold);
+            fi.setItalics(italic);
+            fi.setUnderlined(underlined);
+
+            DefaultLogger.debug(String.format("  font: %s, size: %d, font id: %d, bold: %b,"
+                            + " italic: %b, underlined: %b, monospace: %b, serif: %b, smallcap: %b", fontName, pointSize,
+                    fontId, bold, italic, underlined, monospace, serif, smallcaps));
+            TextCell cell = (TextCell) page.add(TextCell.class, offset);
+            cell.setData(word);
+            cell.setBoundingBox(box);
+            cell.setConfidence(confidence);
+            cell.setFontInfo(fi);
+            detector.decorate(cell);
+            offset++;
+        } while (TessAPI1.TessPageIteratorNext(pi, level) == TRUE);
+        TessAPI1.TessResultIteratorDelete(ri);
     }
 
-    private void runWithPdf() throws Exception {
+
+    private void showOutput(CellDetector detector) throws Exception {
+        Mat img = detector.greyscale();
+        if (img == null) {
+            img = detector.image();
+        }
+
+        HighGui.imshow("Page", img);
+        HighGui.waitKey(10000);
+        HighGui.destroyAllWindows();
+    }
+
+    private void runWithPdf(Source source) throws Exception {
         try (PDDocument document = Loader.loadPDF(sourcePath)) {
             PDFRenderer pdfRenderer = new PDFRenderer(document);
 
@@ -156,6 +253,7 @@ public class TesseractOCR implements ExtractionConvertor<String> {
                             dir.getAbsolutePath()));
                 }
             }
+            DocumentSection doc = source.create(0);
             for (int ii = 0; ii < count; ii++) {
                 String fname = String.format("%s_%d.png", name, ii);
                 String path = String.format("%s/%s", dir.getAbsolutePath(), fname);
@@ -163,55 +261,40 @@ public class TesseractOCR implements ExtractionConvertor<String> {
                 File outf = new File(path);
                 BufferedImage bImage = pdfRenderer.renderImageWithDPI(ii, dpi, ImageType.RGB);
                 ImageIO.write(bImage, "png", outf);
-                runWithImage(outf);
+                runWithImage(outf, source, doc, ii);
             }
         }
     }
 
-    private LanguageCode detect(File source) throws Exception {
-        String output = tesseract.doOCR(source);
-        if (!Strings.isNullOrEmpty(output)) {
-            return LanguageUtils.detect(output);
-        } else {
-            DefaultLogger.warn(String.format("OCR output is empty. [path=%s]", source.getAbsolutePath()));
-        }
-        return null;
-    }
 
-
-    private File convertToGreyscale(File source) throws Exception {
+    private File convertToGreyscale(File source, CellDetector detector) throws Exception {
         String name = FilenameUtils.getName(source.getAbsolutePath());
-        String path = String.format("%s/gs-%s", tempDir.getAbsolutePath(), name);
+        name = FilenameUtils.removeExtension(name);
+        String path = String.format("%s/gs-%s.png", tempDir.getAbsolutePath(), name);
         File outf = new File(path);
         if (outf.exists()) {
             outf.delete();
         }
         Mat src = Imgcodecs.imread(source.getAbsolutePath());
+        detector.image(src);
         Mat dst = new Mat();
         Imgproc.cvtColor(src, dst, Imgproc.COLOR_RGB2GRAY);
         Imgcodecs.imwrite(outf.getAbsolutePath(), dst);
+        detector.greyscale(dst);
         return outf;
     }
 
     public void run() throws Exception {
-        tesseract = new Tesseract();
-        tesseract.setDatapath(dataPath.getAbsolutePath());
-        tesseract.setLanguage(language.getTesseractLang());
-        tesseract.setOcrEngineMode(1);
-        tesseract.setPageSegMode(1);
-
+        Source src = new Source(sourceReferenceId, sourceUri);
+        src.getMetadata().language(language
+                .getLanguage()
+                .getIsoCode639_3()
+                .name());
         tempDir = PathUtils.getTempDir("OCR");
-        formats.add(ITesseract.RenderedFormat.PDF);
-        if (outputType == OCRFileType.hOCR) {
-            formats.add(ITesseract.RenderedFormat.HOCR);
-        } else {
-            formats.add(ITesseract.RenderedFormat.ALTO);
-        }
-
         if (sourceType == OCRFileType.Image) {
-            runWithImage(sourcePath);
+            runWithImage(sourcePath, src, null, 0);
         } else if (sourceType == OCRFileType.PDF) {
-            runWithPdf();
+            runWithPdf(src);
         } else {
             throw new Exception(String.format("Invalid source type: [type=%s]", sourceType.name()));
         }
@@ -270,5 +353,12 @@ public class TesseractOCR implements ExtractionConvertor<String> {
 
     private Source convertHOcr(File dir, Source source) throws Exception {
         throw new Exception("Method not implemented...");
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (handle != null) {
+            TessAPI1.TessBaseAPIDelete(handle);
+        }
     }
 }

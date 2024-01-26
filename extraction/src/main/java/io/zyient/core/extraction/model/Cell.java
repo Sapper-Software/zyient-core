@@ -22,7 +22,9 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.opencv.core.Scalar;
 
+import java.awt.*;
 import java.util.Map;
 
 @Getter
@@ -39,6 +41,9 @@ public abstract class Cell<T> {
     private T data;
     private Map<String, Tag> tags;
     private double confidence;
+    private Scalar background;
+    private Scalar textColor;
+    private FontInfo fontInfo;
 
     public Cell() {
     }
