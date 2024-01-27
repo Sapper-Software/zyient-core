@@ -18,11 +18,15 @@ package io.zyient.base.core.connections.settings.aws;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.units.TimeUnitValue;
+import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.connections.aws.auth.S3StorageAuth;
 import io.zyient.base.core.connections.aws.auth.S3StorageAuthSettings;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
@@ -39,6 +43,8 @@ public class AwsS3Settings extends ConnectionSettings {
     private String region;
     private Class<? extends S3StorageAuth> authHandler;
     private S3StorageAuthSettings authSettings;
+    @Config(name = "timeout.reset", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue resetTimeout = new TimeUnitValue(30, TimeUnit.MINUTES);
 
     @Override
     public void validate() throws Exception {

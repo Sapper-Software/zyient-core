@@ -32,24 +32,19 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
- *     <processor>
+ *     <processor @type="[Processor implementation]">
  *         <name>[Processor Name]</name>
- *         <type>[Processor Class]</type>
  *         <queue>
  *              <builder>
  *                  <type>[Message Builder class]</type>
  *                  <settingsType>[Message Builder Settings class]</settingsType>
  *                  <queue>[Queue Configuration]</queue>
  *              </builder>
+ *              <receiver>
+ *                  [Receiver settings]
+ *                  ...
+ *              </receiver>
  *         </queue>
- *         <errors>
- *             <builder>
- *                <type>[Message Builder class]</type>
- *                <settingsType>[Message Builder Settings class]</settingsType>
- *                <errors>[Error Queue Configuration]</errors>
- *             </builder>
- *             <readBatchTimeout>[Batch read timeout, optional]</readBatchTimeout>
- *         </errors>
  *     </processor>
  * </pre>
  */

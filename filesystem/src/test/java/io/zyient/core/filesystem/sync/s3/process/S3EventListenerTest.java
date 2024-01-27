@@ -66,6 +66,7 @@ class S3EventListenerTest {
         HierarchicalConfiguration<ImmutableNode> node
                 = env.configNode().configurationAt(S3EventListenerSettings.__CONFIG_PATH);
         listener.init(node, env);
+        listener.start();
         files = FileUtils.getFiles(new File(FILES_DIR));
     }
 

@@ -152,7 +152,7 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
             GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                     .queueName(settings.getQueue())
                     .build();
-            queueUrl = consumer.getClient().getQueueUrl(getQueueRequest).queueUrl();
+            queueUrl = consumer.client().getQueueUrl(getQueueRequest).queueUrl();
             if (stateful()) {
                 Preconditions.checkState(offsetStateManager() instanceof AwsSQSStateManager);
                 stateManager = (AwsSQSStateManager) offsetStateManager();
@@ -235,7 +235,7 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
                     .waitTimeSeconds(t)
                     .maxNumberOfMessages(batchSize())
                     .build();
-            List<Message> records = consumer.getClient().receiveMessage(receiveRequest).messages();
+            List<Message> records = consumer.client().receiveMessage(receiveRequest).messages();
             synchronized (offsetMap) {
                 if (records != null && !records.isEmpty()) {
                     List<MessageObject<String, M>> messages = new ArrayList<>(records.size());

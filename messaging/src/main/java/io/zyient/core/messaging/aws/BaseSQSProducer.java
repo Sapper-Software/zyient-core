@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.messaging.MessagingError;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.connections.ConnectionError;
 import io.zyient.base.core.connections.aws.AwsSQSProducerConnection;
 import io.zyient.base.core.connections.settings.aws.AwsSQSConnectionSettings;
 import io.zyient.base.core.processing.ProcessorState;
@@ -49,7 +50,7 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
             GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                     .queueName(settings.getQueue())
                     .build();
-            queueUrl = producer.getClient().getQueueUrl(getQueueRequest).queueUrl();
+            queueUrl = producer.client().getQueueUrl(getQueueRequest).queueUrl();
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
@@ -66,32 +67,36 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
         if (Strings.isNullOrEmpty(message.correlationId())) {
             message.correlationId(message.id());
         }
-        message.queue(settings.getQueue());
-        String mr = serialize(message.value());
-        final Map<String, MessageAttributeValue> attributes = new HashMap<>();
-        attributes.put(MessageObject.HEADER_MESSAGE_ID, MessageAttributeValue.builder()
-                .stringValue(message.id())
-                .build());
-        attributes.put(MessageObject.HEADER_CORRELATION_ID, MessageAttributeValue.builder()
-                .stringValue(message.correlationId())
-                .build());
-        attributes.put(MessageObject.HEADER_MESSAGE_MODE, MessageAttributeValue.builder()
-                .stringValue(message.mode().name())
-                .build());
-        attributes.put(SQSMessage.HEADER_MESSAGE_KEY, MessageAttributeValue.builder()
-                .stringValue(message.key())
-                .build());
-        attributes.put(SQSMessage.HEADER_MESSAGE_TIMESTAMP, MessageAttributeValue.builder()
-                .stringValue(String.valueOf(System.nanoTime()))
-                .build());
-        SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .messageAttributes(attributes)
-                .messageBody(mr)
-                .delaySeconds(5)
-                .build();
-        producer.getClient().sendMessage(sendMsgRequest);
-        return message;
+        try {
+            message.queue(settings.getQueue());
+            String mr = serialize(message.value());
+            final Map<String, MessageAttributeValue> attributes = new HashMap<>();
+            attributes.put(MessageObject.HEADER_MESSAGE_ID, MessageAttributeValue.builder()
+                    .stringValue(message.id())
+                    .build());
+            attributes.put(MessageObject.HEADER_CORRELATION_ID, MessageAttributeValue.builder()
+                    .stringValue(message.correlationId())
+                    .build());
+            attributes.put(MessageObject.HEADER_MESSAGE_MODE, MessageAttributeValue.builder()
+                    .stringValue(message.mode().name())
+                    .build());
+            attributes.put(SQSMessage.HEADER_MESSAGE_KEY, MessageAttributeValue.builder()
+                    .stringValue(message.key())
+                    .build());
+            attributes.put(SQSMessage.HEADER_MESSAGE_TIMESTAMP, MessageAttributeValue.builder()
+                    .stringValue(String.valueOf(System.nanoTime()))
+                    .build());
+            SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
+                    .queueUrl(queueUrl)
+                    .messageAttributes(attributes)
+                    .messageBody(mr)
+                    .delaySeconds(5)
+                    .build();
+            producer.client().sendMessage(sendMsgRequest);
+            return message;
+        } catch (ConnectionError ce) {
+            throw new MessagingError(ce);
+        }
     }
 
     @Override

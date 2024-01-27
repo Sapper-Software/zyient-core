@@ -29,7 +29,7 @@ import lombok.Setter;
  *             <fileSystem>
  *                 <type>[FS class]</type>
  *                 <name>[File System name, must be unique in a namespace]</name>
- *                 <region>[AWS S3 region]</region>
+ *                 <connection>[S3 Connection name]</connection>
  *                 <tmp>
  *                     <path>[temporary storage path (optional)</path>
  *                     <clean>[true|false, default=true]</clean>
@@ -66,13 +66,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public  class S3FileSystemSettings extends RemoteFileSystemSettings {
-    public static final String CONFIG_REGION = "region";
-    public static final String CONFIG_URL = "endpoint";
-
-    @Config(name = CONFIG_URL, required = false)
-    private String endpoint;
-    @Config(name = CONFIG_REGION)
-    private String region;
+    @Config(name = "connection")
+    private String connection;
 
     public S3FileSystemSettings() {
         setType(S3FileSystem.class.getCanonicalName());

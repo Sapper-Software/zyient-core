@@ -25,12 +25,12 @@ import io.zyient.base.core.BaseEnv;
 import io.zyient.core.extraction.ExtractionConvertor;
 import io.zyient.core.extraction.model.*;
 import io.zyient.core.extraction.utils.CellDetector;
-import io.zyient.core.extraction.utils.LanguageUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import net.sourceforge.tess4j.*;
+import net.sourceforge.tess4j.ITessAPI;
+import net.sourceforge.tess4j.TessAPI1;
 import net.sourceforge.tess4j.util.ImageIOHelper;
 import nu.pattern.OpenCV;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -42,22 +42,19 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.ImageType;
 import org.apache.pdfbox.rendering.PDFRenderer;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
-import org.opencv.core.Scalar;
 import org.opencv.highgui.HighGui;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
-import static net.sourceforge.tess4j.ITessAPI.FALSE;
 import static net.sourceforge.tess4j.ITessAPI.TRUE;
 
 @Getter

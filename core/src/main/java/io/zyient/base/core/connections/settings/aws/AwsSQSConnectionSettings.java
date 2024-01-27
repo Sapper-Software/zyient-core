@@ -18,11 +18,15 @@ package io.zyient.base.core.connections.settings.aws;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.units.TimeUnitValue;
+import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.connections.MessageConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
@@ -31,6 +35,8 @@ import lombok.Setter;
 public class AwsSQSConnectionSettings extends MessageConnectionSettings {
     @Config(name = "region")
     private String region;
+    @Config(name = "timeout.reset", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue resetTimeout = new TimeUnitValue(30, TimeUnit.MINUTES);
 
     public AwsSQSConnectionSettings() {
         super(EConnectionType.sqs);

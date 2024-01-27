@@ -18,13 +18,12 @@ package io.zyient.core.filesystem.impl.s3;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.connections.aws.auth.S3StorageAuth;
-import io.zyient.base.core.connections.aws.auth.S3StorageAuthSettings;
+import io.zyient.base.core.connections.ConnectionError;
+import io.zyient.base.core.connections.aws.AwsS3Connection;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.Reader;
 import io.zyient.core.filesystem.Writer;
@@ -42,16 +41,13 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.http.SdkHttpResponse;
-import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.S3ClientBuilder;
 import software.amazon.awssdk.services.s3.model.*;
 import software.amazon.awssdk.services.s3.waiters.S3Waiter;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -60,22 +56,27 @@ import java.util.Map;
 public class S3FileSystem extends RemoteFileSystem {
 
     @Getter(AccessLevel.PACKAGE)
-    private S3Client client;
+    private AwsS3Connection connection;
 
-    public S3FileSystem withClient(@NonNull S3Client client) {
-        this.client = client;
+    public S3FileSystem withClient(@NonNull AwsS3Connection connection) {
+        this.connection = connection;
         return this;
     }
 
-    private boolean bucketExists(String bucket) {
-        HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
-                .bucket(bucket)
-                .build();
+    private boolean bucketExists(String bucket) throws IOException {
         try {
-            client.headBucket(headBucketRequest);
-            return true;
-        } catch (NoSuchBucketException e) {
-            return false;
+            HeadBucketRequest headBucketRequest = HeadBucketRequest.builder()
+                    .bucket(bucket)
+                    .build();
+            try {
+                S3Client client = connection.client();
+                client.headBucket(headBucketRequest);
+                return true;
+            } catch (NoSuchBucketException e) {
+                return false;
+            }
+        } catch (RuntimeException | ConnectionError re) {
+            throw new IOException(re);
         }
     }
 
@@ -119,26 +120,13 @@ public class S3FileSystem extends RemoteFileSystem {
     @SuppressWarnings("unchecked")
     private void s3Init() throws Exception {
         S3FileSystemSettings s3settings = (S3FileSystemSettings) this.settings;
-        if (client == null) {
-            S3StorageAuth auth = null;
-            if (ConfigReader.checkIfNodeExists(configReader().config(), S3StorageAuthSettings.__CONFIG_PATH)) {
-                HierarchicalConfiguration<ImmutableNode> ac =
-                        configReader().config().configurationAt(S3StorageAuthSettings.__CONFIG_PATH);
-                Class<? extends S3StorageAuth> clazz = (Class<? extends S3StorageAuth>) ConfigReader.readType(ac);
-                auth = clazz.getDeclaredConstructor()
-                        .newInstance();
-                auth.init(configReader().config(), env().keyStore());
+        if (connection == null) {
+            connection = env().connectionManager()
+                    .getConnection(settings.getName(), AwsS3Connection.class);
+            if (connection == null) {
+                throw new Exception(String.format("S3 connection not found. [name=%s][type=%s]",
+                        s3settings.getConnection(), AwsS3Connection.class.getCanonicalName()));
             }
-            Region region = Region.of(s3settings.getRegion());
-            S3ClientBuilder builder = S3Client.builder()
-                    .region(region);
-            if (!Strings.isNullOrEmpty(((S3FileSystemSettings) settings).getEndpoint())) {
-                builder.endpointOverride(new URI(((S3FileSystemSettings) settings).getEndpoint()));
-            }
-            if (auth != null) {
-                builder.credentialsProvider(auth.credentials());
-            }
-            client = builder.build();
         }
     }
 
@@ -186,49 +174,54 @@ public class S3FileSystem extends RemoteFileSystem {
     @Override
     public boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException {
         Preconditions.checkArgument(path instanceof S3PathInfo);
-        if (deleteInode(path, recursive)) {
-            S3PathInfo s3path = (S3PathInfo) path;
-            if (bucketExists(s3path.bucket())) {
-                if (recursive) {
-                    boolean ret = true;
-                    ListObjectsRequest request = ListObjectsRequest
-                            .builder()
-                            .bucket(s3path.bucket())
-                            .prefix(path.path())
-                            .build();
+        try {
+            S3Client client = connection.client();
+            if (deleteInode(path, recursive)) {
+                S3PathInfo s3path = (S3PathInfo) path;
+                if (bucketExists(s3path.bucket())) {
+                    if (recursive) {
+                        boolean ret = true;
+                        ListObjectsRequest request = ListObjectsRequest
+                                .builder()
+                                .bucket(s3path.bucket())
+                                .prefix(path.path())
+                                .build();
 
-                    ListObjectsResponse res = client.listObjects(request);
-                    List<S3Object> objects = res.contents();
-                    for (S3Object obj : objects) {
+                        ListObjectsResponse res = client.listObjects(request);
+                        List<S3Object> objects = res.contents();
+                        for (S3Object obj : objects) {
+                            DeleteObjectRequest dr = DeleteObjectRequest.builder()
+                                    .bucket(s3path.bucket())
+                                    .key(obj.key())
+                                    .build();
+                            DeleteObjectResponse r = client.deleteObject(dr);
+                            SdkHttpResponse sr = r.sdkHttpResponse();
+                            if (sr.statusCode() < 200 || sr.statusCode() >= 300) {
+                                String mesg = JSONUtils.asString(sr);
+                                throw new IOException(mesg);
+                            }
+                        }
+                        return ret;
+                    } else if (!path.directory()) {
                         DeleteObjectRequest dr = DeleteObjectRequest.builder()
                                 .bucket(s3path.bucket())
-                                .key(obj.key())
+                                .key(s3path.fsPath())
                                 .build();
                         DeleteObjectResponse r = client.deleteObject(dr);
                         SdkHttpResponse sr = r.sdkHttpResponse();
-                        if (sr.statusCode() < 200 || sr.statusCode() >= 300) {
+                        if (sr.statusCode() >= 200 && sr.statusCode() < 300) {
+                            return true;
+                        } else {
                             String mesg = JSONUtils.asString(sr);
                             throw new IOException(mesg);
                         }
                     }
-                    return ret;
-                } else if (!path.directory()) {
-                    DeleteObjectRequest dr = DeleteObjectRequest.builder()
-                            .bucket(s3path.bucket())
-                            .key(s3path.fsPath())
-                            .build();
-                    DeleteObjectResponse r = client.deleteObject(dr);
-                    SdkHttpResponse sr = r.sdkHttpResponse();
-                    if (sr.statusCode() >= 200 && sr.statusCode() < 300) {
-                        return true;
-                    } else {
-                        String mesg = JSONUtils.asString(sr);
-                        throw new IOException(mesg);
-                    }
                 }
             }
+            return false;
+        } catch (ConnectionError ce) {
+            throw new IOException(ce);
         }
-        return false;
     }
 
     @Override
@@ -247,6 +240,7 @@ public class S3FileSystem extends RemoteFileSystem {
                 return true;
             }
             try {
+                S3Client client = connection.client();
                 HeadObjectRequest request = HeadObjectRequest.builder()
                         .bucket(((S3PathInfo) path).bucket())
                         .key(path.fsPath())
@@ -255,7 +249,7 @@ public class S3FileSystem extends RemoteFileSystem {
                 return (response != null);
             } catch (NoSuchKeyException nk) {
                 return false;
-            } catch (S3Exception ex) {
+            } catch (S3Exception | ConnectionError ex) {
                 throw new IOException(ex);
             }
         }
@@ -302,13 +296,18 @@ public class S3FileSystem extends RemoteFileSystem {
     protected void doCopy(@NonNull FileInode source, @NonNull FileInode target) throws IOException {
         S3PathInfo sp = checkAndGetPath(source);
         S3PathInfo tp = checkAndGetPath(target);
-        CopyObjectRequest cr = CopyObjectRequest.builder()
-                .sourceBucket(sp.bucket())
-                .sourceKey(sp.fsPath())
-                .destinationBucket(tp.bucket())
-                .destinationKey(tp.fsPath())
-                .build();
-        CopyObjectResponse rc = client.copyObject(cr);
+        try {
+            S3Client client = connection.client();
+            CopyObjectRequest cr = CopyObjectRequest.builder()
+                    .sourceBucket(sp.bucket())
+                    .sourceKey(sp.fsPath())
+                    .destinationBucket(tp.bucket())
+                    .destinationKey(tp.fsPath())
+                    .build();
+            CopyObjectResponse rc = client.copyObject(cr);
+        } catch (ConnectionError ce) {
+            throw new IOException(ce);
+        }
     }
 
     @Override
@@ -342,13 +341,18 @@ public class S3FileSystem extends RemoteFileSystem {
                 .bucket(path.bucket())
                 .prefix(path.path())
                 .build();
-        ListObjectsResponse response = client.listObjects(request);
-        if (response.hasContents()) {
-            for (S3Object obj : response.contents()) {
-                if (obj.key().compareTo(path.path()) == 0) {
-                    return obj.lastModified().toEpochMilli();
+        try {
+            S3Client client = connection.client();
+            ListObjectsResponse response = client.listObjects(request);
+            if (response.hasContents()) {
+                for (S3Object obj : response.contents()) {
+                    if (obj.key().compareTo(path.path()) == 0) {
+                        return obj.lastModified().toEpochMilli();
+                    }
                 }
             }
+        } catch (ConnectionError ce) {
+            throw new IOException(ce);
         }
         throw new IOException(String.format("S3 Object not found. [bucket=%s][path=%s]",
                 path.bucket(), path.path()));
@@ -380,9 +384,14 @@ public class S3FileSystem extends RemoteFileSystem {
                             @NonNull FileInode inode,
                             boolean clearLock) throws IOException {
         S3PathInfo path = checkAndGetPath(inode);
-        S3FileUploader task = new S3FileUploader(this, client, inode, source, this, clearLock);
-        uploader.submit(task);
-        return inode;
+        try {
+            S3Client client = connection.client();
+            S3FileUploader task = new S3FileUploader(this, client, inode, source, this, clearLock);
+            uploader.submit(task);
+            return inode;
+        } catch (ConnectionError ce) {
+            throw new IOException(ce);
+        }
     }
 
     @Override
@@ -404,14 +413,19 @@ public class S3FileSystem extends RemoteFileSystem {
                         String.format("Download operation timeout: File not available for download. [path=%s]",
                                 inode.getURI()));
             }
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(path.bucket())
-                    .key(path.fsPath())
-                    .build();
-            try (FileOutputStream fos = new FileOutputStream(path.temp())) {
-                client.getObject(request, ResponseTransformer.toOutputStream(fos));
+            try {
+                S3Client client = connection.client();
+                GetObjectRequest request = GetObjectRequest.builder()
+                        .bucket(path.bucket())
+                        .key(path.fsPath())
+                        .build();
+                try (FileOutputStream fos = new FileOutputStream(path.temp())) {
+                    client.getObject(request, ResponseTransformer.toOutputStream(fos));
+                }
+                return path.temp();
+            } catch (ConnectionError ce) {
+                throw new IOException(ce);
             }
-            return path.temp();
         }
         return null;
     }
@@ -420,6 +434,7 @@ public class S3FileSystem extends RemoteFileSystem {
     public long size(@NonNull PathInfo path) throws IOException {
         if (path instanceof S3PathInfo) {
             try {
+                S3Client client = connection.client();
                 HeadObjectRequest request = HeadObjectRequest.builder()
                         .key(((S3PathInfo) path).bucket())
                         .bucket(path.fsPath())
@@ -430,7 +445,7 @@ public class S3FileSystem extends RemoteFileSystem {
                 throw new IOException(
                         String.format("File not found. [bucket=%s, path=%s]",
                                 ((S3PathInfo) path).bucket(), path.path()));
-            } catch (S3Exception ex) {
+            } catch (S3Exception | ConnectionError ex) {
                 throw new IOException(ex);
             }
         }

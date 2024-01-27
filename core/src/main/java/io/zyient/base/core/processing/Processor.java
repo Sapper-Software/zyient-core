@@ -62,10 +62,9 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
 
     @SuppressWarnings("unchecked")
     protected void init(@NonNull ProcessorSettings settings,
-                        @NonNull String name,
                         @NonNull BaseEnv<?> env) throws Exception {
         this.settings = settings;
-        this.name = name;
+        this.name = settings.getName();
         this.env = env;
         Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
         this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
@@ -91,14 +90,12 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     }
 
     public abstract Processor<E, O> init(@NonNull BaseEnv<?> env,
-                                         @NonNull String name,
                                          @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                          String path) throws ConfigurationException;
 
     public Processor<E, O> init(@NonNull BaseEnv<?> env,
-                                @NonNull String name,
                                 @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        return init(env, name, xmlConfig, null);
+        return init(env, xmlConfig, null);
     }
 
     protected abstract void initState(@NonNull ProcessingState<E, O> processingState) throws Exception;

@@ -17,7 +17,6 @@
 package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.CollectionUtils;
 import io.zyient.base.core.utils.SourceTypes;
 import lombok.Getter;

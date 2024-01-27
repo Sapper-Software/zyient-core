@@ -24,7 +24,6 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.opencv.core.Scalar;
 
-import java.awt.*;
 import java.util.Map;
 
 @Getter

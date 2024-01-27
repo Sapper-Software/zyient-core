@@ -19,6 +19,7 @@ package io.zyient.core.filesystem.impl.s3;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
+import io.zyient.base.common.utils.RunUtils;
 import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -35,18 +36,28 @@ import java.io.IOException;
 import java.util.List;
 
 public class S3Helper {
+    public static final int DEFAULT_RETRY_COUNT = 5;
+
     public static File download(@NonNull S3Client client,
                                 @NonNull String bucket,
                                 @NonNull String path) throws IOException {
-        String name = FilenameUtils.getName(path);
-        File file = PathUtils.getTempFile(name);
-        return download(client, bucket, path, file.getAbsolutePath());
+        return download(client, bucket, path, DEFAULT_RETRY_COUNT);
     }
 
     public static File download(@NonNull S3Client client,
                                 @NonNull String bucket,
                                 @NonNull String path,
-                                @NonNull String filepath) throws IOException {
+                                int retryCount) throws IOException {
+        String name = FilenameUtils.getName(path);
+        File file = PathUtils.getTempFile(name);
+        return download(client, bucket, path, file.getAbsolutePath(), retryCount);
+    }
+
+    public static File download(@NonNull S3Client client,
+                                @NonNull String bucket,
+                                @NonNull String path,
+                                @NonNull String filepath,
+                                int retryCount) throws IOException {
         File file = new File(filepath);
         if (file.exists()) {
             if (!file.delete()) {
@@ -54,19 +65,37 @@ public class S3Helper {
                         file.getAbsolutePath()));
             }
         }
-        try {
-            GetObjectRequest request = GetObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
-                    .build();
-            try (FileOutputStream fos = new FileOutputStream(file)) {
-                client.getObject(request, ResponseTransformer.toOutputStream(fos));
+        RunUtils.BackoffWait wait = RunUtils.create(retryCount);
+        while (true) {
+            try {
+                GetObjectRequest request = GetObjectRequest.builder()
+                        .bucket(bucket)
+                        .key(path)
+                        .build();
+                try (FileOutputStream fos = new FileOutputStream(file)) {
+                    client.getObject(request, ResponseTransformer.toOutputStream(fos));
+                }
+                return file;
+            } catch (NoSuchKeyException nk) {
+                if (wait.check()) {
+                    DefaultLogger.warn(String.format("Waiting for file. [bucket=%s][path=%s]",
+                            bucket, path));
+                    continue;
+                }
+                throw new IOException(String.format("File not found: [bucket=%s][key=%s][retries=%d]",
+                        bucket, path, retryCount));
+            } catch (Throwable t) {
+                throw new IOException(String.format("Download failed. [bucket=%s][path=%s]",
+                        bucket, path), t);
             }
-            return file;
-        } catch (Throwable t) {
-            throw new IOException(String.format("Download failed. [bucket=%s][path=%s]",
-                    bucket, path), t);
         }
+    }
+
+    public static File download(@NonNull S3Client client,
+                                @NonNull String bucket,
+                                @NonNull String path,
+                                @NonNull String filepath) throws IOException {
+        return download(client, bucket, path, filepath, DEFAULT_RETRY_COUNT);
     }
 
     public static boolean exists(@NonNull S3Client client,

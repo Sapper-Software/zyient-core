@@ -24,6 +24,7 @@ import io.zyient.base.core.connections.aws.AwsS3Connection;
 import io.zyient.core.filesystem.impl.s3.S3Helper;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
 import io.zyient.core.filesystem.sync.s3.model.S3EventType;
+import io.zyient.core.messaging.InvalidMessageError;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -67,13 +68,14 @@ public class S3EventTestHandler implements S3EventHandler {
     }
 
     @Override
-    public void handle(@NonNull S3Event event) throws IOException {
+    public void handle(@NonNull S3Event event) throws Exception {
         Preconditions.checkNotNull(connection);
         Preconditions.checkState(connection.isConnected());
         try {
             if (event.getName().getType() != S3EventType.ObjectCreated) {
                 DefaultLogger.info(String.format("Received event: [%s]", event.getName().toString()));
-                return;
+                throw new InvalidMessageError(event.getMessageId(), String.format("Event type not handled. [type=%s]",
+                        event.getName().getType().name()));
             }
             if (event.getData().getSize() <= 0) {
                 DefaultLogger.info(String.format("Received event with Zero size: [key=%s]", event.getData().getKey()));

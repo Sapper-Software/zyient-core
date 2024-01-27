@@ -19,14 +19,15 @@ package io.zyient.core.extraction.utils;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.KeyValuePair;
-import io.zyient.core.extraction.model.BoundingBox;
 import io.zyient.core.extraction.model.Cell;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.opencv.core.*;
-import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.Point;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 import java.util.ArrayList;

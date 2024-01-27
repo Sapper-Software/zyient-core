@@ -16,18 +16,11 @@
 
 package io.zyient.core.filesystem.sync.s3.process;
 
-import io.zyient.base.core.BaseEnv;
-import io.zyient.core.filesystem.sync.s3.model.S3Event;
-import lombok.NonNull;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
-
-public interface S3EventHandler {
-    String __CONFIG_PATH = "handler";
-
-    S3EventHandler init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                        @NonNull BaseEnv<?> env) throws ConfigurationException;
-
-    void handle(@NonNull S3Event event) throws Exception;
+public enum ES3EventProcessorState {
+    Unknown,
+    Initialized,
+    Running,
+    Stopped,
+    Paused,
+    Error;
 }

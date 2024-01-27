@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class OCRTest {
     private static final String __INPUT = "src/test/resources/input/table-view-01.png";

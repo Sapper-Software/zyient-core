@@ -14,34 +14,15 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.state;
+package io.zyient.core.filesystem.sync.s3.process;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import io.zyient.base.common.messaging.MessagingError;
+import io.zyient.core.messaging.aws.BaseSQSConsumer;
 
-@Getter
-@Setter
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.CLASS
-)
-public abstract class Offset implements Comparable<Offset> {
-    private long timeUpdated;
-
-    protected Offset() {
-    }
-
-    protected Offset(@NonNull Offset source) {
-        this.timeUpdated = source.timeUpdated;
-    }
-
-    public abstract String asString();
-
-    public abstract Offset fromString(@NonNull String source) throws Exception;
+public class S3EventSQSConsumer extends BaseSQSConsumer<String> {
 
     @Override
-    public String toString() {
-        return asString();
+    protected String deserialize(String message) throws MessagingError {
+        return message;
     }
 }

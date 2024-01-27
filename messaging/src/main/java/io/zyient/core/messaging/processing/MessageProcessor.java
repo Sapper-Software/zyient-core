@@ -28,7 +28,6 @@ import io.zyient.base.core.state.OffsetState;
 import io.zyient.base.core.utils.Timer;
 import io.zyient.core.messaging.*;
 import io.zyient.core.messaging.builders.MessageReceiverBuilder;
-import io.zyient.core.messaging.builders.MessageSenderBuilder;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -58,7 +57,6 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     @Override
     @SuppressWarnings("unchecked")
     public Processor<E, O> init(@NonNull BaseEnv<?> env,
-                                @NonNull String name,
                                 @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 String path) throws ConfigurationException {
         HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
@@ -72,7 +70,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         receiverConfig.read();
         try {
             MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
-            super.init(settings, name, env);
+            super.init(settings, env);
             __lock().lock();
             try {
                 HierarchicalConfiguration<ImmutableNode> qConfig = receiverConfig
@@ -87,19 +85,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                         .getDeclaredConstructor(Class.class)
                         .newInstance(settings.getBuilderSettingsType());
                 receiver = builder.withEnv(env).build(qConfig);
-                if (settings.getErrorsBuilderType() != null) {
-                    HierarchicalConfiguration<ImmutableNode> eConfig = receiverConfig
-                            .config()
-                            .configurationAt(MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS);
-                    if (eConfig == null) {
-                        throw new ConfigurationException(
-                                String.format("Errors queue configuration not found. [path=%s]",
-                                        MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS));
-                    }
-                    MessageSenderBuilder<K, M> errorBuilder = (MessageSenderBuilder<K, M>) settings.getErrorsBuilderType()
-                            .getDeclaredConstructor(Class.class)
-                            .newInstance(settings.getErrorsBuilderSettingsType());
-                    errorLogger = errorBuilder.withEnv(env).build(eConfig);
+                if (receiver.errors() != null) {
+                    errorLogger = receiver.errors();
                 }
 
                 postInit(settings);
