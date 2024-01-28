@@ -137,7 +137,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public FileInode create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException {
+    public FileInode __create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
         AzurePathInfo pi = checkAndGetPath(node);
         Preconditions.checkNotNull(pi);
@@ -198,7 +198,7 @@ public class AzureFileSystem extends RemoteFileSystem {
     }
 
     @Override
-    protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
+    protected PathInfo __parsePathInfo(@NonNull DirectoryInode parent,
                                      @NonNull String path,
                                      @NonNull InodeType type) throws IOException {
         String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));

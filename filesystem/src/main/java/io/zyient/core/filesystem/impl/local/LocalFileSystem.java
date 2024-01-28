@@ -97,8 +97,8 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
-    public DirectoryInode mkdir(@NonNull DirectoryInode parent,
-                                @NonNull String name) throws IOException {
+    public DirectoryInode __mkdir(@NonNull DirectoryInode parent,
+                                  @NonNull String name) throws IOException {
         if (name.indexOf('/') >= 0) {
             throw new IOException(String.format("Invalid directory name: recursive directory creation not supported. [name=%s]", name));
         }
@@ -123,7 +123,7 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
-    public DirectoryInode mkdirs(@NonNull String module, @NonNull String path) throws IOException {
+    public DirectoryInode __mkdirs(@NonNull String module, @NonNull String path) throws IOException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         LocalPathInfo pi = new LocalPathInfo(this, path, module);
         Inode node = createInode(InodeType.Directory, pi);
@@ -142,7 +142,7 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
-    public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
+    public FileInode __create(@NonNull String domain, @NonNull String path) throws IOException {
         LocalPathInfo pi = new LocalPathInfo(this, path, domain);
         return create(pi);
     }
@@ -170,8 +170,8 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
-    public FileInode create(@NonNull DirectoryInode dir,
-                            @NonNull String name) throws IOException {
+    public FileInode __create(@NonNull DirectoryInode dir,
+                              @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
         LocalPathInfo pi = checkAndGetPath(node);
         File pdir = pi.file().getParentFile();
@@ -212,9 +212,9 @@ public class LocalFileSystem extends FileSystem {
     }
 
     @Override
-    protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
-                                     @NonNull String path,
-                                     @NonNull InodeType type) {
+    protected PathInfo __parsePathInfo(@NonNull DirectoryInode parent,
+                                       @NonNull String path,
+                                       @NonNull InodeType type) {
         String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));
         return new LocalPathInfo(this, p, parent.getDomain());
     }

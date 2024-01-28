@@ -40,6 +40,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -147,5 +148,11 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
     @Override
     protected void batchEnd(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
 
+    }
+
+    @Override
+    public void close() throws IOException {
+        processingState().setState(ES3EventProcessorState.Stopped);
+        super.close();
     }
 }

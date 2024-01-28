@@ -310,6 +310,7 @@ public abstract class FileSystem implements Closeable {
                                 @NonNull String name,
                                 @NonNull InodeType type) throws IOException {
         Preconditions.checkState(state.isConnected());
+        name = FSPathUtils.encode(name);
         PathInfo path = parsePathInfo(dnode, name, type);
         return createInode(type, path);
     }
@@ -432,6 +433,7 @@ public abstract class FileSystem implements Closeable {
         if (zPath.startsWith("/")) {
             zPath = zPath.substring(1);
         }
+        zPath = FSPathUtils.encode(zPath);
         String[] parts = zPath.split("/");
         Inode node = null;
         try {
@@ -716,21 +718,48 @@ public abstract class FileSystem implements Closeable {
         return id.compareTo(current.getLock().getClientId()) == 0;
     }
 
-    public abstract DirectoryInode mkdir(@NonNull DirectoryInode path, @NonNull String name) throws IOException;
+    public final DirectoryInode mkdir(@NonNull DirectoryInode path, @NonNull String name) throws IOException {
+        name = FSPathUtils.encode(name);
+        return __mkdir(path, name);
+    }
 
-    public abstract DirectoryInode mkdirs(@NonNull String domain, @NonNull String path) throws IOException;
+    public abstract DirectoryInode __mkdir(@NonNull DirectoryInode path, @NonNull String name) throws IOException;
 
-    public abstract FileInode create(@NonNull String domain, @NonNull String path) throws IOException;
+    public final DirectoryInode mkdirs(@NonNull String domain, @NonNull String path) throws IOException {
+        path = FSPathUtils.encode(path);
+        return __mkdirs(domain, path);
+    }
+
+    public abstract DirectoryInode __mkdirs(@NonNull String domain, @NonNull String path) throws IOException;
+
+    public final FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
+        path = FSPathUtils.encode(path);
+        return __create(domain, path);
+    }
+
+    public abstract FileInode __create(@NonNull String domain, @NonNull String path) throws IOException;
 
     public abstract FileInode create(@NonNull PathInfo pathInfo) throws IOException;
 
-    public abstract FileInode create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException;
+    public final FileInode create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException {
+        name = FSPathUtils.encode(name);
+        return __create(dir, name);
+    }
+
+    public abstract FileInode __create(@NonNull DirectoryInode dir, @NonNull String name) throws IOException;
 
     public abstract boolean delete(@NonNull PathInfo path, boolean recursive) throws IOException;
 
-    protected abstract PathInfo parsePathInfo(@NonNull DirectoryInode parent,
-                                              @NonNull String path,
-                                              @NonNull InodeType type) throws IOException;
+    protected final PathInfo parsePathInfo(@NonNull DirectoryInode parent,
+                                           @NonNull String path,
+                                           @NonNull InodeType type) throws IOException {
+        path = FSPathUtils.encode(path);
+        return __parsePathInfo(parent, path, type);
+    }
+
+    protected abstract PathInfo __parsePathInfo(@NonNull DirectoryInode parent,
+                                                @NonNull String path,
+                                                @NonNull InodeType type) throws IOException;
 
     public boolean delete(@NonNull PathInfo path) throws IOException {
         return delete(path, false);
@@ -740,10 +769,11 @@ public abstract class FileSystem implements Closeable {
         return list(path.domain(), path.path(), recursive);
     }
 
-    public List<Inode> list(@NonNull String module,
-                            @NonNull String path,
-                            boolean recursive) throws IOException {
+    public final List<Inode> list(@NonNull String module,
+                                  @NonNull String path,
+                                  boolean recursive) throws IOException {
         Preconditions.checkState(state.isConnected());
+        path = FSPathUtils.encode(path);
         Inode root = getInode(module, path);
         if (root != null) {
             if (root.isDirectory()) {

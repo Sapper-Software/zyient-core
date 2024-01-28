@@ -20,10 +20,11 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.RunUtils;
+import io.zyient.core.filesystem.FSPathUtils;
 import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
+import software.amazon.awssdk.core.ResponseBytes;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.core.waiters.WaiterResponse;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -65,6 +66,7 @@ public class S3Helper {
                         file.getAbsolutePath()));
             }
         }
+        path = FSPathUtils.encode(path);
         RunUtils.BackoffWait wait = RunUtils.create(retryCount);
         while (true) {
             try {
@@ -73,7 +75,10 @@ public class S3Helper {
                         .key(path)
                         .build();
                 try (FileOutputStream fos = new FileOutputStream(file)) {
-                    client.getObject(request, ResponseTransformer.toOutputStream(fos));
+                    ResponseBytes<GetObjectResponse> objectBytes = client.getObjectAsBytes(request);
+                    byte[] data = objectBytes.asByteArray();
+                    fos.write(data);
+                    // client.getObject(request, ResponseTransformer.toOutputStream(fos));
                 }
                 return file;
             } catch (NoSuchKeyException nk) {
@@ -101,6 +106,7 @@ public class S3Helper {
     public static boolean exists(@NonNull S3Client client,
                                  @NonNull String bucket,
                                  @NonNull String path) throws IOException {
+        path = FSPathUtils.encode(path);
         try {
             HeadObjectRequest request = HeadObjectRequest.builder()
                     .bucket(bucket)
@@ -120,6 +126,7 @@ public class S3Helper {
                               @NonNull String path,
                               boolean recursive) throws IOException {
         try {
+            path = FSPathUtils.encode(path);
             if (recursive) {
                 ListObjectsRequest request = ListObjectsRequest
                         .builder()
@@ -168,6 +175,7 @@ public class S3Helper {
                                             @NonNull String path,
                                             @NonNull File source) throws IOException {
         try {
+            path = FSPathUtils.encode(path);
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(path)
@@ -190,4 +198,5 @@ public class S3Helper {
                     bucket, path), t);
         }
     }
+
 }

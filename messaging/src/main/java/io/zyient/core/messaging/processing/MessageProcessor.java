@@ -19,10 +19,12 @@ package io.zyient.core.messaging.processing;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.EventProcessorMetrics;
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.Processor;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
 import io.zyient.base.core.utils.Timer;
@@ -37,10 +39,11 @@ import java.io.IOException;
 import java.util.List;
 
 public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset<?>> extends Processor<E, O> {
+    protected final Class<? extends MessagingProcessorSettings> settingsType;
     protected MessageReceiver<K, M> receiver;
     protected MessageSender<K, M> errorLogger;
     protected MessagingProcessorConfig receiverConfig;
-    protected final Class<? extends MessagingProcessorSettings> settingsType;
+    private boolean running = false;
 
     protected MessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
                                @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
@@ -91,6 +94,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
                 postInit(settings);
                 updateState();
+                env.withProcessor(this);
+
                 EventProcessorMetrics metrics = new EventProcessorMetrics(getClass().getSimpleName(),
                         settings.getName(), receiver.connection().name(), env);
                 return withMetrics(metrics);
@@ -114,6 +119,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         Preconditions.checkState(state.isAvailable());
         Preconditions.checkNotNull(env);
         try {
+            running = true;
             doRun(false);
         } catch (Throwable t) {
             state.error(t);
@@ -126,6 +132,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                 DefaultLogger.error(LOG, "Message Processor terminated with error", t);
                 DefaultLogger.stacktrace(t);
             }
+        } finally {
+            running = false;
         }
     }
 
@@ -173,7 +181,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
             }
             if (sleep) {
                 try {
-                    Thread.sleep(settings.getReceiveBatchTimeout().normalized());
+                    RunUtils.sleep(settings.getReceiveBatchTimeout().normalized());
                 } catch (InterruptedException e) {
                     LOG.info(String.format("[%s] Thread interrupted. [%s]",
                             name(), e.getLocalizedMessage()));
@@ -207,13 +215,26 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
     @Override
     public void close() throws IOException {
-        if (receiver != null) {
-            receiver.close();
-            receiver = null;
-        }
-        if (errorLogger != null) {
-            errorLogger.close();
-            errorLogger = null;
+        try {
+            if (running) {
+                state.setState(ProcessorState.EProcessorState.Stopped);
+                while (running) {
+                    RunUtils.sleep(500);
+                }
+            }
+            updateState();
+            if (receiver != null) {
+                receiver.close();
+                receiver = null;
+            }
+            if (errorLogger != null) {
+                errorLogger.close();
+                errorLogger = null;
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(String.format("[%s] ERROR [%s]", settings().getName(), ex.getLocalizedMessage()));
+            throw new IOException(ex);
         }
     }
 

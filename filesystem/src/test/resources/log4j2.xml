@@ -54,7 +54,7 @@
             <AppenderRef ref="services"/>
         </Logger>
 
-        <Root level="debug">
+        <Root level="info">
             <AppenderRef ref="Console"/>
         </Root>
 

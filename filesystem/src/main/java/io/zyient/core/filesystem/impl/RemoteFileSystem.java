@@ -83,7 +83,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     }
 
     @Override
-    public DirectoryInode mkdir(@NonNull DirectoryInode parent, @NonNull String name) throws IOException {
+    public DirectoryInode __mkdir(@NonNull DirectoryInode parent, @NonNull String name) throws IOException {
         String path = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), name));
         PathInfo pp = parsePathInfo(parent.getURI());
         PathInfo pi = createSubPath(pp, path);
@@ -96,7 +96,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     }
 
     @Override
-    public DirectoryInode mkdirs(@NonNull String domain, @NonNull String path) throws IOException {
+    public DirectoryInode __mkdirs(@NonNull String domain, @NonNull String path) throws IOException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(path));
         Container container = domainMap.get(domain);
         if (container == null) {
@@ -114,7 +114,7 @@ public abstract class RemoteFileSystem extends FileSystem implements FileUploadC
     }
 
     @Override
-    public FileInode create(@NonNull String domain, @NonNull String path) throws IOException {
+    public FileInode __create(@NonNull String domain, @NonNull String path) throws IOException {
         Container container = domainMap.get(domain);
         path = PathUtils.formatPath(path);
         PathInfo pi = createPath(domain, container, path, InodeType.File);

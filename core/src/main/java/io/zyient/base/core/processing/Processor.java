@@ -150,6 +150,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         }
     }
 
+
     protected abstract ProcessingState<E, O> finished(@NonNull ProcessingState<E, O> processingState);
 
     protected abstract void doRun(boolean runOnce) throws Throwable;

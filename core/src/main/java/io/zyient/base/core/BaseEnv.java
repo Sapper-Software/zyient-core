@@ -81,7 +81,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
     private String zkBasePath;
-    private Processor<?, ?> processor;
+    private List<Processor<?, ?>> processors;
     private final Map<String, ManagedThread> managedThreads = new HashMap<>();
 
     public BaseEnv(@NonNull String name,
@@ -96,7 +96,10 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     }
 
     public BaseEnv<?> withProcessor(@NonNull Processor<?, ?> processor) {
-        this.processor = processor;
+        if (processors == null) {
+            processors = new ArrayList<>();
+        }
+        processors.add(processor);
         return this;
     }
 
@@ -279,9 +282,11 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     }
 
     public void close() throws Exception {
-        if (processor != null) {
-            processor.close();
-            processor = null;
+        if (processors != null) {
+            for (Processor<?, ?> processor : processors) {
+                processor.close();
+            }
+            processors.clear();
         }
         if (!managedThreads.isEmpty()) {
             for (String key : managedThreads.keySet()) {

@@ -106,8 +106,8 @@ public class SftpFileSystem extends RemoteFileSystem {
     }
 
     @Override
-    public FileInode create(@NonNull DirectoryInode dir,
-                            @NonNull String name) throws IOException {
+    public FileInode __create(@NonNull DirectoryInode dir,
+                              @NonNull String name) throws IOException {
         FileInode node = (FileInode) createInode(dir, name, InodeType.File);
         if (node.getPathInfo() == null) {
             PathInfo pi = parsePathInfo(node.getURI());
@@ -158,9 +158,9 @@ public class SftpFileSystem extends RemoteFileSystem {
     }
 
     @Override
-    protected PathInfo parsePathInfo(@NonNull DirectoryInode parent,
-                                     @NonNull String path,
-                                     @NonNull InodeType type) throws IOException {
+    protected PathInfo __parsePathInfo(@NonNull DirectoryInode parent,
+                                       @NonNull String path,
+                                       @NonNull InodeType type) throws IOException {
         String p = PathUtils.formatPath(String.format("%s/%s", parent.getPath(), path));
         return new SftpPathInfo(this, p, parent.getDomain());
     }
