@@ -99,8 +99,10 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
                         JSONUtils.asBytes(processingState));
             }
         }
+        processingState.clear();
         processingState.setInstance(moduleInstance());
         processingState = update(name, processingState);
+        processingStates.put(name, processingState);
         zkSequencePath = new PathUtils.ZkPathBuilder(zkAgentPath())
                 .withPath(__ZK_PATH_SEQUENCE)
                 .build();
@@ -108,7 +110,6 @@ public abstract class ProcessStateManager<E extends Enum<?>, T extends Offset> e
             client.create().forPath(zkSequencePath);
             JSONUtils.write(client, zkSequencePath, new OffsetSequence());
         }
-        processingStates.put(name, processingState);
         return processingState;
     }
 
