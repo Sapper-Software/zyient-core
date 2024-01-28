@@ -91,8 +91,9 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
                 postInit(settings);
                 updateState();
-
-                return this;
+                EventProcessorMetrics metrics = new EventProcessorMetrics(getClass().getSimpleName(),
+                        settings.getName(), receiver.connection().name(), env);
+                return withMetrics(metrics);
             } finally {
                 __lock().unlock();
             }
@@ -183,18 +184,24 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
     protected void handleBatch(@NonNull List<MessageObject<K, M>> batch,
                                @NonNull MessageProcessorState<E, O, MO> processorState) throws Exception {
-        for (MessageObject<K, M> message : batch) {
-            try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_EVENTS_TIME))) {
-                process(message, processorState);
-                metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_PROCESSED).increment();
-            } catch (InvalidMessageError | MessageProcessingError me) {
-                metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
-                DefaultLogger.stacktrace(me);
-                DefaultLogger.warn(LOG, me.getLocalizedMessage());
-                if (errorLogger != null) {
-                    errorLogger.send(message);
+        try {
+            for (MessageObject<K, M> message : batch) {
+                try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_EVENTS_TIME))) {
+                    process(message, processorState);
+                    metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_PROCESSED).increment();
+                    receiver.ack(message.key(), false);
+                } catch (InvalidMessageError | MessageProcessingError me) {
+                    metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
+                    DefaultLogger.stacktrace(me);
+                    DefaultLogger.warn(LOG, me.getLocalizedMessage());
+                    if (errorLogger != null) {
+                        errorLogger.send(message);
+                    }
+                    receiver.ack(message.key(), false);
                 }
             }
+        } finally {
+            receiver.commit();
         }
     }
 

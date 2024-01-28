@@ -186,7 +186,7 @@ public class S3Helper {
             }
             return waiterResponse.matched().response().get();
         } catch (Throwable t) {
-            throw new IOException(String.format("Download failed. [bucket=%s][path=%s]",
+            throw new IOException(String.format("Upload failed. [bucket=%s][path=%s]",
                     bucket, path), t);
         }
     }

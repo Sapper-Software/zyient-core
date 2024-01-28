@@ -46,4 +46,12 @@ public class AwsSQSConnectionSettings extends MessageConnectionSettings {
         super(settings);
         region = settings.region;
     }
+
+    @Override
+    public void validate() throws Exception {
+        super.validate();
+        if (getBatchSize() > 10) {
+            setBatchSize(10);
+        }
+    }
 }

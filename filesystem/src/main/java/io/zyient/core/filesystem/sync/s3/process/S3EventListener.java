@@ -18,7 +18,6 @@ package io.zyient.core.filesystem.sync.s3.process;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.messaging.MessagingError;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.BaseEnv;
@@ -26,7 +25,9 @@ import io.zyient.base.core.executor.FatalError;
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
+import io.zyient.core.messaging.InvalidMessageError;
 import io.zyient.core.messaging.MessageObject;
+import io.zyient.core.messaging.MessageProcessingError;
 import io.zyient.core.messaging.MessagingProcessorSettings;
 import io.zyient.core.messaging.aws.AwsSQSOffset;
 import io.zyient.core.messaging.aws.SQSMessage;
@@ -39,24 +40,17 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
 public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorState, S3EventOffset, String> {
-    private static class MessageHandle {
-        private String id;
-        private SQSMessage<String> message;
-        private boolean acked = false;
-    }
 
     private S3EventHandler handler = null;
     private S3EventListenerSettings settings;
     private BaseEnv<?> env;
     private S3EventConsumer consumer;
-    private final Map<String, MessageHandle> messages = new HashMap<>();
 
     public S3EventListener() {
         super(S3EventProcessingState.class, S3EventListenerSettings.class);
@@ -95,6 +89,7 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
         if (processingState.getOffset() == null) {
             processingState.setOffset(new S3EventOffset());
         }
+
         processingState.setState(ES3EventProcessorState.Running);
         processingState = stateManager.update(processingState);
     }
@@ -111,25 +106,25 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
                            @NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
         Preconditions.checkArgument(message instanceof SQSMessage<String>);
         try {
-            MessageHandle m = new MessageHandle();
-            m.id = ((SQSMessage<String>) message).sqsMessageId();
-            m.message = (SQSMessage<String>) message;
             String body = message.value();
             if (!Strings.isNullOrEmpty(body)) {
                 Map<String, Object> data = JSONUtils.read(body, Map.class);
                 List<S3Event> es = S3Event.read(data);
                 if (es != null) {
                     for (S3Event event : es) {
-                        event.setMessageId(m.id);
+                        event.setMessageId(message.id());
                         handler.handle(event);
-                        ack(event);
                     }
                 }
             } else {
-                DefaultLogger.warn(String.format("[id=%s] Empty message received...", m.id));
-                m.acked = true;
+                DefaultLogger.warn(String.format("[id=%s] Empty message received...",
+                        ((SQSMessage<String>) message).sqsMessageId()));
             }
-            messages.put(m.id, m);
+        } catch (InvalidMessageError | MessageProcessingError me) {
+            DefaultLogger.stacktrace(me);
+            DefaultLogger.error(String.format("{id=%s} Error=[%s]",
+                    ((SQSMessage<String>) message).sqsMessageId(), me.getLocalizedMessage()));
+
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             throw new FatalError(t);
@@ -151,20 +146,6 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
 
     @Override
     protected void batchEnd(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
-        for (String key : messages.keySet()) {
-            MessageHandle handle = messages.get(key);
-            receiver.ack(handle.id, true);
-        }
-        messages.clear();
-    }
 
-
-    public void ack(@NonNull S3Event event) throws MessagingError {
-        if (messages.containsKey(event.getMessageId())) {
-            MessageHandle handle = messages.get(event.getMessageId());
-            handle.acked = true;
-        } else {
-            throw new MessagingError(String.format("Message not found. [id=%s]", event.getMessageId()));
-        }
     }
 }

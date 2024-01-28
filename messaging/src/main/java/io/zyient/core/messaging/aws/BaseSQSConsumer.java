@@ -17,11 +17,11 @@
 package io.zyient.core.messaging.aws;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.messaging.MessagingError;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.connections.aws.AwsSQSConsumerConnection;
 import io.zyient.base.core.connections.settings.aws.AwsSQSConnectionSettings;
 import io.zyient.base.core.processing.ProcessorState;
@@ -161,13 +161,6 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
                     state = stateManager.create(consumer.name(), consumer.settings().getQueue());
                 }
                 AwsSQSOffset offset = state.getOffset();
-                if (offset.getOffsetCommitted().getIndex() > 0) {
-                    seek(offset.getOffsetCommitted(), true);
-                } else {
-                    AwsSQSOffsetValue v = new AwsSQSOffsetValue();
-                    v.setIndex(0);
-                    seek(v, false);
-                }
                 if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
                     DefaultLogger.warn(
                             String.format("[topic=%s] Read offset ahead of committed, potential resends.",
@@ -202,12 +195,6 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
         state = stateManager.update(state);
     }
 
-    private void seek(AwsSQSOffsetValue offset,
-                      boolean next) throws Exception {
-        String json = JSONUtils.asString(offset);
-        throw new MessagingError(String.format("Seek not supported. [seek offset=%s]", json));
-    }
-
     @Override
     public MessageObject<String, M> receive(long timeout) throws MessagingError {
         Preconditions.checkState(state().isAvailable());
@@ -231,9 +218,10 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
             int t = (int) TimeUnit.MILLISECONDS.toSeconds(timeout);
             ReceiveMessageRequest receiveRequest = ReceiveMessageRequest.builder()
                     .queueUrl(queueUrl)
-                    .visibilityTimeout(ackTimeout.normalized().intValue())
+                    .visibilityTimeout(ackTimeout.normalized().intValue() / 1000)
                     .waitTimeSeconds(t)
                     .maxNumberOfMessages(batchSize())
+                    .attributeNames(QueueAttributeName.ALL)
                     .build();
             List<Message> records = consumer.client().receiveMessage(receiveRequest).messages();
             synchronized (offsetMap) {
@@ -276,13 +264,24 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
         SQSMessage<M> sqsm = new SQSMessage<>();
         sqsm.sqsMessageId(message.messageId());
         final Map<String, MessageAttributeValue> attributes = message.messageAttributes();
-        sqsm.id(getAttributeValue(MessageObject.HEADER_MESSAGE_ID, attributes, false));
-        sqsm.correlationId(getAttributeValue(MessageObject.HEADER_CORRELATION_ID, attributes, true));
-        String value = getAttributeValue(MessageObject.HEADER_MESSAGE_MODE, attributes, false);
+        final Map<MessageSystemAttributeName, String> attrs = message.attributes();
+        sqsm.id(getAttributeValue(MessageObject.HEADER_MESSAGE_ID, attributes, message.messageId()));
+        sqsm.correlationId(getAttributeValue(MessageObject.HEADER_CORRELATION_ID,
+                attributes,
+                UUID.randomUUID().toString()));
+        String value = getAttributeValue(MessageObject.HEADER_MESSAGE_MODE,
+                attributes,
+                MessageObject.MessageMode.New.name());
         sqsm.mode(MessageObject.MessageMode.valueOf(value));
-        sqsm.key(getAttributeValue(SQSMessage.HEADER_MESSAGE_KEY, attributes, false));
-        value = getAttributeValue(SQSMessage.HEADER_MESSAGE_TIMESTAMP, attributes, false);
-        Preconditions.checkNotNull(value);
+        sqsm.key(getAttributeValue(SQSMessage.HEADER_MESSAGE_KEY, attributes, message.messageId()));
+        long ts = System.currentTimeMillis();
+        value = attrs.get(MessageSystemAttributeName.SENT_TIMESTAMP);
+        if (!Strings.isNullOrEmpty(value)) {
+            ts = Long.parseLong(value);
+        }
+        value = getAttributeValue(SQSMessage.HEADER_MESSAGE_TIMESTAMP,
+                attributes,
+                String.valueOf(ts));
         sqsm.timestamp(Long.parseLong(value));
         M m = deserialize(message.body());
         sqsm.value(m);
@@ -293,19 +292,23 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
     private long getMessageSequence(Message message) {
         final Map<MessageSystemAttributeName, String> attrs = message.attributes();
         String seq = attrs.get(MessageSystemAttributeName.SEQUENCE_NUMBER);
+        if (Strings.isNullOrEmpty(seq)) {
+            return System.nanoTime();
+        }
         return Long.parseLong(seq);
     }
 
     private String getAttributeValue(String name,
                                      Map<String, MessageAttributeValue> attributes,
-                                     boolean nullable) throws Exception {
+                                     String defaultVal) throws Exception {
         MessageAttributeValue value = attributes.get(name);
         if (value != null) {
             return value.stringValue();
-        } else if (!nullable) {
-            throw new MessagingError(String.format("Missing message header. [name=%s]", name));
+        } else {
+            if (Strings.isNullOrEmpty(defaultVal))
+                throw new MessagingError(String.format("Missing message header. [name=%s]", name));
+            return defaultVal;
         }
-        return null;
     }
 
     @Override
@@ -344,7 +347,6 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
                 o = s.getOffset().getOffsetRead();
                 ((AwsSQSOffset) offset).setOffsetCommitted(o);
             }
-            seek(o, false);
             updateReadState(o);
         } catch (Exception ex) {
             throw new MessagingError(ex);
