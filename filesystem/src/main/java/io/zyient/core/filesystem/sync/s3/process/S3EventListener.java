@@ -125,7 +125,7 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
             DefaultLogger.stacktrace(me);
             DefaultLogger.error(String.format("{id=%s} Error=[%s]",
                     ((SQSMessage<String>) message).sqsMessageId(), me.getLocalizedMessage()));
-
+            throw me;
         } catch (Throwable t) {
             DefaultLogger.stacktrace(t);
             throw new FatalError(t);

@@ -37,6 +37,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset<?>> extends Processor<E, O> {
     protected final Class<? extends MessagingProcessorSettings> settingsType;
@@ -202,15 +203,24 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                     metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
                     DefaultLogger.stacktrace(me);
                     DefaultLogger.warn(LOG, me.getLocalizedMessage());
-                    if (errorLogger != null) {
-                        errorLogger.send(message);
-                    }
                     receiver.ack(message.key(), false);
+                    sendError(message);
                 }
             }
         } finally {
             receiver.commit();
         }
+    }
+
+    public MessageObject<K, M> sendError(@NonNull MessageObject<K, M> message) throws Exception {
+        if (errorLogger != null) {
+            String id = message.id();
+            message.id(UUID.randomUUID().toString());
+            message.correlationId(id);
+            message.mode(MessageObject.MessageMode.Error);
+            errorLogger.send(message);
+        }
+        return message;
     }
 
     @Override

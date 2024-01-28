@@ -72,18 +72,23 @@ public abstract class BaseSQSProducer<M> extends MessageSender<String, M> {
             String mr = serialize(message.value());
             final Map<String, MessageAttributeValue> attributes = new HashMap<>();
             attributes.put(MessageObject.HEADER_MESSAGE_ID, MessageAttributeValue.builder()
+                    .dataType("String")
                     .stringValue(message.id())
                     .build());
             attributes.put(MessageObject.HEADER_CORRELATION_ID, MessageAttributeValue.builder()
+                    .dataType("String")
                     .stringValue(message.correlationId())
                     .build());
             attributes.put(MessageObject.HEADER_MESSAGE_MODE, MessageAttributeValue.builder()
+                    .dataType("String")
                     .stringValue(message.mode().name())
                     .build());
             attributes.put(SQSMessage.HEADER_MESSAGE_KEY, MessageAttributeValue.builder()
+                    .dataType("String")
                     .stringValue(message.key())
                     .build());
             attributes.put(SQSMessage.HEADER_MESSAGE_TIMESTAMP, MessageAttributeValue.builder()
+                    .dataType("String")
                     .stringValue(String.valueOf(System.nanoTime()))
                     .build());
             SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
