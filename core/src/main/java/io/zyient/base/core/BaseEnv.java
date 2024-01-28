@@ -81,7 +81,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
     private String zkBasePath;
-    private List<Processor<?, ?>> processors;
+    private Map<String, Processor<?, ?>> processors;
     private final Map<String, ManagedThread> managedThreads = new HashMap<>();
 
     public BaseEnv(@NonNull String name,
@@ -97,10 +97,17 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
 
     public BaseEnv<?> withProcessor(@NonNull Processor<?, ?> processor) {
         if (processors == null) {
-            processors = new ArrayList<>();
+            processors = new HashMap<>();
         }
-        processors.add(processor);
+        processors.put(processor.name(), processor);
         return this;
+    }
+
+    public Processor<?, ?> processor(@NonNull String name) {
+        if (processors != null) {
+            return processors.get(name);
+        }
+        return null;
     }
 
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
@@ -283,7 +290,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
 
     public void close() throws Exception {
         if (processors != null) {
-            for (Processor<?, ?> processor : processors) {
+            for (Processor<?, ?> processor : processors.values()) {
                 processor.close();
             }
             processors.clear();

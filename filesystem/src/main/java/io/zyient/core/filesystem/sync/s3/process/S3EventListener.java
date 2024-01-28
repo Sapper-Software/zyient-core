@@ -92,7 +92,7 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
         }
 
         processingState.setState(ES3EventProcessorState.Running);
-        processingState = stateManager.update(processingState);
+        processingState = stateManager.update(name(), processingState);
     }
 
     @Override

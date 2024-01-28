@@ -122,7 +122,7 @@ public class S3FileSystem extends RemoteFileSystem {
         S3FileSystemSettings s3settings = (S3FileSystemSettings) this.settings;
         if (connection == null) {
             connection = env().connectionManager()
-                    .getConnection(settings.getName(), AwsS3Connection.class);
+                    .getConnection(s3settings.getConnection(), AwsS3Connection.class);
             if (connection == null) {
                 throw new Exception(String.format("S3 connection not found. [name=%s][type=%s]",
                         s3settings.getConnection(), AwsS3Connection.class.getCanonicalName()));

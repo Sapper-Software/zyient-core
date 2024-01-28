@@ -76,9 +76,9 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         __lock = env.createLock(lockPath);
         __lock.lock();
         try {
-            processingState = stateManager.processingState();
+            processingState = stateManager.checkAgentState(name);
             initState(processingState);
-            processingState = stateManager.update(processingState);
+            processingState = stateManager.update(name, processingState);
         } finally {
             __lock.unlock();
         }
@@ -108,7 +108,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             __lock.lock();
             try {
                 doRun(false);
-                processingState = stateManager.update(processingState);
+                processingState = stateManager.update(name, processingState);
                 processingState = finished(processingState);
             } finally {
                 __lock.unlock();
@@ -137,7 +137,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             try {
                 doRun(true);
                 processingState = finished(processingState);
-                processingState = stateManager.update(processingState);
+                processingState = stateManager.update(name, processingState);
             } finally {
                 __lock.unlock();
             }
@@ -156,13 +156,13 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     protected abstract void doRun(boolean runOnce) throws Throwable;
 
     protected ProcessingState<E, O> updateState() throws Exception {
-        processingState = stateManager.update(processingState);
+        processingState = stateManager.update(name, processingState);
         return processingState;
     }
 
     protected ProcessingState<E, O> updateState(@NonNull O offset) throws Exception {
         processingState.setOffset(offset);
-        processingState = stateManager.update(processingState);
+        processingState = stateManager.update(name, processingState);
         return processingState;
     }
 

@@ -149,11 +149,12 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
             if (!state.isPaused()) {
                 __lock().lock();
                 try {
-                    MessageProcessorState<E, O, MO> processorState = (MessageProcessorState<E, O, MO>) stateManager().processingState();
+                    MessageProcessorState<E, O, MO> processorState
+                            = (MessageProcessorState<E, O, MO>) stateManager().processingState(name());
                     MO pOffset = processorState.getMessageOffset();
                     OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
                     MO rOffset = offsetState.getOffset();
-                    if (pOffset != null && pOffset.compareTo(rOffset) != 0) {
+                    if (pOffset != null && rOffset != null && pOffset.compareTo(rOffset) != 0) {
                         receiver.seek(pOffset, null);
                     }
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout().normalized());

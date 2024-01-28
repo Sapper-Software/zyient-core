@@ -20,6 +20,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.model.Heartbeat;
 import io.zyient.base.core.processing.ProcessStateManager;
+import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.base.core.state.BaseStateManagerSettings;
 import io.zyient.base.core.state.StateManagerError;
@@ -47,7 +48,19 @@ public class S3EventStateManager extends ProcessStateManager<ES3EventProcessorSt
     @Override
     public Heartbeat heartbeat(@NonNull String instance) throws StateManagerError {
         try {
-            return heartbeat(instance, getClass(), processingState());
+            ProcessingState<ES3EventProcessorState, S3EventOffset> state = null;
+            for (ProcessingState<ES3EventProcessorState, S3EventOffset> ps : processingStates().values()) {
+                if (state == null) {
+                    state = ps;
+                } else if (ps.hasError()) {
+                    state = ps;
+                    break;
+                }
+            }
+            if (state == null) {
+                throw new Exception("No valid states found...");
+            }
+            return heartbeat(instance, getClass(), state);
         } catch (Exception ex) {
             throw new StateManagerError(ex);
         }
