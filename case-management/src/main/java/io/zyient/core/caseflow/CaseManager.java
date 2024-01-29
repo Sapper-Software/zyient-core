@@ -278,6 +278,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -336,6 +338,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -401,6 +405,9 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                contentProvider.endSession();
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -448,6 +455,9 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                contentProvider.endSession();
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -498,6 +508,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             throw t;
         } finally {
             contentProvider.endSession();
+            dataStore.endSession();
         }
     }
 
@@ -549,18 +560,15 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                contentProvider.endSession();
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseFatalError(ex);
-        } finally {
-            try {
-                contentProvider.endSession();
-            } catch (DataStoreException e) {
-                throw new CaseFatalError(e);
-            }
         }
     }
 
@@ -594,6 +602,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -635,10 +645,12 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             DefaultLogger.stacktrace(ex);
             throw new CaseFatalError(ex);
         }
@@ -679,6 +691,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -744,6 +758,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
             return caseObject;
         } catch (CaseAuthorizationError | CaseActionException ae) {
@@ -804,6 +820,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             } catch (Throwable t) {
                 dataStore.rollback(false);
                 throw t;
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -840,13 +858,17 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             authorization.authorizeRead(EStandardAction.Read.action(),
                     caller,
                     context);
-            Case<P, S, E, T> caseObject = dataStore.find(id, entityType, context);
-            if (caseObject != null) {
-                if (fetchDocuments) {
-                    fetchDocuments(caseObject);
+            try {
+                Case<P, S, E, T> caseObject = dataStore.find(id, entityType, context);
+                if (caseObject != null) {
+                    if (fetchDocuments) {
+                        fetchDocuments(caseObject);
+                    }
                 }
+                return caseObject;
+            } finally {
+                dataStore.endSession();
             }
-            return caseObject;
         } catch (CaseAuthorizationError | CaseActionException e) {
             throw e;
         } catch (Throwable t) {
@@ -929,6 +951,8 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         return cases;
                     }
                 }
+            } finally {
+                dataStore.endSession();
             }
         } catch (CaseAuthorizationError | CaseActionException e) {
             throw e;

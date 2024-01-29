@@ -80,4 +80,5 @@ public abstract class TransactionDataStore<C, T> extends AbstractDataStore<C> {
     public void closeSession() throws DataStoreException {
         sessionManager.close();
     }
+
 }
