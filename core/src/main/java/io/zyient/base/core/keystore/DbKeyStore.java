@@ -182,7 +182,7 @@ public class DbKeyStore extends KeyStore {
                 record.isNew = true;
                 records.put(name, record);
             }
-            record.value = CypherUtils.encryptAsString(value, password, settings.getIv());
+            record.value = CypherUtils.encryptAsString(value, password, iv());
             record.timestamp = System.nanoTime();
         }
     }
@@ -198,7 +198,7 @@ public class DbKeyStore extends KeyStore {
         Preconditions.checkArgument(hash.equals(passwdHash));
         if (records.containsKey(name)) {
             KeyRecord record = records.get(name);
-            byte[] data = CypherUtils.decrypt(record.value, password, settings.getIv());
+            byte[] data = CypherUtils.decrypt(record.value, password, iv());
             return new String(data, StandardCharsets.UTF_8);
         }
         return null;

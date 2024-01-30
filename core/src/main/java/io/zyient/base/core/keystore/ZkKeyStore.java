@@ -105,7 +105,7 @@ public class ZkKeyStore extends KeyStore {
             if (client.checkExists().forPath(path) == null) {
                 client.create().creatingParentsIfNeeded().forPath(path);
             }
-            String encrypted = CypherUtils.encryptAsString(value, password, settings.getIv());
+            String encrypted = CypherUtils.encryptAsString(value, password, iv());
             client.setData().forPath(path, encrypted.getBytes(StandardCharsets.UTF_8));
         } finally {
             updateLock.unlock();
@@ -127,7 +127,7 @@ public class ZkKeyStore extends KeyStore {
                 .build();
         String value = JSONUtils.read(client, path, String.class);
         if (!Strings.isNullOrEmpty(value)) {
-            byte[] data = CypherUtils.decrypt(value, password, settings.getIv());
+            byte[] data = CypherUtils.decrypt(value, password, iv());
             return new String(data, StandardCharsets.UTF_8);
         }
         return null;

@@ -57,7 +57,7 @@ public class JavaKeyStore extends KeyStore {
             if (!kf.exists()) {
                 createEmptyStore(kf.getAbsolutePath(), password);
             } else {
-                store = java.security.KeyStore.getInstance(settings.getKeyStoreFile());
+                store = java.security.KeyStore.getInstance(settings.getKeyStoreType());
                 try (FileInputStream fis = new FileInputStream(kf)) {
                     store.load(fis, password.toCharArray());
                 }
@@ -73,7 +73,7 @@ public class JavaKeyStore extends KeyStore {
         if (!authenticate(key)) {
             throw new Exception("Authentication failed...");
         }
-        File file = new File(settings.getKeyStoreType());
+        File file = new File(settings.getKeyStoreFile());
         if (file.exists()) {
             return file;
         }
