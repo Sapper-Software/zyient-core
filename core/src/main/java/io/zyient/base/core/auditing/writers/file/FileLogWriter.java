@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.writers;
+package io.zyient.base.core.auditing.writers.file;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;

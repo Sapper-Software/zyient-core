@@ -25,15 +25,20 @@ import io.zyient.base.core.auditing.*;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.processing.ProcessorState;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
 
+@Getter
+@Accessors(fluent = true)
 public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogger<T> {
     private final ProcessorState state = new ProcessorState();
+    private final Class<? extends AuditLoggerSettings> settingsType;
 
     private IAuditWriter<T> writer;
     private IAuditSerDe<R> serializer;
@@ -42,13 +47,21 @@ public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogge
     private EncryptionInfo encryption;
     private KeyStore keyStore;
 
+    public SyncAuditLogger() {
+        settingsType = AuditLoggerSettings.class;
+    }
+
+    public SyncAuditLogger(Class<? extends AuditLoggerSettings> settingsType) {
+        this.settingsType = settingsType;
+    }
+
     @Override
     @SuppressWarnings("unchecked")
     public IAuditLogger<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                 @NonNull BaseEnv<?> env) throws ConfigurationException {
         this.env = env;
         try {
-            ConfigReader reader = new ConfigReader(config, AuditLoggerSettings.class);
+            ConfigReader reader = new ConfigReader(config, settingsType);
             reader.read();
             settings = (AuditLoggerSettings) reader.settings();
             writer = (IAuditWriter<T>) settings.getWriter().getDeclaredConstructor()

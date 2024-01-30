@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing;
+package io.zyient.base.core.auditing.loggers;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.core.auditing.*;
 import lombok.Getter;
 import lombok.Setter;
 
