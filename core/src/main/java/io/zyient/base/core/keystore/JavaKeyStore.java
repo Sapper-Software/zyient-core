@@ -20,6 +20,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.keystore.settings.JavaKeyStoreSettings;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -35,62 +37,43 @@ import java.util.Enumeration;
 
 
 public class JavaKeyStore extends KeyStore {
-    public static final String CONFIG_KEYSTORE_FILE = "path";
-    public static final String CONFIG_CIPHER_ALGO = "cipher.algo";
-    public static final String CONFIG_KEYSTORE_TYPE = "type";
-    private static final String KEYSTORE_TYPE = "PKCS12";
-
 
     private java.security.KeyStore store;
-    private String keyStoreFile;
-    private HierarchicalConfiguration<ImmutableNode> config;
-    private String cipherAlgo = CIPHER_TYPE;
-    private String keyStoreType = KEYSTORE_TYPE;
     private String passwdHash;
+
+    public JavaKeyStore() {
+        super(JavaKeyStoreSettings.class);
+    }
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
-            config = configNode.configurationAt(__CONFIG_PATH);
-            Preconditions.checkNotNull(config);
-            keyStoreFile = config.getString(CONFIG_KEYSTORE_FILE);
-            if (Strings.isNullOrEmpty(keyStoreFile)) {
-                throw new ConfigurationException(
-                        String.format("Java Key Store: missing keystore file path. [config=%s]",
-                                CONFIG_KEYSTORE_FILE));
-            }
-            String s = config.getString(CONFIG_CIPHER_ALGO);
-            if (!Strings.isNullOrEmpty(s)) {
-                cipherAlgo = s;
-            }
-            s = config.getString(CONFIG_KEYSTORE_TYPE);
-            if (!Strings.isNullOrEmpty(s)) {
-                keyStoreType = s;
-            }
-
+            Preconditions.checkNotNull(settings());
+            JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
             passwdHash = ChecksumUtils.generateHash(password);
-            File kf = new File(keyStoreFile);
+            File kf = new File(settings.getKeyStoreFile());
             if (!kf.exists()) {
                 createEmptyStore(kf.getAbsolutePath(), password);
             } else {
-                store = java.security.KeyStore.getInstance(keyStoreType);
+                store = java.security.KeyStore.getInstance(settings.getKeyStoreFile());
                 try (FileInputStream fis = new FileInputStream(kf)) {
                     store.load(fis, password.toCharArray());
                 }
             }
-            keyStoreFile = kf.getAbsolutePath();
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
     }
 
     public File filePath(@NonNull String key) throws Exception {
+        Preconditions.checkNotNull(settings());
+        JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
         if (!authenticate(key)) {
             throw new Exception("Authentication failed...");
         }
-        File file = new File(keyStoreFile);
+        File file = new File(settings.getKeyStoreType());
         if (file.exists()) {
             return file;
         }
@@ -98,14 +81,15 @@ public class JavaKeyStore extends KeyStore {
     }
 
     private void createEmptyStore(String path, String password) throws Exception {
-        store = java.security.KeyStore.getInstance(keyStoreType);
+        JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
+        store = java.security.KeyStore.getInstance(settings.getKeyStoreType());
         store.load(null, password.toCharArray());
 
         // Save the keyStore
         try (FileOutputStream fos = new FileOutputStream(path)) {
             store.store(fos, password.toCharArray());
         }
-        save(DEFAULT_KEY, password);
+        save(KeyStoreSettings.DEFAULT_KEY, password);
         flush(password);
     }
 
@@ -115,11 +99,12 @@ public class JavaKeyStore extends KeyStore {
                      @NonNull String password) throws Exception {
         Preconditions.checkNotNull(store);
         Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+        JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         java.security.KeyStore.SecretKeyEntry secret
-                = new java.security.KeyStore.SecretKeyEntry(generate(value, cipherAlgo));
+                = new java.security.KeyStore.SecretKeyEntry(generate(value, settings.getCipherAlgo()));
         java.security.KeyStore.ProtectionParameter parameter
                 = new java.security.KeyStore.PasswordProtection(password.toCharArray());
         store.setEntry(name, secret, parameter);
@@ -131,12 +116,14 @@ public class JavaKeyStore extends KeyStore {
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         Preconditions.checkNotNull(store);
+        JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
+
         java.security.KeyStore.ProtectionParameter param
                 = new java.security.KeyStore.PasswordProtection(password.toCharArray());
         if (store.containsAlias(name)) {
             java.security.KeyStore.SecretKeyEntry key
                     = (java.security.KeyStore.SecretKeyEntry) store.getEntry(name, param);
-            return extractValue(key.getSecretKey(), cipherAlgo);
+            return extractValue(key.getSecretKey(), settings.getCipherAlgo());
         }
         return null;
     }
@@ -155,6 +142,8 @@ public class JavaKeyStore extends KeyStore {
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         Preconditions.checkNotNull(store);
+        JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
+
         Enumeration<String> aliases = store.aliases();
         while (aliases.hasMoreElements()) {
             String alias = aliases.nextElement();
@@ -162,16 +151,17 @@ public class JavaKeyStore extends KeyStore {
         }
         store = null;
 
-        Files.delete(Paths.get(keyStoreFile));
+        Files.delete(Paths.get(settings.getKeyStoreType()));
     }
 
     @Override
     public String flush(@NonNull String password) throws Exception {
         Preconditions.checkNotNull(store);
-        try (FileOutputStream fos = new FileOutputStream(keyStoreFile, false)) {
+        JavaKeyStoreSettings settings = (JavaKeyStoreSettings) settings();
+        try (FileOutputStream fos = new FileOutputStream(settings.getKeyStoreFile(), false)) {
             store.store(fos, password.toCharArray());
         }
-        return keyStoreFile;
+        return settings.getKeyStoreType();
     }
 
     @Override

@@ -14,29 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing;
+package io.zyient.base.core.keystore.settings;
 
-import java.lang.annotation.*;
+import io.zyient.base.common.config.Config;
+import lombok.Getter;
+import lombok.Setter;
 
-/**
- * Annotation to mark entities to be
- * audited for changes.
- */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-public @interface Audited {
-    /**
-     * Log records for this in a separate file.
-     *
-     * @return
-     */
-    boolean exclusive() default false;
+@Getter
+@Setter
+public class ZkKeyStoreSettings extends KeyStoreSettings {
+    public static final String CONFIG_NAME = "name";
+    public static final String CONFIG_ZK_PATH = "path";
 
-    /**
-     * Encrypt audit data.
-     *
-     * @return
-     */
-    boolean encrypted() default true;
+    @Config(name = CONFIG_NAME)
+    private String name;
+    @Config(name = CONFIG_ZK_PATH)
+    private String zkBasePath;
 }

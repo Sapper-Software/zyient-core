@@ -16,27 +16,8 @@
 
 package io.zyient.base.core.auditing;
 
-import java.lang.annotation.*;
-
-/**
- * Annotation to mark entities to be
- * audited for changes.
- */
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Inherited
-public @interface Audited {
-    /**
-     * Log records for this in a separate file.
-     *
-     * @return
-     */
-    boolean exclusive() default false;
-
-    /**
-     * Encrypt audit data.
-     *
-     * @return
-     */
-    boolean encrypted() default true;
+public enum AuditRecordType {
+    Record,
+    ChangeDelta,
+    RecordAndChangeDelta
 }

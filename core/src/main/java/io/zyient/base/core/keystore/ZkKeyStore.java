@@ -18,7 +18,6 @@ package io.zyient.base.core.keystore;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.common.utils.CypherUtils;
 import io.zyient.base.common.utils.JSONUtils;
@@ -27,6 +26,8 @@ import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.DistributedLock;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
+import io.zyient.base.core.keystore.settings.ZkKeyStoreSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -38,54 +39,43 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 public class ZkKeyStore extends KeyStore {
-    public static final String CONFIG_NAME = "name";
-    public static final String CONFIG_ZK_PATH = "path";
-    public static final String CONFIG_IV_SPEC = "iv";
-
-    private String name;
-    private String zkBasePath;
-    private String iv;
     private ZookeeperConnection connection;
-    private HierarchicalConfiguration<ImmutableNode> config;
     private String passwdHash;
     private DistributedLock updateLock = null;
-    private BaseEnv<?> env;
+    private String zkBasePath;
+
+    public ZkKeyStore() {
+        super(ZkKeyStoreSettings.class);
+    }
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
-        this.env = env;
+        Preconditions.checkNotNull(settings());
         try {
+            ZkKeyStoreSettings settings = (ZkKeyStoreSettings) settings();
             String pwd = password;
-            config = configNode.configurationAt(__CONFIG_PATH);
-            Preconditions.checkNotNull(config);
-            name = config.getString(CONFIG_NAME);
-            ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
-            password = CypherUtils.checkPassword(password, name);
+            password = CypherUtils.checkPassword(password, settings.getName());
             withPassword(password);
 
             HierarchicalConfiguration<ImmutableNode> zkc
-                    = config.configurationAt(ConnectionManager.Constants.CONFIG_CONNECTION_LIST);
+                    = config().configurationAt(ConnectionManager.Constants.CONFIG_CONNECTION_LIST);
             connection = new ZookeeperConnection()
                     .withPassword(pwd);
             connection.init(zkc, env);
             connection.connect();
-            zkBasePath = new PathUtils.ZkPathBuilder(config.getString(CONFIG_ZK_PATH))
-                    .withPath(name)
+            zkBasePath = new PathUtils.ZkPathBuilder(settings.getZkBasePath())
+                    .withPath(settings.getName())
                     .build();
-            ConfigReader.checkStringValue(zkBasePath, getClass(), CONFIG_ZK_PATH);
-            iv = config.getString(CONFIG_IV_SPEC);
-            ConfigReader.checkStringValue(iv, getClass(), CONFIG_IV_SPEC);
-            iv = CypherUtils.formatIvString(iv);
             passwdHash = ChecksumUtils.generateHash(password);
             CuratorFramework client = connection.client();
             if (client.checkExists().forPath(zkBasePath) == null) {
                 client.create().creatingParentsIfNeeded().forPath(zkBasePath);
             }
-            String passwd = read(DEFAULT_KEY, password);
+            String passwd = read(KeyStoreSettings.DEFAULT_KEY, password);
             if (passwd == null) {
-                save(DEFAULT_KEY, password, password);
+                save(KeyStoreSettings.DEFAULT_KEY, password, password);
                 flush(password);
             } else if (passwd.compareTo(password) != 0) {
                 throw new Exception("Invalid password specified....");
@@ -105,6 +95,7 @@ public class ZkKeyStore extends KeyStore {
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         checkLock();
+        ZkKeyStoreSettings settings = (ZkKeyStoreSettings) settings();
         updateLock.lock();
         try {
             String path = new PathUtils.ZkPathBuilder(zkBasePath)
@@ -114,7 +105,7 @@ public class ZkKeyStore extends KeyStore {
             if (client.checkExists().forPath(path) == null) {
                 client.create().creatingParentsIfNeeded().forPath(path);
             }
-            String encrypted = CypherUtils.encryptAsString(value, password, iv);
+            String encrypted = CypherUtils.encryptAsString(value, password, settings.getIv());
             client.setData().forPath(path, encrypted.getBytes(StandardCharsets.UTF_8));
         } finally {
             updateLock.unlock();
@@ -129,13 +120,14 @@ public class ZkKeyStore extends KeyStore {
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
+        ZkKeyStoreSettings settings = (ZkKeyStoreSettings) settings();
         CuratorFramework client = connection.client();
         String path = new PathUtils.ZkPathBuilder(zkBasePath)
                 .withPath(name)
                 .build();
         String value = JSONUtils.read(client, path, String.class);
         if (!Strings.isNullOrEmpty(value)) {
-            byte[] data = CypherUtils.decrypt(value, password, iv);
+            byte[] data = CypherUtils.decrypt(value, password, settings.getIv());
             return new String(data, StandardCharsets.UTF_8);
         }
         return null;
@@ -199,8 +191,9 @@ public class ZkKeyStore extends KeyStore {
     }
 
     private synchronized void checkLock() throws Exception {
+        ZkKeyStoreSettings settings = (ZkKeyStoreSettings) settings();
         if (updateLock == null) {
-            updateLock = env.createCustomLock(name, zkBasePath, connection, 5000L);
+            updateLock = env().createCustomLock(settings.getName(), zkBasePath, connection, 5000L);
         }
     }
 

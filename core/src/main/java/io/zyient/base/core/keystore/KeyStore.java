@@ -17,7 +17,10 @@
 package io.zyient.base.core.keystore;
 
 import com.google.common.base.Strings;
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.utils.CypherUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -35,24 +38,38 @@ import java.security.SecureRandom;
 @Getter
 @Accessors(fluent = true)
 public abstract class KeyStore implements Closeable {
-    public static final String __CONFIG_PATH = "keystore";
-    public static final String CONFIG_KEYSTORE_CLASS = String.format("%s.class", __CONFIG_PATH);
-    public static final String CIPHER_TYPE = "PBEWithMD5AndDES";
-    public static final String DEFAULT_KEY = "__default__";
     private static final int DEFAULT_ITERATION_COUNT = 8;
     private static final int DEFAULT_KEY_LENGTH = 128;
+
+    public final Class<? extends KeyStoreSettings> settingsType;
+    private HierarchicalConfiguration<ImmutableNode> config;
+    private KeyStoreSettings settings;
     @Getter(AccessLevel.NONE)
     private SecretKey password;
+    private String iv;
+    private BaseEnv<?> env;
+
+    protected KeyStore(Class<? extends KeyStoreSettings> settingsType) {
+        this.settingsType = settingsType;
+    }
 
     public KeyStore withPassword(@NonNull String password) throws Exception {
-        this.password = generate(password, CIPHER_TYPE);
+        this.password = generate(password, KeyStoreSettings.CIPHER_TYPE);
         return this;
     }
 
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
+        this.env = env;
         try {
-            init(configNode, extractValue(password, CIPHER_TYPE), env);
+            ConfigReader reader = new ConfigReader(configNode, KeyStoreSettings.__CONFIG_PATH, settingsType);
+            reader.read();
+            settings = (KeyStoreSettings) reader.settings();
+            config = reader.config();
+
+            iv = CypherUtils.formatIvString(settings.getIv());
+
+            init(configNode, extractValue(password, KeyStoreSettings.CIPHER_TYPE), env);
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
@@ -64,11 +81,11 @@ public abstract class KeyStore implements Closeable {
 
     public void save(@NonNull String name,
                      @NonNull String value) throws Exception {
-        save(name, value, extractValue(password, CIPHER_TYPE));
+        save(name, value, extractValue(password, KeyStoreSettings.CIPHER_TYPE));
     }
 
     public boolean authenticate(@NonNull String key) throws Exception {
-        String value = read(DEFAULT_KEY);
+        String value = read(KeyStoreSettings.DEFAULT_KEY);
         if (Strings.isNullOrEmpty(value)) {
             throw new Exception("KeyStore not initialized with default key.");
         }
@@ -76,7 +93,7 @@ public abstract class KeyStore implements Closeable {
     }
 
     public String read(@NonNull String name) throws Exception {
-        return read(name, extractValue(password, CIPHER_TYPE));
+        return read(name, extractValue(password, KeyStoreSettings.CIPHER_TYPE));
     }
 
     public abstract void save(@NonNull String name,
@@ -91,7 +108,7 @@ public abstract class KeyStore implements Closeable {
     public abstract void delete(@NonNull String password) throws Exception;
 
     public String flush() throws Exception {
-        return flush(extractValue(password, CIPHER_TYPE));
+        return flush(extractValue(password, KeyStoreSettings.CIPHER_TYPE));
     }
 
     public abstract String flush(@NonNull String password) throws Exception;

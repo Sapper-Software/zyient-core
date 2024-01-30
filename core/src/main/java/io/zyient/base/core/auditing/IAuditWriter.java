@@ -18,7 +18,6 @@ package io.zyient.base.core.auditing;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.model.UserOrRole;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -26,15 +25,12 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.Closeable;
 
-public interface IAuditLogger<T extends AuditRecord> extends Closeable {
-    String __CONFIG_PATH = "audit-logger";
+public interface IAuditWriter<T extends AuditRecord<?>> extends Closeable {
+    String __CONFIG_PATH = "writer";
 
-    IAuditLogger<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
-                         @NonNull BaseEnv<?> env) throws ConfigurationException;
+    IAuditWriter<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+                         @NonNull BaseEnv<?> env,
+                         @NonNull Class<? extends T> recordType) throws ConfigurationException;
 
-    void audit(@NonNull Object record,
-               @NonNull AuditRecordType type,
-               @NonNull String module,
-               @NonNull UserOrRole user,
-               Context context) throws Exception;
+    void write(@NonNull T record, Context context) throws Exception;
 }

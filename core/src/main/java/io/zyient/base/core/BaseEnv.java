@@ -33,6 +33,7 @@ import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.env.BaseEnvSettings;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import io.zyient.base.core.model.ModuleInstance;
 import io.zyient.base.core.processing.Processor;
 import io.zyient.base.core.services.model.ShutdownStatus;
@@ -232,11 +233,12 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                       String connectionsConfigPath) throws ConfigurationException {
         try {
 
-            if (ConfigReader.checkIfNodeExists(baseConfig, KeyStore.__CONFIG_PATH)) {
-                String c = baseConfig.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
+            if (ConfigReader.checkIfNodeExists(baseConfig, KeyStoreSettings.__CONFIG_PATH)) {
+                String c = baseConfig.getString(KeyStoreSettings.CONFIG_KEYSTORE_CLASS);
                 if (Strings.isNullOrEmpty(c)) {
                     throw new ConfigurationException(
-                            String.format("Key Store class not defined. [config=%s]", KeyStore.CONFIG_KEYSTORE_CLASS));
+                            String.format("Key Store class not defined. [config=%s]",
+                                    KeyStoreSettings.CONFIG_KEYSTORE_CLASS));
                 }
                 Class<? extends KeyStore> cls = (Class<? extends KeyStore>) Class.forName(c);
                 keyStore = cls.getDeclaredConstructor().newInstance();

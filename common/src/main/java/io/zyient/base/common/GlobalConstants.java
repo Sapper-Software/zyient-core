@@ -35,7 +35,7 @@ public class GlobalConstants {
     /**
      * Default Joda date format to parse/print dates.
      */
-    public static final String DEFAULT_JODA_DATE_FORMAT = "M.d.y";
+    public static final String DEFAULT_JODA_DATE_FORMAT = "MM.dd.yyyy";
     /**
      * Default Joda data/time format to parse/print date/time.
      */

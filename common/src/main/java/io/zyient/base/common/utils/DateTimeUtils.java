@@ -103,6 +103,15 @@ public class DateTimeUtils {
         return dateTime.toString(GlobalConstants.DEFAULT_JODA_DATETIME_FORMAT);
     }
 
+    public static String now() {
+        return now(GlobalConstants.DEFAULT_JODA_DATETIME_FORMAT);
+    }
+
+    public static String now(@Nonnull String format) {
+        DateTime dateTime = new DateTime(System.currentTimeMillis());
+        return dateTime.toString(format);
+    }
+
     /**
      * Convert to a milliseconds period.
      *

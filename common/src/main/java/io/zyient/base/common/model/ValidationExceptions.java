@@ -224,9 +224,9 @@ public class ValidationExceptions extends Exception
         return errors;
     }
 
-    public static ValidationExceptions chack(boolean condition,
-                                             @NonNull String mesg,
-                                             ValidationExceptions errors) {
+    public static ValidationExceptions checkCondition(boolean condition,
+                                                      @NonNull String mesg,
+                                                      ValidationExceptions errors) {
         if (!condition) {
             errors = ValidationExceptions.add(new ValidationException(mesg), errors);
         }

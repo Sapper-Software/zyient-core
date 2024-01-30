@@ -24,6 +24,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -60,10 +61,10 @@ public class JavaKeyStoreUtil {
 
         config = env.baseConfig();
 
-        String c = config.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
+        String c = config.getString(KeyStoreSettings.CONFIG_KEYSTORE_CLASS);
         if (Strings.isNullOrEmpty(c)) {
             throw new ConfigurationException(
-                    String.format("Key Store class not defined. [config=%s]", KeyStore.CONFIG_KEYSTORE_CLASS));
+                    String.format("Key Store class not defined. [config=%s]", KeyStoreSettings.CONFIG_KEYSTORE_CLASS));
         }
         Class<? extends KeyStore> cls = (Class<? extends KeyStore>) Class.forName(c);
         KeyStore keyStore = cls.getDeclaredConstructor().newInstance();
