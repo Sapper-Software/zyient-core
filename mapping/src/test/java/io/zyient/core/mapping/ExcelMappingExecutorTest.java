@@ -82,7 +82,7 @@ public class ExcelMappingExecutorTest {
         @Override
         public void onSuccess(@NonNull InputContentInfo contentInfo, @NonNull ReadResponse response) {
             try {
-                String jc = JSONUtils.asString(contentInfo, contentInfo.getClass());
+                String jc = JSONUtils.asString(contentInfo);
                 DefaultLogger.info(String.format("INPUT=[%s]", jc));
                 finished = true;
             } catch (Exception ex) {
