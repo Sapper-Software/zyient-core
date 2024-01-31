@@ -35,4 +35,5 @@ dependencies {
     implementation 'org.drools:drools-decisiontables:9.44.0.Final'
     implementation 'com.jayway.jsonpath:json-path:2.8.0'
     implementation 'org.apache.kafka:kafka-clients:3.4.0'
+
 }

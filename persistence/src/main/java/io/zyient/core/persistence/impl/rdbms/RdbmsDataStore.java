@@ -148,7 +148,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         session.setCacheMode(CacheMode.IGNORE);
-
+        session.clear();
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
