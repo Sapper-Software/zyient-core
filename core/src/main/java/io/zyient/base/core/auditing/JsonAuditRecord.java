@@ -19,6 +19,7 @@ package io.zyient.base.core.auditing;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
+import jakarta.persistence.Column;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.NonNull;
@@ -28,6 +29,7 @@ import lombok.Setter;
 @Setter
 @MappedSuperclass
 public class JsonAuditRecord extends AuditRecord<String> {
+    @Column(name = "record")
     private String record;
 
     /**

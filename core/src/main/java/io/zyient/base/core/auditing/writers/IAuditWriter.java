@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing;
+package io.zyient.base.core.auditing.writers;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.auditing.AuditRecord;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -33,4 +34,8 @@ public interface IAuditWriter<T extends AuditRecord<?>> extends Closeable {
                          @NonNull Class<? extends T> recordType) throws ConfigurationException;
 
     void write(@NonNull T record, Context context) throws Exception;
+
+    IAuditWriter<T> name(@NonNull String name);
+
+    String name();
 }

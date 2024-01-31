@@ -26,7 +26,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.Closeable;
 
-public interface IAuditLogger<T extends AuditRecord> extends Closeable {
+public interface IAuditLogger<T extends AuditRecord<?>> extends Closeable {
     String __CONFIG_PATH = "audit-logger";
 
     IAuditLogger<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,

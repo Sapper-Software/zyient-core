@@ -22,6 +22,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.auditing.*;
+import io.zyient.base.core.auditing.writers.IAuditWriter;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.base.core.model.UserOrRole;
 import io.zyient.base.core.processing.ProcessorState;
@@ -42,6 +43,8 @@ public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogge
 
     private IAuditWriter<T> writer;
     private IAuditSerDe<R> serializer;
+    private AuditReader<T, R> reader;
+
     private AuditLoggerSettings settings;
     private BaseEnv<?> env;
     private EncryptionInfo encryption;
@@ -67,7 +70,8 @@ public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogge
             writer = (IAuditWriter<T>) settings.getWriter().getDeclaredConstructor()
                     .newInstance();
             HierarchicalConfiguration<ImmutableNode> node = reader.config().configurationAt(IAuditWriter.__CONFIG_PATH);
-            writer.init(node, env, (Class<? extends T>) settings.getRecordType());
+            writer.name(settings.getName())
+                    .init(node, env, (Class<? extends T>) settings.getRecordType());
             serializer = (IAuditSerDe<R>) settings.getSerializer().getDeclaredConstructor()
                     .newInstance();
             encryption = new EncryptionInfo();
@@ -82,6 +86,19 @@ public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogge
                 }
                 encryption.password(settings.getEncryptionKey());
                 encryption.iv(keyStore.iv());
+            }
+            if (ConfigReader.checkIfNodeExists(reader.config(), AuditReader.__CONFIG_PATH)) {
+                node = reader.config().configurationAt(AuditReader.__CONFIG_PATH);
+                Class<? extends AuditReader<T, R>> rt
+                        = (Class<? extends AuditReader<T, R>>) ConfigReader.readType(reader.config());
+                this.reader = rt.getDeclaredConstructor()
+                        .newInstance();
+                this.reader.env(env)
+                        .recordType((Class<? extends T>) settings.getRecordType())
+                        .name(settings.getName())
+                        .serializer(serializer)
+                        .encryption(encryption)
+                        .init(node);
             }
             state.setState(ProcessorState.EProcessorState.Running);
             return this;
@@ -104,6 +121,7 @@ public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogge
         R data = serializer.serialize(record,
                 encryption,
                 keyStore);
+
         AuditRecord<R> rec = (AuditRecord<R>) settings.getRecordType()
                 .getDeclaredConstructor()
                 .newInstance();
@@ -111,6 +129,7 @@ public class SyncAuditLogger<T extends AuditRecord<R>, R> implements IAuditLogge
         rec.setModule(module);
         rec.setInstanceId(env.moduleInstance().id());
         rec.setActor(new ActionedBy(user));
+        rec.setRecordType(record.getClass().getCanonicalName());
         rec.data(data);
         writer.write((T) rec, context);
     }
