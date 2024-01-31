@@ -22,7 +22,7 @@ import lombok.NonNull;
 @Getter
 public enum SourceTypes {
     UNKNOWN("unknown", null),
-    CSV("text/csv", new String[]{"csv","pgp"}),
+    CSV("text/csv", new String[]{"csv"}),
     TSV("text/tsv", new String[]{"tsv", "tdf"}),
     RFC4180("text/rfc4180", null),
     PSV("text/psv", new String[]{"psv"}),

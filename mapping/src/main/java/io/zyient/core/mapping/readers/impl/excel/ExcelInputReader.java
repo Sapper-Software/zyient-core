@@ -51,7 +51,7 @@ public class ExcelInputReader extends InputReader {
     public ReadCursor open() throws IOException {
         try {
             stream = new FileInputStream(contentInfo().path());
-            if(settings().isPasswordProtected()) {
+            if(settings().isProtected()) {
                 String password = fetchPassword(settings().getDecryptionSecretName());
                 XSSFWorkbookFactory xssfWorkbookFactory = new XSSFWorkbookFactory();
                 workbook = xssfWorkbookFactory.create(stream, password);
