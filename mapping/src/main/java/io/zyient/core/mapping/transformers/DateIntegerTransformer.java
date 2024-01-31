@@ -17,14 +17,10 @@
 package io.zyient.core.mapping.transformers;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.mapper.MappingSettings;
 import io.zyient.core.mapping.model.DateMappedElement;
-import io.zyient.core.mapping.model.MappedElement;
-import io.zyient.core.mapping.model.RegexMappedElement;
-import lombok.AccessLevel;
+import io.zyient.core.mapping.model.mapping.MappedElement;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -32,12 +28,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Getter
 @Setter

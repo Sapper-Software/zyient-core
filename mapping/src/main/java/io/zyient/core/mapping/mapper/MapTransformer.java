@@ -26,10 +26,8 @@ import io.zyient.core.mapping.model.mapping.CustomMappedElement;
 import io.zyient.core.mapping.model.mapping.MappedElement;
 import io.zyient.core.mapping.model.mapping.MappingType;
 import io.zyient.core.mapping.model.mapping.RegexMappedElement;
-import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.mapping.transformers.RegexTransformer;
 import io.zyient.core.mapping.transformers.Transformer;
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -126,14 +124,14 @@ public class MapTransformer<T> {
         return source;
     }
 
-    public Map<String, Object> transform(@NonNull Map<String, Object> source, @NotNull Context context,
+    public Map<String, Object> transform(@NonNull Map<String, Object> source,
                                          @NonNull Class<? extends T> entityType) throws Exception {
         Preconditions.checkState(!mapper.isEmpty());
         Map<String, Object> data = new HashMap<>();
         JSONUtils.checkAndAddType(data, entityType);
         for (String key : mapper.keySet()) {
             MapNode node = mapper.get(key);
-            transform(source, node, data, context.params);
+            transform(source, node, data);
         }
         return data;
     }
@@ -141,11 +139,9 @@ public class MapTransformer<T> {
     @SuppressWarnings("unchecked")
     private void transform(Map<String, Object> source,
                            MapNode node,
-                           Map<String, Object> data, Map<String, Object> context) throws Exception {
+                           Map<String, Object> data) throws Exception {
         if (source.containsKey(node.name)) {
             findValueFromSourceOrContext(source, node, data);
-        } else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
-            findValueFromSourceOrContext(context, node, data);
         } else {
             if (!node.nullable) {
                 throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
@@ -189,7 +185,7 @@ public class MapTransformer<T> {
                     for (String key : node.nodes.keySet()) {
                         Context context = new Context();
                         context.setParams(sourceOrContext);
-                        transform((Map<String, Object>) value, node.nodes.get(key), data,sourceOrContext);
+                        transform((Map<String, Object>) value, node.nodes.get(key), data, sourceOrContext);
                     }
                 }
             }

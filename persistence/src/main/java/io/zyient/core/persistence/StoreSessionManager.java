@@ -182,17 +182,6 @@ public abstract class StoreSessionManager<C, T> {
         return false;
     }
 
-    public boolean remove() throws DataStoreException {
-        synchronized (sessions) {
-            long tid = Thread.currentThread().getId();
-            if (sessions.containsKey(tid)) {
-                sessions.remove(tid);
-                return true;
-            }
-        }
-        return false;
-    }
-
     protected abstract boolean isActive(@NonNull T transaction);
 
     protected abstract boolean isAvailable(@NonNull C session);
