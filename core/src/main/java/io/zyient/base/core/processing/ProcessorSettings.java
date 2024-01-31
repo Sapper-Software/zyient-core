@@ -17,15 +17,15 @@
 package io.zyient.base.core.processing;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
 /**
  * <pre>
- *     <processor>
+ *     <processor @type="[Processor implementation]">
  *         <name>[Processor Name]</name>
- *         <type>[Processor Class]</type>
  *         ...
  *     </processor>
  * </pre>
@@ -37,4 +37,6 @@ import lombok.Setter;
 public class ProcessorSettings extends Settings {
     public static final String __CONFIG_PATH = "processor";
 
+    @Config(name = "name")
+    private String name;
 }

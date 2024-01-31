@@ -74,9 +74,9 @@ public class SQSConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
             HierarchicalConfiguration<ImmutableNode> ec
                     = config.configurationAt(SQSConsumerSettings.__CONFIG_PATH_ERRORS);
             Class<? extends BaseSQSProducer<M>> type
-                    = (Class<? extends BaseSQSProducer<M>>) ConfigReader.readAsClass(ec);
+                    = (Class<? extends BaseSQSProducer<M>>) ConfigReader.readType(ec);
             SQSProducerBuilder<M> builder = new SQSProducerBuilder<>(type);
-            BaseSQSProducer<M> producer = (BaseSQSProducer<M>) builder.build(ec);
+            BaseSQSProducer<M> producer = (BaseSQSProducer<M>) builder.withEnv(env()).build(ec);
             return (BaseSQSConsumer<M>) consumer
                     .withErrorQueue(producer)
                     .init();

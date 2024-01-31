@@ -26,6 +26,7 @@ import io.zyient.base.common.utils.*;
 import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.utils.FileTypeDetector;
 import io.zyient.base.core.utils.SourceTypes;
@@ -108,7 +109,7 @@ public abstract class ContentProvider implements Closeable {
                                 settings.getEncryptionKey()));
                     }
                     value = CypherUtils.checkPassword(value, ENCRYPTED_PREFIX);
-                    secretKey = keyStore.generate(value, KeyStore.CIPHER_TYPE);
+                    secretKey = keyStore.generate(value, KeyStoreSettings.CIPHER_TYPE);
                 }
                 doConfigure(reader.config());
                 state.setState(ProcessorState.EProcessorState.Running);
@@ -215,10 +216,6 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    private String extractIV(Document<?, ?, ?> document) {
-        return document.getId().getId().substring(0, 16);
-    }
-
     private void checkPassword(Document<?, ?, ?> document) throws Exception {
         if (Strings.isNullOrEmpty(document.getPassword())) return;
         String password = document.getPassword();
@@ -229,8 +226,8 @@ public abstract class ContentProvider implements Closeable {
         KeyStore keyStore = env().keyStore();
         Preconditions.checkNotNull(keyStore);
         String encrypted = CypherUtils.encryptAsString(password,
-                keyStore.extractValue(secretKey, KeyStore.CIPHER_TYPE),
-                extractIV(document));
+                keyStore.extractValue(secretKey, KeyStoreSettings.CIPHER_TYPE),
+                keyStore.iv());
         document.setPassword(String.format("%s=[%s]", ENCRYPTED_PREFIX, encrypted));
     }
 

@@ -16,34 +16,44 @@
 
 package io.zyient.base.core.auditing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.GlobalConstants;
+import io.zyient.base.common.utils.CypherUtils;
+import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.core.keystore.KeyStore;
 import lombok.NonNull;
 import org.apache.commons.lang3.SerializationException;
 
-public class JsonAuditSerDe implements IAuditSerDe {
+import java.nio.charset.StandardCharsets;
+
+public class JsonAuditSerDe implements IAuditSerDe<String> {
 
     /**
      * Serialize the specified entity record.
      *
      * @param record - Entity record.
-     * @param type   - Entity type being serialized.
      * @return - Serialized Byte array.
      * @throws SerializationException
      */
-    @NonNull
     @Override
-    public String serialize(@NonNull Object record, @NonNull Class<?> type) throws SerializationException {
+    public @NonNull String serialize(@NonNull Object record,
+                                     @NonNull EncryptionInfo encryption,
+                                     KeyStore keyStore) throws SerializationException {
         try {
-            ObjectMapper mapper = GlobalConstants.getJsonMapper();
-            String json = mapper.writeValueAsString(record);
-            if (Strings.isNullOrEmpty(json)) {
-                throw new SerializationException(String.format("Error serializing record. [type=%s]",
-                        type.getCanonicalName()));
+            if (!encryption.encrypted())
+                return JSONUtils.asString(record);
+            else {
+                Preconditions.checkArgument(!Strings.isNullOrEmpty(encryption.password()));
+                Preconditions.checkArgument(!Strings.isNullOrEmpty(encryption.iv()));
+                Preconditions.checkArgument(keyStore != null);
+                String password = keyStore.read(encryption.password());
+                if (Strings.isNullOrEmpty(password)) {
+                    throw new Exception(String.format("Encryption password not found. [name=%s]",
+                            encryption.password()));
+                }
+                String json = JSONUtils.asString(record);
+                return CypherUtils.encryptAsString(json, password, encryption.iv());
             }
-            return json;
         } catch (Exception ex) {
             throw new SerializationException(ex);
         }
@@ -58,11 +68,28 @@ public class JsonAuditSerDe implements IAuditSerDe {
      * @throws SerializationException
      */
     @Override
-    public <T> @NonNull T deserialize(@NonNull String data, @NonNull Class<? extends T> type) throws SerializationException {
+    public <T> @NonNull T deserialize(@NonNull String data,
+                                      @NonNull Class<? extends T> type,
+                                      @NonNull EncryptionInfo encryption,
+                                      KeyStore keyStore) throws SerializationException {
         try {
             Preconditions.checkArgument(!Strings.isNullOrEmpty(data));
-            ObjectMapper mapper = GlobalConstants.getJsonMapper();
-            T value = mapper.readValue(data, type);
+            if (encryption.encrypted()) {
+                Preconditions.checkArgument(!Strings.isNullOrEmpty(encryption.password()));
+                Preconditions.checkArgument(!Strings.isNullOrEmpty(encryption.iv()));
+                Preconditions.checkArgument(keyStore != null);
+                String password = keyStore.read(encryption.password());
+                if (Strings.isNullOrEmpty(password)) {
+                    throw new Exception(String.format("Encryption password not found. [name=%s]",
+                            encryption.password()));
+                }
+                byte[] array = CypherUtils.decrypt(data, password, encryption.iv());
+                if (array == null || array.length == 0) {
+                    throw new Exception(String.format("Failed to decrypt string. [data=%s]", data));
+                }
+                data = new String(array, StandardCharsets.UTF_8);
+            }
+            T value = JSONUtils.read(data, type);
             if (value == null) {
                 throw new SerializationException(String.format("Error de-serializing record. [type=%s]",
                         type.getCanonicalName()));

@@ -29,6 +29,7 @@ public class Page extends Section {
     public static final String __PREFIX = "PG.";
 
     private int number;
+    private int pixelSize;
 
     public Page() {
         super();

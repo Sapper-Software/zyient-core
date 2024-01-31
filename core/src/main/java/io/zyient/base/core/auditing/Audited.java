@@ -16,8 +16,6 @@
 
 package io.zyient.base.core.auditing;
 
-import io.zyient.base.common.GlobalConstants;
-
 import java.lang.annotation.*;
 
 /**
@@ -29,9 +27,16 @@ import java.lang.annotation.*;
 @Inherited
 public @interface Audited {
     /**
-     * Specify the logger name to audit to.
+     * Log records for this in a separate file.
      *
-     * @return - Logger name
+     * @return
      */
-    String logger() default GlobalConstants.EMPTY;
+    boolean exclusive() default false;
+
+    /**
+     * Encrypt audit data.
+     *
+     * @return
+     */
+    boolean encrypted() default true;
 }

@@ -16,14 +16,23 @@
 
 package io.zyient.core.filesystem.sync.s3.process;
 
-import io.zyient.base.common.config.ConfigReader;
-import io.zyient.base.common.threads.ManagedThread;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.RunUtils;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.connections.aws.AwsSQSConsumerConnection;
+import io.zyient.base.core.executor.FatalError;
+import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
+import io.zyient.core.messaging.InvalidMessageError;
+import io.zyient.core.messaging.MessageObject;
+import io.zyient.core.messaging.MessageProcessingError;
+import io.zyient.core.messaging.MessagingProcessorSettings;
+import io.zyient.core.messaging.aws.AwsSQSOffset;
+import io.zyient.core.messaging.aws.SQSMessage;
+import io.zyient.core.messaging.processing.MessageProcessorState;
+import io.zyient.core.messaging.processing.aws.BaseSQSMessageProcessor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -31,20 +40,22 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class S3EventListener implements Closeable {
-    private final ProcessorState state = new ProcessorState();
+public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorState, S3EventOffset, String> {
+
     private S3EventHandler handler = null;
     private S3EventListenerSettings settings;
     private BaseEnv<?> env;
-    private AwsSQSConsumerConnection connection;
     private S3EventConsumer consumer;
-    private ManagedThread executor;
+
+    public S3EventListener() {
+        super(S3EventProcessingState.class, S3EventListenerSettings.class);
+    }
 
     public S3EventListener withHandler(@NonNull S3EventHandler handler) {
         this.handler = handler;
@@ -55,34 +66,17 @@ public class S3EventListener implements Closeable {
                                 @NonNull BaseEnv<?> env) throws ConfigurationException {
         this.env = env;
         try {
-            ConfigReader reader = new ConfigReader(config,
-                    S3EventListenerSettings.class);
-            reader.read();
-            settings = (S3EventListenerSettings) reader.settings();
-            connection = env.connectionManager()
-                    .getConnection(settings.getConnection(), AwsSQSConsumerConnection.class);
-            if (connection == null) {
-                throw new Exception(String.format("SQS Connection not found. [name=%s][type=%s]",
-                        settings.getConnection(), AwsSQSConsumerConnection.class.getCanonicalName()));
-            }
-            consumer = new S3EventConsumer(connection,
-                    settings.getQueue(),
-                    settings().getBatchSize(),
-                    settings.getReadTimeout().normalized(),
-                    settings.getAckTimeout().normalized().intValue());
+            super.init(env, config);
+            settings = (S3EventListenerSettings) receiverConfig.settings();
             if (settings.getHandler() != null) {
                 handler = settings.getHandler()
                         .getDeclaredConstructor()
                         .newInstance();
-                handler.init(reader.config(), env);
+                handler.init(receiverConfig.config(), env);
             } else if (handler == null) {
                 throw new Exception("Event handler not defined...");
             }
-            state.setState(ProcessorState.EProcessorState.Running);
-            Runner runner = new Runner(this, consumer);
-            executor = new ManagedThread(env, runner, settings.threadName());
-            env.addThread(executor.getName(), executor);
-            executor.start();
+
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
@@ -91,56 +85,74 @@ public class S3EventListener implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
-        if (state.isAvailable()) {
-            state.setState(ProcessorState.EProcessorState.Stopped);
+    protected void initState(@NonNull ProcessingState<ES3EventProcessorState, S3EventOffset> processingState) throws Exception {
+        S3EventStateManager stateManager = (S3EventStateManager) stateManager();
+        if (processingState.getOffset() == null) {
+            processingState.setOffset(new S3EventOffset());
         }
+
+        processingState.setState(ES3EventProcessorState.Running);
+        processingState = stateManager.update(name(), processingState);
+    }
+
+    @Override
+    protected ProcessingState<ES3EventProcessorState, S3EventOffset> finished(@NonNull ProcessingState<ES3EventProcessorState, S3EventOffset> processingState) {
+        processingState.setState(ES3EventProcessorState.Stopped);
+        return processingState;
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void process(@NonNull MessageObject<String, String> message,
+                           @NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
+        Preconditions.checkArgument(message instanceof SQSMessage<String>);
         try {
-            if (executor != null) {
-                executor.close();
-                executor.join();
-                env.removeThread(executor.getName());
-                executor = null;
+            String body = message.value();
+            if (!Strings.isNullOrEmpty(body)) {
+                Map<String, Object> data = JSONUtils.read(body, Map.class);
+                List<S3Event> es = S3Event.read(data);
+                if (es != null) {
+                    for (S3Event event : es) {
+                        event.setMessageId(message.id());
+                        handler.handle(event);
+                    }
+                }
+            } else {
+                DefaultLogger.warn(String.format("[id=%s] Empty message received...",
+                        ((SQSMessage<String>) message).sqsMessageId()));
             }
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            throw new IOException(ex);
+        } catch (InvalidMessageError | MessageProcessingError me) {
+            DefaultLogger.stacktrace(me);
+            DefaultLogger.error(String.format("{id=%s} Error=[%s]",
+                    ((SQSMessage<String>) message).sqsMessageId(), me.getLocalizedMessage()));
+            throw me;
+        } catch (Throwable t) {
+            DefaultLogger.stacktrace(t);
+            throw new FatalError(t);
         }
     }
 
-    public static class Runner implements Runnable {
-        private final S3EventListener parent;
-        private final S3EventConsumer consumer;
-
-        public Runner(S3EventListener parent, S3EventConsumer consumer) {
-            this.parent = parent;
-            this.consumer = consumer;
+    @Override
+    protected void postInit(@NonNull MessagingProcessorSettings settings) throws Exception {
+        if (processingState().getOffset() == null) {
+            processingState().setOffset(new S3EventOffset());
         }
+        state.setState(ProcessorState.EProcessorState.Initialized);
+    }
 
-        @Override
-        public void run() {
-            try {
-                while (parent.state.isRunning()) {
-                    List<S3Event> events = consumer.next();
-                    if (events == null || events.isEmpty()) {
-                        RunUtils.sleep(parent.settings.getReadTimeout().normalized());
-                        continue;
-                    }
-                    for (S3Event event : events) {
-                        parent.handler.handle(event);
-                        consumer.ack(event);
-                    }
-                    consumer.commit();
-                }
-            } catch (RuntimeException re) {
-                DefaultLogger.error("S3 Event listener stopped.", re);
-                DefaultLogger.stacktrace(re);
-                parent.state.error(re);
-            } catch (Throwable t) {
-                DefaultLogger.error("S3 Event listener stopped.", t);
-                DefaultLogger.stacktrace(t);
-                parent.state.error(t);
-            }
-        }
+    @Override
+    protected void batchStart(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
+
+    }
+
+    @Override
+    protected void batchEnd(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
+
+    }
+
+    @Override
+    public void close() throws IOException {
+        processingState().setState(ES3EventProcessorState.Stopped);
+        super.close();
     }
 }

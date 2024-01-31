@@ -23,13 +23,11 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.io.IOException;
-
 public interface S3EventHandler {
     String __CONFIG_PATH = "handler";
 
     S3EventHandler init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                         @NonNull BaseEnv<?> env) throws ConfigurationException;
 
-    void handle(@NonNull S3Event event) throws IOException;
+    void handle(@NonNull S3Event event) throws Exception;
 }

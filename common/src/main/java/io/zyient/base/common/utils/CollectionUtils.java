@@ -32,7 +32,7 @@ public class CollectionUtils {
     public static <T> void setAtIndex(@NonNull List<T> array,
                                       int index,
                                       @NonNull T value) {
-        Preconditions.checkArgument(index > 0);
+        Preconditions.checkArgument(index >= 0);
         if (array.size() > index) {
             array.set(index, value);
         } else {

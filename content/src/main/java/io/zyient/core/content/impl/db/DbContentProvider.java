@@ -90,6 +90,8 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
                     }
                     return documents.get(0);
                 }
+            } finally {
+                dataStore.endSession();
             }
             return null;
         } catch (Exception ex) {

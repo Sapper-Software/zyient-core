@@ -87,6 +87,8 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
                     }
                     return documents.get(0);
                 }
+            } finally {
+                dataStore.endSession();
             }
             return null;
         } catch (Exception ex) {

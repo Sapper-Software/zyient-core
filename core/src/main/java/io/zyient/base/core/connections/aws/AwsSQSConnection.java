@@ -19,6 +19,7 @@ package io.zyient.base.core.connections.aws;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.config.ZkConfigReader;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
@@ -44,21 +45,19 @@ import java.io.IOException;
 @Getter
 @Accessors(fluent = true)
 public abstract class AwsSQSConnection extends MessageConnection {
+    public static final int SQS_MAX_BATCH_SIZE = 10;
+
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
     protected AwsSQSConnectionConfig config;
     protected SqsClient client;
     protected BaseEnv<?> env;
+    private long connectedTimestamp = 0;
 
     @Override
     public String name() {
         Preconditions.checkNotNull(settings);
         return settings.getName();
-    }
-
-    public SqsClient getClient() {
-        Preconditions.checkState(isConnected());
-        return client;
     }
 
     @Override
@@ -79,6 +78,25 @@ public abstract class AwsSQSConnection extends MessageConnection {
         } catch (Exception ex) {
             state.error(ex);
             throw new ConnectionError(ex);
+        }
+    }
+
+    public SqsClient client() throws ConnectionError {
+        Preconditions.checkState(state.isConnected());
+        synchronized (this) {
+            try {
+                long delta = System.currentTimeMillis() - connectedTimestamp;
+                if (delta > ((AwsSQSConnectionSettings) settings).getResetTimeout().normalized()) {
+                    client.close();
+                    reconnect();
+                }
+                connectedTimestamp = System.currentTimeMillis();
+                return client;
+            } catch (Exception ex) {
+                state.error(ex);
+                DefaultLogger.stacktrace(ex);
+                throw new ConnectionError(ex);
+            }
         }
     }
 
@@ -130,13 +148,17 @@ public abstract class AwsSQSConnection extends MessageConnection {
     public Connection connect() throws ConnectionError {
         Preconditions.checkState(settings instanceof AwsSQSConnectionSettings);
         if (!state.isConnected()) {
-            Region region = Region.of(((AwsSQSConnectionSettings) settings).getRegion());
-            client = SqsClient.builder()
-                    .region(region)
-                    .build();
+            reconnect();
             state.setState(EConnectionState.Connected);
         }
         return this;
+    }
+
+    private void reconnect() {
+        Region region = Region.of(((AwsSQSConnectionSettings) settings).getRegion());
+        client = SqsClient.builder()
+                .region(region)
+                .build();
     }
 
     @Override

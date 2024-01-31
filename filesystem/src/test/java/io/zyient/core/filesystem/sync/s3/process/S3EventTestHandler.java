@@ -24,6 +24,8 @@ import io.zyient.base.core.connections.aws.AwsS3Connection;
 import io.zyient.core.filesystem.impl.s3.S3Helper;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
 import io.zyient.core.filesystem.sync.s3.model.S3EventType;
+import io.zyient.core.messaging.InvalidMessageError;
+import io.zyient.core.messaging.MessageProcessingError;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -33,7 +35,6 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +43,8 @@ import java.util.Map;
 public class S3EventTestHandler implements S3EventHandler {
     private AwsS3Connection connection;
     private final Map<String, Boolean> received = new HashMap<>();
+    private int receivedCount = 0;
+    private int processedCount = 0;
 
     @Override
     public S3EventHandler init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
@@ -67,17 +70,20 @@ public class S3EventTestHandler implements S3EventHandler {
     }
 
     @Override
-    public void handle(@NonNull S3Event event) throws IOException {
+    public void handle(@NonNull S3Event event) throws Exception {
         Preconditions.checkNotNull(connection);
         Preconditions.checkState(connection.isConnected());
         try {
+            receivedCount++;
             if (event.getName().getType() != S3EventType.ObjectCreated) {
                 DefaultLogger.info(String.format("Received event: [%s]", event.getName().toString()));
-                return;
+                throw new InvalidMessageError(event.getMessageId(), String.format("Event type not handled. [type=%s]",
+                        event.getName().getType().name()));
             }
             if (event.getData().getSize() <= 0) {
                 DefaultLogger.info(String.format("Received event with Zero size: [key=%s]", event.getData().getKey()));
             }
+
             S3Client client = connection.client();
             if (!S3Helper.exists(client, event.getBucket().getName(), event.getData().getKey())) {
                 DefaultLogger.warn(String.format("Source file not found. [bucket=%s][key=%s]",
@@ -90,9 +96,14 @@ public class S3EventTestHandler implements S3EventHandler {
                         event.getBucket().getName(), event.getData().getKey()));
             }
             received.put(event.getData().getKey(), true);
+            processedCount++;
             DefaultLogger.info(String.format("Downloaded file from S3. [path=%s]", output.getAbsolutePath()));
+            DefaultLogger.info(String.format("Event counts = [received=%d][processed=%d], [size=%d]",
+                    receivedCount, processedCount, received.size()));
+        } catch (InvalidMessageError | MessageProcessingError me) {
+            throw me;
         } catch (Throwable t) {
-            throw new IOException(t);
+            throw new Exception(t);
         }
     }
 }

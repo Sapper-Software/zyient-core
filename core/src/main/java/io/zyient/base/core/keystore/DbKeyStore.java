@@ -18,13 +18,14 @@ package io.zyient.base.core.keystore;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.common.utils.CypherUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.db.JdbcConnection;
+import io.zyient.base.core.keystore.settings.DbKeyStoreSettings;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -42,8 +43,6 @@ public class DbKeyStore extends KeyStore {
     public static final String DB_COLUMN_NAME = "key_name";
     public static final String DB_COLUMN_VALUE = "key_value";
     public static final String DB_COLUMN_TIMESTAMP = "key_timestamp";
-    public static final String CONFIG_NAME = "name";
-    public static final String CONFIG_IV_SPEC = "iv";
 
     private static class KeyRecord {
         private String namespace;
@@ -53,49 +52,44 @@ public class DbKeyStore extends KeyStore {
         private boolean isNew;
     }
 
-    private String name;
-    private String iv;
     private JdbcConnection connection;
-    private HierarchicalConfiguration<ImmutableNode> config;
     private String passwdHash;
-    private BaseEnv<?> env;
     private long syncTimestamp;
     private final Map<String, KeyRecord> records = new HashMap<>();
+
+
+    public DbKeyStore() {
+        super(DbKeyStoreSettings.class);
+    }
 
     @Override
     public void init(@NonNull HierarchicalConfiguration<ImmutableNode> configNode,
                      @NonNull String password,
                      @NonNull BaseEnv<?> env) throws ConfigurationException {
+        Preconditions.checkNotNull(settings());
         try {
+            DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
             String pwd = password;
-            config = configNode.configurationAt(__CONFIG_PATH);
-            Preconditions.checkNotNull(config);
-            name = config.getString(CONFIG_NAME);
-            ConfigReader.checkStringValue(name, getClass(), CONFIG_NAME);
-            password = CypherUtils.checkPassword(password, name);
+            password = CypherUtils.checkPassword(password, settings.getName());
             withPassword(password);
 
             HierarchicalConfiguration<ImmutableNode> dbc
-                    = config.configurationAt(ConnectionManager.Constants.CONFIG_CONNECTION_LIST);
+                    = config().configurationAt(ConnectionManager.Constants.CONFIG_CONNECTION_LIST);
             connection = (JdbcConnection) new JdbcConnection()
                     .withPassword(pwd);
             connection
                     .init(dbc, env)
                     .connect();
 
-            iv = config.getString(CONFIG_IV_SPEC);
-            ConfigReader.checkStringValue(iv, getClass(), CONFIG_IV_SPEC);
-            iv = CypherUtils.formatIvString(iv);
             passwdHash = ChecksumUtils.generateHash(password);
             checkDbSetup();
-            String passwd = read(DEFAULT_KEY, password);
+            String passwd = read(KeyStoreSettings.DEFAULT_KEY, password);
             if (passwd == null) {
-                save(DEFAULT_KEY, password, password);
+                save(KeyStoreSettings.DEFAULT_KEY, password, password);
                 flush(password);
             } else if (passwd.compareTo(password) != 0) {
                 throw new Exception("Invalid password specified...");
             }
-            this.env = env;
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
@@ -140,6 +134,7 @@ public class DbKeyStore extends KeyStore {
     }
 
     private void fetchRecords(Connection connection) throws Exception {
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
         records.clear();
         String sql = String.format("SELECT %s, %s, %s, %s FROM %s WHERE %s = ?",
                 DB_COLUMN_NAMESPACE,
@@ -149,7 +144,7 @@ public class DbKeyStore extends KeyStore {
                 DB_TABLE_NAME,
                 DB_COLUMN_NAMESPACE);
         try (PreparedStatement pstmnt = connection.prepareStatement(sql)) {
-            pstmnt.setString(1, name);
+            pstmnt.setString(1, settings.getName());
             try (ResultSet rs = pstmnt.executeQuery()) {
                 while (rs.next()) {
                     KeyRecord record = new KeyRecord();
@@ -172,6 +167,7 @@ public class DbKeyStore extends KeyStore {
                      @NonNull String password) throws Exception {
         Preconditions.checkState(connection != null);
         Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
@@ -181,12 +177,12 @@ public class DbKeyStore extends KeyStore {
                 record = records.get(name);
             } else {
                 record = new KeyRecord();
-                record.namespace = this.name;
+                record.namespace = settings.getName();
                 record.name = name;
                 record.isNew = true;
                 records.put(name, record);
             }
-            record.value = CypherUtils.encryptAsString(value, password, iv);
+            record.value = CypherUtils.encryptAsString(value, password, iv());
             record.timestamp = System.nanoTime();
         }
     }
@@ -196,12 +192,13 @@ public class DbKeyStore extends KeyStore {
                        @NonNull String password) throws Exception {
         Preconditions.checkState(connection != null);
         Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
         if (records.containsKey(name)) {
             KeyRecord record = records.get(name);
-            byte[] data = CypherUtils.decrypt(record.value, password, iv);
+            byte[] data = CypherUtils.decrypt(record.value, password, iv());
             return new String(data, StandardCharsets.UTF_8);
         }
         return null;
@@ -212,6 +209,7 @@ public class DbKeyStore extends KeyStore {
                        @NonNull String password) throws Exception {
         Preconditions.checkState(connection != null);
         Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
@@ -224,13 +222,14 @@ public class DbKeyStore extends KeyStore {
                             DB_COLUMN_NAMESPACE,
                             DB_COLUMN_NAME);
                     try (PreparedStatement pstmnt = connection.prepareStatement(sql)) {
-                        pstmnt.setString(1, this.name);
+                        pstmnt.setString(1, settings.getName());
                         pstmnt.setString(2, name);
                         int r = pstmnt.executeUpdate();
                         if (r == 0) {
-                            DefaultLogger.warn(String.format("[%s] Specified key not found. [key=%s]", this.name, name));
+                            DefaultLogger.warn(String.format("[%s] Specified key not found. [key=%s]",
+                                    settings.getName(), name));
                         } else {
-                            DefaultLogger.info(String.format("[%s] Deleted key. [key=%s]", this.name, name));
+                            DefaultLogger.info(String.format("[%s] Deleted key. [key=%s]", settings.getName(), name));
                         }
                     }
                 }
@@ -242,6 +241,7 @@ public class DbKeyStore extends KeyStore {
     public void delete(@NonNull String password) throws Exception {
         Preconditions.checkState(connection != null);
         Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
@@ -252,9 +252,9 @@ public class DbKeyStore extends KeyStore {
                         DB_COLUMN_NAMESPACE
                 );
                 try (PreparedStatement pstmnt = connection.prepareStatement(sql)) {
-                    pstmnt.setString(1, this.name);
+                    pstmnt.setString(1, settings.getName());
                     int r = pstmnt.executeUpdate();
-                    DefaultLogger.warn(String.format("[%s] Deleted all keys. [count=%d]", name, r));
+                    DefaultLogger.warn(String.format("[%s] Deleted all keys. [count=%d]", settings.getName(), r));
                 }
             }
             records.clear();
@@ -265,6 +265,7 @@ public class DbKeyStore extends KeyStore {
     public String flush(@NonNull String password) throws Exception {
         Preconditions.checkState(connection != null);
         Preconditions.checkState(!Strings.isNullOrEmpty(passwdHash));
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
 
         String hash = ChecksumUtils.generateHash(password);
         Preconditions.checkArgument(hash.equals(passwdHash));
@@ -283,52 +284,54 @@ public class DbKeyStore extends KeyStore {
                 }
             }
             syncTimestamp = System.nanoTime();
-            return name;
+            return settings.getName();
         }
     }
 
     private void insertKey(KeyRecord record, Connection connection) throws Exception {
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
         String sql = String.format("INSERT INTO %s (%s, %s, %s, %s) VALUES (?, ?, ?, ?)",
                 DB_TABLE_NAME,
                 DB_COLUMN_NAMESPACE,
                 DB_COLUMN_NAME,
                 DB_COLUMN_VALUE,
                 DB_COLUMN_TIMESTAMP);
-        DefaultLogger.debug(String.format("[%s] Add KEY SQL [%s]", name, sql));
+        DefaultLogger.debug(String.format("[%s] Add KEY SQL [%s]", settings.getName(), sql));
         try (PreparedStatement pstmnt = connection.prepareStatement(sql)) {
-            pstmnt.setString(1, this.name);
+            pstmnt.setString(1, settings.getName());
             pstmnt.setString(2, record.name);
             pstmnt.setString(3, record.value);
             pstmnt.setLong(4, record.timestamp);
 
             int r = pstmnt.executeUpdate();
             if (r != 0) {
-                DefaultLogger.info(String.format("[%s] Inserted new key. [key=%s]", name, record.name));
+                DefaultLogger.info(String.format("[%s] Inserted new key. [key=%s]", settings.getName(), record.name));
             } else {
-                DefaultLogger.warn(String.format("[%s] Insert returned zero. [key=%s]", name, record.name));
+                DefaultLogger.warn(String.format("[%s] Insert returned zero. [key=%s]", settings.getName(), record.name));
             }
         }
     }
 
     private void updateKey(KeyRecord record, Connection connection) throws Exception {
+        DbKeyStoreSettings settings = (DbKeyStoreSettings) settings();
         String sql = String.format("UPDATE %s SET %s = ?, %s = ? WHERE %s = ? AND %s = ?",
                 DB_TABLE_NAME,
                 DB_COLUMN_VALUE,
                 DB_COLUMN_TIMESTAMP,
                 DB_COLUMN_NAMESPACE,
                 DB_COLUMN_NAME);
-        DefaultLogger.debug(String.format("[%s] Update KEY SQL [%s]", name, sql));
+        DefaultLogger.debug(String.format("[%s] Update KEY SQL [%s]", settings.getName(), sql));
         try (PreparedStatement pstmnt = connection.prepareStatement(sql)) {
             pstmnt.setString(1, record.value);
             pstmnt.setLong(2, record.timestamp);
-            pstmnt.setString(3, name);
+            pstmnt.setString(3, settings.getName());
             pstmnt.setString(4, record.name);
 
             int r = pstmnt.executeUpdate();
             if (r != 0) {
-                DefaultLogger.info(String.format("[%s] Updated key. [key=%s]", name, record.name));
+                DefaultLogger.info(String.format("[%s] Updated key. [key=%s]", settings.getName(), record.name));
             } else {
-                DefaultLogger.warn(String.format("[%s] Update returned zero. [key=%s]", name, record.name));
+                DefaultLogger.warn(String.format("[%s] Update returned zero. [key=%s]", settings.getName(), record.name));
             }
         }
     }

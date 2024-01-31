@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.s3;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.core.connections.aws.AwsS3Connection;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.model.Inode;
 import io.zyient.core.filesystem.model.InodeType;
@@ -25,7 +26,6 @@ import io.zyient.core.filesystem.model.PathInfo;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
-import software.amazon.awssdk.services.s3.S3Client;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +39,7 @@ import java.util.Map;
 public class S3PathInfo extends PathInfo {
     public static final String CONFIG_KEY_BUCKET = "bucket";
 
-    private final S3Client client;
+    private final AwsS3Connection connection;
     private final String bucket;
     private File temp;
 
@@ -48,7 +48,7 @@ public class S3PathInfo extends PathInfo {
                       String bucket) {
         super(fs, node);
         Preconditions.checkArgument(fs instanceof S3FileSystem);
-        this.client = ((S3FileSystem) fs).client();
+        this.connection = ((S3FileSystem) fs).connection();
         this.bucket = bucket;
     }
 
@@ -59,7 +59,7 @@ public class S3PathInfo extends PathInfo {
                          @NonNull InodeType type) {
         super(fs, path, domain);
         Preconditions.checkArgument(fs instanceof S3FileSystem);
-        this.client = ((S3FileSystem) fs).client();
+        this.connection = ((S3FileSystem) fs).connection();
         this.bucket = bucket;
         directory = (type == InodeType.Directory);
     }
@@ -68,7 +68,7 @@ public class S3PathInfo extends PathInfo {
                          @NonNull Map<String, String> config) {
         super(fs, config);
         Preconditions.checkArgument(fs instanceof S3FileSystem);
-        this.client = ((S3FileSystem) fs).client();
+        this.connection = ((S3FileSystem) fs).connection();
         bucket = config.get(CONFIG_KEY_BUCKET);
         Preconditions.checkArgument(!Strings.isNullOrEmpty(bucket));
     }
