@@ -88,7 +88,11 @@ public class AWSKeyStore extends KeyStore {
             client = SecretsManagerClient.builder()
                     .region(region)
                     .build();
+
             bucket = String.format("%s/%s", env.name(), settings.getName());
+            if (settings.getExcludeEnv()) {
+                bucket = settings.getName();
+            }
             fetch();
             Key key = keys.get(KeyStoreSettings.DEFAULT_KEY);
             password = key.getValue();
@@ -252,7 +256,7 @@ public class AWSKeyStore extends KeyStore {
                     }
                 }
                 String value = JSONUtils.asString(keys);
-                UpdateSecretRequest  secretRequest = UpdateSecretRequest.builder()
+                UpdateSecretRequest secretRequest = UpdateSecretRequest.builder()
                         .secretId(bucket)
                         .description(String.format("[keyStore=%s] Saved secret. [name=%s]", settings.getName(), bucket))
                         .secretString(value)

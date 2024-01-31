@@ -26,6 +26,7 @@ import io.zyient.core.mapping.model.mapping.CustomMappedElement;
 import io.zyient.core.mapping.model.mapping.MappedElement;
 import io.zyient.core.mapping.model.mapping.MappingType;
 import io.zyient.core.mapping.model.mapping.RegexMappedElement;
+import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.mapping.transformers.RegexTransformer;
 import io.zyient.core.mapping.transformers.Transformer;
 import lombok.Getter;
@@ -54,8 +55,9 @@ public class MapTransformer<T> {
 
     private final Class<? extends T> type;
     private final MappingSettings settings;
-    private final Map<String, MapNode> mapper = new HashMap<>();
+    private final Map<String, Map<Integer, MapNode>> mapper = new HashMap<>();
     private final Map<String, Transformer<?>> transformers = new HashMap<>();
+
 
     public MapTransformer(@NonNull Class<? extends T> type, @NonNull MappingSettings settings) {
         this.type = type;
@@ -125,13 +127,15 @@ public class MapTransformer<T> {
     }
 
     public Map<String, Object> transform(@NonNull Map<String, Object> source,
-                                         @NonNull Class<? extends T> entityType) throws Exception {
+                                         @NonNull Class<? extends T> entityType, @NonNull Context context) throws Exception {
         Preconditions.checkState(!mapper.isEmpty());
         Map<String, Object> data = new HashMap<>();
         JSONUtils.checkAndAddType(data, entityType);
         for (String key : mapper.keySet()) {
-            MapNode node = mapper.get(key);
-            transform(source, node, data);
+            Map<Integer, MapNode> nodes = mapper.get(key);
+            for (Integer seq : nodes.keySet()) {
+                transform(source, nodes.get(seq), data, context.params);
+            }
         }
         return data;
     }
@@ -139,9 +143,11 @@ public class MapTransformer<T> {
     @SuppressWarnings("unchecked")
     private void transform(Map<String, Object> source,
                            MapNode node,
-                           Map<String, Object> data) throws Exception {
+                           Map<String, Object> data, Map<String, Object> contextParam) throws Exception {
         if (source.containsKey(node.name)) {
             findValueFromSourceOrContext(source, node, data);
+        } else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
+            findValueFromSourceOrContext(contextParam, node, data);
         } else {
             if (!node.nullable) {
                 throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
@@ -149,14 +155,18 @@ public class MapTransformer<T> {
         }
     }
 
-    private void findValueFromSourceOrContext(Map<String, Object> sourceOrContext,
+    private void findValueFromSourceOrContext(Map<String, Object> source,
                                               MapNode node,
                                               Map<String, Object> data) throws Exception {
         Object value = null;
         if (node.mappingType == MappingType.ConstField || node.mappingType == MappingType.ConstProperty) {
             value = node.name;
-        } else if (sourceOrContext.containsKey(node.name)) {
-            value = sourceOrContext.get(node.name);
+        } else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
+            Context dummyContext = new Context();
+            dummyContext.setParams(source);
+            value = MappingReflectionHelper.getContextProperty(node.name, dummyContext);
+        } else if (source.containsKey(node.name)) {
+            value = source.get(node.name);
             if (value == null) {
                 if (!node.nullable) {
                     throw new Exception(String.format("Field is not nullable. [field=%s]", node.targetPath));
@@ -183,9 +193,7 @@ public class MapTransformer<T> {
                 }
                 if (node.nodes != null && !node.nodes.isEmpty()) {
                     for (String key : node.nodes.keySet()) {
-                        Context context = new Context();
-                        context.setParams(sourceOrContext);
-                        transform((Map<String, Object>) value, node.nodes.get(key), data, sourceOrContext);
+                        transform((Map<String, Object>) value, node.nodes.get(key), data, source);
                     }
                 }
             }
@@ -227,43 +235,54 @@ public class MapTransformer<T> {
         return current;
     }
 
-    private MapNode findNode(MappedElement element,
-                             PropertyDef property) throws Exception {
-        String source = element.getSourcePath();
-        String[] parts = null;
-        if (element.getMappingType() == MappingType.ConstField
-                || element.getMappingType() == MappingType.ConstProperty) {
-            parts = new String[]{source};
-        } else {
-            parts = source.split("\\.");
-        }
-        if (parts.length == 1) {
-            String sourceKey = String.format("%s%d", parts[0], element.getSequence());
-            if (mapper.containsKey(sourceKey)) {
-                return mapper.get(sourceKey);
-            } else {
-                MapNode node = new MapNode();
-                node.name = parts[0];
-                node.targetPath = element.getTargetPath();
-                node.type = property.field().getType();
-                node.nullable = element.isNullable();
-                mapper.put(sourceKey, node);
-                node.mappingType = element.getMappingType();
-                mapper.put(parts[0], node);
-                return node;
+    private MapNode getOrCreate(MappedElement element, String sourceKey, Class<?> cls) {
+        Map<Integer, MapNode> seqMap = null;
+        if (mapper.containsKey(sourceKey)) {
+            seqMap = mapper.get(sourceKey);
+            MapNode existingNode = seqMap.get(element.getSequence());
+            if (existingNode != null) {
+                return seqMap.get(element.getSequence());
             }
+        }
+        if (seqMap == null) {
+            seqMap = new HashMap<>();
+        }
+        MapNode node = new MapNode();
+        node.name = sourceKey;
+        node.targetPath = element.getTargetPath();
+        node.type = cls;
+        node.nullable = element.isNullable();
+        node.mappingType = element.getMappingType();
+        seqMap.put(element.getSequence(), node);
+        mapper.put(sourceKey, seqMap);
+        return node;
+
+    }
+
+    private MapNode findNode(MappedElement element, PropertyDef property) throws Exception {
+        String source = element.getSourcePath();
+        String[] parts = source.split("\\.");
+        if (parts.length == 1) {
+            String sourceKey = parts[0];
+            return getOrCreate(element, sourceKey, property.field().getType());
+
         } else {
             MapNode node = null;
             for (int ii = 0; ii < parts.length; ii++) {
-
                 String name = parts[ii];
                 if (node == null) {
-                    if (mapper.containsKey(name)) {
-                        node = mapper.get(name);
+                    if (mapper.containsKey(name) && mapper.get(name).get(element.getSequence()) != null) {
+                        node = mapper.get(name).get(element.getSequence());
                     } else {
                         node = new MapNode();
                         node.name = name;
-                        mapper.put(name, node);
+                        if (mapper.containsKey(name)) {
+                            mapper.get(name).put(element.getSequence(), node);
+                        } else {
+                            Map<Integer, MapNode> seqMap = new HashMap<>();
+                            seqMap.put(element.getSequence(), node);
+                            mapper.put(name, seqMap);
+                        }
                     }
                 } else {
                     if (ii == parts.length - 1) {
@@ -271,26 +290,22 @@ public class MapTransformer<T> {
                             node = node.nodes.get(name);
                             if (node.type != null && property.field() != null) {
                                 if (node.type.equals(property.field().getType())) {
-                                    throw new Exception(String.format("Type mis-match: [current=%s][specified=%s]",
-                                            node.type.getCanonicalName(),
-                                            property.field().getType().getCanonicalName()));
+                                    throw new Exception(String.format("Type mis-match: [current=%s][specified=%s]", node.type.getCanonicalName(), property.field().getType().getCanonicalName()));
                                 }
                             } else {
-                                if (property.field() != null)
-                                    node.type = property.field().getType();
+                                if (property.field() != null) node.type = property.field().getType();
                                 node.targetPath = element.getTargetPath();
                             }
                         } else {
                             MapNode nnode = new MapNode();
-                            if (property.field() != null)
-                                nnode.type = property.field().getType();
+                            if (property.field() != null) nnode.type = property.field().getType();
                             nnode.name = name;
                             nnode.targetPath = element.getTargetPath();
                             nnode.nullable = element.isNullable();
-                            nnode.mappingType = element.getMappingType();
                             if (node.nodes == null) {
                                 node.nodes = new HashMap<>();
                             }
+                            node.mappingType = element.getMappingType();
                             node.nodes.put(name, nnode);
                             node = nnode;
                         }
@@ -312,4 +327,5 @@ public class MapTransformer<T> {
             return node;
         }
     }
+
 }

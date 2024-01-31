@@ -262,7 +262,7 @@ public abstract class Mapping<T> {
                 return response;
             }
         }
-        Map<String, Object> converted = mapTransformer.transform(source, context, entityType);
+        Map<String, Object> converted = mapTransformer.transform(source, entityType, context);
         T entity = mapper.convertValue(converted, entityType);
         response.setEntity(entity);
 

@@ -29,11 +29,8 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbookFactory;
 
-import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,18 +48,16 @@ public class ExcelInputReader extends InputReader {
     public ReadCursor open() throws IOException {
         try {
             stream = new FileInputStream(contentInfo().path());
-            if(settings().isPasswordProtected()) {
-                String password = fetchPassword(settings().getDecryptionSecretName());
-                XSSFWorkbookFactory xssfWorkbookFactory = new XSSFWorkbookFactory();
-                workbook = xssfWorkbookFactory.create(stream, password);
-            } else {
-                workbook = new XSSFWorkbook(stream);
-            }
+            workbook = createWorkbook(stream);
             return new ExcelReadCursor(this, settings().getReadBatchSize());
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new IOException(ex);
         }
+    }
+
+    protected Workbook createWorkbook(FileInputStream stream) throws IOException {
+        return new XSSFWorkbook(stream);
     }
 
     @Override
@@ -182,7 +177,7 @@ public class ExcelInputReader extends InputReader {
     private boolean isDateValid(String dateStr) {
         dateStr = dateStr.replace("\\", "");
         String[] dateFormats = {
-                "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yyyy", "yyyy/MM/dd", "M/dd/yy", "MM/dd/yy", "MM/d/yy", "M/d/yy","M/d/yyyy"
+                "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yyyy", "yyyy/MM/dd", "M/dd/yy", "MM/dd/yy", "MM/d/yy", "M/d/yy", "M/d/yyyy"
         };
         for (String format : dateFormats) {
             if (format.equalsIgnoreCase(dateStr)) {
@@ -217,13 +212,5 @@ public class ExcelInputReader extends InputReader {
         }
     }
 
-    private String fetchPassword(String filePath) throws IOException {
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                return line;
-            }
-        }
-        throw new IOException("Password not found in the file.");
-    }
+
 }

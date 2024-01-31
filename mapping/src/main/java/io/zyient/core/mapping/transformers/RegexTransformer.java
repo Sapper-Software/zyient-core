@@ -19,8 +19,8 @@ package io.zyient.core.mapping.transformers;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.core.mapping.mapper.MappingSettings;
-import io.zyient.core.mapping.model.MappedElement;
-import io.zyient.core.mapping.model.RegexMappedElement;
+import io.zyient.core.mapping.model.mapping.MappedElement;
+import io.zyient.core.mapping.model.mapping.RegexMappedElement;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -29,7 +29,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.SerializationException;
 
-import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

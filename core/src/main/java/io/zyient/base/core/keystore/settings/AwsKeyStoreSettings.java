@@ -26,6 +26,7 @@ public class AwsKeyStoreSettings extends KeyStoreSettings {
     public static final String CONFIG_REGION = "region";
     public static final String CONFIG_NAME = "name";
     public static final String CONFIG_CACHE_TIMEOUT = "timeout";
+    public static final String CONFIG_EXCLUDE_ENV = "excludeEnv";
     private static final long CACHE_TIMEOUT = 30 * 60 * 1000; // 30mins
 
     @Config(name = CONFIG_NAME)
@@ -34,4 +35,6 @@ public class AwsKeyStoreSettings extends KeyStoreSettings {
     private String region;
     @Config(name = CONFIG_CACHE_TIMEOUT, required = false, type = Long.class)
     private long cacheTimeout = CACHE_TIMEOUT;
+    @Config(name = CONFIG_EXCLUDE_ENV, required = false, type = Boolean.class)
+    private Boolean excludeEnv;
 }
