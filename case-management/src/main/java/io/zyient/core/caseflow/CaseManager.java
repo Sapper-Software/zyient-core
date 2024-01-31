@@ -710,8 +710,9 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         id.stringKey(), entityType.getCanonicalName()));
             }
             if (caseObject.getCaseState().getState() == state) {
-                throw new Exception(String.format("Case already in state. [id=%s][state=%s]",
+                DefaultLogger.info(String.format("Case already in state. [id=%s][state=%s]",
                         id.stringKey(), state.name()));
+               return caseObject;
             }
             authorization.authorize(caseObject, EStandardAction.UpdateState.action(), modifier, context);
             P current = caseObject.getCaseState().getState();
