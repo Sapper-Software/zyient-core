@@ -73,6 +73,5 @@ public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Curso
     @Override
     public void close() throws IOException {
         results.close();
-        session.close();
     }
 }

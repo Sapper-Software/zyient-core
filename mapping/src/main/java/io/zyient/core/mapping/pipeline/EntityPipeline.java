@@ -78,7 +78,7 @@ public class EntityPipeline<K extends IKey, E extends IEntity<K>> extends Persis
             response.setStatus(ret);
         }
         if (response.getStatus().getStatus() != StatusCode.IgnoreRecord) {
-            beingTransaction();
+            //beingTransaction();
             try {
                 E entity = save(r.getEntity(), context);
                 ValidationExceptions errors = response.getStatus().getErrors();
@@ -88,12 +88,12 @@ public class EntityPipeline<K extends IKey, E extends IEntity<K>> extends Persis
                     }
                     save(entity, errors, context);
                 }
-                commit();
+                //commit();
             } catch (ValidationException | ValidationExceptions ve) {
-                rollback();
+                //rollback();
                 throw ve;
             } catch (Throwable t) {
-                rollback();
+                //rollback();
                 throw new Exception(t);
             }
         } else if (DefaultLogger.isTraceEnabled()) {
