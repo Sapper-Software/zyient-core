@@ -62,7 +62,6 @@ publishing {
 }
 
 
-
 apply plugin: 'maven-publish'
 subprojects {
 
