@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.loggers;
+package io.zyient.base.core.auditing.readers;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
-import io.zyient.base.core.auditing.*;
-import io.zyient.base.core.auditing.writers.IAuditWriter;
+import io.zyient.base.core.auditing.AuditRecord;
+import io.zyient.base.core.auditing.IAuditSerDe;
+import io.zyient.base.core.auditing.JsonAuditRecord;
+import io.zyient.base.core.auditing.JsonAuditSerDe;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(
-        use = JsonTypeInfo.Id.CLASS
-)
-public class AuditLoggerSettings extends Settings {
-    @Config(name = "name")
+public class AuditReaderSettings extends Settings {
+    @Config(name = "name", required = false)
     private String name;
-    @Config(name = "writer", type = Class.class)
-    private Class<? extends IAuditWriter<?>> writer;
     @Config(name = "serializer", required = false, type = Class.class)
     private Class<? extends IAuditSerDe<?>> serializer = JsonAuditSerDe.class;
     @Config(name = "encryption.enabled", required = false, type = Boolean.class)
@@ -42,4 +38,6 @@ public class AuditLoggerSettings extends Settings {
     private String encryptionKey;
     @Config(name = "recordType", required = false, type = Class.class)
     private Class<? extends AuditRecord<?>> recordType = JsonAuditRecord.class;
+    @Config(name = "pageSize", required = false, type = Integer.class)
+    private int pageSize = 128;
 }

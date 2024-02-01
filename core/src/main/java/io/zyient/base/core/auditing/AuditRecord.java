@@ -48,6 +48,9 @@ public abstract class AuditRecord<R> implements IEntity<StringKey> {
     private Timestamp dbTimestamp;
     @Embedded
     private ActionedBy actor;
+    @Column(name = "data_type")
+    private String recordType;
+
 
     protected AuditRecord() {
         id = new StringKey(UUID.randomUUID().toString());

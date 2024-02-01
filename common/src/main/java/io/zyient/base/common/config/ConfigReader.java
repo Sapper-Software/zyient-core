@@ -612,4 +612,14 @@ public class ConfigReader {
                             caller.getSimpleName(), name));
         }
     }
+
+    public static void checkNotNull(Object value,
+                                    @NonNull Class<?> caller,
+                                    @NonNull String name) throws ConfigurationException {
+        if (value == null) {
+            throw new ConfigurationException(
+                    String.format("[%s] Missing configuration [name=%s]",
+                            caller.getSimpleName(), name));
+        }
+    }
 }

@@ -33,6 +33,7 @@ public abstract class Cursor<K extends IKey, E extends IEntity<K>> implements Cl
     private int pageSize = 256;
     @Setter(AccessLevel.NONE)
     private int currentPage = 0;
+    @Setter(AccessLevel.NONE)
     private boolean EOF = false;
 
     protected Cursor(int currentPage) {

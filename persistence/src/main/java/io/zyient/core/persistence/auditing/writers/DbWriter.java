@@ -16,11 +16,13 @@
 
 package io.zyient.core.persistence.auditing.writers;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.auditing.IAuditWriter;
+import io.zyient.base.core.auditing.writers.IAuditWriter;
 import io.zyient.base.core.auditing.JsonAuditRecord;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.persistence.impl.rdbms.HibernateConnection;
@@ -37,6 +39,7 @@ public class DbWriter implements IAuditWriter<JsonAuditRecord> {
     private final ProcessorState state = new ProcessorState();
     private HibernateConnection connection;
     private Class<? extends JsonAuditRecord> recordType;
+    private String name;
     private DbWriterSettings settings;
     private long committedTimestamp = -1;
     private Session currentSession;
@@ -47,6 +50,7 @@ public class DbWriter implements IAuditWriter<JsonAuditRecord> {
     public IAuditWriter<JsonAuditRecord> init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                               @NonNull BaseEnv<?> env,
                                               @NonNull Class<? extends JsonAuditRecord> recordType) throws ConfigurationException {
+        Preconditions.checkState(!Strings.isNullOrEmpty(name));
         try {
             ConfigReader reader = new ConfigReader(config, DbWriterSettings.class);
             reader.read();
@@ -76,6 +80,17 @@ public class DbWriter implements IAuditWriter<JsonAuditRecord> {
             currentTx = currentSession.beginTransaction();
         }
         currentSession.persist(record);
+    }
+
+    @Override
+    public IAuditWriter<JsonAuditRecord> name(@NonNull String name) {
+        this.name = name;
+        return this;
+    }
+
+    @Override
+    public String name() {
+        return name;
     }
 
     private void checkCommit() throws Exception {

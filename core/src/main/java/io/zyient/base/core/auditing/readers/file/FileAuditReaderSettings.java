@@ -14,22 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.writers.file;
+package io.zyient.base.core.auditing.readers.file;
 
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import io.zyient.base.common.config.units.SpaceUnitValue;
-import io.zyient.base.common.config.units.SpaceValueParser;
+import io.zyient.base.core.auditing.readers.AuditReaderSettings;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FileLogWriterSettings extends Settings {
-    @Config(name = "name")
-    private String name;
+public class FileAuditReaderSettings extends AuditReaderSettings {
     @Config(name = "directory")
     private String dir;
-    @Config(name = "rolloverSize", required = false, parser = SpaceValueParser.class)
-    private SpaceUnitValue rolloverSize = new SpaceUnitValue(100, SpaceUnitValue.SpaceUnit.MEGABYTES);
 }
