@@ -24,8 +24,7 @@ repositories {
 }
 
 group 'io.zyient.framework'
-var versionTag = '2.14-SNAPSHOT'
-version = versionTag
+version '3.0.2-SNAPSHOT'
 
 configurations.all {
     exclude module: "logback-classic"
@@ -73,7 +72,7 @@ subprojects {
     apply plugin: 'idea'
 
     group 'io.zyient.framework'
-    version = versionTag
+    version '3.0.2-SNAPSHOT'
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
