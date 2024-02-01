@@ -18,7 +18,7 @@ package io.zyient.core.mapping.mapper;
 
 import io.zyient.core.mapping.annotations.EntityRef;
 import io.zyient.core.mapping.model.Holding;
-import io.zyient.core.mapping.model.MappedResponse;
+import io.zyient.core.mapping.model.mapping.MappedResponse;
 
 import java.util.Map;
 

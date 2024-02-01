@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.beans.UnknownPropertyDef;
@@ -26,6 +27,7 @@ import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import org.junit.jupiter.api.Test;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -40,7 +42,8 @@ class MapTransformerTest {
         try {
             ObjectMapper mapper = new ObjectMapper();
             MapTransformer<Constants.Target> transformer = new MapTransformer<>(Constants.Target.class, new MappingSettings());
-            transformer.add(new MappedElement("id", "sourceId", false, String.class, null));
+            MappedElement mp = new MappedElement("id", "sourceId", false, String.class, null);
+            transformer.add(mp);
             transformer.add(new MappedElement("nested.date", "created", false, Date.class, null));
             transformer.add(new MappedElement("nested.nested.id", "inner.id", false, String.class, null));
             transformer.add(new MappedElement("type", "inner.etype", false, Constants.TestEnum.class, null));
@@ -52,7 +55,9 @@ class MapTransformerTest {
             String json = JSONUtils.asString(source);
             Object data = mapper.readValue(json, Object.class);
             assertInstanceOf(Map.class, data);
-            Map<String, Object> output = transformer.transform((Map<String, Object>) data, Constants.Target.class);
+            Context context = new Context();
+            context.setParams(new HashMap<>());
+            Map<String, Object> output = transformer.transform((Map<String, Object>) data, Constants.Target.class, context);
             assertNotNull(output);
             Constants.Target target = mapper.convertValue(output, Constants.Target.class);
             assertNotNull(target);
