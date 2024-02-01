@@ -24,7 +24,8 @@ repositories {
 }
 
 group 'io.zyient.framework'
-version '2.10-SNAPSHOT'
+var versionTag = '2.14-SNAPSHOT'
+version = versionTag
 
 configurations.all {
     exclude module: "logback-classic"
@@ -62,7 +63,6 @@ publishing {
 }
 
 
-
 apply plugin: 'maven-publish'
 subprojects {
 
@@ -73,7 +73,7 @@ subprojects {
     apply plugin: 'idea'
 
     group 'io.zyient.framework'
-    version '2.10-SNAPSHOT'
+    version = versionTag
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
