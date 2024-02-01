@@ -19,16 +19,17 @@ package io.zyient.core.messaging.processing;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.EventProcessorMetrics;
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.Processor;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
 import io.zyient.base.core.utils.Timer;
 import io.zyient.core.messaging.*;
 import io.zyient.core.messaging.builders.MessageReceiverBuilder;
-import io.zyient.core.messaging.builders.MessageSenderBuilder;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -36,12 +37,14 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset, MO extends ReceiverOffset<?>> extends Processor<E, O> {
+    protected final Class<? extends MessagingProcessorSettings> settingsType;
     protected MessageReceiver<K, M> receiver;
     protected MessageSender<K, M> errorLogger;
     protected MessagingProcessorConfig receiverConfig;
-    protected final Class<? extends MessagingProcessorSettings> settingsType;
+    private boolean running = false;
 
     protected MessageProcessor(@NonNull Class<? extends ProcessingState<E, O>> stateType,
                                @NonNull Class<? extends MessagingProcessorSettings> settingsType) {
@@ -58,7 +61,6 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
     @Override
     @SuppressWarnings("unchecked")
     public Processor<E, O> init(@NonNull BaseEnv<?> env,
-                                @NonNull String name,
                                 @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 String path) throws ConfigurationException {
         HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
@@ -72,7 +74,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         receiverConfig.read();
         try {
             MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
-            super.init(settings, name, env);
+            super.init(settings, env);
             __lock().lock();
             try {
                 HierarchicalConfiguration<ImmutableNode> qConfig = receiverConfig
@@ -87,25 +89,17 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                         .getDeclaredConstructor(Class.class)
                         .newInstance(settings.getBuilderSettingsType());
                 receiver = builder.withEnv(env).build(qConfig);
-                if (settings.getErrorsBuilderType() != null) {
-                    HierarchicalConfiguration<ImmutableNode> eConfig = receiverConfig
-                            .config()
-                            .configurationAt(MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS);
-                    if (eConfig == null) {
-                        throw new ConfigurationException(
-                                String.format("Errors queue configuration not found. [path=%s]",
-                                        MessagingProcessorSettings.Constants.__CONFIG_PATH_ERRORS));
-                    }
-                    MessageSenderBuilder<K, M> errorBuilder = (MessageSenderBuilder<K, M>) settings.getErrorsBuilderType()
-                            .getDeclaredConstructor(Class.class)
-                            .newInstance(settings.getErrorsBuilderSettingsType());
-                    errorLogger = errorBuilder.withEnv(env).build(eConfig);
+                if (receiver.errors() != null) {
+                    errorLogger = receiver.errors();
                 }
 
                 postInit(settings);
                 updateState();
+                env.withProcessor(this);
 
-                return this;
+                EventProcessorMetrics metrics = new EventProcessorMetrics(getClass().getSimpleName(),
+                        settings.getName(), receiver.connection().name(), env);
+                return withMetrics(metrics);
             } finally {
                 __lock().unlock();
             }
@@ -126,6 +120,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         Preconditions.checkState(state.isAvailable());
         Preconditions.checkNotNull(env);
         try {
+            running = true;
             doRun(false);
         } catch (Throwable t) {
             state.error(t);
@@ -138,6 +133,8 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
                 DefaultLogger.error(LOG, "Message Processor terminated with error", t);
                 DefaultLogger.stacktrace(t);
             }
+        } finally {
+            running = false;
         }
     }
 
@@ -152,11 +149,12 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
             if (!state.isPaused()) {
                 __lock().lock();
                 try {
-                    MessageProcessorState<E, O, MO> processorState = (MessageProcessorState<E, O, MO>) stateManager().processingState();
+                    MessageProcessorState<E, O, MO> processorState
+                            = (MessageProcessorState<E, O, MO>) stateManager().processingState(name());
                     MO pOffset = processorState.getMessageOffset();
                     OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
                     MO rOffset = offsetState.getOffset();
-                    if (pOffset != null && pOffset.compareTo(rOffset) != 0) {
+                    if (pOffset != null && rOffset != null && pOffset.compareTo(rOffset) != 0) {
                         receiver.seek(pOffset, null);
                     }
                     List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout().normalized());
@@ -185,7 +183,7 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
             }
             if (sleep) {
                 try {
-                    Thread.sleep(settings.getReceiveBatchTimeout().normalized());
+                    RunUtils.sleep(settings.getReceiveBatchTimeout().normalized());
                 } catch (InterruptedException e) {
                     LOG.info(String.format("[%s] Thread interrupted. [%s]",
                             name(), e.getLocalizedMessage()));
@@ -196,30 +194,58 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
 
     protected void handleBatch(@NonNull List<MessageObject<K, M>> batch,
                                @NonNull MessageProcessorState<E, O, MO> processorState) throws Exception {
-        for (MessageObject<K, M> message : batch) {
-            try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_EVENTS_TIME))) {
-                process(message, processorState);
-                metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_PROCESSED).increment();
-            } catch (InvalidMessageError | MessageProcessingError me) {
-                metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
-                DefaultLogger.stacktrace(me);
-                DefaultLogger.warn(LOG, me.getLocalizedMessage());
-                if (errorLogger != null) {
-                    errorLogger.send(message);
+        try {
+            for (MessageObject<K, M> message : batch) {
+                try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_EVENTS_TIME))) {
+                    process(message, processorState);
+                    metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_PROCESSED).increment();
+                    receiver.ack(message.key(), false);
+                } catch (InvalidMessageError | MessageProcessingError me) {
+                    metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_ERROR).increment();
+                    DefaultLogger.stacktrace(me);
+                    DefaultLogger.warn(LOG, me.getLocalizedMessage());
+                    receiver.ack(message.key(), false);
+                    sendError(message);
                 }
             }
+        } finally {
+            receiver.commit();
         }
+    }
+
+    public MessageObject<K, M> sendError(@NonNull MessageObject<K, M> message) throws Exception {
+        if (errorLogger != null) {
+            String id = message.id();
+            message.id(UUID.randomUUID().toString());
+            message.correlationId(id);
+            message.mode(MessageObject.MessageMode.Error);
+            errorLogger.send(message);
+        }
+        return message;
     }
 
     @Override
     public void close() throws IOException {
-        if (receiver != null) {
-            receiver.close();
-            receiver = null;
-        }
-        if (errorLogger != null) {
-            errorLogger.close();
-            errorLogger = null;
+        try {
+            if (running) {
+                state.setState(ProcessorState.EProcessorState.Stopped);
+                while (running) {
+                    RunUtils.sleep(500);
+                }
+            }
+            updateState();
+            if (receiver != null) {
+                receiver.close();
+                receiver = null;
+            }
+            if (errorLogger != null) {
+                errorLogger.close();
+                errorLogger = null;
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            DefaultLogger.error(String.format("[%s] ERROR [%s]", settings().getName(), ex.getLocalizedMessage()));
+            throw new IOException(ex);
         }
     }
 

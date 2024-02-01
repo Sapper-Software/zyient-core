@@ -55,6 +55,7 @@ public class AwsS3Connection implements Connection {
     private BaseEnv<?> env;
     @Getter(AccessLevel.NONE)
     private S3StorageAuth auth;
+    private long connectedTimestamp = 0;
 
     @Override
     public String name() {
@@ -129,22 +130,32 @@ public class AwsS3Connection implements Connection {
         return this;
     }
 
+    public S3Client client() throws ConnectionError {
+        Preconditions.checkState(state.isConnected());
+        synchronized (this) {
+            try {
+                long delta = System.currentTimeMillis() - connectedTimestamp;
+                if (delta > settings.getResetTimeout().normalized()) {
+                    client.close();
+                    reconnect();
+                }
+                connectedTimestamp = System.currentTimeMillis();
+                return client;
+            } catch (Exception ex) {
+                state.error(ex);
+                DefaultLogger.stacktrace(ex);
+                throw new ConnectionError(ex);
+            }
+        }
+    }
+
     @Override
     public Connection connect() throws ConnectionError {
         if (!state.isConnected()) {
             Preconditions.checkState(state.getState() == EConnectionState.Initialized);
             Preconditions.checkNotNull(settings);
             try {
-                Region region = Region.of(settings.getRegion());
-                S3ClientBuilder builder = S3Client.builder()
-                        .region(region);
-                if (!Strings.isNullOrEmpty(settings.getEndpoint())) {
-                    builder.endpointOverride(new URI(settings.getEndpoint()));
-                }
-                if (auth != null) {
-                    builder.credentialsProvider(auth.credentials());
-                }
-                client = builder.build();
+                reconnect();
                 state.setState(EConnectionState.Connected);
             } catch (Exception ex) {
                 state.error(ex);
@@ -153,6 +164,20 @@ public class AwsS3Connection implements Connection {
             }
         }
         return this;
+    }
+
+    private void reconnect() throws Exception {
+        Region region = Region.of(settings.getRegion());
+        S3ClientBuilder builder = S3Client.builder()
+                .region(region);
+        if (!Strings.isNullOrEmpty(settings.getEndpoint())) {
+            builder.endpointOverride(new URI(settings.getEndpoint()));
+        }
+        if (auth != null) {
+            builder.credentialsProvider(auth.credentials());
+        }
+        client = builder.build();
+        connectedTimestamp = System.currentTimeMillis();
     }
 
     @Override

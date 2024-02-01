@@ -68,7 +68,7 @@ public class Section extends Cell<String> {
         if (blocks == null) {
             blocks = new ArrayList<>();
         }
-        Cell<T> cell = type.getDeclaredConstructor(String.class, Integer.class)
+        Cell<T> cell = type.getDeclaredConstructor(String.class, int.class)
                 .newInstance(getId(), index);
         CollectionUtils.setAtIndex(blocks, index, cell);
         return cell;

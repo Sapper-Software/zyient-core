@@ -16,25 +16,26 @@
 
 package io.zyient.base.core.auditing;
 
+import io.zyient.base.core.keystore.KeyStore;
 import lombok.NonNull;
 import org.apache.commons.lang3.SerializationException;
 
 /**
  * Interface to implement entity record serializer/de-serializer.
- *
  */
-public interface IAuditSerDe {
+public interface IAuditSerDe<R> {
 
     /**
      * Serialize the specified entity record.
      *
      * @param record - Entity record.
-     * @param type   - Entity type being serialized.
      * @return - Serialized Byte array.
      * @throws SerializationException
      */
     @NonNull
-    String serialize(@NonNull Object record, @NonNull Class<?> type) throws SerializationException;
+    R serialize(@NonNull Object record,
+                @NonNull EncryptionInfo encryption,
+                KeyStore keyStore) throws SerializationException;
 
     /**
      * Read the entity record from the byte array passed.
@@ -44,6 +45,7 @@ public interface IAuditSerDe {
      * @return - De-serialized entity record.
      * @throws SerializationException
      */
-    @NonNull
-    <T> T deserialize(@NonNull String data, @NonNull Class<? extends T> type) throws SerializationException;
+    @NonNull <T> T deserialize(@NonNull R data, @NonNull Class<? extends T> type,
+                               @NonNull EncryptionInfo encryption,
+                               KeyStore keyStore) throws SerializationException;
 }

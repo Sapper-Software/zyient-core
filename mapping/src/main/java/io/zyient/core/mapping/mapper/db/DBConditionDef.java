@@ -121,14 +121,14 @@ public abstract class DBConditionDef implements IEntity<StringKey> {
         ValidationExceptions errors = null;
         errors = ValidationExceptions.checkValue(id.getKey(),
                 "Condition ID is null/empty", errors);
-        errors = ValidationExceptions.chack(type != null,
+        errors = ValidationExceptions.checkCondition(type != null,
                 "Condition type not set.", errors);
         if (type == ConditionType.Simple)
             errors = ValidationExceptions.checkValue(field,
                     "Missing required field: [field]", errors);
         errors = ValidationExceptions.checkValue(condition,
                 "Missing required field: [condition]", errors);
-        errors = ValidationExceptions.chack(dataType != null,
+        errors = ValidationExceptions.checkCondition(dataType != null,
                 "Missing required field: [type]", errors);
         if (errors != null)
             throw errors;

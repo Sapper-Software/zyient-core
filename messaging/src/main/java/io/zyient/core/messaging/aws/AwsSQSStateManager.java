@@ -73,6 +73,8 @@ public class AwsSQSStateManager extends OffsetStateManager<AwsSQSOffset> {
         AwsSQSConsumerState state = create(AwsSQSConsumerState.OFFSET_TYPE, name, AwsSQSConsumerState.class);
         state.setQueue(name);
         AwsSQSOffset offset = new AwsSQSOffset();
+        offset.setOffsetCommitted(new AwsSQSOffsetValue(0));
+        offset.setOffsetRead(new AwsSQSOffsetValue(0));
         offset.setQueue(queue);
         state.setOffset(offset);
         return update(state);

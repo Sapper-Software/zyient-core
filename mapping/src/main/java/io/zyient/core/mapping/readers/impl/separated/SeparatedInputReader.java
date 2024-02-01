@@ -25,6 +25,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -45,13 +46,17 @@ public class SeparatedInputReader extends InputReader {
         try {
             format = getReaderFormat(((SeparatedReaderSettings) settings()).getType());
             format = ((SeparatedReaderSettings) settings()).setup(format);
-            reader = new FileReader(contentInfo().path());
+            reader = getReader(contentInfo().path());
             parser = new CSVParser(reader, format);
             iterator = parser.stream().iterator();
             return new SeparatedReadCursor(this, settings().getReadBatchSize());
         } catch (Exception ex) {
             throw new IOException(ex);
         }
+    }
+
+    protected Reader getReader(File file) throws IOException {
+        return new FileReader(file);
     }
 
     private CSVFormat getReaderFormat(SeparatedReaderTypes type) {
@@ -143,4 +148,6 @@ public class SeparatedInputReader extends InputReader {
             reader = null;
         }
     }
+
+
 }

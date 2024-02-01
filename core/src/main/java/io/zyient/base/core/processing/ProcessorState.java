@@ -19,6 +19,7 @@ package io.zyient.base.core.processing;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.AbstractEnvState;
+import io.zyient.base.common.StateException;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -62,9 +63,9 @@ public class ProcessorState extends AbstractEnvState<ProcessorState.EProcessorSt
         return (getState() == EProcessorState.Stopped || hasError());
     }
 
-    public void check(@Nonnull EProcessorState state) throws Exception {
+    public void check(@Nonnull EProcessorState state) throws StateException {
         if (state != getState()) {
-            throw new Exception(
+            throw new StateException(
                     String.format("Invalid Processor state: [expected=%s][state=%s]",
                             state.name(), getState().name()));
         }

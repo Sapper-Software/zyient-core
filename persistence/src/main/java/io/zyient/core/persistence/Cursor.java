@@ -33,6 +33,7 @@ public abstract class Cursor<K extends IKey, E extends IEntity<K>> implements Cl
     private int pageSize = 256;
     @Setter(AccessLevel.NONE)
     private int currentPage = 0;
+    @Setter(AccessLevel.NONE)
     private boolean EOF = false;
 
     protected Cursor(int currentPage) {
@@ -46,7 +47,10 @@ public abstract class Cursor<K extends IKey, E extends IEntity<K>> implements Cl
         if (!EOF) {
             List<E> result = next(currentPage);
             if (result != null) {
-                currentPage++;
+                if (result.size() < pageSize) {
+                    EOF = true;
+                } else
+                    currentPage++;
             } else {
                 EOF = true;
             }

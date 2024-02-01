@@ -144,6 +144,10 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                     ((TransactionDataStore<?, ?>) dataStore).rollback(false);
                 }
                 throw t;
+            } finally {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).endSession();
+                }
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -189,6 +193,10 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                     ((TransactionDataStore<?, ?>) dataStore).rollback(false);
                 }
                 throw t;
+            } finally {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).endSession();
+                }
             }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
@@ -201,48 +209,59 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                                                                                                           @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                           @NonNull DocumentContext context) throws DataStoreException {
         try {
-            Document<?, ?, ?> doc = findDoc(id, entityType, false, context);
-            if (doc != null) {
-                Map<String, String> map = doc.pathConfig();
-                PathInfo pi = fileSystem.parsePathInfo(map);
-                FileInode fi = (FileInode) fileSystem.getInode(pi);
-                if (fi == null) {
-                    DefaultLogger.warn(String.format("Document not found. [uri=%s]", doc.getUri()));
-                } else {
-                    DocumentId docId = JSONUtils.read(fi.attribute(Constants.ATTRIBUTE_DOC_ID), DocumentId.class);
-                    if (docId.compareTo(id) != 0) {
-                        throw new DataStoreException(String.format("Document mis-match: [FS ID=%s][DOC ID=%s]",
-                                docId.stringKey(), id.stringKey()));
-                    }
-                    if (!fileSystem.delete(fi.getPathInfo())) {
-                        DefaultLogger.warn(String.format("Document delete returned false. [uri=%s]", doc.getUri()));
-                    }
-                }
+            if (dataStore instanceof TransactionDataStore<?, ?>) {
+                ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
+            }
+            try {
+                boolean r = doDelete(id, entityType, context);
                 if (dataStore instanceof TransactionDataStore<?, ?>) {
-                    ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
+                    ((TransactionDataStore<?, ?>) dataStore).commit();
                 }
-                try {
-                    boolean r = dataStore.delete(id, Document.class, context);
-                    if (dataStore instanceof TransactionDataStore<?, ?>) {
-                        ((TransactionDataStore<?, ?>) dataStore).commit();
-                    }
-                    return r;
-                } catch (RuntimeException re) {
-                    if (dataStore instanceof TransactionDataStore<?, ?>) {
-                        ((TransactionDataStore<?, ?>) dataStore).rollback(false);
-                    }
-                    throw re;
-                } catch (Throwable t) {
-                    if (dataStore instanceof TransactionDataStore<?, ?>) {
-                        ((TransactionDataStore<?, ?>) dataStore).rollback(false);
-                    }
-                    throw t;
+                return r;
+            } catch (RuntimeException re) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw re;
+            } catch (Throwable t) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw t;
+            } finally {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).endSession();
                 }
             }
-            return false;
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
+    }
+
+    private <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> boolean doDelete(@NonNull DocumentId id,
+                                                                                                       @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                       @NonNull DocumentContext context) throws Exception {
+        Document<?, ?, ?> doc = findDoc(id, entityType, false, context);
+        if (doc != null) {
+            Map<String, String> map = doc.pathConfig();
+            PathInfo pi = fileSystem.parsePathInfo(map);
+            FileInode fi = (FileInode) fileSystem.getInode(pi);
+            if (fi == null) {
+                DefaultLogger.warn(String.format("Document not found. [uri=%s]", doc.getUri()));
+            } else {
+                DocumentId docId = JSONUtils.read(fi.attribute(Constants.ATTRIBUTE_DOC_ID), DocumentId.class);
+                if (docId.compareTo(id) != 0) {
+                    throw new DataStoreException(String.format("Document mis-match: [FS ID=%s][DOC ID=%s]",
+                            docId.stringKey(), id.stringKey()));
+                }
+                if (!fileSystem.delete(fi.getPathInfo())) {
+                    DefaultLogger.warn(String.format("Document delete returned false. [uri=%s]", doc.getUri()));
+                }
+            }
+
+            return dataStore.delete(id, entityType, context);
+        }
+        return false;
     }
 
     @Override
@@ -250,12 +269,34 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
                                                                                                                             @NonNull Class<? extends Document<E, K, D>> entityType,
                                                                                                                             @NonNull DocumentContext context) throws DataStoreException {
         try {
-            Map<DocumentId, Boolean> response = new HashMap<>();
-            for (DocumentId id : ids) {
-                boolean r = deleteDoc(id, entityType, context);
-                response.put(id, r);
+            if (dataStore instanceof TransactionDataStore<?, ?>) {
+                ((TransactionDataStore<?, ?>) dataStore).beingTransaction();
             }
-            return response;
+            try {
+                Map<DocumentId, Boolean> response = new HashMap<>();
+                for (DocumentId id : ids) {
+                    boolean r = doDelete(id, entityType, context);
+                    response.put(id, r);
+                }
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).commit();
+                }
+                return response;
+            } catch (RuntimeException re) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw re;
+            } catch (Throwable t) {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).rollback(false);
+                }
+                throw t;
+            } finally {
+                if (dataStore instanceof TransactionDataStore<?, ?>) {
+                    ((TransactionDataStore<?, ?>) dataStore).endSession();
+                }
+            }
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
@@ -287,6 +328,10 @@ public abstract class ManagedContentProvider<T> extends ContentProvider implemen
             return null;
         } catch (Exception ex) {
             throw new DataStoreException(ex);
+        } finally {
+            if (dataStore instanceof TransactionDataStore<?,?>) {
+                ((TransactionDataStore<?, ?>) dataStore).endSession();
+            }
         }
     }
 

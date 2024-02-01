@@ -48,13 +48,16 @@ public class ExcelInputReader extends InputReader {
     public ReadCursor open() throws IOException {
         try {
             stream = new FileInputStream(contentInfo().path());
-            workbook = new XSSFWorkbook(stream);
-
+            workbook = createWorkbook(stream);
             return new ExcelReadCursor(this, settings().getReadBatchSize());
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new IOException(ex);
         }
+    }
+
+    protected Workbook createWorkbook(FileInputStream stream) throws IOException {
+        return new XSSFWorkbook(stream);
     }
 
     @Override
@@ -155,12 +158,33 @@ public class ExcelInputReader extends InputReader {
     }
 
     private Object getCellValue(Cell cell) {
-        return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue();
-            case BOOLEAN -> cell.getBooleanCellValue();
-            case NUMERIC -> cell.getNumericCellValue();
-            default -> null;
+        Object o = null;
+        switch (cell.getCellType()) {
+            case STRING -> o = cell.getStringCellValue().trim();
+            case BOOLEAN -> o = cell.getBooleanCellValue();
+            case NUMERIC -> {
+                if (cell.getCellStyle().getDataFormatString() != null &&
+                        isDateValid(cell.getCellStyle().getDataFormatString())) {
+                    return cell.toString();
+                }
+                o = cell.getNumericCellValue();
+            }
+        }
+
+        return o;
+    }
+
+    private boolean isDateValid(String dateStr) {
+        dateStr = dateStr.replace("\\", "");
+        String[] dateFormats = {
+                "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yyyy", "yyyy/MM/dd", "M/dd/yy", "MM/dd/yy", "MM/d/yy", "M/d/yy", "M/d/yyyy"
         };
+        for (String format : dateFormats) {
+            if (format.equalsIgnoreCase(dateStr)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean checkHeaderRow(Map<String, Object> record, ExcelReaderSettings settings) {
@@ -187,4 +211,6 @@ public class ExcelInputReader extends InputReader {
             stream = null;
         }
     }
+
+
 }

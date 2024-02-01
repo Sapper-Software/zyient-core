@@ -67,15 +67,15 @@ public class DBMappingDef extends DBMapping {
         ValidationExceptions errors = null;
         errors = ValidationExceptions.checkValue(id.getConditionId(),
                 "Condition ID is null/empty", errors);
-        errors = ValidationExceptions.chack(id.getSequence() >= 0,
+        errors = ValidationExceptions.checkCondition(id.getSequence() >= 0,
                 "Invalid ID sequence...", errors);
         errors = ValidationExceptions.checkValue(sourcePath,
                 "Source Path is null/empty...", errors);
         errors = ValidationExceptions.checkValue(targetPath,
                 "Target Path is null/empty...", errors);
-        errors = ValidationExceptions.chack(mappingType != null,
+        errors = ValidationExceptions.checkCondition(mappingType != null,
                 "Mapping Type not set...", errors);
-        errors = ValidationExceptions.chack(dataType != null,
+        errors = ValidationExceptions.checkCondition(dataType != null,
                 "Data Type not set...", errors);
         if (errors != null) {
             throw errors;

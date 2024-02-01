@@ -25,7 +25,7 @@ public enum SourceTypes {
     CSV("text/csv", new String[]{"csv"}),
     TSV("text/tsv", new String[]{"tsv", "tdf"}),
     RFC4180("text/rfc4180", null),
-    PSV("text/psv", new String[]{"psv"}),
+    PSV("text/psv", new String[]{"psv","pgp"}),
     EXCEL_CSV("excel/csv", null),
     XML(FileUtils.MIME_TYPE_XML, new String[]{"xml"}),
     JSON(FileUtils.MIME_TYPE_JSON, new String[]{"json"}),

@@ -24,6 +24,7 @@ import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
 import org.hibernate.ScrollableResults;
+import org.hibernate.Session;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,15 +32,19 @@ import java.util.List;
 
 public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Cursor<K, E> {
     private final ScrollableResults<E> results;
+    private final Session session;
 
-    public HibernateCursor(@NonNull ScrollableResults<E> results,
+    public HibernateCursor(@NonNull Session session,
+                           @NonNull ScrollableResults<E> results,
                            int currentPage) {
         super(currentPage);
+        this.session = session;
         this.results = results;
     }
 
     public HibernateCursor(@NonNull HibernateCursor<K, E> cursor) {
         super(cursor.currentPage());
+        session = cursor.session;
         results = cursor.results;
     }
 
@@ -68,5 +73,6 @@ public class HibernateCursor<K extends IKey, E extends IEntity<K>> extends Curso
     @Override
     public void close() throws IOException {
         results.close();
+        session.close();
     }
 }

@@ -29,6 +29,13 @@ import lombok.Setter;
 public abstract class Offset implements Comparable<Offset> {
     private long timeUpdated;
 
+    protected Offset() {
+    }
+
+    protected Offset(@NonNull Offset source) {
+        this.timeUpdated = source.timeUpdated;
+    }
+
     public abstract String asString();
 
     public abstract Offset fromString(@NonNull String source) throws Exception;

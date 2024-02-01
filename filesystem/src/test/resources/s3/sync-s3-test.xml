@@ -26,16 +26,49 @@
             <registry>/test/filesystem/registry</registry>
             <root>/test/filesystem</root>
         </paths>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/filesystem/registry</path>
+        </locks>
+        <managers>
+            <state>
+                <stateManagerClass>io.zyient.core.filesystem.sync.s3.process.S3EventStateManager</stateManagerClass>
+                <basePath>sync-s3</basePath>
+                <connection>test-zk</connection>
+                <offsets>
+                    <offsetManager>
+                        <name>TestS3EventOffset</name>
+                        <type>io.zyient.core.messaging.aws.AwsSQSStateManager</type>
+                        <connection>test-zk</connection>
+                        <basePath>test/s3</basePath>
+                    </offsetManager>
+                </offsets>
+            </state>
+        </managers>
         <filesystem>
-            <listener>
+            <processor>
                 <name>test-s3-sync</name>
-                <connection>test-sqs</connection>
-                <queue>s3-events-test</queue>
+                <queue>
+                    <builder>
+                        <type>io.zyient.core.filesystem.sync.s3.process.EventConsumerBuilder</type>
+                        <settingsType>io.zyient.core.messaging.aws.builders.SQSConsumerSettings</settingsType>
+                        <queue>s3-events-test</queue>
+                    </builder>
+                    <type>sqs</type>
+                    <connection>test-sqs</connection>
+                    <offset>
+                        <manager>TestS3EventOffset</manager>
+                    </offset>
+                    <errorQueue type="io.zyient.core.filesystem.sync.s3.process.S3EventSQSProducer">
+                        <type>sqs</type>
+                        <connection>test-errors</connection>
+                    </errorQueue>
+                </queue>
                 <handler>
                     <class>io.zyient.core.filesystem.sync.s3.process.S3EventTestHandler</class>
                     <connection>test-s3</connection>
                 </handler>
-            </listener>
+            </processor>
         </filesystem>
         <keystore>
             <name>test-zk-keystore</name>
@@ -87,6 +120,17 @@
                             <region>ap-south-1</region>
                             <queue>s3-events-test</queue>
                             <mode>Consumer</mode>
+                        </sqs>
+                    </aws>
+                </connection>
+                <connection>
+                    <class>io.zyient.base.core.connections.aws.AwsSQSProducerConnection</class>
+                    <aws>
+                        <sqs>
+                            <name>test-errors</name>
+                            <region>ap-south-1</region>
+                            <queue>sync-errors</queue>
+                            <mode>Producer</mode>
                         </sqs>
                     </aws>
                 </connection>

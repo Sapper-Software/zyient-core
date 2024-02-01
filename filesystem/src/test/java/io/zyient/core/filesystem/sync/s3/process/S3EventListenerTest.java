@@ -18,10 +18,14 @@ package io.zyient.core.filesystem.sync.s3.process;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.PathUtils;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.connections.aws.AwsS3Connection;
 import io.zyient.base.core.utils.FileUtils;
+import io.zyient.core.filesystem.FSPathUtils;
 import io.zyient.core.filesystem.env.DemoFileSystemEnv;
 import io.zyient.core.filesystem.impl.s3.S3Helper;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -36,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -66,14 +71,12 @@ class S3EventListenerTest {
         HierarchicalConfiguration<ImmutableNode> node
                 = env.configNode().configurationAt(S3EventListenerSettings.__CONFIG_PATH);
         listener.init(node, env);
+        listener.start();
         files = FileUtils.getFiles(new File(FILES_DIR));
     }
 
     @AfterAll
     public static void stop() throws Exception {
-        if (listener != null) {
-            listener.close();
-        }
         env.close();
     }
 
@@ -86,7 +89,8 @@ class S3EventListenerTest {
             Map<String, Boolean> uploaded = new HashMap<>();
             for (File file : files) {
                 if (!file.isFile()) continue;
-                String path = String.format("%s/%s", prefix, file.getName());
+                String path = PathUtils.formatPath(String.format("%s/%s", prefix, file.getName()));
+                path = FSPathUtils.encode(path);
                 S3Helper.upload(connection.client(),
                         S3_BUCKET,
                         path,
@@ -94,6 +98,8 @@ class S3EventListenerTest {
                 uploaded.put(path, true);
             }
             Thread.sleep(1000);
+            TimeUnitValue timeout = new TimeUnitValue(60, TimeUnit.SECONDS);
+            long start = System.currentTimeMillis();
             while (true) {
                 Map<String, Boolean> received = handler.received();
                 if (!received.isEmpty()) {
@@ -102,7 +108,13 @@ class S3EventListenerTest {
                     }
                 }
                 if (uploaded.isEmpty()) break;
-                Thread.sleep(500);
+                if (System.currentTimeMillis() - start > timeout.normalized()) {
+                    for (String path : uploaded.keySet()) {
+                        DefaultLogger.error(String.format("Not processed. [path=%s]", path));
+                    }
+                    throw new Exception(String.format("Pending messages. [count=%s]", uploaded.size()));
+                }
+                RunUtils.sleep(2000);
             }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

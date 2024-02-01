@@ -62,10 +62,9 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
 
     @SuppressWarnings("unchecked")
     protected void init(@NonNull ProcessorSettings settings,
-                        @NonNull String name,
                         @NonNull BaseEnv<?> env) throws Exception {
         this.settings = settings;
-        this.name = name;
+        this.name = settings.getName();
         this.env = env;
         Preconditions.checkArgument(env.stateManager() instanceof ProcessStateManager);
         this.stateManager = (ProcessStateManager<E, O>) env.stateManager();
@@ -77,9 +76,9 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         __lock = env.createLock(lockPath);
         __lock.lock();
         try {
-            processingState = stateManager.processingState();
+            processingState = stateManager.checkAgentState(name);
             initState(processingState);
-            processingState = stateManager.update(processingState);
+            processingState = stateManager.update(name, processingState);
         } finally {
             __lock.unlock();
         }
@@ -91,14 +90,12 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     }
 
     public abstract Processor<E, O> init(@NonNull BaseEnv<?> env,
-                                         @NonNull String name,
                                          @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                          String path) throws ConfigurationException;
 
     public Processor<E, O> init(@NonNull BaseEnv<?> env,
-                                @NonNull String name,
                                 @NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
-        return init(env, name, xmlConfig, null);
+        return init(env, xmlConfig, null);
     }
 
     protected abstract void initState(@NonNull ProcessingState<E, O> processingState) throws Exception;
@@ -111,7 +108,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             __lock.lock();
             try {
                 doRun(false);
-                processingState = stateManager.update(processingState);
+                processingState = stateManager.update(name, processingState);
                 processingState = finished(processingState);
             } finally {
                 __lock.unlock();
@@ -140,7 +137,7 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             try {
                 doRun(true);
                 processingState = finished(processingState);
-                processingState = stateManager.update(processingState);
+                processingState = stateManager.update(name, processingState);
             } finally {
                 __lock.unlock();
             }
@@ -153,18 +150,19 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         }
     }
 
+
     protected abstract ProcessingState<E, O> finished(@NonNull ProcessingState<E, O> processingState);
 
     protected abstract void doRun(boolean runOnce) throws Throwable;
 
     protected ProcessingState<E, O> updateState() throws Exception {
-        processingState = stateManager.update(processingState);
+        processingState = stateManager.update(name, processingState);
         return processingState;
     }
 
     protected ProcessingState<E, O> updateState(@NonNull O offset) throws Exception {
         processingState.setOffset(offset);
-        processingState = stateManager.update(processingState);
+        processingState = stateManager.update(name, processingState);
         return processingState;
     }
 

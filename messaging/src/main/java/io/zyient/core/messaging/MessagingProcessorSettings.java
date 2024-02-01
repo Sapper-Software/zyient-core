@@ -23,8 +23,6 @@ import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.processing.ProcessorSettings;
 import io.zyient.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.core.messaging.builders.MessageReceiverSettings;
-import io.zyient.core.messaging.builders.MessageSenderBuilder;
-import io.zyient.core.messaging.builders.MessageSenderSettings;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,24 +30,19 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * <pre>
- *     <processor>
+ *     <processor @type="[Processor implementation]">
  *         <name>[Processor Name]</name>
- *         <type>[Processor Class]</type>
  *         <queue>
  *              <builder>
  *                  <type>[Message Builder class]</type>
  *                  <settingsType>[Message Builder Settings class]</settingsType>
  *                  <queue>[Queue Configuration]</queue>
  *              </builder>
+ *              <receiver>
+ *                  [Receiver settings]
+ *                  ...
+ *              </receiver>
  *         </queue>
- *         <errors>
- *             <builder>
- *                <type>[Message Builder class]</type>
- *                <settingsType>[Message Builder Settings class]</settingsType>
- *                <errors>[Error Queue Configuration]</errors>
- *             </builder>
- *             <readBatchTimeout>[Batch read timeout, optional]</readBatchTimeout>
- *         </errors>
  *     </processor>
  * </pre>
  */
@@ -60,12 +53,8 @@ import java.util.concurrent.TimeUnit;
 public class MessagingProcessorSettings extends ProcessorSettings {
     public static class Constants {
         public static final String __CONFIG_PATH_RECEIVER = "queue";
-        public static final String __CONFIG_PATH_ERRORS = "errors";
-
         public static final String CONFIG_BUILDER_TYPE = "queue.builder.type";
         public static final String CONFIG_MESSAGING_SETTINGS_TYPE = "queue.builder.settingsType";
-        public static final String CONFIG_ERRORS_BUILDER_TYPE = "errors.builder.type";
-        public static final String CONFIG_ERRORS_MESSAGING_SETTINGS_TYPE = "errors.builder.settingsType";
         public static final String CONFIG_BATCH_RECEIVE_TIMEOUT = "readBatchTimeout";
     }
 
@@ -75,8 +64,4 @@ public class MessagingProcessorSettings extends ProcessorSettings {
     private Class<? extends MessageReceiverSettings> builderSettingsType;
     @Config(name = Constants.CONFIG_BATCH_RECEIVE_TIMEOUT, required = false, parser = TimeValueParser.class)
     private TimeUnitValue receiveBatchTimeout = new TimeUnitValue(1000, TimeUnit.MILLISECONDS);
-    @Config(name = Constants.CONFIG_ERRORS_BUILDER_TYPE, required = false, type = Class.class)
-    private Class<? extends MessageSenderBuilder<?, ?>> errorsBuilderType;
-    @Config(name = Constants.CONFIG_ERRORS_MESSAGING_SETTINGS_TYPE, required = false, type = Class.class)
-    private Class<? extends MessageSenderSettings> errorsBuilderSettingsType;
 }

@@ -33,6 +33,7 @@ import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.env.BaseEnvSettings;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.base.core.keystore.KeyStore;
+import io.zyient.base.core.keystore.settings.KeyStoreSettings;
 import io.zyient.base.core.model.ModuleInstance;
 import io.zyient.base.core.processing.Processor;
 import io.zyient.base.core.services.model.ShutdownStatus;
@@ -81,7 +82,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     private HeartbeatThread heartbeat;
     private BaseEnvSettings settings;
     private String zkBasePath;
-    private Processor<?, ?> processor;
+    private Map<String, Processor<?, ?>> processors;
     private final Map<String, ManagedThread> managedThreads = new HashMap<>();
 
     public BaseEnv(@NonNull String name,
@@ -96,8 +97,18 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     }
 
     public BaseEnv<?> withProcessor(@NonNull Processor<?, ?> processor) {
-        this.processor = processor;
+        if (processors == null) {
+            processors = new HashMap<>();
+        }
+        processors.put(processor.name(), processor);
         return this;
+    }
+
+    public Processor<?, ?> processor(@NonNull String name) {
+        if (processors != null) {
+            return processors.get(name);
+        }
+        return null;
     }
 
     public BaseEnv<T> init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
@@ -222,11 +233,12 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
                       String connectionsConfigPath) throws ConfigurationException {
         try {
 
-            if (ConfigReader.checkIfNodeExists(baseConfig, KeyStore.__CONFIG_PATH)) {
-                String c = baseConfig.getString(KeyStore.CONFIG_KEYSTORE_CLASS);
+            if (ConfigReader.checkIfNodeExists(baseConfig, KeyStoreSettings.__CONFIG_PATH)) {
+                String c = baseConfig.getString(KeyStoreSettings.CONFIG_KEYSTORE_CLASS);
                 if (Strings.isNullOrEmpty(c)) {
                     throw new ConfigurationException(
-                            String.format("Key Store class not defined. [config=%s]", KeyStore.CONFIG_KEYSTORE_CLASS));
+                            String.format("Key Store class not defined. [config=%s]",
+                                    KeyStoreSettings.CONFIG_KEYSTORE_CLASS));
                 }
                 Class<? extends KeyStore> cls = (Class<? extends KeyStore>) Class.forName(c);
                 keyStore = cls.getDeclaredConstructor().newInstance();
@@ -279,9 +291,11 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
     }
 
     public void close() throws Exception {
-        if (processor != null) {
-            processor.close();
-            processor = null;
+        if (processors != null) {
+            for (Processor<?, ?> processor : processors.values()) {
+                processor.close();
+            }
+            processors.clear();
         }
         if (!managedThreads.isEmpty()) {
             for (String key : managedThreads.keySet()) {

@@ -18,9 +18,9 @@ package io.zyient.core.filesystem.sync.s3.process;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
+import io.zyient.core.messaging.MessagingProcessorSettings;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,25 +30,13 @@ import java.util.concurrent.TimeUnit;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class S3EventListenerSettings extends Settings {
-    public static final String __CONFIG_PATH = "listener";
-
-    @Config(name = "name")
-    private String name;
-    @Config(name = "connection")
-    private String connection;
-    @Config(name = "queue")
-    private String queue;
-    @Config(name = "batchSize", required = false, type = Integer.class)
-    private int batchSize = 32;
-    @Config(name = "readTimeout", required = false, parser = TimeValueParser.class)
-    private TimeUnitValue readTimeout = new TimeUnitValue(500, TimeUnit.MILLISECONDS);
-    @Config(name = "ackTimeout", required = false, parser = TimeValueParser.class)
-    private TimeUnitValue ackTimeout = new TimeUnitValue(30, TimeUnit.SECONDS);
+public class S3EventListenerSettings extends MessagingProcessorSettings {
     @Config(name = "handler.class", required = false, type = Class.class)
     private Class<? extends S3EventHandler> handler;
+    @Config(name = "timeouts.read", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue readTimeout = new TimeUnitValue(500, TimeUnit.MILLISECONDS);
 
     public String threadName() {
-        return String.format("%s::%s", S3EventListener.class.getSimpleName(), name);
+        return String.format("%s::%s", S3EventListener.class.getSimpleName(), getName());
     }
 }

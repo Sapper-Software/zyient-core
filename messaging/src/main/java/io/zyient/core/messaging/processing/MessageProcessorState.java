@@ -28,7 +28,7 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public abstract class MessageProcessorState<E extends Enum<?>, O extends Offset, M extends ReceiverOffset> extends ProcessingState<E, O> {
+public abstract class MessageProcessorState<E extends Enum<?>, O extends Offset, M extends ReceiverOffset<?>> extends ProcessingState<E, O> {
     private M messageOffset;
 
     public MessageProcessorState(@NonNull E errorState,

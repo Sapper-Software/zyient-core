@@ -1,3 +1,14 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url 'https://repo.spring.io/snapshot' }
+        maven { url 'https://repo.spring.io/milestone' }
+    }
+    dependencies {
+        classpath 'org.owasp:dependency-check-gradle:8.2.1'
+    }
+}
+
 plugins {
     id 'java'
     id "io.freefair.lombok" version "6.4.3"
@@ -5,15 +16,16 @@ plugins {
     id 'maven-publish'
     id 'signing'
     id 'idea'
+    id 'org.owasp.dependencycheck' version '8.2.1'
 }
-
 repositories {
     mavenCentral()
+    gradlePluginPortal()
 }
 
 group 'io.zyient.framework'
-version '1.17-SNAPSHOT'
-
+var versionName = '3.0.3-SNAPSHOT'
+version = versionName
 configurations.all {
     exclude module: "logback-classic"
     exclude module: "log4j-to-slf4j"
@@ -31,39 +43,24 @@ configurations.all {
 }
 
 publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            groupId = "io.zyient.framework"
-            from components.java
-
-            pom {
-                name = 'Zyient Java Core Framework'
-                description = 'Zyient Java - Core Framework Libraries.'
-                url = 'https://zyient.io/'
-
-                licenses {
-                    license {
-                        name = 'The Apache License, Version 2.0'
-                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
-                    }
-                }
-                developers {
-                    developer {
-                        id = 'subhagho'
-                        name = 'Subho Ghosh'
-                        email = 'subho.ghosh@outlook.com'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git@github.com:subhagho/hcdc.git'
-                    developerConnection = 'scm:git:git@github.com:subhagho/hcdc.git'
-                    url = 'https://zyient.io'
+    repositories {
+        if (System.getenv("GIT_TOKEN")) {
+            maven {
+                url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
+                credentials {
+                    username = "zyient-core"
+                    password = System.getenv("GIT_TOKEN")
                 }
             }
         }
     }
-
+    publications {
+        gpr(MavenPublication) {
+            artifact jar
+        }
+    }
 }
+
 
 apply plugin: 'maven-publish'
 subprojects {
@@ -75,8 +72,7 @@ subprojects {
     apply plugin: 'idea'
 
     group 'io.zyient.framework'
-    version '1.17-SNAPSHOT'
-
+    version = versionName
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(17)
@@ -86,36 +82,54 @@ subprojects {
 
     repositories {
         mavenCentral()
-        maven {
-            url layout.buildDirectory.dir(repoDirSnapshot)
-            mavenContent {
-                snapshotsOnly()
-            }
-        }
-        maven {
-            url 'https://oss.sonatype.org/content/repositories/snapshots'
-            mavenContent {
-                snapshotsOnly()
-            }
-        }
+        gradlePluginPortal()
+        // maven {
+        //     url layout.buildDirectory.dir(repoDirSnapshot)
+        //     mavenContent {
+        //         snapshotsOnly()
+        //     }
+        // }
+        // maven {
+        //     url 'https://oss.sonatype.org/content/repositories/snapshots'
+        //     mavenContent {
+        //         snapshotsOnly()
+        //     }
+        // }
     }
 
     publishing {
-        publications {
-            "$project.name"(MavenPublication) {
-                groupId = project.group
-                artifactId = project.name
-                version = project.version
-                from components.java
-            }
-        }
+        // publications {
+        //     "$project.name"(MavenPublication) {
+        //         groupId = project.group
+        //         artifactId = project.name
+        //         version = project.version
+        //         from components.java
+        //     }
+        // }
+        // repositories {
+        //     maven {
+        //         def releasesRepoUrl = layout.buildDirectory.dir(repoDirRelease)
+        //         def snapshotsRepoUrl = layout.buildDirectory.dir(repoDirSnapshot)
+        //         url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+        //     }
+        // }
         repositories {
-            maven {
-                def releasesRepoUrl = layout.buildDirectory.dir(repoDirRelease)
-                def snapshotsRepoUrl = layout.buildDirectory.dir(repoDirSnapshot)
-                url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
+            if (System.getenv("GIT_TOKEN")) {
+                maven {
+                    url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
+                    credentials {
+                        username = "zyient-core"
+                        password = System.getenv("GIT_TOKEN")
+                    }
+                }
             }
         }
+        publications {
+            gpr(MavenPublication) {
+                artifact jar
+            }
+        }
+
     }
 
     configurations.all {
@@ -168,11 +182,11 @@ subprojects {
         // https://mvnrepository.com/artifact/com.beust/jcommander
         implementation group: 'com.beust', name: 'jcommander', version: '1.82'
 
-        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.2'
-        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
-        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.2'
-        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.2'
-        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.2'
+        implementation 'com.fasterxml.jackson.core:jackson-core:2.15.3'
+        implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.3'
+        implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.3'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.3'
+        implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.3'
 
         // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
         implementation 'com.google.protobuf:protobuf-java:3.21.5'
@@ -188,6 +202,10 @@ subprojects {
         implementation 'io.prometheus:simpleclient_httpserver:0.16.0'
         implementation 'io.prometheus:simpleclient_pushgateway:0.16.0'
         implementation 'io.micrometer:micrometer-registry-prometheus:1.10.5'
+
+        //Bouncy castle for decryption
+        implementation 'org.bouncycastle:bcpg-jdk18on:1.76'
+        implementation 'org.bouncycastle:bcprov-jdk18on:1.76'
 
         testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
         testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

@@ -33,10 +33,10 @@ import java.util.Map;
 @Setter
 @Accessors(fluent = true)
 public class MetricsBase {
-    public static final String TAG_ENV_NAME = "ENV_NAME";
-    public static final String TAG_DB_TYPE = "DB_TYPE";
-    public static final String TAG_ENGINE = "ENGINE";
-    public static final String TAG_INSTANCE_NAME = "PIPELINE";
+    public static final String TAG_ENV_NAME = "__env__";
+    public static final String TAG_MODULE = "__module__";
+    public static final String TAG_PROCESS = "__process__";
+    public static final String TAG_INSTANCE_NAME = "__instance__";
     public static final String METRICS_TIMER = "timer";
     public static final String METRICS_COUNTER = "counter";
     private final BaseEnv<?> env;
@@ -140,8 +140,8 @@ public class MetricsBase {
         }
         map.put(TAG_ENV_NAME, env.name());
         map.put(TAG_INSTANCE_NAME, name);
-        map.put(TAG_DB_TYPE, type);
-        map.put(TAG_ENGINE, engine);
+        map.put(TAG_MODULE, type);
+        map.put(TAG_PROCESS, engine);
         return map;
     }
 }

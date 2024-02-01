@@ -25,7 +25,6 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.*;
 import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
-import jakarta.persistence.CacheStoreMode;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.*;
@@ -49,7 +48,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-        session.setCacheMode(CacheMode.IGNORE);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -83,7 +81,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-        session.setCacheMode(CacheMode.IGNORE);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -123,7 +120,6 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-        session.setCacheMode(CacheMode.IGNORE);
         E entity = session.find(type, key);
         if (doRefresh(context)) {
             session.evict(entity);
@@ -147,19 +143,16 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
-        StatelessSession statelessSession = session.getSessionFactory().openStatelessSession();
-        session.setCacheMode(CacheMode.IGNORE);
-
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);
-            Query qq = statelessSession.createQuery(query.generatedQuery(), type).setCacheable(false);
+            Query qq = session.createQuery(query.generatedQuery(), type);
             if (query.hasParameters()) {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));
             }
             ScrollableResults<E> results = qq.scroll();
-            HibernateCursor<K, E> cursor = new HibernateCursor<>(results, currentPage);
+            HibernateCursor<K, E> cursor = new HibernateCursor<>(session, results, currentPage);
             return cursor.pageSize(maxResults);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

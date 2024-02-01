@@ -69,9 +69,7 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
     @Override
     protected Session create() throws DataStoreException {
         try {
-            Session session = hibernateConnection.getConnection();
-            session.setCacheMode(CacheMode.IGNORE);
-            return session;
+            return hibernateConnection.getConnection();
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
@@ -110,6 +108,17 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         }
         session.flush();
         transaction.commit();
+    }
+
+    @Override
+    public Session session() throws DataStoreException {
+        Session session = super.session();
+        if(!session.isOpen()) {
+            close(session);
+        }else {
+            return session;
+        }
+        return super.session();
     }
 
     @Override

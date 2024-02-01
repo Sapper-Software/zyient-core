@@ -93,7 +93,7 @@ public class InputReaderFactory {
     }
 
     public InputReader getReader(@NonNull InputContentInfo inputContentInfo) throws Exception {
-        if (inputContentInfo.path() == null)
+        if (inputContentInfo.contentType() != SourceTypes.DB &&  inputContentInfo.path() == null)
             throw new IOException("Content path not specified...");
         if (inputContentInfo.contentType() == SourceTypes.UNKNOWN) {
             FileTypeDetector detector = new FileTypeDetector(inputContentInfo.path());

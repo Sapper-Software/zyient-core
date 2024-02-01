@@ -1,0 +1,75 @@
+name: v1.1
+on:
+  push:
+    branches: 
+      - "release_**" 
+    paths:
+      - '**'
+      - "!.github/**"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: '0'
+
+      - uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+
+
+      - name: increment tag
+        id: gen_tag
+        run: |
+          current_branch=${{ github.ref }}
+          current_branch=${current_branch##*/}
+          branch_ver="$(cut -d'_' -f2 <<< $current_branch)"
+
+          tag_check=$(git tag -l "$branch_ver.*") 
+          tag_ver=0
+          if [ "$tag_check" == "" ]; then
+            tag_ver=0
+            echo "creating new tag"
+          else
+            current_tag="$(git describe --abbrev=0 --tags)"
+            echo current_tag:$current_tag
+            tag_ver="$(cut -d'.' -f4 <<< $current_tag)"
+            echo $tag_ver
+          fi
+
+          echo "new_tag=$branch_ver."$(( tag_ver+1 ))"" >> $GITHUB_OUTPUT
+          echo $branch_ver."$(( tag_ver+1 ))"
+
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Setup Gradle wrapper
+        run: gradle wrapper --gradle-version 8.2 --distribution-type all
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Publish package
+        id: publish
+        uses: gradle/gradle-build-action@67421db6bd0bf253fb4bd25b31ebb98943c375e1
+        with:
+          arguments: publish
+        env:
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # VERSION: ${{ steps.gen_tag.outputs.new_tag }}
+
+
+      - name: push tag
+        if: steps.publish.outcome == 'success'
+        run: | 
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git tag ${{ steps.gen_tag.outputs.new_tag }}
+          git push origin ${{ steps.gen_tag.outputs.new_tag }}
+
