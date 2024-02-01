@@ -4,21 +4,18 @@ package io.zyient.core.mapping.rules.spel;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
-import io.zyient.core.mapping.rules.Rule;
 import io.zyient.core.mapping.rules.RuleConfig;
 import io.zyient.core.mapping.rules.RuleType;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @Accessors(fluent = true)
-public class MultiValueSpELRule<T> extends SpELRule<T> {
+public class MultiValueSpELRule<T> extends AbstractSpELRule<T> {
     @Override
     protected List<FieldMap> createTargetFields(RuleConfig config) throws Exception {
         List<FieldMap> fieldMaps = new ArrayList<>();
@@ -49,8 +46,4 @@ public class MultiValueSpELRule<T> extends SpELRule<T> {
         }
     }
 
-    @Override
-    public Rule<T> withContentDir(@NonNull File contentDir) {
-        return this;
-    }
 }

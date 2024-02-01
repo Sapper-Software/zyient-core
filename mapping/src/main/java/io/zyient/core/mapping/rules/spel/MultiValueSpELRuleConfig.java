@@ -1,7 +1,6 @@
 package io.zyient.core.mapping.rules.spel;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.google.common.base.Strings;
 import io.zyient.base.common.config.Config;
 import io.zyient.core.mapping.rules.BaseRuleConfig;
 import io.zyient.core.mapping.rules.Rule;

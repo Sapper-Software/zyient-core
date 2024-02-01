@@ -22,13 +22,10 @@ import io.zyient.base.common.config.Config;
 import io.zyient.core.mapping.rules.BaseRuleConfig;
 import io.zyient.core.mapping.rules.Rule;
 import io.zyient.core.mapping.rules.RuleType;
-import io.zyient.core.mapping.rules.db.FieldMappingReader;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-
-import java.util.Map;
 
 @Getter
 @Setter
