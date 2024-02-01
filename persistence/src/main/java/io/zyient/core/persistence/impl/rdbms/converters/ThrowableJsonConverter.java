@@ -4,7 +4,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.utils.JSONUtils;
 import jakarta.persistence.AttributeConverter;
 
-public class ErrorJsonConverter implements AttributeConverter<Object, String> {
+public class ThrowableJsonConverter implements AttributeConverter<Throwable, String> {
     /**
      * Converts the value stored in the entity attribute into the
      * data representation to be stored in the database.
@@ -14,7 +14,7 @@ public class ErrorJsonConverter implements AttributeConverter<Object, String> {
      * column
      */
     @Override
-    public String convertToDatabaseColumn(Object attribute) {
+    public String convertToDatabaseColumn(Throwable attribute) {
         try {
             if (attribute != null)
                 return JSONUtils.asString(attribute);
