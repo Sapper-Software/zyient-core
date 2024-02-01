@@ -137,6 +137,9 @@ public class SpELRule<T> extends BaseRule<T> {
                     }
                 }
             } else if (response != null) {
+                /**
+                 * normal SpEL will set the output of the SpEL to target
+                 */
                 if (fieldMaps.size() == 1) {
                     // set SpeL output to target
                     MappingReflectionHelper.setProperty(fieldMaps.get(0).targetField, fieldMaps.get(0).property, data, response);
@@ -152,13 +155,6 @@ public class SpELRule<T> extends BaseRule<T> {
             return response;
         } catch (RuleValidationError | RuleEvaluationError e) {
             throw e;
-        } catch (RuntimeException re) {
-            throw new RuleEvaluationError(name(),
-                    entityType(),
-                    expression(),
-                    errorCode(),
-                    Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
-                    re);
         } catch (Throwable t) {
             throw new RuleEvaluationError(name(),
                     entityType(),
@@ -172,45 +168,12 @@ public class SpELRule<T> extends BaseRule<T> {
     @Override
     public void setup(@NonNull RuleConfig config) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof SpELRuleConfig);
-        SpELRuleConfig spELRuleConfig = ((SpELRuleConfig) config);
         try {
-            if (getRuleType() == RuleType.Transformation) {
-                if (Strings.isNullOrEmpty(spELRuleConfig.getTarget()) && (spELRuleConfig.getFieldMappings() == null || spELRuleConfig.getFieldMappings().isEmpty())) {
-                    throw new ConfigurationException(String.format("[rule=%s] FieldMappings or Target not specified.", name()));
-                }
-            }
-
-            if (getRuleType() == RuleType.Validation ||
-                    getRuleType() == RuleType.Condition ||
-                    getRuleType() == RuleType.Filter) {
-                if (spELRuleConfig.getFieldMappings() != null && !spELRuleConfig.getFieldMappings().isEmpty()) {
-                    throw new ConfigurationException(String.format("[rule=%s] Instead of FieldMappings, use target field ", name()));
-                }
-            }
-            fieldMaps = new ArrayList<>();
-            if (spELRuleConfig.getTarget() != null) {
-                String target = MappingReflectionHelper.normalizeField(spELRuleConfig.getTarget());
-                PropertyDef property = MappingReflectionHelper.findField(spELRuleConfig.getTarget(), entityType());
-                if (property == null) {
-                    throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
-                            entityType().getCanonicalName(), spELRuleConfig.getTarget()));
-                }
-                fieldMaps.add(new FieldMap(target, null, property));
-            }
-            if (spELRuleConfig.getFieldMappings() != null) {
-                for (String fieldName : spELRuleConfig.getFieldMappings().keySet()) {
-                    String target = MappingReflectionHelper.normalizeField(fieldName);
-                    PropertyDef property = MappingReflectionHelper.findField(fieldName, entityType());
-                    if (property == null) {
-                        throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
-                                entityType().getCanonicalName(), fieldName));
-                    }
-                    fieldMaps.add(new FieldMap(target, spELRuleConfig.getFieldMappings().get(fieldName), property));
-                }
-            }
+            this.validate(config);
+            fieldMaps = createTargetFields(config);
 
             if (getRuleType() == RuleType.Transformation && fieldMaps.isEmpty()) {
-                throw new ConfigurationException(String.format("Either target or fieldMappings is required. [type=%s]",
+                throw new ConfigurationException(String.format("[target] is required. [type=%s]",
                         entityType().getCanonicalName()));
             }
 
@@ -231,6 +194,34 @@ public class SpELRule<T> extends BaseRule<T> {
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
+    }
+
+    protected List<FieldMap> createTargetFields(RuleConfig config) throws Exception {
+        Preconditions.checkArgument(config instanceof SpELRuleConfig);
+        SpELRuleConfig spELRuleConfig = ((SpELRuleConfig) config);
+        List<FieldMap> fieldMaps = new ArrayList<>();
+        if (spELRuleConfig.getTarget() != null) {
+            String target = MappingReflectionHelper.normalizeField(spELRuleConfig.getTarget());
+            PropertyDef property = MappingReflectionHelper.findField(spELRuleConfig.getTarget(), entityType());
+            if (property == null) {
+                throw new ConfigurationException(String.format("Failed to find property. [type=%s][property=%s]",
+                        entityType().getCanonicalName(), spELRuleConfig.getTarget()));
+            }
+            fieldMaps.add(new FieldMap(target, null, property));
+        }
+
+        return fieldMaps;
+    }
+
+    protected void validate(RuleConfig config) throws ConfigurationException {
+        Preconditions.checkArgument(config instanceof SpELRuleConfig);
+        SpELRuleConfig spELRuleConfig = ((SpELRuleConfig) config);
+        if (getRuleType() == RuleType.Transformation) {
+            if (Strings.isNullOrEmpty(spELRuleConfig.getTarget())) {
+                throw new ConfigurationException(String.format("[rule=%s] [Target] not specified.", name()));
+            }
+        }
+
     }
 
     @Override
