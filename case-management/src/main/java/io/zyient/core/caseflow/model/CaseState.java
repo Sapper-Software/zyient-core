@@ -17,7 +17,7 @@
 package io.zyient.core.caseflow.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.core.persistence.impl.rdbms.converters.GenericJsonConverter;
+import io.zyient.core.persistence.impl.rdbms.converters.ErrorJsonConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -42,7 +42,7 @@ public abstract class CaseState<E extends Enum<?>> {
     @Column(name = "case_state")
     private E state;
     @Column(name = "error")
-    @Convert(converter = GenericJsonConverter.class)
+    @Convert(converter = ErrorJsonConverter.class)
     private Throwable error;
 
     protected CaseState(@NonNull E errorState,
