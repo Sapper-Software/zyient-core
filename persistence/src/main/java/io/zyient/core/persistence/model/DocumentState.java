@@ -17,6 +17,7 @@
 package io.zyient.core.persistence.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.core.persistence.impl.rdbms.converters.ErrorObjectConverter;
 import io.zyient.core.persistence.impl.rdbms.converters.GenericJsonConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -39,7 +40,7 @@ public abstract class DocumentState<E extends Enum<?>> {
     @Column(name = "doc_state")
     private E state;
     @Column(name = "error")
-    @Convert(converter = GenericJsonConverter.class)
+    @Convert(converter = ErrorObjectConverter.class)
     private Throwable error;
 
     protected DocumentState(@NonNull E errorState,
