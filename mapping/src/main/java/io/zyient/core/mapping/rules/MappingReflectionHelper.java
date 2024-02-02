@@ -139,10 +139,11 @@ public class MappingReflectionHelper {
                 entity = ((MappedResponse<?>) entity).getEntity();
             }
             PropertyBag pb = (PropertyBag) entity;
-            pb.setProperty(((PropertyFieldDef) property).name(), value);
-        } else if (property instanceof FixedPropertyDef) {
-            PropertyBag pb = (PropertyBag) entity;
-            pb.setProperty(((FixedPropertyDef) property).key(), value);
+            if (property instanceof FixedPropertyDef) {
+                pb.setProperty(((FixedPropertyDef) property).key(), value);
+            } else {
+                pb.setProperty(property.name(), value);
+            }
         } else {
             BeanUtils.setValue(entity, field, value);
         }
