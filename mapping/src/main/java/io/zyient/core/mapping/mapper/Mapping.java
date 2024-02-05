@@ -392,7 +392,7 @@ public abstract class Mapping<T> {
             } else {
                 Object o = node.get(key);
                 if (o instanceof Map<?, ?>) {
-                    findSourceValue((Map<String, Object>) o, parts, index + 1);
+                    return findSourceValue((Map<String, Object>) o, parts, index + 1);
                 }
             }
         }
