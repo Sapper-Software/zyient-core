@@ -173,6 +173,14 @@ public class MappingReflectionHelper {
                         entity.getClass().getCanonicalName()));
             }
         }
+        else if (isCachePrefixed(field)) {
+            if (entity instanceof MappedResponse<?>) {
+                return ReflectionHelper.getMapValue(field, ((MappedResponse<?>) entity).getCached());
+            } else {
+                throw new Exception(String.format("Cached fields not present. [type=%s]",
+                        entity.getClass().getCanonicalName()));
+            }
+        }
         return BeanUtils.getValue(entity, field);
     }
 
