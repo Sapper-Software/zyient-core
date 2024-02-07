@@ -48,11 +48,6 @@ public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
     }
 
     @Override
-    public void endSession() throws DataStoreException {
-
-    }
-
-    @Override
     protected void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         super.doConfigure(xmlConfig);
         if (!(dataStore() instanceof SolrDataStore)) {
@@ -107,5 +102,25 @@ public class IndexedContentProvider extends ManagedContentProvider<SolrClient> {
                         entityType,
                         context);
         return new SolrContentCursor<>(cursor, fileSystem());
+    }
+
+    @Override
+    public void beingSession(boolean readOnly) throws DataStoreException {
+
+    }
+
+    @Override
+    public void endSession(@NonNull With with) throws DataStoreException {
+
+    }
+
+    @Override
+    public <T> T endSession(@NonNull With with, T ret) throws DataStoreException {
+        return ret;
+    }
+
+    @Override
+    public void endIfOpen() throws DataStoreException {
+
     }
 }

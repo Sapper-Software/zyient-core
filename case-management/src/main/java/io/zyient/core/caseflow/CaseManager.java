@@ -435,7 +435,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     context);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -493,7 +493,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     context);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -553,7 +553,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     modifier);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -622,7 +622,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     modifier);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -1072,7 +1072,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 caseObject.setArtefacts(docs);
             }
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -1112,7 +1112,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             }
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -1139,10 +1139,15 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
 
     @Override
     public void endIfOpen() throws DataStoreException {
-        if (dataStore.isInTransaction()) {
-            dataStore.rollback(false);
+        try {
+            checkState();
+            if (dataStore.isInTransaction()) {
+                dataStore.rollback(false);
+            }
+            endSession(With.ReadOnly);
+        } catch (CaseActionException ex) {
+            throw new DataStoreException(ex);
         }
-        endSession(With.ReadOnly);
     }
 
     @Override

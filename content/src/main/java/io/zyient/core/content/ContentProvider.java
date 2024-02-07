@@ -34,6 +34,7 @@ import io.zyient.base.core.utils.Timer;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.SessionScope;
 import io.zyient.core.persistence.model.Document;
 import io.zyient.core.persistence.model.DocumentId;
 import io.zyient.core.persistence.model.DocumentState;
@@ -55,7 +56,7 @@ import java.util.regex.Pattern;
 
 @Getter
 @Accessors(fluent = true)
-public abstract class ContentProvider implements Closeable {
+public abstract class ContentProvider implements SessionScope, Closeable {
     public static final String ENCRYPTED_PREFIX = "encrypted";
     public static final String ENCRYPTED_REGEX = String.format("%s=\\[(.+)\\]", ENCRYPTED_PREFIX);
     public static final String KEY_ENGINE = "ContentProvider";
@@ -425,8 +426,6 @@ public abstract class ContentProvider implements Closeable {
         }
     }
 
-    public abstract void endSession() throws DataStoreException;
-    
     protected abstract void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException;
 
     protected abstract <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> Document<E, K, T> createDoc(@NonNull Document<E, K, T> document,

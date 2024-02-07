@@ -44,17 +44,6 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
     }
 
     @Override
-    public void endSession() throws DataStoreException {
-        try {
-            checkState(ProcessorState.EProcessorState.Running);
-            MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
-            dataStore.endSession();
-        } catch (StateException se) {
-            throw new DataStoreException(se);
-        }
-    }
-
-    @Override
     protected void doConfigure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         super.doConfigure(xmlConfig);
         if (!(dataStore() instanceof MongoDbDataStore)) {
@@ -66,9 +55,9 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
     @Override
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull String uri,
-                                                                                                         @NonNull String collection,
-                                                                                                         @NonNull Class<? extends Document<E, K, D>> entityType,
-                                                                                                         DocumentContext context) throws DataStoreException {
+                                                                                                                  @NonNull String collection,
+                                                                                                                  @NonNull Class<? extends Document<E, K, D>> entityType,
+                                                                                                                  DocumentContext context) throws DataStoreException {
         try {
             String condition = String.format("URI = %s", uri);
             AbstractDataStore.Q query = new AbstractDataStore.Q()
@@ -113,5 +102,60 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
                         entityType,
                         context);
         return new MongoContentCursor<>(cursor, fileSystem());
+    }
+
+    @Override
+    public void beingSession(boolean readOnly) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
+            if (!readOnly) {
+                dataStore.beingTransaction();
+            }
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
+    }
+
+    @Override
+    public void endSession(@NonNull With with) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
+            try {
+                switch (with) {
+                    case Commit -> {
+                        dataStore.commit();
+                    }
+                    case Rollback -> {
+                        dataStore.rollback(false);
+                    }
+                }
+            } finally {
+                dataStore.endSession();
+            }
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
+    }
+
+    @Override
+    public <T> T endSession(@NonNull With with, T ret) throws DataStoreException {
+        endSession(with);
+        return ret;
+    }
+
+    @Override
+    public void endIfOpen() throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
+            if (dataStore.isInTransaction()) {
+                dataStore.rollback(false);
+            }
+            endSession(With.ReadOnly);
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
     }
 }
