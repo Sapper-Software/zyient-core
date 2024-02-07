@@ -30,8 +30,6 @@ import java.util.Locale;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
 @Embeddable
 public class CurrencyValue {
     @Column(name = "currency")

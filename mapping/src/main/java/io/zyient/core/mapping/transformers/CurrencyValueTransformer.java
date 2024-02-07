@@ -31,6 +31,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -132,7 +133,9 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                         return new CurrencyValue(currency, number.doubleValue());
                     }
                 }
-                Number number = format.parse(value);
+                NumberFormat numberFormat = NumberFormat.getCurrencyInstance(locale);
+                Number number = numberFormat.parse(value);
+                //Number number = format.parse(value);
                 return new CurrencyValue(currency, number.doubleValue());
             } catch (Exception ex) {
                 throw new DataException(ex);

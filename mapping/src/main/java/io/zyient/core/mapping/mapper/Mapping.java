@@ -170,6 +170,8 @@ public abstract class Mapping<T> {
         deSerializers.put(deSerializer.name(), deSerializer);
         deSerializer = new DoubleTransformer().locale(settings.getLocale()).configure(settings);
         deSerializers.put(deSerializer.name(), deSerializer);
+        deSerializer = new CurrencyValueTransformer().locale(settings.getLocale()).configure(settings);
+        deSerializers.put(deSerializer.name(), deSerializer);
         deSerializer = new DateTransformer().locale(settings.getLocale()).format(settings.getDateFormat()).configure(settings);
         deSerializers.put(deSerializer.name(), deSerializer);
     }
@@ -326,9 +328,13 @@ public abstract class Mapping<T> {
                     throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]", element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
+
                 PropertyDef def = ReflectionHelper.findProperty(entityType, element.getTargetPath());
                 if (def == null) {
-                    throw new Exception(String.format("Property not found. [entity=%s][property=%s]", entityType.getCanonicalName(), element.getTargetPath()));
+                    def = MappingReflectionHelper.findField(element.getTargetPath(), responseType);
+                    if (def == null) {
+                        throw new Exception(String.format("Property not found. [entity=%s][property=%s]", responseType.getCanonicalName(), element.getTargetPath()));
+                    }
                 }
                 MappingReflectionHelper.setProperty(element.getTargetPath(), def, data, tv);
             }

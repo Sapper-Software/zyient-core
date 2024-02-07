@@ -44,7 +44,7 @@ public class RuleConfigReader<T> {
     private RulesCache<T> cache;
     private File contentDir;
     private BaseEnv<?> env;
-
+    private boolean terminateOnValidationError;
     @SuppressWarnings("unchecked")
     public List<Rule<T>> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         Preconditions.checkNotNull(env);
@@ -77,12 +77,14 @@ public class RuleConfigReader<T> {
                             throw new Exception(String.format("Referenced rule not found in cache. [name=%s]",
                                     config.getName()));
                         }
-                        rules.add(rule);
+
+                        rules.add(rule.withTerminateOnValidationError(terminateOnValidationError));
                     } else {
                         Rule<T> rule = config.createInstance(entityType);
                         rule.withEntityType(entityType)
                                 .withContentDir(contentDir)
-                                .configure(config, env);
+                                .configure(config, env)
+                                .withTerminateOnValidationError(terminateOnValidationError);
                         if (ConfigReader.checkIfNodeExists(node, __CONFIG_PATH)) {
                             if (rule.getRuleType() != RuleType.Group
                                     && rule.getRuleType() != RuleType.Condition) {

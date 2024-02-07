@@ -55,7 +55,8 @@ public class RulesExecutor<T> {
                 .env(env)
                 .cache(cache)
                 .contentDir(contentDir)
-                .entityType(type);
+                .entityType(type)
+                .terminateOnValidationError(terminateOnValidationError);
         rules = reader.read(xmlConfig);
         return this;
     }
