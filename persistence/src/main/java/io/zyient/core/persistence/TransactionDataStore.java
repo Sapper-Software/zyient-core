@@ -76,9 +76,4 @@ public abstract class TransactionDataStore<C, T> extends AbstractDataStore<C> {
     public void endSession() throws DataStoreException {
         sessionManager.endSession();
     }
-
-    public void closeSession() throws DataStoreException {
-        sessionManager.close();
-    }
-
 }
