@@ -272,6 +272,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 document.setId(new DocumentId(settings.getContentCollection()));
                 document.setName(f.name());
                 document.setPath(f.file());
+                document.setSourcePath(f.sourceUrl());
                 document.getState().setState(EEntityState.New);
                 if (!Strings.isNullOrEmpty(f.mimeType())) {
                     document.setMimeType(f.mimeType());
