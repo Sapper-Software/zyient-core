@@ -16,13 +16,14 @@
 
 package io.zyient.base.core.auditing.readers.file;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.auditing.AuditCursor;
 import io.zyient.base.core.auditing.JsonAuditRecord;
 import io.zyient.base.core.auditing.JsonAuditSerDe;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.BufferedReader;
@@ -31,14 +32,16 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
+@Setter
 @Accessors(fluent = true)
 public class FileAuditCursor extends AuditCursor<JsonAuditRecord, String> {
     private List<File> files;
+    @Setter(AccessLevel.NONE)
     private int index = 0;
+    @Setter(AccessLevel.NONE)
+    @Getter(AccessLevel.NONE)
     private BufferedReader reader = null;
 
     public FileAuditCursor(int currentPage) {
@@ -62,6 +65,11 @@ public class FileAuditCursor extends AuditCursor<JsonAuditRecord, String> {
 
     @Override
     protected List<JsonAuditRecord> next(int page) throws Exception {
+        if (page < 0) {
+            page = currentPage();
+        } else {
+            currentPage = page;
+        }
         if (state == AuditCursorState.EOF || index >= files.size()) return null;
         int count = 0;
         List<JsonAuditRecord> records = new ArrayList<>(pageSize());
@@ -84,6 +92,7 @@ public class FileAuditCursor extends AuditCursor<JsonAuditRecord, String> {
             records.add(record);
         }
         if (!records.isEmpty()) {
+            currentPage++;
             return records;
         }
         return null;

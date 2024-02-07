@@ -115,7 +115,8 @@ public abstract class AuditReader<T extends AuditRecord<R>, R> implements Closea
         }
     }
 
-    public abstract List<T> read(int batchSize,
+    public abstract List<T> read(int page,
+                                 int batchSize,
                                  @NonNull EncryptionInfo encryption,
                                  Class<?> type,
                                  Context context) throws Exception;
