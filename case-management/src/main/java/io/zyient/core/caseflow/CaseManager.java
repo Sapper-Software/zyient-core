@@ -55,7 +55,7 @@ import java.util.*;
 @Getter
 @Accessors(fluent = true)
 public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E extends DocumentState<?>, T extends CaseDocument<E, T>>
-        implements Closeable {
+        implements SessionScope, Closeable {
     private final ProcessorState state = new ProcessorState();
     private final Class<? extends CaseManagerSettings> settingsType;
     private final Class<P> caseStateType;
@@ -215,10 +215,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         Preconditions.checkArgument(!Strings.isNullOrEmpty(description));
         checkState();
         try {
+            beingSession(false);
             try {
-                return __create(name, description, artefacts, creator, caseCode, notes, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __create(name, description, artefacts, creator, caseCode, notes, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -285,21 +288,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             }
         }
         validateCase(caseObject);
-        dataStore.beingTransaction();
-        try {
-            caseObject = save(caseObject, creator, context);
-            addCaseHistory(caseObject.getId(),
-                    EStandardAction.Create.action(),
-                    caseCode,
-                    notes,
-                    caseObject,
-                    creator);
-            dataStore.commit();
-            return caseObject;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
-        }
+        caseObject = save(caseObject, creator, context);
+        addCaseHistory(caseObject.getId(),
+                EStandardAction.Create.action(),
+                caseCode,
+                notes,
+                caseObject,
+                creator);
+        return caseObject;
     }
 
     public Case<P, S, E, T> assignTo(@NonNull String caseId,
@@ -310,10 +306,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
         checkState();
         try {
+            beingSession(false);
             try {
-                return __assignTo(caseId, assignTo, notes, assigner, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __assignTo(caseId, assignTo, notes, assigner, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -355,24 +354,15 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
         validateAssignment(current, caseObject);
         caseObject.getState().setState(EEntityState.Updated);
-        dataStore.beingTransaction();
-        try {
-            caseObject = saveUpdate(caseObject,
-                    EStandardAction.AssignTo.action(),
-                    EStandardCode.ActionAssignTo.code(),
-                    null,
-                    assigner,
-                    diff,
-                    context);
-            dataStore.commit();
-            return caseObject;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
-        } finally {
-            dataStore.endSession();
-        }
-
+        caseObject = saveUpdate(caseObject,
+                EStandardAction.AssignTo.action(),
+                EStandardCode.ActionAssignTo.code(),
+                null,
+                assigner,
+                diff,
+                context);
+        dataStore.commit();
+        return caseObject;
     }
 
     public Case<P, S, E, T> addArtefact(@NonNull String caseId,
@@ -381,10 +371,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                         Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __addArtefact(caseId, artefact, modifier, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __addArtefact(caseId, artefact, modifier, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -433,7 +426,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
         document = validateArtefact(document);
         caseObject.addArtefact(document);
-        dataStore.beingTransaction();
         try {
             caseObject = saveUpdate(caseObject,
                     EStandardAction.AddArtefact.action(),
@@ -442,11 +434,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     modifier,
                     Map.of("artefact.add", artefact.sourceUrl()),
                     context);
-            dataStore.commit();
             return caseObject;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
         } finally {
             contentProvider.endSession();
         }
@@ -458,10 +446,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                            Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __removeArtefact(caseId, artefactId, modifier, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __removeArtefact(caseId, artefactId, modifier, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -493,7 +484,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             throw new Exception(String.format("Artefact not found. [case id=%s][document id=%s]",
                     caseId, artefactId));
         }
-        dataStore.beingTransaction();
         try {
             caseObject = saveUpdate(caseObject,
                     EStandardAction.DeleteArtefact.action(),
@@ -502,11 +492,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     modifier,
                     Map.of("artefact.removed", artefactId),
                     context);
-            dataStore.commit();
             return caseObject;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
         } finally {
             contentProvider.endSession();
         }
@@ -518,10 +504,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                            Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __updateArtefact(caseId, document, modifier, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __updateArtefact(caseId, document, modifier, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -555,7 +544,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             docCtx = new DocumentContext();
         }
         docCtx.user(modifier.asPrincipal());
-        dataStore.beingTransaction();
         try {
             document = (CaseDocument<E, T>) contentProvider.update(document, docCtx);
             addCaseHistory(caseObject.getId(),
@@ -564,11 +552,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     null,
                     document,
                     modifier);
-            dataStore.commit();
             return caseObject;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
         } finally {
             contentProvider.endSession();
         }
@@ -581,10 +565,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                                 Context context) throws CaseActionException, CaseAuthorizationError {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __updateArtefactState(caseId, artefactId, state, modifier, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __updateArtefactState(caseId, artefactId, state, modifier, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -626,7 +613,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             docCtx = new DocumentContext();
         }
         docCtx.user(modifier.asPrincipal());
-        dataStore.beingTransaction();
         try {
             document = (CaseDocument<E, T>) contentProvider.update(document, docCtx);
             addCaseHistory(caseObject.getId(),
@@ -635,11 +621,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     null,
                     document,
                     modifier);
-            dataStore.commit();
             return caseObject;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
         } finally {
             contentProvider.endSession();
         }
@@ -652,8 +634,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __comment(caseId, comment, reason, commentBy, context);
+                CaseComment c = __comment(caseId, comment, reason, commentBy, context);
+                dataStore.commit();
+                return c;
+            } catch (Throwable t) {
+                dataStore.rollback(false);
+                throw t;
             } finally {
                 dataStore.endSession();
             }
@@ -679,21 +667,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
         authorization.authorize(caseObject, EStandardAction.Comment.action(), commentBy, context);
         CaseComment c = caseObject.addComment(commentBy, comment, reason, null, null, null);
-        dataStore.beingTransaction();
-        try {
-            caseObject = saveUpdate(caseObject,
-                    EStandardAction.Comment.action(),
-                    reason,
-                    comment,
-                    commentBy,
-                    Map.of("reason", reason, "comment", comment),
-                    context);
-            dataStore.commit();
-            return c;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
-        }
+        caseObject = saveUpdate(caseObject,
+                EStandardAction.Comment.action(),
+                reason,
+                comment,
+                commentBy,
+                Map.of("reason", reason, "comment", comment),
+                context);
+        return c;
     }
 
     public CaseComment commentOn(@NonNull String caseId,
@@ -704,10 +685,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                  Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __commentOn(caseId, documentId, comment, reason, commentBy, context);
-            } finally {
-                dataStore.endSession();
+                CaseComment c = __commentOn(caseId, documentId, comment, reason, commentBy, context);
+                return endSession(With.Commit, c);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -733,21 +717,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         authorization.authorize(caseObject, EStandardAction.Comment.action(), commentBy, context);
         DocumentId docId = new DocumentId(settings.getContentCollection(), documentId);
         CaseComment c = caseObject.addComment(commentBy, comment, reason, null, null, docId);
-        dataStore.beingTransaction();
-        try {
-            caseObject = saveUpdate(caseObject,
-                    EStandardAction.Comment.action(),
-                    reason,
-                    comment,
-                    commentBy,
-                    Map.of("reason", reason, "comment", comment),
-                    context);
-            dataStore.commit();
-            return c;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
-        }
+        caseObject = saveUpdate(caseObject,
+                EStandardAction.Comment.action(),
+                reason,
+                comment,
+                commentBy,
+                Map.of("reason", reason, "comment", comment),
+                context);
+        return c;
     }
 
     public CaseComment respondTo(@NonNull String caseId,
@@ -759,10 +736,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                  Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(false);
             try {
-                return __respondTo(caseId, commentId, comment, reason, responseState, commentBy, context);
-            } finally {
-                dataStore.endSession();
+                CaseComment c = __respondTo(caseId, commentId, comment, reason, responseState, commentBy, context);
+                return endSession(With.Commit, c);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -791,21 +771,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         else
             authorization.authorize(caseObject, EStandardAction.CommentClose.action(), commentBy, context);
         CaseComment c = caseObject.addComment(commentBy, comment, reason, commentId, responseState, null);
-        dataStore.beingTransaction();
-        try {
-            caseObject = saveUpdate(caseObject,
-                    EStandardAction.Comment.action(),
-                    reason,
-                    comment,
-                    commentBy,
-                    Map.of("response", responseState, "comment", comment),
-                    context);
-            dataStore.commit();
-            return c;
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
-        }
+        caseObject = saveUpdate(caseObject,
+                EStandardAction.Comment.action(),
+                reason,
+                comment,
+                commentBy,
+                Map.of("response", responseState, "comment", comment),
+                context);
+        return c;
     }
 
     public Case<P, S, E, T> updateCaseState(@NonNull CaseId id,
@@ -817,10 +790,13 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         Preconditions.checkArgument(!Strings.isNullOrEmpty(notes));
         checkState();
         try {
+            beingSession(false);
             try {
-                return __updateCaseState(id, entityType, state, notes, modifier, context);
-            } finally {
-                dataStore.endSession();
+                Case<P, S, E, T> caseObject = __updateCaseState(id, entityType, state, notes, modifier, context);
+                return endSession(With.Commit, caseObject);
+            } catch (Throwable t) {
+                endSession(With.Rollback);
+                throw t;
             }
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
@@ -869,25 +845,15 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         if (context instanceof CaseContext) {
             diff.put("updates", context);
         }
-        dataStore.beingTransaction();
-        try {
-            transition(current, caseObject.getCaseState().getState(), caseObject);
-            caseObject = saveUpdate(caseObject,
-                    EStandardAction.UpdateState.action(),
-                    EStandardCode.UpdateSate.code(),
-                    notes,
-                    modifier,
-                    diff,
-                    context);
-            dataStore.commit();
-        } catch (Throwable t) {
-            dataStore.rollback(false);
-            throw t;
-        } finally {
-            dataStore.endSession();
-        }
+        transition(current, caseObject.getCaseState().getState(), caseObject);
+        caseObject = saveUpdate(caseObject,
+                EStandardAction.UpdateState.action(),
+                EStandardCode.UpdateSate.code(),
+                notes,
+                modifier,
+                diff,
+                context);
         return caseObject;
-
     }
 
     private void transition(P fromState, P toState, Case<P, S, E, T> caseObject) throws CaseActionException {
@@ -909,7 +875,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         handleStateTransition(fromState, caseObject);
     }
 
-    @SuppressWarnings("unchecked")
     protected Case<P, S, E, T> update(@NonNull Case<P, S, E, T> caseObject,
                                       @NonNull CaseAction action,
                                       @NonNull CaseCode code,
@@ -920,21 +885,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         checkState();
         try {
             authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
-            dataStore.beingTransaction();
-            try {
-                caseObject = saveUpdate(caseObject,
-                        action,
-                        code,
-                        notes,
-                        modifier,
-                        Map.of("action", action, "code", code, "notes", notes),
-                        context);
-                dataStore.commit();
-                return caseObject;
-            } catch (Throwable t) {
-                dataStore.rollback(false);
-                throw t;
-            }
+            caseObject = saveUpdate(caseObject,
+                    action,
+                    code,
+                    notes,
+                    modifier,
+                    Map.of("action", action, "code", code, "notes", notes),
+                    context);
+            return caseObject;
         } catch (CaseAuthorizationError | CaseActionException ae) {
             throw ae;
         } catch (Throwable ex) {
@@ -968,10 +926,11 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                      Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(true);
             try {
                 return __findById(id, entityType, fetchDocuments, caller, context);
             } finally {
-                dataStore.endSession();
+                endSession(With.ReadOnly);
             }
         } catch (CaseAuthorizationError | CaseActionException e) {
             throw e;
@@ -1045,10 +1004,11 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                                            Context context) throws CaseAuthorizationError, CaseActionException {
         checkState();
         try {
+            beingSession(true);
             try {
                 return __findByName(caseName, entityType, fetchDocuments, caller, context);
             } finally {
-                dataStore.endSession();
+                endSession(With.ReadOnly);
             }
         } catch (CaseAuthorizationError | CaseActionException e) {
             throw e;
@@ -1157,9 +1117,51 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
     }
 
-    public void endSession() throws CaseActionException, DataStoreException {
-        checkState();
-        dataStore.endSession();
+    @Override
+    public void endSession(@NonNull With with) throws DataStoreException {
+        try {
+            checkState();
+            try {
+                switch (with) {
+                    case Commit -> {
+                        dataStore.commit();
+                    }
+                    case Rollback -> {
+                        dataStore.rollback(false);
+                    }
+                }
+            } finally {
+                dataStore.endSession();
+            }
+        } catch (CaseActionException ex) {
+            throw new DataStoreException(ex);
+        }
+    }
+
+    @Override
+    public void endIfOpen() throws DataStoreException {
+        if (dataStore.isInTransaction()) {
+            dataStore.rollback(false);
+        }
+        endSession(With.ReadOnly);
+    }
+
+    @Override
+    public <R> R endSession(@NonNull With with, R ret) throws DataStoreException {
+        endSession(with);
+        return ret;
+    }
+
+    @Override
+    public void beingSession(boolean readOnly) throws DataStoreException {
+        try {
+            checkState();
+            if (!readOnly) {
+                dataStore.beingTransaction();
+            }
+        } catch (CaseActionException ex) {
+            throw new DataStoreException(ex);
+        }
     }
 
     @Override
