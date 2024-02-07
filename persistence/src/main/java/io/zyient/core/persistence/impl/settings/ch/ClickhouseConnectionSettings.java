@@ -14,30 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings;
+package io.zyient.core.persistence.impl.settings.ch;
 
-public enum EConnectionType {
-    kafka,
-    zookeeper,
-    db,
-    rest,
-    hadoop,
-    debezium,
-    others,
-    chronicle,
-    email,
-    notification,
-    sqs,
-    servicebus,
-    solr,
-    s3;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.zyient.base.common.config.ConfigPath;
+import io.zyient.core.persistence.AbstractConnectionSettings;
+import lombok.Getter;
+import lombok.Setter;
 
-    public static EConnectionType parse(String name) {
-        for (EConnectionType type : EConnectionType.values()) {
-            if (type.name().compareToIgnoreCase(name) == 0) {
-                return type;
-            }
-        }
-        return null;
-    }
+@Getter
+@Setter
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+@ConfigPath(path = "morphia")
+public class ClickhouseConnectionSettings extends AbstractConnectionSettings {
+
 }

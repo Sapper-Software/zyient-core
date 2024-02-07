@@ -25,8 +25,8 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ThreadCache<T> implements Closeable {
-    private Map<Long, T> cache = new HashMap<>();
-    private ReentrantLock cacheLock = new ReentrantLock();
+    private final Map<Long, T> cache = new HashMap<>();
+    private final ReentrantLock cacheLock = new ReentrantLock();
 
     public T put(T elem) {
         cacheLock.lock();

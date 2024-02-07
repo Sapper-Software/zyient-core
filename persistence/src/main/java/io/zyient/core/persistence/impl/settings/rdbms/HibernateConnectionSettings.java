@@ -77,4 +77,8 @@ public class HibernateConnectionSettings extends AbstractConnectionSettings {
     private List<String> modelPackages;
     @Config(name = "useSpringScanning", required = false, type = Boolean.class)
     private boolean useSpringScanning = false;
+    @Config(name = "timeout.idle", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue connectionIdleTimeout = new TimeUnitValue(DEFAULT_POOL_TIMEOUT, TimeUnit.MILLISECONDS);
+    @Config(name = "timeout.opened", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue connectionOpenedTimeout = new TimeUnitValue(30, TimeUnit.MINUTES);
 }

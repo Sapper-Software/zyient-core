@@ -16,14 +16,10 @@
 
 package io.zyient.base.core.auditing;
 
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import io.zyient.base.common.StateException;
-import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.keystore.KeyStore;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -40,7 +36,7 @@ public abstract class AuditCursor<T extends AuditRecord<R>, R> implements Closea
 
     private int pageSize = 128;
     @Setter(AccessLevel.NONE)
-    private int currentPage = 0;
+    protected int currentPage = 0;
     @Setter(AccessLevel.NONE)
     protected AuditCursorState state = AuditCursorState.Unknown;
     private Class<? extends T> recordType;
