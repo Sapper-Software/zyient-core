@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.connections.settings;
+package io.zyient.core.persistence;
 
-public enum EConnectionType {
-    kafka,
-    zookeeper,
-    db,
-    rest,
-    hadoop,
-    debezium,
-    others,
-    chronicle,
-    email,
-    notification,
-    sqs,
-    servicebus,
-    solr,
-    s3;
+import lombok.NonNull;
 
-    public static EConnectionType parse(String name) {
-        for (EConnectionType type : EConnectionType.values()) {
-            if (type.name().compareToIgnoreCase(name) == 0) {
-                return type;
-            }
-        }
-        return null;
+public interface SessionScope {
+    enum With {
+        ReadOnly,
+        Commit,
+        Rollback
     }
+
+    void beingSession(boolean readOnly) throws DataStoreException;
+
+    void endSession(@NonNull With with) throws DataStoreException;
+
+    <T> T endSession(@NonNull With with, T ret) throws DataStoreException;
+
+    void endIfOpen() throws DataStoreException;
 }

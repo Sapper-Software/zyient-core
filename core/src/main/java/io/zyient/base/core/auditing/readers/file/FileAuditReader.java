@@ -30,7 +30,6 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.joda.time.DateTime;
 
 import java.io.File;
@@ -86,10 +85,23 @@ public class FileAuditReader extends AuditReader<JsonAuditRecord, String> {
     }
 
     @Override
-    public List<JsonAuditRecord> read(int batchSize,
+    public List<JsonAuditRecord> read(int page,
+                                      int batchSize,
                                       @NonNull EncryptionInfo encryption,
                                       Class<?> type,
                                       Context context) throws Exception {
+        int start = page * batchSize;
+        File current = current(type);
+        if (current != null) {
+            FileAuditCursor cursor = (FileAuditCursor) new FileAuditCursor(page)
+                    .files(List.of(current))
+                    .encryption(encryption)
+                    .recordType(JsonAuditRecord.class)
+                    .pageSize(batchSize)
+                    .keyStore(env().keyStore())
+                    .serializer(new JsonAuditSerDe());
+
+        }
         return null;
     }
 
@@ -99,6 +111,17 @@ public class FileAuditReader extends AuditReader<JsonAuditRecord, String> {
                                                      @NonNull EncryptionInfo encryption,
                                                      Class<?> type,
                                                      Context context) throws Exception {
+        List<File> files = fetchFiles(timeStart, timeEnd, type);
+        if (files != null && !files.isEmpty()) {
+            FileAuditCursor cursor = (FileAuditCursor) new FileAuditCursor(0)
+                    .files(files)
+                    .encryption(encryption)
+                    .recordType(JsonAuditRecord.class)
+                    .keyStore(env().keyStore())
+                    .serializer(new JsonAuditSerDe());
+
+            return cursor.open();
+        }
         return null;
     }
 

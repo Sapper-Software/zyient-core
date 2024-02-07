@@ -44,6 +44,7 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.cfg.Environment;
 import org.hibernate.service.ServiceRegistry;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Properties;
@@ -52,10 +53,24 @@ import java.util.Set;
 @Getter
 @Accessors(fluent = true)
 public class HibernateConnection extends AbstractConnection<Session> {
+    public static class SessionCacheElement implements Closeable {
+        private Session session;
+        private long timeOpened = System.currentTimeMillis();
+        private long timeLastUsed;
+
+        @Override
+        public void close() throws IOException {
+            if (session != null && session.isOpen()) {
+                session.close();
+            }
+            session = null;
+        }
+    }
+
     @Setter(AccessLevel.NONE)
     private SessionFactory sessionFactory = null;
     @Getter(AccessLevel.NONE)
-    private final ThreadCache<Session> threadCache = new ThreadCache<>();
+    private final ThreadCache<SessionCacheElement> threadCache = new ThreadCache<>();
     private BaseEnv<?> env;
 
     public HibernateConnection() {
@@ -81,11 +96,11 @@ public class HibernateConnection extends AbstractConnection<Session> {
                 DefaultLogger.warn("Connection already closed...");
             }
 
-            Session cs = threadCache.remove();
+            SessionCacheElement cs = threadCache.remove();
             if (cs == null) {
                 throw new ConnectionError("Connection not created via connection manager...");
             }
-            if (!cs.equals(connection)) {
+            if (!cs.session.equals(connection)) {
                 throw new ConnectionError("Connection handle passed doesn't match cached connection.");
             }
         } catch (Exception ex) {
@@ -97,19 +112,41 @@ public class HibernateConnection extends AbstractConnection<Session> {
     public Session getConnection() throws ConnectionError {
         state().check(EConnectionState.Connected);
         try {
-            if (threadCache.contains()) {
-                Session session = threadCache.get();
-                if (session.isOpen()) {
-                    return session;
-                }
-            }
             synchronized (threadCache) {
+                SessionCacheElement elem = null;
+                if (threadCache.contains()) {
+                    elem = threadCache.get();
+                    if (elem.session.isOpen() && !checkTimeout(elem)) {
+                        elem.timeLastUsed = System.currentTimeMillis();
+                        return elem.session;
+                    }
+                }
+                if (elem == null) {
+                    elem = new SessionCacheElement();
+                    threadCache.put(elem);
+                }
                 Session session = sessionFactory.openSession();
-                return threadCache.put(session);
+                elem.timeOpened = System.currentTimeMillis();
+                elem.timeLastUsed = System.currentTimeMillis();
+                elem.session = session;
+                return elem.session;
             }
         } catch (Throwable t) {
             throw new ConnectionError(t);
         }
+    }
+
+    private boolean checkTimeout(SessionCacheElement elem) throws Exception {
+        HibernateConnectionSettings st = (HibernateConnectionSettings) settings;
+        long delta = System.currentTimeMillis() - elem.timeLastUsed;
+        if (delta >= st.getConnectionIdleTimeout().normalized()) {
+            return true;
+        }
+        delta = System.currentTimeMillis() - elem.timeOpened;
+        if (delta >= st.getConnectionOpenedTimeout().normalized()) {
+            return true;
+        }
+        return false;
     }
 
     /**
