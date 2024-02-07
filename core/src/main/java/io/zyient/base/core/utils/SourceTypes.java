@@ -22,7 +22,7 @@ import lombok.NonNull;
 @Getter
 public enum SourceTypes {
     UNKNOWN("unknown", null),
-    CSV("text/csv", new String[]{"csv"}),
+    CSV("text/csv", new String[]{"csv","dat"}),
     TSV("text/tsv", new String[]{"tsv", "tdf"}),
     RFC4180("text/rfc4180", null),
     PSV("text/psv", new String[]{"psv","pgp"}),
@@ -30,7 +30,7 @@ public enum SourceTypes {
     XML(FileUtils.MIME_TYPE_XML, new String[]{"xml"}),
     JSON(FileUtils.MIME_TYPE_JSON, new String[]{"json"}),
     POSITIONAL("text/pos", new String[]{"pos"}),
-    EXCEL("application/ms-excel", new String[]{"xls", "xlsx"}),
+    EXCEL("application/ms-excel", new String[]{"xls", "xlsx","xlsb"}),
     HTML(FileUtils.MIME_TYPE_HTML, new String[]{"html", "dhtml"}),
     PDF(FileUtils.MIME_TYPE_PDF, new String[]{"pdf"}),
     WORD("application/ms-word", new String[]{"doc", "docx"}),
