@@ -24,7 +24,9 @@ import io.zyient.core.mapping.model.ExcelColumn;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderConfig;
+import io.zyient.core.mapping.readers.impl.separated.SeparatedInputReader;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
+import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -39,6 +41,10 @@ public class ExcelReaderConfig extends InputReaderConfig {
 
     public ExcelReaderConfig() {
         super(new SourceTypes[]{SourceTypes.EXCEL}, ExcelReaderSettings.class);
+    }
+
+    public ExcelReaderConfig(Class<? extends ReaderSettings> cls) {
+        super(new SourceTypes[]{SourceTypes.EXCEL}, cls);
     }
 
     @Override
@@ -61,6 +67,6 @@ public class ExcelReaderConfig extends InputReaderConfig {
 
     @Override
     public InputReader createInstance(@NonNull InputContentInfo contentInfo) throws Exception {
-        return null;
+        return (new ExcelInputReader()).contentInfo(contentInfo).settings(this.settings());
     }
 }

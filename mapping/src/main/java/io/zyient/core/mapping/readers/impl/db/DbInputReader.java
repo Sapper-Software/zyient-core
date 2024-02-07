@@ -113,13 +113,14 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
                 }
             }
         }
-        AbstractDataStore.Q query = builder.build(settings.getQuery(), conditions);
-        cursor = dataStore.search(query,
+        AbstractDataStore.Q queryDataStore = builder.build(settings.getQuery(), conditions);
+        cursor = dataStore.search(queryDataStore,
                 0,
                 settings.getReadBatchSize(),
                 keyType,
                 entityType,
                 null);
+
     }
 
     @Override

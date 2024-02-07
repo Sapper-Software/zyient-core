@@ -26,6 +26,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 
@@ -107,6 +108,17 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         }
         session.flush();
         transaction.commit();
+    }
+
+    @Override
+    public Session session() throws DataStoreException {
+        Session session = super.session();
+        if(!session.isOpen()) {
+            close(session);
+        }else {
+            return session;
+        }
+        return super.session();
     }
 
     @Override

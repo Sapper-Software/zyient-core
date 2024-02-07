@@ -17,11 +17,13 @@
 package io.zyient.core.mapping.readers.impl.separated;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.config.Settings;
 import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.mapping.model.Column;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderConfig;
+import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import io.zyient.core.mapping.readers.settings.SeparatedReaderSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
@@ -30,13 +32,18 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.util.Map;
 
 public class SeparatedReaderConfig extends InputReaderConfig {
+    private final static SourceTypes[] DEFAULT_SOURCE_TYPES = new SourceTypes[]{SourceTypes.CSV,
+            SourceTypes.EXCEL_CSV,
+            SourceTypes.TSV,
+            SourceTypes.PSV,
+            SourceTypes.RFC4180};
+
     public SeparatedReaderConfig() {
-        super(new SourceTypes[]{SourceTypes.CSV,
-                        SourceTypes.EXCEL_CSV,
-                        SourceTypes.TSV,
-                        SourceTypes.PSV,
-                        SourceTypes.RFC4180},
-                SeparatedReaderSettings.class);
+        super(DEFAULT_SOURCE_TYPES, SeparatedReaderSettings.class);
+    }
+
+    public SeparatedReaderConfig(Class<? extends ReaderSettings> cls) {
+        super(DEFAULT_SOURCE_TYPES, cls);
     }
 
     @Override

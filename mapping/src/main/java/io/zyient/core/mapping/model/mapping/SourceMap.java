@@ -16,10 +16,13 @@
 
 package io.zyient.core.mapping.model.mapping;
 
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class SourceMap extends HashMap<String, Object> {
+/**
+ * Using LinkedHashMap to maintain the order of the columns in source
+ */
+public class SourceMap extends LinkedHashMap<String, Object> {
     public SourceMap(int initialCapacity, float loadFactor) {
         super(initialCapacity, loadFactor);
     }

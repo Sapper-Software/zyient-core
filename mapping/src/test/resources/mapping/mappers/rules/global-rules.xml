@@ -18,6 +18,50 @@
 <configuration>
     <global>
         <rules>
+
+
+<!--            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">-->
+<!--                <name>fetch-iso-country</name>-->
+<!--                <expression>key.name = ${contact.address.country}</expression>-->
+<!--                <errorCode>1000001</errorCode>-->
+<!--                <validationErrorCode>1500001</validationErrorCode>-->
+<!--                <dataStore>test-rdbms</dataStore>-->
+<!--                <keyType>io.zyient.core.mapping.model.IsoCountryKey</keyType>-->
+<!--                <entityType>io.zyient.core.mapping.model.IsoCountries</entityType>-->
+<!--                <fieldMappings>-->
+<!--                    <alpha3>contact.address.countryCode</alpha3>-->
+<!--                </fieldMappings>-->
+<!--            </rule>-->
+<!--            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">-->
+<!--                <name>account-lookup</name>-->
+<!--                <expression>accountNo = ${source['Contract']}</expression>-->
+<!--                <errorCode>1000002</errorCode>-->
+<!--                <validationErrorCode>1500002</validationErrorCode>-->
+<!--                <dataStore>test-rdbms</dataStore>-->
+<!--                <keyType>io.zyient.base.core.model.LongKey</keyType>-->
+<!--                <entityType>io.zyient.core.mapping.model.CustodianAccount</entityType>-->
+<!--                <fieldMappings>-->
+<!--                    <key.a.b>custodianAccountId</key.a.b>-->
+<!--                </fieldMappings>-->
+<!--            </rule>-->
+
+<!--            <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">-->
+<!--                <name>fetch-iso-country</name>-->
+<!--                <expression>key.name = ${contact.address.country}</expression>-->
+<!--                <errorCode>1000001</errorCode>-->
+<!--                <validationErrorCode>1500001</validationErrorCode>-->
+<!--                <dataStore>test-rdbms</dataStore>-->
+<!--                <keyType>io.zyient.core.mapping.model.IsoCountryKey</keyType>-->
+<!--                <entityType>io.zyient.core.mapping.model.IsoCountries</entityType>-->
+<!--                <fieldMappings>-->
+<!--                    <mapping>-->
+<!--                        <source>alpha3</source>-->
+<!--                        <target>contact.address.countryCode</target>-->
+<!--                    </mapping>-->
+<!--                </fieldMappings>-->
+<!--            </rule>-->
+
+
             <rule settings="io.zyient.core.mapping.rules.db.DBRuleConfig">
                 <name>fetch-iso-country</name>
                 <expression>key.name = ${contact.address.country}</expression>
@@ -36,6 +80,7 @@
                    <name>TEST-RULE-VISITOR</name>
                 </visitor>
             </rule>
+
         </rules>
     </global>
 </configuration>

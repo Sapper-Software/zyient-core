@@ -34,4 +34,5 @@ public class ReaderSettings extends Settings {
     private SourceTypes assumeType;
     @Config(name = "readBatchSize", required = false, type = Integer.class)
     private int readBatchSize = 512;
+
 }

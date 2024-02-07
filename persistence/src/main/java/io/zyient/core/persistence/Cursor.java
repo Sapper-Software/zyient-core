@@ -47,7 +47,10 @@ public abstract class Cursor<K extends IKey, E extends IEntity<K>> implements Cl
         if (!EOF) {
             List<E> result = next(currentPage);
             if (result != null) {
-                currentPage++;
+                if (result.size() < pageSize) {
+                    EOF = true;
+                } else
+                    currentPage++;
             } else {
                 EOF = true;
             }

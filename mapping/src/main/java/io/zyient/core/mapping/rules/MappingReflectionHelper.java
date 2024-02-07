@@ -134,9 +134,16 @@ public class MappingReflectionHelper {
         if (isSourcePrefixed(field)) {
             throw new Exception(String.format("Cannot set value for Source. [field=%s]", field));
         }
-        if (property instanceof FixedPropertyDef) {
+        if (property instanceof PropertyFieldDef) {
+            if (entity instanceof MappedResponse<?>) {
+                entity = ((MappedResponse<?>) entity).getEntity();
+            }
             PropertyBag pb = (PropertyBag) entity;
-            pb.setProperty(((FixedPropertyDef) property).key(), value);
+            if (property instanceof FixedPropertyDef) {
+                pb.setProperty(((FixedPropertyDef) property).key(), value);
+            } else {
+                pb.setProperty(property.name(), value);
+            }
         } else {
             BeanUtils.setValue(entity, field, value);
         }

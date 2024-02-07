@@ -31,6 +31,8 @@ import io.zyient.core.mapping.pipeline.settings.PersistedEntityPipelineSettings;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.ReadResponse;
+import io.zyient.core.persistence.TransactionDataStore;
+import io.zyient.core.persistence.impl.rdbms.RdbmsDataStore;
 import lombok.NonNull;
 
 public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends EntityPipeline<K, E>
@@ -44,37 +46,47 @@ public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends 
         Preconditions.checkNotNull(settings);
         DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType().getCanonicalName()));
         ReadResponse response = new ReadResponse();
-        ReadCursor cursor = reader.open();
-        while (true) {
-            RecordResponse r = new RecordResponse();
-            try {
-                SourceMap data = cursor.next();
-                if (data == null) break;
-                r.setSource(data);
-                response.incrementCount();
-                r = process(data, context);
-                response.add(r);
-                response.incrementCommitCount();
-            } catch (ValidationException | ValidationExceptions ex) {
-                String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
-                        reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
-                ValidationExceptions ve = ValidationExceptions.add(new ValidationException(mesg), null);
-                if (settings().isTerminateOnValidationError()) {
-                    DefaultLogger.stacktrace(ex);
-                    throw ve;
-                } else {
+        beingTransaction();
+        try {
+            ReadCursor cursor = reader.open();
+            while (true) {
+                RecordResponse r = new RecordResponse();
+                try {
+                    SourceMap data = cursor.next();
+                    if (data == null) break;
+                    r.setSource(data);
                     response.incrementCount();
-                    DefaultLogger.warn(mesg);
-                    r = errorResponse(r, null, ex);
+                    r = process(data, context);
                     response.add(r);
+                    response.incrementCommitCount();
+
+                } catch (ValidationException | ValidationExceptions ex) {
+                    String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
+                            reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
+                    ValidationExceptions ve = ValidationExceptions.add(new ValidationException(mesg), null);
+                    if (settings().isTerminateOnValidationError()) {
+                        DefaultLogger.stacktrace(ex);
+                        throw ve;
+                    } else {
+                        response.incrementCount();
+                        DefaultLogger.warn(mesg);
+                        r = errorResponse(r, null, ex);
+                        response.add(r);
+                    }
+                } catch (Exception e) {
+                    rollback();
+                    DefaultLogger.stacktrace(e);
+                    DefaultLogger.error(e.getLocalizedMessage());
+                    throw e;
                 }
-            } catch (Exception e) {
-                rollback();
-                DefaultLogger.stacktrace(e);
-                DefaultLogger.error(e.getLocalizedMessage());
-                throw e;
             }
+            commit();
+        } catch (Exception e) {
+            rollback();
+            throw e;
         }
+
+
         DefaultLogger.info(String.format("Processed [%d] records for entity. [type=%s]",
                 response.getRecordCount(), entityType().getCanonicalName()));
         return response;

@@ -118,8 +118,7 @@ public abstract class BaseRule<T> implements Rule<T> {
                             entityType,
                             getRuleType().name(),
                             errorCode,
-                            String.format("Invalid Filter Rule response. [type=%s]",
-                                    response.getClass().getCanonicalName()));
+                            "Invalid Filter/Condition Rule response.");
                 }
                 boolean r = (boolean) response;
                 if (rt == RuleType.Condition) {

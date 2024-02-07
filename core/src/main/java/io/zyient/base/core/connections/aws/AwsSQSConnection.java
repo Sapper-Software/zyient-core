@@ -158,7 +158,6 @@ public abstract class AwsSQSConnection extends MessageConnection {
         Region region = Region.of(((AwsSQSConnectionSettings) settings).getRegion());
         client = SqsClient.builder()
                 .region(region)
-                .credentialsProvider(ProfileCredentialsProvider.create())
                 .build();
     }
 

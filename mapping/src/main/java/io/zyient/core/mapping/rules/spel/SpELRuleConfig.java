@@ -35,18 +35,19 @@ public class SpELRuleConfig extends BaseRuleConfig {
     @Config(name = "field", required = false)
     private String target;
 
+
     @Override
     public void validate() throws ConfigurationException {
         super.validate();
         if (getType() == RuleType.Transformation) {
             if (Strings.isNullOrEmpty(target)) {
-                throw new ConfigurationException(String.format("Missing required property [field]. [rule=%s]",
+                throw new ConfigurationException(String.format("Missing required property [target]. [rule=%s]",
                         getName()));
             }
         }
     }
 
-    public  <E> Rule<E> createInstance(@NonNull Class<? extends E> entityType) throws Exception {
+    public <E> Rule<E> createInstance(@NonNull Class<? extends E> entityType) throws Exception {
         return new SpELRule<E>();
     }
 }
