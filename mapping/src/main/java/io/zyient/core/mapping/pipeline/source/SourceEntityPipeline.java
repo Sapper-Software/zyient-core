@@ -31,8 +31,6 @@ import io.zyient.core.mapping.pipeline.settings.PersistedEntityPipelineSettings;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.ReadResponse;
-import io.zyient.core.persistence.TransactionDataStore;
-import io.zyient.core.persistence.impl.rdbms.RdbmsDataStore;
 import lombok.NonNull;
 
 public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends EntityPipeline<K, E>

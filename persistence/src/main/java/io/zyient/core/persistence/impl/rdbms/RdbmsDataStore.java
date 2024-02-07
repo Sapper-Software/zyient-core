@@ -27,7 +27,9 @@ import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.hibernate.*;
+import org.hibernate.ScrollableResults;
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.hibernate.query.Query;
 
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {

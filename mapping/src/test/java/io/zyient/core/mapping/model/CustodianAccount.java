@@ -5,8 +5,10 @@ import io.zyient.base.common.model.CopyException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.core.model.LongKey;
-import jakarta.persistence.*;
 import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

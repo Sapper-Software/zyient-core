@@ -54,17 +54,6 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
     }
 
     @Override
-    public void endSession() throws DataStoreException {
-        try {
-            checkState(ProcessorState.EProcessorState.Running);
-            RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
-            dataStore.endSession();
-        } catch (StateException se) {
-            throw new DataStoreException(se);
-        }
-    }
-
-    @Override
     @SuppressWarnings("unchecked")
     protected <E extends DocumentState<?>, K extends IKey, D extends Document<E, K, D>> Document<E, K, D> findDoc(@NonNull String uri,
                                                                                                                   @NonNull String collection,
@@ -116,5 +105,60 @@ public class DbContentProvider extends ManagedContentProvider<Session> {
                         entityType,
                         context);
         return new DbContentCursor<>(cursor, fileSystem());
+    }
+
+    @Override
+    public void beingSession(boolean readOnly) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
+            if (!readOnly) {
+                dataStore.beingTransaction();
+            }
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
+    }
+
+    @Override
+    public void endSession(@NonNull With with) throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
+            try {
+                switch (with) {
+                    case Commit -> {
+                        dataStore.commit();
+                    }
+                    case Rollback -> {
+                        dataStore.rollback(false);
+                    }
+                }
+            } finally {
+                dataStore.endSession();
+            }
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
+    }
+
+    @Override
+    public <T> T endSession(@NonNull With with, T ret) throws DataStoreException {
+        endSession(with);
+        return ret;
+    }
+
+    @Override
+    public void endIfOpen() throws DataStoreException {
+        try {
+            checkState(ProcessorState.EProcessorState.Running);
+            RdbmsDataStore dataStore = (RdbmsDataStore) dataStore();
+            if (dataStore.isInTransaction()) {
+                dataStore.rollback(false);
+            }
+            endSession(With.ReadOnly);
+        } catch (StateException se) {
+            throw new DataStoreException(se);
+        }
     }
 }

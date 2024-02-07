@@ -1,6 +1,5 @@
 package io.zyient.core.mapping.model;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.model.entity.IKey;
 import jakarta.persistence.*;
 import lombok.Getter;
