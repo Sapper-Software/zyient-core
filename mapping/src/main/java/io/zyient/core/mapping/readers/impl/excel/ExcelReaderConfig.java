@@ -24,7 +24,6 @@ import io.zyient.core.mapping.model.ExcelColumn;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderConfig;
-import io.zyient.core.mapping.readers.impl.separated.SeparatedInputReader;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
 import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.NonNull;

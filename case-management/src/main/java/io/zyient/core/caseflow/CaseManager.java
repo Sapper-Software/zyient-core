@@ -393,8 +393,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                           @NonNull UserOrRole modifier,
                                           Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        context = AbstractDataStore.withRefresh(context);
-        Case<P, S, E, T> caseObject = findById(id,
+        Case<P, S, E, T> caseObject = __findById(id,
                 (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                 true,
                 modifier,
@@ -436,7 +435,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     context);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -468,8 +467,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                              @NonNull UserOrRole modifier,
                                              Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        context = AbstractDataStore.withRefresh(context);
-        Case<P, S, E, T> caseObject = findById(id,
+        Case<P, S, E, T> caseObject = __findById(id,
                 (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                 true,
                 modifier,
@@ -494,7 +492,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     context);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -526,8 +524,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                              @NonNull UserOrRole modifier,
                                              Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        context = AbstractDataStore.withRefresh(context);
-        Case<P, S, E, T> caseObject = findById(id,
+        Case<P, S, E, T> caseObject = __findById(id,
                 (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                 true,
                 modifier,
@@ -554,7 +551,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     modifier);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -588,8 +585,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                                   @NonNull UserOrRole modifier,
                                                   Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        context = AbstractDataStore.withRefresh(context);
-        Case<P, S, E, T> caseObject = findById(id,
+        Case<P, S, E, T> caseObject = __findById(id,
                 (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                 true,
                 modifier,
@@ -623,7 +619,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                     modifier);
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -813,8 +809,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                               @NonNull String notes,
                                               @NonNull UserOrRole modifier,
                                               Context context) throws Exception {
-        context = AbstractDataStore.withRefresh(context);
-        Case<P, S, E, T> caseObject = findById(id,
+        Case<P, S, E, T> caseObject = __findById(id,
                 (Class<? extends Case<P, S, E, T>>) settings.getCaseType(),
                 true,
                 modifier,
@@ -1073,7 +1068,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 caseObject.setArtefacts(docs);
             }
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -1113,7 +1108,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
             }
             return caseObject;
         } finally {
-            contentProvider.endSession();
+            contentProvider.endIfOpen();
         }
     }
 
@@ -1140,10 +1135,15 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
 
     @Override
     public void endIfOpen() throws DataStoreException {
-        if (dataStore.isInTransaction()) {
-            dataStore.rollback(false);
+        try {
+            checkState();
+            if (dataStore.isInTransaction()) {
+                dataStore.rollback(false);
+            }
+            endSession(With.ReadOnly);
+        } catch (CaseActionException ex) {
+            throw new DataStoreException(ex);
         }
-        endSession(With.ReadOnly);
     }
 
     @Override
