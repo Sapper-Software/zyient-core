@@ -29,6 +29,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -133,9 +134,13 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                         return new CurrencyValue(currency, number.doubleValue());
                     }
                 }
+                if(NumberUtils.isParsable(value)){
+                    double d = Double.parseDouble(value);
+                    return new CurrencyValue(currency, d);
+                }
+
                 NumberFormat numberFormat = NumberFormat.getCurrencyInstance(locale);
                 Number number = numberFormat.parse(value);
-                //Number number = format.parse(value);
                 return new CurrencyValue(currency, number.doubleValue());
             } catch (Exception ex) {
                 throw new DataException(ex);
