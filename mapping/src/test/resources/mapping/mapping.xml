@@ -39,6 +39,7 @@
         </contextProvider>
         <pipelines>
             <pipeline type="io.zyient.core.mapping.pipeline.CustomerPipeline">
+                <name>TEST-CUSTOMERS</name>
                 <mapping>test-customer</mapping>
                 <keyType>io.zyient.base.core.model.IntegerKey</keyType>
                 <entityType>io.zyient.core.mapping.model.Customer</entityType>

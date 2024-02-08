@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.common.config.ConfigReader;
@@ -173,7 +174,7 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
             }
             DefaultExports.initialize();
             if (meterRegistry == null) {
-                meterRegistry = new CompositeMeterRegistry();
+                meterRegistry = new LoggingMeterRegistry();
             }
             return this;
         } catch (Exception ex) {
