@@ -65,7 +65,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     private ActionAuthorization<P, S> authorization;
     private DataStoreEnv<?> env;
     private Map<String, StateTransitionHandler<P, S, E, T>> handlers;
-    private Map<P, Map<P, StateTransitionHandler<P, S, E, T>>> transitions;
+    private Map<P, Map<P, List<StateTransitionHandler<P, S, E, T>>>> transitions;
     private Class<? extends CaseDocument<E, T>> documentType;
 
     public CaseManager(@NonNull Class<? extends CaseManagerSettings> settingsType,
@@ -160,8 +160,9 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         throw new Exception(String.format("Specified transition handler not found. [name=%s]",
                                 settings.getHandler()));
                     }
-                    Map<P, StateTransitionHandler<P, S, E, T>> map = transitions.computeIfAbsent(from, k -> new HashMap<>());
-                    map.put(to, handler);
+                    Map<P, List<StateTransitionHandler<P, S, E, T>>> map = transitions.computeIfAbsent(from, k -> new HashMap<>());
+                    map.computeIfAbsent(to, k -> new ArrayList<>());
+                    map.get(to).add(handler);
                 }
             }
         }
@@ -854,11 +855,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     private void transition(P fromState, P toState, Case<P, S, E, T> caseObject) throws CaseActionException {
         if (transitions != null) {
             if (transitions.containsKey(fromState)) {
-                Map<P, StateTransitionHandler<P, S, E, T>> map = transitions.get(fromState);
+                Map<P, List<StateTransitionHandler<P, S, E, T>>> map = transitions.get(fromState);
                 if (map.containsKey(toState)) {
-                    StateTransitionHandler<P, S, E, T> handler = map.get(toState);
+                    List<StateTransitionHandler<P, S, E, T>> handlers = map.get(toState);
+
                     try {
-                        handler.handleStateTransition(fromState, caseObject);
+                        for (StateTransitionHandler<P, S, E, T> handler : handlers) {
+                            handler.handleStateTransition(fromState, caseObject);
+                        }
                     } catch (CaseActionException | CaseFatalError ae) {
                         throw ae;
                     } catch (Throwable t) {
