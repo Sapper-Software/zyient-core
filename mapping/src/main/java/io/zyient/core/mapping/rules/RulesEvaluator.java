@@ -19,12 +19,16 @@ package io.zyient.core.mapping.rules;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
+import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.utils.Timer;
 import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RuleEvaluationMetrics;
 import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
+import java.io.IOException;
 import java.util.List;
 
 @Getter
@@ -32,53 +36,72 @@ import java.util.List;
 public class RulesEvaluator<T> {
     private final List<Rule<T>> rules;
     private final boolean terminateOnValidationError;
+    private final BaseEnv<?> env;
+    private RuleEvaluationMetrics metrics;
 
     public RulesEvaluator(@NonNull List<Rule<T>> rules,
+                          @NonNull BaseEnv<?> env,
                           boolean terminateOnValidationError) {
         Preconditions.checkArgument(!rules.isEmpty());
         this.rules = rules;
+        this.env = env;
         this.terminateOnValidationError = terminateOnValidationError;
+        metrics = new RuleEvaluationMetrics("RULES",
+                getClass().getSimpleName(),
+                getClass().getCanonicalName(),
+                env);
     }
 
+    @SuppressWarnings("unchecked")
     public void evaluate(@NonNull T data, EvaluationStatus status) throws RuleEvaluationError, RuleValidationError {
-        for (Rule<T> rule : rules) {
-            try {
-                EvaluationStatus r = rule.evaluate(data);
-                if (r.getErrors() != null) {
-                    ValidationExceptions errors = r.getErrors();
-                    for (ValidationException ve : errors.getErrors()) {
-                        if (!(ve instanceof RuleValidationError)) {
-                            throw new RuleEvaluationError(rule.name(),
-                                    rule.entityType(),
-                                    rule.getRuleType().name(),
-                                    rule.errorCode(),
-                                    String.format("Invalid validation error: [type=%s]",
-                                            ve.getClass().getCanonicalName()));
+        try {
+            try (Timer t = new Timer(metrics.processTimer())) {
+                for (Rule<T> rule : rules) {
+                    metrics.recordsCounter().increment();
+                    try (Timer rt = new Timer(metrics.timer((Class<? extends Rule<?>>) rule.getClass()))){
+                        EvaluationStatus r = rule.evaluate(data);
+                        if (r.getErrors() != null) {
+                            ValidationExceptions errors = r.getErrors();
+                            for (ValidationException ve : errors.getErrors()) {
+                                if (!(ve instanceof RuleValidationError)) {
+                                    throw new RuleEvaluationError(rule.name(),
+                                            rule.entityType(),
+                                            rule.getRuleType().name(),
+                                            rule.errorCode(),
+                                            String.format("Invalid validation error: [type=%s]",
+                                                    ve.getClass().getCanonicalName()));
+                                }
+                                if (terminateOnValidationError) {
+                                    throw (RuleValidationError) ve;
+                                }
+                                status.error((RuleValidationError) ve);
+                            }
                         }
-                        if (terminateOnValidationError) {
-                            throw (RuleValidationError) ve;
-                        }
-                        status.error((RuleValidationError) ve);
-                    }
-                }
 
-                if (rule.getRuleType() == RuleType.Condition) {
-                    if (r.getStatus() == StatusCode.Failed) {
-                        status.setStatus(StatusCode.Failed);
-                        break;
-                    }
-                } else if (rule.getRuleType() == RuleType.Filter) {
-                    if (r.getStatus() == StatusCode.IgnoreRecord) {
-                        status.setStatus(StatusCode.IgnoreRecord);
-                        break;
+                        if (rule.getRuleType() == RuleType.Condition) {
+                            if (r.getStatus() == StatusCode.Failed) {
+                                status.setStatus(StatusCode.Failed);
+                                metrics.ignoredCounter().increment();
+                                break;
+                            }
+                        } else if (rule.getRuleType() == RuleType.Filter) {
+                            if (r.getStatus() == StatusCode.IgnoreRecord) {
+                                status.setStatus(StatusCode.IgnoreRecord);
+                                metrics.ignoredCounter().increment();
+                                break;
+                            }
+                        }
+                    } catch (RuleValidationError ve) {
+                        if (terminateOnValidationError) {
+                            throw ve;
+                        }
+                        status.error(ve);
+                        metrics.errorsCounter().increment();
                     }
                 }
-            } catch (RuleValidationError ve) {
-                if (terminateOnValidationError) {
-                    throw ve;
-                }
-                status.error(ve);
             }
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
         }
     }
 }

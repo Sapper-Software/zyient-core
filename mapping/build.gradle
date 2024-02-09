@@ -30,7 +30,7 @@ dependencies {
 
     implementation 'org.apache.commons:commons-csv:1.10.0'
     // https://mvnrepository.com/artifact/org.springframework/spring-expression
-    implementation 'org.springframework:spring-expression:6.1.0'
+    implementation 'org.springframework:spring-expression:6.1.3'
     implementation 'org.kie:kie-ci:9.44.0.Final'
     implementation 'org.drools:drools-decisiontables:9.44.0.Final'
     implementation 'com.jayway.jsonpath:json-path:2.8.0'

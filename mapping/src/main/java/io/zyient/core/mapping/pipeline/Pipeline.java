@@ -24,6 +24,8 @@ import io.zyient.base.common.model.ValidationException;
 import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
+import io.zyient.base.core.utils.Timer;
+import io.zyient.core.mapping.PipelineMetrics;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.EvaluationStatus;
 import io.zyient.core.mapping.model.RecordResponse;
@@ -53,6 +55,7 @@ public abstract class Pipeline implements Closeable {
     private HierarchicalConfiguration<ImmutableNode> config;
     private File contentDir;
     private BaseEnv<?> env;
+    private PipelineMetrics pMetrics;
 
     public String name() {
         Preconditions.checkNotNull(settings);
@@ -67,6 +70,11 @@ public abstract class Pipeline implements Closeable {
         reader.read();
         settings = (PipelineSettings) reader.settings();
         config = reader.config();
+        pMetrics = new PipelineMetrics("PIPELINE",
+                settings.getName(),
+                getClass().getName(),
+                env,
+                getClass());
     }
 
     protected RecordResponse errorResponse(RecordResponse response,
@@ -111,7 +119,12 @@ public abstract class Pipeline implements Closeable {
 
     public final RecordResponse process(@NonNull SourceMap data, Context context) throws Exception {
         checkState();
-        return execute(data, context);
+        pMetrics.recordsCounter().increment();
+        try (Timer t = new Timer(pMetrics.recordTimer())) {
+            RecordResponse r = execute(data, context);
+            pMetrics.processedCounter().increment();
+            return r;
+        }
     }
 
     protected abstract RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception;

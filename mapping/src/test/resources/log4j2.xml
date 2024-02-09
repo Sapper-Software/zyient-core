@@ -54,6 +54,10 @@
             <AppenderRef ref="services"/>
         </Logger>
 
+        <Logger name="test-mappings" additivity="false" level="info">
+            <AppenderRef ref="services"/>
+        </Logger>
+
         <Root level="debug">
             <AppenderRef ref="Console"/>
         </Root>

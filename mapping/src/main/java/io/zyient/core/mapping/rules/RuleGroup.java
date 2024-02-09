@@ -38,6 +38,7 @@ public class RuleGroup<T> implements Rule<T> {
     private int errorCode;
     private boolean terminateOnValidationError = true;
     private RuleVisitor<T> visitor;
+    private BaseEnv<?> env;
 
     @Override
     public String name() {
@@ -66,6 +67,7 @@ public class RuleGroup<T> implements Rule<T> {
     public Rule<T> configure(@NonNull RuleConfig config,
                              @NonNull BaseEnv<?> env) throws ConfigurationException {
         Preconditions.checkArgument(config instanceof RuleGroupConfig);
+        this.env = env;
         settings = (RuleGroupConfig) config;
         if (config.getErrorCode() != null)
             errorCode = config.getErrorCode();
@@ -77,7 +79,7 @@ public class RuleGroup<T> implements Rule<T> {
         Preconditions.checkState(rules != null && !rules.isEmpty());
         synchronized (this) {
             if (evaluator == null) {
-                evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
+                evaluator = new RulesEvaluator<>(rules, env, terminateOnValidationError);
             }
         }
         EvaluationStatus status = new EvaluationStatus();

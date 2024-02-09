@@ -21,7 +21,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.mapper.Mapping;
-import io.zyient.core.mapping.model.PipelineMetrics;
+import io.zyient.core.mapping.model.SourcePipelineMetrics;
 import io.zyient.core.mapping.model.mapping.MappedResponse;
 import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
 import io.zyient.core.mapping.pipeline.settings.PipelineSettings;
@@ -43,7 +43,7 @@ public abstract class ExecutablePipeline<E> extends Pipeline {
     private Mapping<E> mapping;
     private RulesExecutor<MappedResponse<E>> postProcessor;
     private MapperFactory mapperFactory;
-    protected PipelineMetrics metrics;
+    protected SourcePipelineMetrics metrics;
 
     public ExecutablePipeline<E> withMapperFactory(@NonNull MapperFactory mapperFactory) {
         this.mapperFactory = mapperFactory;
@@ -65,7 +65,7 @@ public abstract class ExecutablePipeline<E> extends Pipeline {
                     settings.getMapping()));
         }
         mapping.withTerminateOnValidationError(settings.isTerminateOnValidationError());
-        metrics = new PipelineMetrics("PIPELINE",
+        metrics = new SourcePipelineMetrics("PIPELINE",
                 settings.getName(),
                 getClass().getSimpleName(),
                 env, getClass());

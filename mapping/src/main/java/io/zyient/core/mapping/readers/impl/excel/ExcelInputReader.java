@@ -45,7 +45,7 @@ public class ExcelInputReader extends InputReader {
     private Sheet current = null;
 
     @Override
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         try {
             stream = new FileInputStream(contentInfo().path());
             workbook = createWorkbook(stream);
@@ -61,7 +61,7 @@ public class ExcelInputReader extends InputReader {
     }
 
     @Override
-    public List<SourceMap> nextBatch() throws IOException {
+    public List<SourceMap> fetchNextBatch() throws IOException {
         Preconditions.checkState(workbook != null);
         Preconditions.checkState(settings() instanceof ExcelReaderSettings);
         if (EOF) return null;

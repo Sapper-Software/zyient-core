@@ -41,7 +41,7 @@ public class SeparatedInputReader extends InputReader {
     private Iterator<CSVRecord> iterator;
 
     @Override
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         Preconditions.checkState(settings() instanceof SeparatedReaderSettings);
         try {
             format = getReaderFormat(((SeparatedReaderSettings) settings()).getType());
@@ -94,7 +94,7 @@ public class SeparatedInputReader extends InputReader {
     }
 
     @Override
-    public List<SourceMap> nextBatch() throws IOException {
+    public List<SourceMap> fetchNextBatch() throws IOException {
         Preconditions.checkNotNull(parser);
         SeparatedReaderSettings settings = (SeparatedReaderSettings) settings();
         if (!parser.isClosed()) {

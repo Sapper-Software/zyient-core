@@ -48,7 +48,7 @@ public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends 
         ReadResponse response = new ReadResponse();
         try {
             int pendingCommitCount = 0;
-            ReadCursor cursor = reader.open();
+            ReadCursor cursor = reader.open(env());
             while (true) {
                 try (Timer t = new Timer(metrics.processTimer())) {
                     if (pendingCommitCount >= settings.getCommitBatchSize()) {
@@ -58,11 +58,11 @@ public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends 
                     if (pendingCommitCount == 0) {
                         beingTransaction();
                     }
-                    metrics.recordsCounter().increment();
                     RecordResponse r = new RecordResponse();
                     try {
                         SourceMap data = cursor.next();
                         if (data == null) break;
+                        metrics.recordsCounter().increment();
                         r.setSource(data);
                         response.incrementCount();
                         r = process(data, context);
@@ -76,9 +76,9 @@ public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends 
                         ValidationExceptions ve = ValidationExceptions.add(new ValidationException(mesg), null);
                         if (settings().isTerminateOnValidationError()) {
                             DefaultLogger.stacktrace(ex);
-                            metrics.errorsCounter().increment();
                             throw ve;
                         } else {
+                            metrics.errorsCounter().increment();
                             response.incrementCount();
                             DefaultLogger.warn(mesg);
                             r = errorResponse(r, null, ex);

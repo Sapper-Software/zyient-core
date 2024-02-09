@@ -33,7 +33,7 @@ public class JsonInputReader extends JacksonInputReader {
 
     @Override
     @SuppressWarnings("unchecked")
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         Preconditions.checkState(settings() instanceof JsonReaderSettings);
         try {
             ObjectMapper mapper = ((JsonReaderSettings) settings()).getObjectMapper();

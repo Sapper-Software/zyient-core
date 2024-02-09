@@ -31,31 +31,28 @@ import java.util.Map;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class PipelineMetrics extends MetricsBase {
+public class SourcePipelineMetrics extends MetricsBase {
     public static final String TAG_TYPE = "PipelineType";
     public static final String METRIC_TAG_RECORDS = "RECORDS";
     public static final String METRIC_TAG_PROCESSED = "PROCESSED";
-    public static final String METRIC_TAG_IGNORED = "IGNORED";
     public static final String METRIC_TAG_ERRORS = "ERRORS";
 
     private Counter recordsCounter;
     private Counter processedCounter;
-    private Counter ignoredCounter;
     private Counter errorsCounter;
 
     private DistributionSummary processTimer;
 
-    public PipelineMetrics(@NonNull String engine,
-                           @NonNull String name,
-                           @NonNull String sourceType,
-                           @NonNull BaseEnv<?> env,
-                           @NonNull Class<? extends Pipeline> type) {
+    public SourcePipelineMetrics(@NonNull String engine,
+                                 @NonNull String name,
+                                 @NonNull String sourceType,
+                                 @NonNull BaseEnv<?> env,
+                                 @NonNull Class<? extends Pipeline> type) {
         super(engine, name, sourceType, env);
         Map<String, String> tags = Map.of(TAG_TYPE, type.getCanonicalName());
         recordsCounter = addCounter(METRIC_TAG_RECORDS, tags);
         processedCounter = addCounter(METRIC_TAG_PROCESSED, tags);
-        ignoredCounter = addCounter(METRIC_TAG_IGNORED, tags);
-        errorsCounter = addCounter(METRIC_TAG_RECORDS, tags);
+        errorsCounter = addCounter(METRIC_TAG_ERRORS, tags);
 
         processTimer = addTimer(METRIC_TAG_RECORDS, tags);
     }

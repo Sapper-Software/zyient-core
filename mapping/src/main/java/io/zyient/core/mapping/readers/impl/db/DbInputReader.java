@@ -55,7 +55,7 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
 
     @Override
     @SuppressWarnings("unchecked")
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         try {
             DbReaderSettings settings = (DbReaderSettings) settings();
             DataStoreEnv<?> env = BaseEnv.get(settings.getEnv(), DataStoreEnv.class);
@@ -124,7 +124,7 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
     }
 
     @Override
-    public List<SourceMap> nextBatch() throws IOException {
+    public List<SourceMap> fetchNextBatch() throws IOException {
         try {
             List<E> data = cursor.nextPage();
             if (data != null && !data.isEmpty()) {

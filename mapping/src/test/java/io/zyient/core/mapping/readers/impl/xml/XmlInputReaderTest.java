@@ -16,10 +16,17 @@
 
 package io.zyient.core.mapping.readers.impl.xml;
 
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.core.mapping.env.DemoDataStoreEnv;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.XmlReaderSettings;
+import org.apache.commons.configuration2.XMLConfiguration;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -30,6 +37,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class XmlInputReaderTest {
     private static final String FILE_XML_OBJECT = "src/test/resources/data/customers_202311231645.xml";
+    private static final String __CONFIG_FILE = "src/test/resources/mapping/test-mapping-env.xml";
+    private static XMLConfiguration xmlConfiguration = null;
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+        xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
+        Preconditions.checkState(xmlConfiguration != null);
+        env.create(xmlConfiguration);
+        env.connectionManager().save();
+    }
+
+    @AfterAll
+    static void afterAll() throws Exception {
+        env.close();
+    }
 
     @Test
     void nextBatch() {
@@ -43,7 +66,7 @@ class XmlInputReaderTest {
             XmlInputReader reader = (XmlInputReader) new XmlInputReader()
                     .contentInfo(ci)
                     .settings(settings);
-            try (ReadCursor cursor = reader.open()) {
+            try (ReadCursor cursor = reader.open(env)) {
                 int count = 0;
                 while (true) {
                     Map<String, Object> data = cursor.next();
