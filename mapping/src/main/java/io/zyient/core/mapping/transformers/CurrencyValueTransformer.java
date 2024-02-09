@@ -134,7 +134,7 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                         return new CurrencyValue(currency, number.doubleValue());
                     }
                 }
-                if(NumberUtils.isParsable(value)){
+                if(NumberUtils.isParsable(value) || CommonUtils.isScientificNotation(value)){
                     double d = Double.parseDouble(value);
                     return new CurrencyValue(currency, d);
                 }

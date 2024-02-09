@@ -20,6 +20,8 @@ import com.google.common.base.Strings;
 import lombok.NonNull;
 
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CommonUtils {
     public static Locale parseLocale(@NonNull String localeStr) throws Exception {
@@ -33,5 +35,19 @@ public class CommonUtils {
             throw new Exception(String.format("Invalid locale string. [string=%s]", localeStr));
         }
         return new Locale(language, country);
+    }
+
+    public static boolean isScientificNotation(String input) {
+        // Regular expression for scientific notation
+        String scientificPattern = "[-+]?[0-9]*\\.?[0-9]+([eE][-+]?[0-9]+)?";
+
+        // Create a Pattern object
+        Pattern pattern = Pattern.compile(scientificPattern);
+
+        // Match the input string with the pattern
+        Matcher matcher = pattern.matcher(input);
+
+        // Check if the entire string matches the scientific notation pattern
+        return matcher.matches();
     }
 }
