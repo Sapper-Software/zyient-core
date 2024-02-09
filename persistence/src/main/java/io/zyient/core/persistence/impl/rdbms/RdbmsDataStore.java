@@ -23,6 +23,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.*;
+import io.zyient.core.persistence.annotations.EGeneratedType;
 import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
@@ -30,6 +31,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
@@ -171,6 +173,23 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
                                                                                     @NonNull Class<? extends K> keyTpe) throws Exception {
         return new SqlQueryParser<>(keyTpe, entityType);
+    }
+
+    public Long nextSequence(@NonNull EGeneratedType type, @NonNull String name) throws Exception {
+        try {
+            if (type == EGeneratedType.DB_SEQUENCE) {
+                RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
+                Session session = sessionManager.session();
+                String sequenceQuery = String.format("SELECT nextval('%s')", name);
+                NativeQuery<Long> seq = session.createNativeQuery(sequenceQuery, Long.class);
+                return seq.getSingleResult();
+            } else {
+                return nextSequence(name);
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new DataStoreException(ex);
+        }
     }
 
 }

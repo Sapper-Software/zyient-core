@@ -21,6 +21,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.core.persistence.annotations.EGeneratedType;
 import io.zyient.core.persistence.annotations.GeneratedId;
+import io.zyient.core.persistence.impl.rdbms.RdbmsDataStore;
 import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Id;
 import lombok.NonNull;
@@ -71,6 +72,11 @@ public class IDGenerator {
                             GeneratedId gi = f.getAnnotation(GeneratedId.class);
                             if (gi.type() == EGeneratedType.UUID) {
                                 ReflectionHelper.setStringValue(fv, f, UUID.randomUUID().toString());
+                            } else if (gi.type() == EGeneratedType.DB_SEQUENCE) {
+                                if (dataStore instanceof RdbmsDataStore rdbms) {
+                                    Long value = rdbms.nextSequence(gi.type(), gi.sequence());
+                                    ReflectionHelper.setLongValue(fv, f, value);
+                                }
                             } else {
                                 Long value = dataStore.nextSequence(gi.sequence());
                                 ReflectionHelper.setLongValue(fv, f, value);

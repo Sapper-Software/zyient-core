@@ -17,5 +17,5 @@
 package io.zyient.core.persistence.annotations;
 
 public enum EGeneratedType {
-    UUID, SEQUENCE
+    UUID, SEQUENCE,DB_SEQUENCE
 }
