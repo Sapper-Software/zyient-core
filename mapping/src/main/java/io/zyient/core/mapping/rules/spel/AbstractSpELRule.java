@@ -31,7 +31,7 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
     private List<FieldMap> fieldMaps;
 
     @AllArgsConstructor
-    static class FieldMap {
+    public static class FieldMap {
         String targetField;
         String targetValue;
         PropertyDef property;

@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.azure;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.core.connections.azure.AzureFsClientSettings;
 import io.zyient.core.filesystem.impl.RemoteFileSystemSettings;
 import lombok.Getter;
 import lombok.Setter;

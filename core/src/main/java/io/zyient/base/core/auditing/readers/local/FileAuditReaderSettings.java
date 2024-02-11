@@ -14,27 +14,16 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.azure;
+package io.zyient.base.core.auditing.readers.local;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import io.zyient.core.filesystem.impl.azure.auth.AzureStorageAuthSettings;
+import io.zyient.base.core.auditing.readers.AuditReaderSettings;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
-public class AzureFsClientSettings extends Settings {
-    public static final String __CONFIG_PATH = "client";
-
-    @Config(name = "endpointUrl")
-    private String endpointUrl;
-    @Config(name = "authClass")
-    private String authClass;
-    @Config(name = "account")
-    private String authAccount;
-    private AzureStorageAuthSettings authSettings;
+public class FileAuditReaderSettings extends AuditReaderSettings {
+    @Config(name = "directory")
+    private String dir;
 }

@@ -48,6 +48,7 @@ dependencies {
     // https://mvnrepository.com/artifact/com.microsoft.sqlserver/mssql-jdbc
     implementation 'com.microsoft.sqlserver:mssql-jdbc:12.2.0.jre11'
     implementation 'com.azure:azure-identity:1.11.2'
+    implementation 'com.azure:azure-storage-blob:12.21.1'
     implementation 'com.azure:azure-data-tables:12.3.9'
 
     // https://mvnrepository.com/artifact/software.amazon.awssdk/s3
@@ -57,6 +58,9 @@ dependencies {
     implementation 'com.azure:azure-messaging-servicebus:7.14.3'
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
     implementation 'net.openhft:chronicle-queue:5.24ea23'
+
+    implementation 'com.clickhouse:clickhouse-jdbc:0.6.0'
+    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
 
     implementation 'io.netty:netty-tcnative:2.0.59.Final'
 

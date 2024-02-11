@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.azure.auth;
+package io.zyient.base.core.connections.azure.auth;
 
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import io.zyient.base.core.keystore.KeyStore;

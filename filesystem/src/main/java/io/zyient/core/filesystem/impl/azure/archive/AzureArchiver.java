@@ -16,9 +16,9 @@
 
 package io.zyient.core.filesystem.impl.azure.archive;
 
+import io.zyient.base.core.connections.azure.AzureFsClient;
 import io.zyient.core.filesystem.Archiver;
 import io.zyient.core.filesystem.FileSystem;
-import io.zyient.core.filesystem.impl.azure.AzureFsClient;
 import io.zyient.core.filesystem.model.ArchivePathInfo;
 import io.zyient.core.filesystem.model.ArchiverSettings;
 import io.zyient.core.filesystem.model.PathInfo;

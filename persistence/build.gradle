@@ -36,6 +36,4 @@ dependencies {
     implementation 'org.apache.tika:tika-langdetect:2.9.1'
     implementation 'org.apache.tika:tika-parsers-standard-package:2.9.1'
 
-    implementation 'com.clickhouse:clickhouse-http-client:0.6.0'
-    implementation 'org.apache.httpcomponents.client5:httpclient5:5.3.1'
 }

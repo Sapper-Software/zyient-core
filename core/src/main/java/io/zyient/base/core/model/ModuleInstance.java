@@ -55,7 +55,7 @@ public class ModuleInstance {
     }
 
     public String id() {
-        return String.format("%s:%s/%s", module, name, ip);
+        return String.format("%s/%s/%s", module, name, ip);
     }
 
     @JsonIgnore

@@ -31,6 +31,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.connections.azure.AzureFsClient;
 import io.zyient.base.core.keystore.KeyStore;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.Reader;

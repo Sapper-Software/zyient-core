@@ -29,6 +29,7 @@ public enum EConnectionType {
     notification,
     sqs,
     servicebus,
+    azureFs,
     solr,
     s3;
 
