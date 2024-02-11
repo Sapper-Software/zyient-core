@@ -13,13 +13,10 @@ import java.util.List;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ListRuleConfig extends  CollectionRuleConfig{
+public class ListRuleConfig extends CollectionRuleConfig {
 
-    @Config(name="isPresent")
+    @Config(name = "isPresent")
     private String present;
-    @Config(name="field")
-    private String field;
-
     @Config(name = "items", required = false, custom = ListRuleReader.class)
     private List<String> items;
 

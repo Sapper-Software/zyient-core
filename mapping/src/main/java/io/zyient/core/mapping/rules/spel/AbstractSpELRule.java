@@ -27,11 +27,11 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
     public static final String FIELD_ROOT = "#root";
     public static final String FIELD_RESULT = "__zy_result";
 
-    private Expression spELRule;
+    protected Expression spELRule;
     private List<FieldMap> fieldMaps;
 
     @AllArgsConstructor
-    static class FieldMap {
+    protected static class FieldMap {
         String targetField;
         String targetValue;
         PropertyDef property;
@@ -66,72 +66,7 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
         Object result = null;
         ctx.setVariable(FIELD_RESULT, result);
         try {
-            Object response = spELRule.getValue(ctx);
-            if (getRuleType() == RuleType.Validation ||
-                    getRuleType() == RuleType.Condition ||
-                    getRuleType() == RuleType.Filter) {
-                if (!(response instanceof Boolean)) {
-                    if (response == null) {
-                        throw new RuleEvaluationError(name(),
-                                entityType(),
-                                getRuleType().name(),
-                                errorCode(),
-                                "NULL response from rule."
-                        );
-
-                    } else {
-                        throw new RuleEvaluationError(name(),
-                                entityType(),
-                                getRuleType().name(),
-                                errorCode(),
-                                String.format("Expected boolean response. [response=%s]",
-                                        response.getClass().getCanonicalName())
-                        );
-                    }
-                }
-                boolean r = (boolean) response;
-                if (!r) {
-                    if (getRuleType() == RuleType.Validation) {
-                        if (DefaultLogger.isTraceEnabled()) {
-                            String json = JSONUtils.asString(data);
-                            throw new RuleValidationError(name(),
-                                    entityType(),
-                                    getRuleType().name(),
-                                    errorCode(),
-                                    Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage(),
-                                    new Exception(json)
-                            );
-                        } else
-                            throw new RuleValidationError(name(),
-                                    entityType(),
-                                    getRuleType().name(),
-                                    errorCode(),
-                                    Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
-                            );
-                    } else {
-                        if (DefaultLogger.isTraceEnabled()) {
-                            DefaultLogger.trace(expression(), data);
-                        }
-                        return false;
-                    }
-                }
-            } else if (response != null) {
-                /**
-                 * normal SpEL will set the output of the SpEL to target
-                 */
-                if (fieldMaps.size() == 1) {
-                    // set SpeL output to target
-                    MappingReflectionHelper.setProperty(fieldMaps.get(0).targetField, fieldMaps.get(0).property, data, response);
-                } else {
-                    for (FieldMap fieldMap : fieldMaps) {
-                        MappingReflectionHelper.setProperty(fieldMap.targetField, fieldMap.property, data, fieldMap.targetValue);
-                    }
-                }
-            } else if (DefaultLogger.isTraceEnabled()) {
-                String json = JSONUtils.asString(data);
-                DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
-            }
-            return response;
+            return validateResponse(spELRule.getValue(ctx), data);
         } catch (RuleValidationError | RuleEvaluationError e) {
             throw e;
         } catch (Throwable t) {
@@ -142,6 +77,74 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
                     Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     t);
         }
+    }
+
+    protected Object validateResponse(Object response, T data) throws Exception {
+        if (getRuleType() == RuleType.Validation ||
+                getRuleType() == RuleType.Condition ||
+                getRuleType() == RuleType.Filter) {
+            if (!(response instanceof Boolean)) {
+                if (response == null) {
+                    throw new RuleEvaluationError(name(),
+                            entityType(),
+                            getRuleType().name(),
+                            errorCode(),
+                            "NULL response from rule."
+                    );
+
+                } else {
+                    throw new RuleEvaluationError(name(),
+                            entityType(),
+                            getRuleType().name(),
+                            errorCode(),
+                            String.format("Expected boolean response. [response=%s]",
+                                    response.getClass().getCanonicalName())
+                    );
+                }
+            }
+            boolean r = (boolean) response;
+            if (!r) {
+                if (getRuleType() == RuleType.Validation) {
+                    if (DefaultLogger.isTraceEnabled()) {
+                        String json = JSONUtils.asString(data);
+                        throw new RuleValidationError(name(),
+                                entityType(),
+                                getRuleType().name(),
+                                errorCode(),
+                                Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage(),
+                                new Exception(json)
+                        );
+                    } else
+                        throw new RuleValidationError(name(),
+                                entityType(),
+                                getRuleType().name(),
+                                errorCode(),
+                                Errors.getDefault().get(__ERROR_TYPE_VALIDATION, validationErrorCode()).getMessage()
+                        );
+                } else {
+                    if (DefaultLogger.isTraceEnabled()) {
+                        DefaultLogger.trace(expression(), data);
+                    }
+                    return false;
+                }
+            }
+        } else if (response != null) {
+            /**
+             * normal SpEL will set the output of the SpEL to target
+             */
+            if (fieldMaps.size() == 1) {
+                // set SpeL output to target
+                MappingReflectionHelper.setProperty(fieldMaps.get(0).targetField, fieldMaps.get(0).property, data, response);
+            } else {
+                for (FieldMap fieldMap : fieldMaps) {
+                    MappingReflectionHelper.setProperty(fieldMap.targetField, fieldMap.property, data, fieldMap.targetValue);
+                }
+            }
+        } else if (DefaultLogger.isTraceEnabled()) {
+            String json = JSONUtils.asString(data);
+            DefaultLogger.trace(String.format("Returned null : [rule=%s][data=%s]", rules(), json));
+        }
+        return response;
     }
 
     @Override
