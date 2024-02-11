@@ -33,10 +33,8 @@ import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
 @Accessors(fluent = true)
@@ -44,9 +42,9 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
     private AbstractDataStore<?> dataStore;
     private Class<? extends K> keyType;
     private Class<? extends E> entityType;
-    private Cursor<K, E> cursor;
     private QueryBuilder builder;
     private Map<String, Object> predicates;
+    private Queue<E> cache;
 
     public DbInputReader<K, E> withPredicates(@NonNull Map<String, Object> predicates) {
         this.predicates = predicates;
@@ -114,20 +112,34 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
             }
         }
         AbstractDataStore.Q queryDataStore = builder.build(settings.getQuery(), conditions);
-        cursor = dataStore.search(queryDataStore,
+        try (Cursor<K, E> cursor = dataStore.search(queryDataStore,
                 0,
                 settings.getReadBatchSize(),
                 keyType,
                 entityType,
-                null);
-
+                null)) {
+            while (true) {
+                List<E> data = cursor.nextPage();
+                if (data == null || data.isEmpty()) {
+                    break;
+                }
+                if (cache == null) {
+                    cache = new LinkedBlockingQueue<>();
+                }
+                cache.addAll(data);
+            }
+        }
     }
 
     @Override
     public List<SourceMap> fetchNextBatch() throws IOException {
         try {
-            List<E> data = cursor.nextPage();
-            if (data != null && !data.isEmpty()) {
+            List<E> data = new ArrayList<>();
+            while (data.size() < settings().getReadBatchSize() && !cache.isEmpty()) {
+                E entity = cache.poll();
+                data.add(entity);
+            }
+            if (!data.isEmpty()) {
                 List<SourceMap> values = new ArrayList<>(data.size());
                 for (E entity : data) {
                     Map<String, Object> map = JSONUtils.asMap(entity);
@@ -144,8 +156,9 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
 
     @Override
     public void close() throws IOException {
-        if (cursor != null)
-            cursor.close();
-        cursor = null;
+        if (!cache.isEmpty()) {
+            cache.clear();
+        }
+        cache = null;
     }
 }
