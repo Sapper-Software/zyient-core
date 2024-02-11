@@ -27,6 +27,7 @@ import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.RecordResponse;
+import io.zyient.core.mapping.model.SourcePipelineMetrics;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.CompositePipelineSettings;
 import lombok.Getter;
@@ -45,6 +46,7 @@ import java.util.Map;
 public abstract class CompositePipeline extends Pipeline {
     public static final String __CONFIG_PATH_PIPELINES = "pipelines";
     private List<PipelineInfo> pipelines;
+    protected SourcePipelineMetrics metrics;
 
     @Override
     @SuppressWarnings("unchecked")
@@ -76,7 +78,10 @@ public abstract class CompositePipeline extends Pipeline {
                 pi.setExpression(pf);
                 pipelines.add(pi);
             }
-
+            metrics = new SourcePipelineMetrics("PIPELINE",
+                    settings().getName(),
+                    getClass().getSimpleName(),
+                    env, getClass());
             state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {

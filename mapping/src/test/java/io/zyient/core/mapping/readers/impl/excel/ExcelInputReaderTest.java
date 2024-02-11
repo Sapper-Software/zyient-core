@@ -16,11 +16,18 @@
 
 package io.zyient.core.mapping.readers.impl.excel;
 
+import com.google.common.base.Preconditions;
+import io.zyient.base.common.config.ConfigReader;
+import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.core.mapping.env.DemoDataStoreEnv;
 import io.zyient.core.mapping.model.Column;
 import io.zyient.core.mapping.model.ExcelColumn;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
+import org.apache.commons.configuration2.XMLConfiguration;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -34,6 +41,22 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class ExcelInputReaderTest {
     private static final String FILE_EXCEL_MULTI_SHEET = "src/test/resources/data/Financial Sample.xlsx";
+    private static final String __CONFIG_FILE = "src/test/resources/mapping/test-mapping-env.xml";
+    private static XMLConfiguration xmlConfiguration = null;
+    private static DemoDataStoreEnv env = new DemoDataStoreEnv();
+
+    @BeforeAll
+    static void beforeAll() throws Exception {
+        xmlConfiguration = ConfigReader.read(__CONFIG_FILE, EConfigFileType.File);
+        Preconditions.checkState(xmlConfiguration != null);
+        env.create(xmlConfiguration);
+        env.connectionManager().save();
+    }
+
+    @AfterAll
+    static void afterAll() throws Exception {
+        env.close();
+    }
 
     @Test
     void nextBatch() {
@@ -60,7 +83,7 @@ class ExcelInputReaderTest {
             ExcelInputReader reader = (ExcelInputReader) new ExcelInputReader()
                     .contentInfo(ci)
                     .settings(settings);
-            try (ExcelReadCursor cursor = (ExcelReadCursor) reader.open()) {
+            try (ExcelReadCursor cursor = (ExcelReadCursor) reader.open(env)) {
                 int count = 0;
                 while (true) {
                     Map<String, Object> data = cursor.next();

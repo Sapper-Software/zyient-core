@@ -17,7 +17,6 @@
 package io.zyient.core.mapping.env;
 
 import com.google.common.base.Strings;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.persistence.env.DataStoreEnv;
@@ -75,8 +74,6 @@ public class DemoDataStoreEnv extends DataStoreEnv<DemoDataStoreEnv.EDemoState> 
     public BaseEnv<EDemoState> create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
         if (Strings.isNullOrEmpty(storeKey()))
             withStoreKey(TEST_PASSWD);
-        CompositeMeterRegistry registry = new CompositeMeterRegistry();
-        BaseEnv.registry(registry);
         super.init(xmlConfig, DemoEnvSettings.class);
         demoConfig = baseConfig().configurationAt(__CONFIG_PATH);
         return this;

@@ -36,7 +36,7 @@ public class PositionalInputReader extends InputReader {
     private boolean EOF = false;
 
     @Override
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         Preconditions.checkState(settings() instanceof PositionalReaderSettings);
         try {
             reader = new BufferedReader(new FileReader(contentInfo().path()));
@@ -85,7 +85,7 @@ public class PositionalInputReader extends InputReader {
     }
 
     @Override
-    public List<SourceMap> nextBatch() throws IOException {
+    public List<SourceMap> fetchNextBatch() throws IOException {
         if (EOF) return null;
         try {
             List<SourceMap> records = new ArrayList<>();

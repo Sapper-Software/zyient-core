@@ -50,18 +50,18 @@ public class FlattenedInputReader extends SeparatedInputReader {
     }
 
     @Override
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         Preconditions.checkState(settings() instanceof FlattenedInputReaderSettings);
         sectionHeaderDef = ((FlattenedInputReaderSettings) settings()).getFields();
         if (sectionHeaderDef == null || sectionHeaderDef.isEmpty()) {
             throw new IOException(String.format("Invalid configuration : Section Headers missing. [name=%s]",
                     settings().getName()));
         }
-        return super.open();
+        return super.doOpen();
     }
 
     @Override
-    public List<SourceMap> nextBatch() throws IOException {
+    public List<SourceMap> fetchNextBatch() throws IOException {
         if (EOF && records.isEmpty()) return null;
         if (!EOF && records.isEmpty()) {
             fetch();

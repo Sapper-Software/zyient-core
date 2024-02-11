@@ -33,7 +33,7 @@ import java.util.Map;
 public class XmlInputReader extends JacksonInputReader {
     @Override
     @SuppressWarnings("unchecked")
-    public ReadCursor open() throws IOException {
+    public ReadCursor doOpen() throws IOException {
         Preconditions.checkState(settings() instanceof XmlReaderSettings);
         try {
             XmlMapper mapper = ((XmlReaderSettings) settings()).getXmlMapper();

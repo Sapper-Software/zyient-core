@@ -22,6 +22,7 @@ import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.utils.Timer;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.RecordResponse;
 import io.zyient.core.mapping.model.mapping.SourceMap;
@@ -38,50 +39,66 @@ public class SourceEntityPipeline<K extends IKey, E extends IEntity<K>> extends 
 
     @Override
     @SuppressWarnings(("unchecked"))
-    public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
+    public ReadResponse read(@NonNull InputReader reader,
+                             @NonNull InputContentInfo context) throws Exception {
         checkState();
         PersistedEntityPipelineSettings settings = (PersistedEntityPipelineSettings) settings();
         Preconditions.checkNotNull(settings);
         DefaultLogger.info(String.format("Running pipeline for entity. [type=%s]", entityType().getCanonicalName()));
         ReadResponse response = new ReadResponse();
-        beingTransaction();
         try {
-            ReadCursor cursor = reader.open();
+            int pendingCommitCount = 0;
+            ReadCursor cursor = reader.open(env());
             while (true) {
-                RecordResponse r = new RecordResponse();
-                try {
-                    SourceMap data = cursor.next();
-                    if (data == null) break;
-                    r.setSource(data);
-                    response.incrementCount();
-                    r = process(data, context);
-                    response.add(r);
-                    response.incrementCommitCount();
-
-                } catch (ValidationException | ValidationExceptions ex) {
-                    String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
-                            reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
-                    ValidationExceptions ve = ValidationExceptions.add(new ValidationException(mesg), null);
-                    if (settings().isTerminateOnValidationError()) {
-                        DefaultLogger.stacktrace(ex);
-                        throw ve;
-                    } else {
-                        response.incrementCount();
-                        DefaultLogger.warn(mesg);
-                        r = errorResponse(r, null, ex);
-                        response.add(r);
+                try (Timer t = new Timer(metrics.processTimer())) {
+                    if (pendingCommitCount >= settings.getCommitBatchSize()) {
+                        commit();
+                        pendingCommitCount = 0;
                     }
-                } catch (Exception e) {
-                    rollback();
-                    DefaultLogger.stacktrace(e);
-                    DefaultLogger.error(e.getLocalizedMessage());
-                    throw e;
+                    if (pendingCommitCount == 0) {
+                        beingTransaction();
+                    }
+                    RecordResponse r = new RecordResponse();
+                    try {
+                        SourceMap data = cursor.next();
+                        if (data == null) break;
+                        metrics.recordsCounter().increment();
+                        r.setSource(data);
+                        response.incrementCount();
+                        r = process(data, context);
+                        response.add(r);
+                        response.incrementCommitCount();
+                        metrics.processedCounter().increment();
+                        pendingCommitCount++;
+                    } catch (ValidationException | ValidationExceptions ex) {
+                        String mesg = String.format("[file=%s][record=%d] Validation Failed: %s",
+                                reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
+                        ValidationExceptions ve = ValidationExceptions.add(new ValidationException(mesg), null);
+                        if (settings().isTerminateOnValidationError()) {
+                            DefaultLogger.stacktrace(ex);
+                            throw ve;
+                        } else {
+                            metrics.errorsCounter().increment();
+                            response.incrementCount();
+                            DefaultLogger.warn(mesg);
+                            r = errorResponse(r, null, ex);
+                            response.add(r);
+                        }
+                    } catch (Exception e) {
+                        DefaultLogger.stacktrace(e);
+                        DefaultLogger.error(e.getLocalizedMessage());
+                        throw e;
+                    }
                 }
             }
-            commit();
+            if (pendingCommitCount > 0) {
+                commit();
+            }
         } catch (Exception e) {
             rollback();
             throw e;
+        } finally {
+            finished();
         }
 
 

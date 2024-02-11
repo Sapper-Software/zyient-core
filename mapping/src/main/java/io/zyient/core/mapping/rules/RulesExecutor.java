@@ -64,7 +64,7 @@ public class RulesExecutor<T> {
     public EvaluationStatus evaluate(@NonNull T input) throws Exception {
         synchronized (this) {
             if (evaluator == null) {
-                evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
+                evaluator = new RulesEvaluator<>(rules, env, terminateOnValidationError);
             }
         }
         EvaluationStatus status = new EvaluationStatus();

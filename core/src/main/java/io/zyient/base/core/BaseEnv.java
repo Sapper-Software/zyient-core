@@ -18,8 +18,11 @@ package io.zyient.base.core;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.micrometer.common.util.internal.logging.Slf4JLoggerFactory;
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
+import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
+import io.micrometer.core.instrument.logging.LoggingRegistryConfig;
 import io.prometheus.client.hotspot.DefaultExports;
 import io.zyient.base.common.AbstractEnvState;
 import io.zyient.base.common.config.ConfigReader;
@@ -173,7 +176,18 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
             }
             DefaultExports.initialize();
             if (meterRegistry == null) {
-                meterRegistry = new CompositeMeterRegistry();
+                LoggingRegistryConfig cfg = new LoggingRegistryConfig() {
+                    final Map<String, String> values = Map.of("enabled", "true", "step", "5s");
+
+                    @Override
+                    public String get(String s) {
+                        return values.get(s);
+                    }
+                };
+                meterRegistry = LoggingMeterRegistry.builder(cfg)
+                        .clock(Clock.SYSTEM)
+                        .loggingSink(Slf4JLoggerFactory.getInstance(settings.getInstance())::info)
+                        .build();
             }
             return this;
         } catch (Exception ex) {
@@ -310,6 +324,9 @@ public abstract class BaseEnv<T extends Enum<?>> implements ThreadManager {
         }
         if (connectionManager != null) {
             connectionManager.close();
+        }
+        if (meterRegistry != null) {
+            meterRegistry.close();
         }
         if (exitCallbacks != null && !exitCallbacks.isEmpty()) {
             for (ExitCallback<T> callback : exitCallbacks) {

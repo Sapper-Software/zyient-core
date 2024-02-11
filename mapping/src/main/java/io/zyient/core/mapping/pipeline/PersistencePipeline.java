@@ -115,4 +115,10 @@ public abstract class PersistencePipeline<K extends IKey, E extends IEntity<K>> 
             }
         }
     }
+
+    protected void finished() throws Exception {
+        if (dataStore instanceof TransactionDataStore<?,?>) {
+            ((TransactionDataStore<?, ?>) dataStore).endSession();;
+        }
+    }
 }

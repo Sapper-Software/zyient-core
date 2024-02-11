@@ -50,7 +50,7 @@ public abstract class JacksonInputReader extends InputReader {
     }
 
     @Override
-    public List<SourceMap> nextBatch() throws IOException {
+    public List<SourceMap> fetchNextBatch() throws IOException {
         if (data != null && !data.isEmpty()) {
             if (readIndex < data.size()) {
                 List<SourceMap> records = new ArrayList<>();

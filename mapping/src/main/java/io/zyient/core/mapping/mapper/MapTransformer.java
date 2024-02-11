@@ -140,11 +140,12 @@ public class MapTransformer<T> {
         return data;
     }
 
-    @SuppressWarnings("unchecked")
     private void transform(Map<String, Object> source,
                            MapNode node,
                            Map<String, Object> data, Map<String, Object> contextParam) throws Exception {
-        if (source.containsKey(node.name)) {
+        if (source.containsKey(node.name)
+                || node.mappingType == MappingType.ConstField
+                || node.mappingType == MappingType.ConstProperty) {
             findValueFromSourceOrContext(source, node, data);
         } else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
             findValueFromSourceOrContext(contextParam, node, data);
@@ -159,7 +160,8 @@ public class MapTransformer<T> {
                                               MapNode node,
                                               Map<String, Object> data) throws Exception {
         Object value = null;
-        if (node.mappingType == MappingType.ConstField || node.mappingType == MappingType.ConstProperty) {
+        if (node.mappingType == MappingType.ConstField
+                || node.mappingType == MappingType.ConstProperty) {
             value = node.name;
         } else if (MappingReflectionHelper.isContextPrefixed(node.name)) {
             Context dummyContext = new Context();
@@ -260,12 +262,15 @@ public class MapTransformer<T> {
     }
 
     private MapNode findNode(MappedElement element, PropertyDef property) throws Exception {
+        if (element.getMappingType() == MappingType.ConstField
+                || element.getMappingType() == MappingType.ConstProperty) {
+            return getOrCreate(element, element.getSourcePath(), property.field().getType());
+        }
         String source = element.getSourcePath();
         String[] parts = source.split("\\.");
         if (parts.length == 1) {
             String sourceKey = parts[0];
             return getOrCreate(element, sourceKey, property.field().getType());
-
         } else {
             MapNode node = null;
             for (int ii = 0; ii < parts.length; ii++) {

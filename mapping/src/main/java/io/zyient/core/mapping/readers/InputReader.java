@@ -16,10 +16,14 @@
 
 package io.zyient.core.mapping.readers;
 
+import io.zyient.base.core.BaseEnv;
+import io.zyient.base.core.utils.Timer;
 import io.zyient.core.mapping.model.InputContentInfo;
+import io.zyient.core.mapping.model.ReaderMetrics;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
@@ -35,8 +39,28 @@ public abstract class InputReader implements Closeable {
     private ReaderSettings settings;
     private File input;
     private InputContentInfo contentInfo;
+    private ReaderMetrics metrics;
 
-    public abstract ReadCursor open() throws IOException;
+    public ReadCursor open(@NonNull BaseEnv<?> env) throws IOException {
+        ReadCursor cursor = doOpen();
+        metrics = new ReaderMetrics("INPUT-READER",
+                settings.getName(),
+                getClass().getSimpleName(),
+                env, getClass());
+        return cursor;
+    }
 
-    public abstract List<SourceMap> nextBatch() throws IOException;
+    protected abstract ReadCursor doOpen() throws IOException;
+
+    public List<SourceMap> nextBatch() throws IOException {
+        try (Timer t = new Timer(metrics.readBatchTimer())) {
+            List<SourceMap> batch = fetchNextBatch();
+            if (batch != null && !batch.isEmpty()) {
+                metrics.recordsCounter().increment(batch.size());
+            }
+            return batch;
+        }
+    }
+
+    public abstract List<SourceMap> fetchNextBatch() throws IOException;
 }

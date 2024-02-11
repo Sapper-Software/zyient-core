@@ -21,6 +21,7 @@ import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.core.mapping.env.DemoDataStoreEnv;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.ReadCompleteCallback;
@@ -73,11 +74,12 @@ class MappingExecutorTest {
             ci.put("country", "India");
             MappingExecutor.defaultInstance().read(ci);
             while (!callback.finished) {
-                Thread.sleep(1000);
+                RunUtils.sleep(1000);
             }
             if (callback.error != null) {
                 fail(callback.error);
             }
+            RunUtils.sleep(30000);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);

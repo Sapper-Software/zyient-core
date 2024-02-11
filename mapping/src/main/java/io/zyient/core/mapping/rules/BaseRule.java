@@ -103,7 +103,7 @@ public abstract class BaseRule<T> implements Rule<T> {
         if (rules != null) {
             synchronized (this) {
                 if (evaluator == null) {
-                    evaluator = new RulesEvaluator<>(rules, terminateOnValidationError);
+                    evaluator = new RulesEvaluator<>(rules, env, terminateOnValidationError);
                 }
             }
         }
