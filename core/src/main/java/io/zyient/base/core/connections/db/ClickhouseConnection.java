@@ -16,10 +16,11 @@
 
 package io.zyient.base.core.connections.db;
 
-import com.google.common.base.Preconditions;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
+import com.clickhouse.jdbc.ClickHouseConnection;
+import com.clickhouse.jdbc.ClickHouseDataSource;
+import com.google.common.base.Strings;
 import io.zyient.base.common.config.ZkConfigReader;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
@@ -28,7 +29,7 @@ import io.zyient.base.core.connections.ConnectionManager;
 import io.zyient.base.core.connections.common.ZookeeperConnection;
 import io.zyient.base.core.connections.settings.ConnectionSettings;
 import io.zyient.base.core.connections.settings.EConnectionType;
-import io.zyient.base.core.connections.settings.db.MongoDbConnectionSettings;
+import io.zyient.base.core.connections.settings.db.ClickhouseConnectionSettings;
 import io.zyient.base.core.keystore.KeyStore;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -39,31 +40,50 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
 
 import java.io.IOException;
+import java.util.Properties;
 
 @Getter
 @Accessors(fluent = true)
-public class MongoDbConnection implements Connection {
+public class ClickhouseConnection implements Connection {
     @Getter(AccessLevel.NONE)
     protected final ConnectionState state = new ConnectionState();
-    protected ConnectionManager connectionManager;
-    protected MongoDbConnectionSettings settings;
-    private MongoClient client;
-
     protected final String zkNode;
-    private MongoDbConnectionConfig config;
+    @Getter(AccessLevel.NONE)
+    private ClickHouseDataSource dataSource;
+    private ClickhouseConnectionConfig config;
+    private ClickhouseConnectionSettings settings;
+    private ConnectionManager connectionManager;
+    private BaseEnv<?> env;
 
-    public MongoDbConnection() {
-        this.zkNode = MongoDbConnectionConfig.Constants.__CONFIG_PATH;
+    public ClickhouseConnection() {
+        zkNode = ClickhouseConnectionSettings.__CONFIG_PATH;
+    }
+
+    private String createUrl() {
+        StringBuilder builder = new StringBuilder("jdbc:clickhouse:");
+        builder.append(settings.getProtocol())
+                .append("://");
+        for (int ii = 0; ii < settings.getDbUrls().size(); ii++) {
+            if (ii > 0) {
+                builder.append(",");
+            }
+            builder.append(settings.getDbUrls().get(ii));
+        }
+        if (settings.getPort() > 0) {
+            builder.append(":").append(settings.getPort());
+        }
+        builder.append("/").append(settings.getDb());
+        if (settings.isUseSSL()) {
+            builder.append("?");
+            builder.append("ssl=true");
+            builder.append("&sslMode=").append(settings.getSslMode());
+        }
+        return builder.toString();
     }
 
     @Override
     public String name() {
-        return settings.getName();
-    }
-
-    public MongoClient client() {
-        Preconditions.checkState(state.isConnected());
-        return client;
+        return null;
     }
 
     @Override
@@ -75,10 +95,11 @@ public class MongoDbConnection implements Connection {
                     close();
                 }
                 state.clear();
+                this.env = env;
                 this.connectionManager = env.connectionManager();
-                config = new MongoDbConnectionConfig(xmlConfig);
+                config = new ClickhouseConnectionConfig(xmlConfig);
                 config.read();
-                settings = (MongoDbConnectionSettings) config.settings();
+                settings = (ClickhouseConnectionSettings) config.settings();
 
                 state.setState(EConnectionState.Initialized);
                 return this;
@@ -100,16 +121,17 @@ public class MongoDbConnection implements Connection {
                     close();
                 }
                 state.clear();
+                this.env = env;
                 CuratorFramework client = connection.client();
                 String zkPath = new PathUtils.ZkPathBuilder(path)
                         .withPath(zkNode)
                         .build();
-                ZkConfigReader reader = new ZkConfigReader(client, MongoDbConnectionSettings.class);
+                ZkConfigReader reader = new ZkConfigReader(client, ClickhouseConnectionSettings.class);
                 if (!reader.read(zkPath)) {
                     throw new ConnectionError(
-                            String.format("MongoDB Connection settings not found. [path=%s]", zkPath));
+                            String.format("ClickHouse Connection settings not found. [path=%s]", zkPath));
                 }
-                settings = (MongoDbConnectionSettings) reader.settings();
+                settings = (ClickhouseConnectionSettings) reader.settings();
                 settings.validate();
 
                 this.connectionManager = env.connectionManager();
@@ -131,7 +153,8 @@ public class MongoDbConnection implements Connection {
                     close();
                 }
                 state.clear();
-                this.settings = (MongoDbConnectionSettings) settings;
+                this.env = env;
+                this.settings = (ClickhouseConnectionSettings) settings;
                 this.connectionManager = env.connectionManager();
                 state.setState(EConnectionState.Initialized);
                 return this;
@@ -144,53 +167,33 @@ public class MongoDbConnection implements Connection {
 
     @Override
     public Connection connect() throws ConnectionError {
-        KeyStore keyStore = connectionManager().keyStore();
-        Preconditions.checkNotNull(keyStore);
-        synchronized (state) {
-            if (state.isConnected()) return this;
-            Preconditions.checkState(state.getState() == EConnectionState.Initialized);
+        if (!isConnected()) {
             try {
-                String url = createConnectionUrl(keyStore);
-                client = MongoClients.create(url);
-                state.setState(EConnectionState.Connected);
-                return this;
+                state.check(Connection.EConnectionState.Initialized);
+                String url = createUrl();
+                Properties props = new Properties();
+                if (settings.getParameters() != null) {
+                    props.putAll(settings.getParameters());
+                }
+                dataSource = new ClickHouseDataSource(url, props);
+                state.setState(Connection.EConnectionState.Connected);
             } catch (Exception ex) {
+                DefaultLogger.stacktrace(ex);
                 state.error(ex);
                 throw new ConnectionError(ex);
             }
+        } else {
+            state.check(Connection.EConnectionState.Connected);
         }
-    }
-
-    protected String createConnectionUrl(KeyStore keyStore) throws Exception {
-        String url = "mongodb://";
-        StringBuilder builder = new StringBuilder(url);
-        builder.append(settings.getUser());
-        String pk = settings.getPassword();
-        builder.append(":")
-                .append(keyStore.read(pk));
-        builder.append("@")
-                .append(settings.getHost())
-                .append(":")
-                .append(settings.getPort());
-        builder.append("/")
-                .append(settings.getDb());
-        builder.append("/?")
-                .append(DbConnection.Constants.DB_KEY_POOL_SIZE)
-                .append(settings.getPoolSize());
-        if (settings.getParameters() != null && !settings.getParameters().isEmpty()) {
-            for (String param : settings.getParameters().keySet()) {
-                builder.append("&")
-                        .append(param)
-                        .append("=")
-                        .append(settings.getParameters().get(param));
-            }
-        }
-        return builder.toString();
+        return this;
     }
 
     @Override
     public Throwable error() {
-        return state.getError();
+        if (state.hasError()) {
+            return state.getError();
+        }
+        return null;
     }
 
     @Override
@@ -205,12 +208,7 @@ public class MongoDbConnection implements Connection {
 
     @Override
     public String path() {
-        return MongoDbConnectionSettings.CONFIG_PARAMS;
-    }
-
-    @Override
-    public ConnectionSettings settings() {
-        return settings;
+        return ClickhouseConnectionSettings.__CONFIG_PATH;
     }
 
     @Override
@@ -218,16 +216,34 @@ public class MongoDbConnection implements Connection {
         return EConnectionType.db;
     }
 
-    @Override
-    public void close() throws IOException {
-        if (client != null) {
-            synchronized (state) {
-                if (client != null) {
-                    client.close();
-                    client = null;
+    public ClickHouseConnection client() throws ConnectionError {
+        state.check(Connection.EConnectionState.Connected);
+        try {
+            String user = settings.getUsername();
+            String passwd = settings.getPassKey();
+            if (!Strings.isNullOrEmpty(passwd)) {
+                KeyStore keyStore = env.keyStore();
+                if (keyStore == null) {
+                    throw new ConnectionError(String.format("[env=%s] Key Store not specified...", env.name()));
+                }
+                passwd = keyStore.read(passwd);
+                if (Strings.isNullOrEmpty(passwd)) {
+                    throw new ConnectionError(String.format("Pass Key not found. [key=%s]", settings.getPassKey()));
                 }
             }
+            return dataSource.getConnection(user, passwd);
+        } catch (Exception e) {
+            throw new ConnectionError(e);
         }
-        state.setState(EConnectionState.Closed);
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (!state.hasError()) {
+            state.setState(Connection.EConnectionState.Closed);
+        }
+        if (dataSource != null) {
+            dataSource = null;
+        }
     }
 }

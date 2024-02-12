@@ -105,7 +105,6 @@ public class RdbmsSessionManager extends StoreSessionManager<Session, Transactio
         if (!transaction.isActive()) {
             throw new DataStoreException("Transaction instance is not active...");
         }
-        session.flush();
         transaction.commit();
     }
 

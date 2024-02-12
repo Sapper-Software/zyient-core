@@ -18,6 +18,7 @@ package io.zyient.core.filesystem.impl.azure;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.core.connections.azure.AzureFsClient;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.impl.local.LocalPathInfo;
 import io.zyient.core.filesystem.model.Inode;

@@ -30,7 +30,7 @@ dependencies {
     implementation 'software.amazon.awssdk:glacier:2.20.140'
     implementation 'software.amazon.awssdk:sqs:2.20.140'
 
-    implementation 'com.azure:azure-identity:1.10.0'
+    implementation 'com.azure:azure-identity:1.11.2'
     implementation 'com.azure:azure-storage-blob:12.21.1'
 
     implementation 'net.openhft:chronicle-bytes:2.24ea15'

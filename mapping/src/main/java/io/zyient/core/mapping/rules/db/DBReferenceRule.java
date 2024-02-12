@@ -24,7 +24,6 @@ import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
 import io.zyient.core.mapping.rules.RuleValidationError;
-import io.zyient.core.persistence.Cursor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -36,9 +35,8 @@ import java.util.List;
 public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends DBRule<T, K, E> {
 
     protected Object process(@NonNull T response,
-                             @NonNull Cursor<K, E> cursor) throws RuleValidationError, RuleEvaluationError {
+                             List<E> entities) throws RuleValidationError, RuleEvaluationError {
         try {
-            List<E> entities = cursor.nextPage();
             if (entities != null && !entities.isEmpty()) {
                 E entity = entities.get(0);
                 if (targetMappings != null && !targetMappings.isEmpty()) {

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.writers.file;
+package io.zyient.base.core.auditing.writers.local;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -29,7 +29,11 @@ import io.zyient.base.core.auditing.Audited;
 import io.zyient.base.core.auditing.JsonAuditRecord;
 import io.zyient.base.core.auditing.writers.IAuditWriter;
 import io.zyient.base.core.processing.ProcessorState;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -42,21 +46,30 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+@Getter
+@Accessors(fluent = true)
 public class FileAuditWriter implements IAuditWriter<JsonAuditRecord> {
     public static final byte[] NEWLINE = "\n".getBytes(StandardCharsets.UTF_8);
     public static final String DEFAULT_FILE_NAME = "%s-audit.json";
 
-    private static class FileHandle {
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    protected static class FileHandle {
         private File file;
         private FileOutputStream outputStream;
         private long size;
+        private long timestamp;
+        private File archived = null;
     }
 
     private final ProcessorState state = new ProcessorState();
     private Class<? extends JsonAuditRecord> recordType;
     private File directory;
+    @Getter(AccessLevel.NONE)
     private FileHandle defaultWriter;
-    private FileAuditWriterSettings settings;
+    protected FileAuditWriterSettings settings;
+    @Getter(AccessLevel.NONE)
     private final Map<String, FileHandle> writers = new HashMap<>();
     private String name;
 
@@ -69,19 +82,7 @@ public class FileAuditWriter implements IAuditWriter<JsonAuditRecord> {
             ConfigReader reader = new ConfigReader(config, FileAuditWriterSettings.class);
             reader.read();
             settings = (FileAuditWriterSettings) reader.settings();
-            directory = new File(settings.getDir());
-            if (!directory.exists()) {
-                if (!directory.mkdirs()) {
-                    throw new Exception(String.format("Failed to create directory. [path=%s]",
-                            directory.getAbsolutePath()));
-                }
-            }
-            File outf = new File(PathUtils.formatPath(String.format("%s/" + DEFAULT_FILE_NAME,
-                    directory.getAbsolutePath(), name)));
-            defaultWriter = new FileHandle();
-            defaultWriter.file = outf;
-            defaultWriter.size = outf.length();
-            defaultWriter = checkReCycle(defaultWriter);
+            setup();
             state.setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
@@ -90,7 +91,23 @@ public class FileAuditWriter implements IAuditWriter<JsonAuditRecord> {
         }
     }
 
-    private FileHandle checkReCycle(FileHandle handle) throws Exception {
+    protected void setup() throws Exception {
+        directory = new File(settings.getDir());
+        if (!directory.exists()) {
+            if (!directory.mkdirs()) {
+                throw new Exception(String.format("Failed to create directory. [path=%s]",
+                        directory.getAbsolutePath()));
+            }
+        }
+        File outf = new File(PathUtils.formatPath(String.format("%s/" + DEFAULT_FILE_NAME,
+                directory.getAbsolutePath(), name)));
+        defaultWriter = new FileHandle();
+        defaultWriter.file = outf;
+        defaultWriter.size = outf.length();
+        defaultWriter = checkReCycle(defaultWriter);
+    }
+
+    protected FileHandle checkReCycle(FileHandle handle) throws Exception {
         if (handle.size >= settings.getRolloverSize().normalized()) {
             if (handle.outputStream != null) {
                 handle.outputStream.flush();
@@ -117,9 +134,11 @@ public class FileAuditWriter implements IAuditWriter<JsonAuditRecord> {
             if (!handle.file.renameTo(tf)) {
                 throw new Exception(String.format("Failed to rename: [path=%s]", tf.getAbsolutePath()));
             }
+            handle.archived = tf;
             handle.file = new File(path);
             handle.outputStream = new FileOutputStream(handle.file);
             handle.size = 0;
+            handle.timestamp = System.currentTimeMillis();
         }
         return handle;
     }

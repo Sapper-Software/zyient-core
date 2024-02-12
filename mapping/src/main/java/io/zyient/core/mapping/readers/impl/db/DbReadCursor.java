@@ -23,7 +23,7 @@ import lombok.NonNull;
 
 public class DbReadCursor<K extends IKey, E extends IEntity<K>> extends ReadCursor {
 
-    public DbReadCursor(@NonNull DbInputReader reader,
+    public DbReadCursor(@NonNull DbInputReader<K, E> reader,
                         int batchSize) {
         super(reader, batchSize);
     }

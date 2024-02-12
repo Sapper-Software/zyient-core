@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.writers.file;
+package io.zyient.base.core.connections.azure.auth;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import io.zyient.base.common.config.units.SpaceUnitValue;
-import io.zyient.base.common.config.units.SpaceValueParser;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FileAuditWriterSettings extends Settings {
-    @Config(name = "directory")
-    private String dir;
-    @Config(name = "rolloverSize", required = false, parser = SpaceValueParser.class)
-    private SpaceUnitValue rolloverSize = new SpaceUnitValue(100, SpaceUnitValue.SpaceUnit.MEGABYTES);
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class SharedKeyAuthSettings extends AzureStorageAuthSettings {
+    public static final String CONFIG_AUTH_KEY = "authKey";
+
+    @Config(name = CONFIG_AUTH_KEY)
+    private String authKey;
 }

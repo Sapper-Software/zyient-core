@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.readers.file;
+package io.zyient.base.core.auditing.readers.local;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.JSONUtils;

@@ -21,16 +21,14 @@ import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
 import io.zyient.core.mapping.rules.RuleValidationError;
-import io.zyient.core.persistence.Cursor;
 import lombok.NonNull;
 
 import java.util.List;
 
 public class DBExistsRule<T, K extends IKey, E extends IEntity<K>> extends DBRule<T, K, E> {
     @Override
-    protected Object process(@NonNull T response, @NonNull Cursor<K, E> cursor) throws RuleValidationError, RuleEvaluationError {
+    protected Object process(@NonNull T response, List<E> entities) throws RuleValidationError, RuleEvaluationError {
         try {
-            List<E> entities = cursor.nextPage();
             if (entities != null && !entities.isEmpty()) {
                 E entity = entities.get(0);
                 return true;

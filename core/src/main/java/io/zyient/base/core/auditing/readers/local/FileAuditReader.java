@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.base.core.auditing.readers.file;
+package io.zyient.base.core.auditing.readers.local;
 
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DateTimeUtils;
@@ -22,7 +22,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.auditing.*;
-import io.zyient.base.core.auditing.writers.file.FileAuditWriter;
+import io.zyient.base.core.auditing.writers.local.FileAuditWriter;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

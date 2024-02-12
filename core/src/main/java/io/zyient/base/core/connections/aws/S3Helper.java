@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.impl.s3;
+package io.zyient.base.core.connections.aws;
 
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.RunUtils;
-import io.zyient.core.filesystem.FSPathUtils;
+import io.zyient.base.core.utils.FSPathUtils;
 import lombok.NonNull;
 import org.apache.commons.io.FilenameUtils;
 import software.amazon.awssdk.core.ResponseBytes;

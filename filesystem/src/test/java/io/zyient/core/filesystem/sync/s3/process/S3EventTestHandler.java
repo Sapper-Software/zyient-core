@@ -21,7 +21,7 @@ import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.aws.AwsS3Connection;
-import io.zyient.core.filesystem.impl.s3.S3Helper;
+import io.zyient.base.core.connections.aws.S3Helper;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
 import io.zyient.core.filesystem.sync.s3.model.S3EventType;
 import io.zyient.core.messaging.InvalidMessageError;

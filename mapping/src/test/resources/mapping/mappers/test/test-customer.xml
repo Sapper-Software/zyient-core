@@ -200,9 +200,9 @@
                 <errorCode>1000001</errorCode>
                 <validationErrorCode>1500001</validationErrorCode>
             </rule>
-<!--            <rule settings="io.zyient.core.mapping.rules.RuleReferenceConfig">-->
-<!--                <name>fetch-iso-country</name>-->
-<!--            </rule>-->
+            <rule settings="io.zyient.core.mapping.rules.RuleReferenceConfig">
+                <name>fetch-iso-country</name>
+            </rule>
         </rules>
     </mapping>
 </configuration>

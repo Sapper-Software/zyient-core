@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem;
+package io.zyient.base.core.utils;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.PathUtils;

@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package io.zyient.core.persistence.impl.settings.ch;
+package io.zyient.base.core.connections.azure.auth;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.config.ConfigPath;
-import io.zyient.core.persistence.AbstractConnectionSettings;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,7 +25,6 @@ import lombok.Setter;
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-@ConfigPath(path = "morphia")
-public class ClickhouseConnectionSettings extends AbstractConnectionSettings {
-
+public abstract class AzureStorageAuthSettings extends Settings {
+    public static final String __CONFIG_PATH = "auth";
 }

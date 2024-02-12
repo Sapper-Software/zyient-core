@@ -12,7 +12,6 @@ import io.zyient.core.mapping.rules.RuleConfig;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
 import io.zyient.core.mapping.rules.RuleValidationError;
 import io.zyient.core.messaging.MessageObject;
-import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import lombok.Getter;
 import lombok.NonNull;
@@ -66,9 +65,8 @@ public class DBEventPublisherRule<T, K extends IKey, E extends IEntity<K>> exten
     }
 
     @Override
-    protected Object process(@NonNull T response, @NonNull Cursor<K, E> cursor) throws RuleValidationError, RuleEvaluationError {
+    protected Object process(@NonNull T response, List<E> entities) throws RuleValidationError, RuleEvaluationError {
         try {
-            List<E> entities = cursor.nextPage();
             if (entities != null && !entities.isEmpty()) {
                 E entity = entities.get(0);
                 if (entity == null) {

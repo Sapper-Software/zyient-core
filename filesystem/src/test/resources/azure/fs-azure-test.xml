@@ -65,7 +65,7 @@
                     <compressed>true</compressed>
                     <client>
                         <endpointUrl>https://cdcdevblob01.blob.core.windows.net/</endpointUrl>
-                        <authClass>io.zyient.core.filesystem.impl.azure.auth.SharedKeyAuth</authClass>
+                        <authClass>io.zyient.base.core.connections.azure.auth.SharedKeyAuth</authClass>
                         <account>cdcdevblob01</account>
                         <auth>
                             <authKey>azureDemoKey</authKey>
