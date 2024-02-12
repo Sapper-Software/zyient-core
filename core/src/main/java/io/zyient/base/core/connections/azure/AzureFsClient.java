@@ -51,39 +51,6 @@ public class AzureFsClient implements Connection {
     private AzureFsClientSettings settings;
     private AzureStorageAuth auth;
 
-    public AzureFsClient init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                              @NonNull KeyStore keyStore) throws IOException {
-        try {
-            ConfigReader config = new ConfigReader(xmlConfig, AzureFsClientSettings.__CONFIG_PATH, AzureFsClientSettings.class);
-            config.read();
-            settings = (AzureFsClientSettings) config.settings();
-
-            setup(keyStore);
-            settings.setAuthSettings(auth.settings());
-
-            state.setState(EConnectionState.Connected);
-            return this;
-        } catch (Exception ex) {
-            state.error(ex);
-            throw new IOException(ex);
-        }
-    }
-
-    public AzureFsClient init(@NonNull AzureFsClientSettings settings,
-                              @NonNull KeyStore keyStore) throws IOException {
-        Preconditions.checkNotNull(settings.getAuthSettings());
-        try {
-            this.settings = settings;
-            setup(keyStore);
-
-            state.setState(EConnectionState.Connected);
-            return this;
-        } catch (Exception ex) {
-            state.error(ex);
-            throw new IOException(ex);
-        }
-    }
-
     @SuppressWarnings("unchecked")
     private void setup(KeyStore keyStore) throws Exception {
         Class<? extends AzureStorageAuth> ac = (Class<? extends AzureStorageAuth>) Class.forName(settings.getAuthClass());
@@ -111,10 +78,20 @@ public class AzureFsClient implements Connection {
     }
 
     @Override
-    public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
+    public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
         try {
-            return init(config, env.keyStore());
+            ConfigReader config = new ConfigReader(xmlConfig,
+                    AzureFsClientSettings.__CONFIG_PATH,
+                    AzureFsClientSettings.class);
+            config.read();
+            settings = (AzureFsClientSettings) config.settings();
+
+            setup(env.keyStore());
+            settings.setAuthSettings(auth.settings());
+
+            state.setState(EConnectionState.Connected);
+            return this;
         } catch (Exception ex) {
             throw new ConnectionError(ex);
         }
@@ -136,7 +113,9 @@ public class AzureFsClient implements Connection {
                         String.format("WebService Connection settings not found. [path=%s]", zkPath));
             }
             settings = (AzureFsClientSettings) reader.settings();
-            return setup(settings, env);
+            setup(env.keyStore());
+            state.setState(EConnectionState.Connected);
+            return this;
         } catch (Exception ex) {
             state.error(ex);
             DefaultLogger.stacktrace(ex);

@@ -18,10 +18,14 @@ package io.zyient.core.filesystem.impl.azure;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.units.TimeUnitValue;
+import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.connections.azure.AzureFsClientSettings;
 import io.zyient.core.filesystem.impl.RemoteFileSystemSettings;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -81,8 +85,10 @@ import lombok.Setter;
 public class AzureFileSystemSettings extends RemoteFileSystemSettings {
     @Config(name = "hierarchical", required = false, type = Boolean.class)
     private boolean useHierarchical = false;
-    @Config(name = "uploadTimeout", required = false, type = Long.class)
-    private long uploadTimeout = 15; // 15 Seconds
+    @Config(name = "upload.timeout", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue uploadTimeout = new TimeUnitValue(15, TimeUnit.SECONDS); // 15 Seconds
+    @Config(name = "download.retries", required = false, type = Integer.class)
+    private int retryCount = 5;
     private AzureFsClientSettings clientSettings;
 
     public AzureFileSystemSettings() {
