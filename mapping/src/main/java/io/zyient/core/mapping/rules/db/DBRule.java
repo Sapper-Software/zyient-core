@@ -17,9 +17,12 @@
 package io.zyient.core.mapping.rules.db;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.cache.LRUCache;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.ChecksumUtils;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.errors.Errors;
@@ -35,8 +38,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Accessors(fluent = true)
@@ -54,6 +56,16 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         }
     }
 
+    @Getter
+    @Setter
+    @Accessors(fluent = true)
+    protected static class CacheRecord<K extends IKey, E extends IEntity<K>> {
+        private String query;
+        private Map<String, Object> where;
+        private List<E> result;
+        private long timestamp;
+    }
+
     protected RdbmsDataStore dataStore;
     protected String query;
     protected Map<String, FieldProperty> whereFields = null;
@@ -62,14 +74,15 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     protected DBRuleHandler<T, K, E> handler;
     protected Map<String, FieldProperty> sourceFields = null;
     protected Map<String, FieldProperty> targetMappings = null;
-
+    protected LRUCache<String, CacheRecord<K, E>> cache;
+    protected DBRuleConfig config;
 
     @Override
     @SuppressWarnings("unchecked")
     public void setup(@NonNull RuleConfig cfg) throws ConfigurationException {
         Preconditions.checkArgument(cfg instanceof DBRuleConfig);
         Preconditions.checkArgument(env() instanceof DataStoreEnv<?>);
-        DBRuleConfig config = (DBRuleConfig) cfg;
+        config = (DBRuleConfig) cfg;
         try {
             dataStore = ((DataStoreEnv<?>) env()).dataStoreManager()
                     .getDataStore(((DBRuleConfig) config).getDataStore(), RdbmsDataStore.class);
@@ -131,6 +144,9 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                         .newInstance();
                 handler.configure((DBRuleConfig) config, this);
             }
+            if (config.isUseCache()) {
+                cache = new LRUCache<>(config.getCacheSize());
+            }
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
@@ -146,23 +162,11 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     protected Object doEvaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
         Preconditions.checkNotNull(dataStore);
         try {
-            AbstractDataStore.Q q = new AbstractDataStore.Q()
-                    .where(query);
-            if (whereFields != null && !whereFields.isEmpty()) {
-                Map<String, Object> params = new HashMap<>();
-                for (String key : whereFields.keySet()) {
-                    FieldProperty field = whereFields.get(key);
-                    Object value = MappingReflectionHelper.getProperty(field.field(), field.property(), data);
-                    params.put(key, value);
-                }
-                q.addAll(params);
+            List<E> entities = fetch(data);
+            if (handler != null) {
+                return handler.handle(data, entities);
             }
-            try (Cursor<K, E> cursor = dataStore.search(q, keyType, refEntityType, null)) {
-                if (handler != null) {
-                    return handler.handle(data, cursor);
-                }
-                return process(data, cursor);
-            }
+            return process(data, entities);
         } catch (RuleValidationError | RuleEvaluationError e) {
             throw e;
         } catch (RuntimeException re) {
@@ -182,6 +186,59 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
         }
     }
 
+    private List<E> fetch(T data) throws Exception {
+        AbstractDataStore.Q q = new AbstractDataStore.Q()
+                .where(query);
+        if (whereFields != null && !whereFields.isEmpty()) {
+            Map<String, Object> params = new HashMap<>();
+            for (String key : whereFields.keySet()) {
+                FieldProperty field = whereFields.get(key);
+                Object value = MappingReflectionHelper.getProperty(field.field(), field.property(), data);
+                params.put(key, value);
+            }
+            q.addAll(params);
+        }
+        String key = key(q);
+        if (cache != null) {
+            if (cache.containsKey(key)) {
+                Optional<CacheRecord<K, E>> o = cache.get(key);
+                if (o.isPresent()) {
+                    CacheRecord<K, E> record = o.get();
+                    if (System.currentTimeMillis() - record.timestamp < config.getCacheTimeout().normalized()) {
+                        DefaultLogger.debug(String.format("Found in cache. [where=%s][predicates=%s]",
+                                q.where(), q.parameters()));
+                        return record.result;
+                    }
+                }
+            }
+        }
+        try (Cursor<K, E> cursor = dataStore.search(q, keyType, refEntityType, null)) {
+            List<E> entities = new ArrayList<>();
+            while (true) {
+                List<E> r = cursor.nextPage();
+                if (r == null || r.isEmpty())
+                    break;
+                entities.addAll(r);
+            }
+            CacheRecord<K, E> record = new CacheRecord<>();
+            record.query = q.where();
+            record.where = q.parameters();
+            record.result = entities;
+            record.timestamp = System.currentTimeMillis();
+            cache.put(key, record);
+            return entities;
+        }
+    }
+
+    private String key(AbstractDataStore.Q query) throws Exception {
+        StringBuilder str = new StringBuilder(query.where());
+        if (query.parameters() != null && !query.parameters().isEmpty()) {
+            String json = JSONUtils.asString(query.parameters());
+            str.append(":").append(json);
+        }
+        return ChecksumUtils.generateHash(str.toString());
+    }
+
     protected abstract Object process(@NonNull T response,
-                                      @NonNull Cursor<K, E> cursor) throws RuleValidationError, RuleEvaluationError;
+                                      List<E> entities) throws RuleValidationError, RuleEvaluationError;
 }

@@ -18,6 +18,8 @@ package io.zyient.core.mapping.rules.db;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.units.TimeUnitValue;
+import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.core.mapping.rules.BaseRuleConfig;
@@ -27,6 +29,7 @@ import lombok.NonNull;
 import lombok.Setter;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Getter
 @Setter
@@ -43,6 +46,12 @@ public class DBRuleConfig extends BaseRuleConfig {
     private Map<String, String> fieldMappings;
     @Config(name = "handler", required = false, type = Class.class)
     private Class<? extends DBRuleHandler<?, ?, ?>> handler;
+    @Config(name = "cache.enable", required = false, type = Boolean.class)
+    private boolean useCache = true;
+    @Config(name = "cache.size", required = false, type = Integer.class)
+    private int cacheSize = 128;
+    @Config(name = "cache.timeout", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue cacheTimeout = new TimeUnitValue(60, TimeUnit.MINUTES);
 
     @Override
     public <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception {
