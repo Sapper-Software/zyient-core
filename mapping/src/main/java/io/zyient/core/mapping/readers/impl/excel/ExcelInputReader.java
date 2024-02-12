@@ -119,7 +119,8 @@ public class ExcelInputReader extends InputReader {
             if (settings.getHeaders() != null) {
                 for (int ii : settings.getHeaders().keySet()) {
                     ExcelColumn column = (ExcelColumn) settings.getHeaders().get(ii);
-                    Cell cell = row.getCell(column.getCellIndex(), Row.MissingCellPolicy.RETURN_BLANK_AS_NULL);
+
+                    Cell cell = row.getCell(column.getCellIndex(), getMissingCellPolicy(settings));
                     if (cell != null) {
                         Object value = getCellValue(cell);
                         if (value != null) {
@@ -157,6 +158,16 @@ public class ExcelInputReader extends InputReader {
         return data;
     }
 
+    private Row.MissingCellPolicy getMissingCellPolicy(ExcelReaderSettings settings) {
+        Row.MissingCellPolicy policy = null;
+        switch (settings.getCellMissing()) {
+            case Null -> policy = Row.MissingCellPolicy.RETURN_BLANK_AS_NULL;
+            case Blank -> policy = Row.MissingCellPolicy.CREATE_NULL_AS_BLANK;
+            case Both -> policy = Row.MissingCellPolicy.RETURN_NULL_AND_BLANK;
+        }
+        return policy;
+    }
+
     private Object getCellValue(Cell cell) {
         Object o = null;
         switch (cell.getCellType()) {
@@ -169,6 +180,9 @@ public class ExcelInputReader extends InputReader {
                 }
                 o = cell.getNumericCellValue();
             }
+        }
+        if (o == null) {
+            o = "";
         }
 
         return o;

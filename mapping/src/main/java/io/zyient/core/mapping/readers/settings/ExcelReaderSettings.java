@@ -19,6 +19,7 @@ package io.zyient.core.mapping.readers.settings;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
 import io.zyient.core.mapping.model.Column;
+import io.zyient.core.mapping.readers.impl.excel.CellMissing;
 import io.zyient.core.mapping.readers.impl.excel.ExcelHeader;
 import io.zyient.core.mapping.readers.impl.excel.ExcelSheet;
 import lombok.Getter;
@@ -40,4 +41,7 @@ public class ExcelReaderSettings extends ReaderSettings {
     private ExcelHeader header = ExcelHeader.None;
     @Config(name = "header.skip", required = false, type = Boolean.class)
     private boolean skipHeader = true;
+    @Config(name = "cell.missing", required = false, type = CellMissing.class)
+    private CellMissing cellMissing = CellMissing.Both;
+
 }
