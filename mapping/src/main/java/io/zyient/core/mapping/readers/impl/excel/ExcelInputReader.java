@@ -121,12 +121,11 @@ public class ExcelInputReader extends InputReader {
                     ExcelColumn column = (ExcelColumn) settings.getHeaders().get(ii);
 
                     Cell cell = row.getCell(column.getCellIndex(), getMissingCellPolicy(settings));
-                    if (cell != null) {
-                        Object value = getCellValue(cell);
-                        if (value != null) {
-                            record.put(column.getName(), value);
-                        }
+                    Object value = getCellValue(cell);
+                    if (value != null) {
+                        record.put(column.getName(), value);
                     }
+
                 }
             } else {
                 int ii = 0;
@@ -170,20 +169,23 @@ public class ExcelInputReader extends InputReader {
 
     private Object getCellValue(Cell cell) {
         Object o = null;
-        switch (cell.getCellType()) {
-            case STRING -> o = cell.getStringCellValue().trim();
-            case BOOLEAN -> o = cell.getBooleanCellValue();
-            case NUMERIC -> {
-                if (cell.getCellStyle().getDataFormatString() != null &&
-                        isDateValid(cell.getCellStyle().getDataFormatString())) {
-                    return cell.toString();
+        if (null != cell) {
+            switch (cell.getCellType()) {
+                case STRING -> o = cell.getStringCellValue().trim();
+                case BOOLEAN -> o = cell.getBooleanCellValue();
+                case NUMERIC -> {
+                    if (cell.getCellStyle().getDataFormatString() != null &&
+                            isDateValid(cell.getCellStyle().getDataFormatString())) {
+                        return cell.toString();
+                    }
+                    o = cell.getNumericCellValue();
                 }
-                o = cell.getNumericCellValue();
             }
         }
         if (o == null) {
             o = "";
         }
+
 
         return o;
     }
