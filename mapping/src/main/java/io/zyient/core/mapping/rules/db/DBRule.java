@@ -25,7 +25,9 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.errors.Errors;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
@@ -151,6 +153,14 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
+        DBRuleConfig config = (DBRuleConfig) new DBRuleConfig()
+                .from(def);
+        return configure(config, env);
     }
 
     @Override

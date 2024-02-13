@@ -8,6 +8,8 @@ import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.kafka.BasicKafkaProducerConnection;
 import io.zyient.base.core.errors.Errors;
+import io.zyient.core.mapping.model.RuleDef;
+import io.zyient.core.mapping.rules.Rule;
 import io.zyient.core.mapping.rules.RuleConfig;
 import io.zyient.core.mapping.rules.RuleEvaluationError;
 import io.zyient.core.mapping.rules.RuleValidationError;
@@ -62,6 +64,13 @@ public class DBEventPublisherRule<T, K extends IKey, E extends IEntity<K>> exten
         } catch (Exception ex) {
             throw new ConfigurationException(ex);
         }
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def, @NonNull BaseEnv<?> env) throws ConfigurationException {
+        DBEventPublisherConfig config = (DBEventPublisherConfig) new DBEventPublisherConfig()
+                .from(def);
+        return configure(config, env);
     }
 
     @Override

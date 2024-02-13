@@ -2,7 +2,9 @@ package io.zyient.core.mapping.rules.collection;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.errors.Errors;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -17,6 +19,14 @@ public class ListRule<T> extends BaseRule<T> {
 
     private PropertyDef property;
     private String target;
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
+        ListRuleConfig config = (ListRuleConfig) new ListRuleConfig()
+                .from(def);
+        return configure(config, env);
+    }
 
     @Override
     protected Object doEvaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError {
@@ -92,4 +102,5 @@ public class ListRule<T> extends BaseRule<T> {
     public Rule<T> withContentDir(@NonNull File contentDir) {
         return this;
     }
+
 }

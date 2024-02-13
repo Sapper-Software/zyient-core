@@ -3,10 +3,14 @@ package io.zyient.core.mapping.rules.spel;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.base.core.BaseEnv;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
+import io.zyient.core.mapping.rules.Rule;
 import io.zyient.core.mapping.rules.RuleConfig;
 import io.zyient.core.mapping.rules.RuleType;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
@@ -16,6 +20,14 @@ import java.util.List;
 @Getter
 @Accessors(fluent = true)
 public class MultiValueSpELRule<T> extends AbstractSpELRule<T> {
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def, @NonNull BaseEnv<?> env) throws ConfigurationException {
+        MultiValueSpELRuleConfig config = (MultiValueSpELRuleConfig) new MultiValueSpELRuleConfig()
+                .from(def);
+        return configure(config, env);
+    }
+
     @Override
     protected List<FieldMap> createTargetFields(RuleConfig config) throws Exception {
         List<FieldMap> fieldMaps = new ArrayList<>();

@@ -19,6 +19,7 @@ package io.zyient.core.mapping.rules;
 import com.google.common.base.Preconditions;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.model.StatusCode;
 import lombok.Getter;
 import lombok.NonNull;
@@ -72,6 +73,14 @@ public class RuleGroup<T> implements Rule<T> {
         if (config.getErrorCode() != null)
             errorCode = config.getErrorCode();
         return this;
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
+        RuleGroupConfig config = (RuleGroupConfig) new RuleGroupConfig()
+                .from(def);
+        return configure(config, env);
     }
 
     @Override

@@ -3,8 +3,10 @@ package io.zyient.core.mapping.rules.spel;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.beans.PropertyDef;
+import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.errors.Error;
 import io.zyient.base.core.errors.Errors;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -35,6 +37,14 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
         String targetField;
         String targetValue;
         PropertyDef property;
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
+        SpELRuleConfig config = (SpELRuleConfig) new SpELRuleConfig()
+                .from(def);
+        return configure(config, env);
     }
 
     private void normalizeRule() throws Exception {
