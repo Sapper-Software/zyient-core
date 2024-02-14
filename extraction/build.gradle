@@ -42,4 +42,5 @@ dependencies {
     implementation 'org.openpnp:opencv:4.9.0-0'
     implementation 'net.sourceforge.tess4j:tess4j:5.10.0'
     implementation 'com.github.pemistahl:lingua:1.2.2'
+    implementation group: 'com.azure', name: 'azure-ai-formrecognizer', version: '4.1.4'
 }

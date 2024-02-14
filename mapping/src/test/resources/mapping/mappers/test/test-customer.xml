@@ -194,7 +194,7 @@
             <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                 <name>address-append</name>
                 <expression>
-                    ${source['addressLine1']} + ", " + ${source['addressLine2']}
+                    ${cached['contact.address.line1']} + ", " + ${cached['contact.address.line2']}
                 </expression>
                 <field>contact.address.street</field>
                 <errorCode>1000001</errorCode>
