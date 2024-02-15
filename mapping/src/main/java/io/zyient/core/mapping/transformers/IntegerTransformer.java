@@ -30,6 +30,12 @@ public class IntegerTransformer extends NumericTransformer<Integer> {
     @Override
     public Integer transform(@NonNull Object source) throws DataException {
         if (ReflectionHelper.isNumericType(source.getClass())) {
+            if(ReflectionHelper.isDouble(source.getClass())) {
+                return ((Double)source).intValue();
+            }
+            if(ReflectionHelper.isFloat(source.getClass())) {
+                return ((Float)source).intValue();
+            }
             return (int) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {
