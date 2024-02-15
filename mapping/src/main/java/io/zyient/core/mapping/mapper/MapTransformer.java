@@ -295,7 +295,9 @@ public class MapTransformer<T> {
                             node = node.nodes.get(name);
                             if (node.type != null && property.field() != null) {
                                 if (node.type.equals(property.field().getType())) {
-                                    throw new Exception(String.format("Type mis-match: [current=%s][specified=%s]", node.type.getCanonicalName(), property.field().getType().getCanonicalName()));
+                                    throw new Exception(String.format("Type mis-match: [current=%s][specified=%s]",
+                                            node.type.getCanonicalName(),
+                                            property.field().getType().getCanonicalName()));
                                 }
                             } else {
                                 if (property.field() != null) node.type = property.field().getType();

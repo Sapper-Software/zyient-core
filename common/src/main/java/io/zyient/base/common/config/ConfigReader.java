@@ -22,6 +22,7 @@ import io.zyient.base.common.model.Options;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.BeanUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -545,6 +546,31 @@ public class ConfigReader {
             }
         }
         return null;
+    }
+
+    public static <T> void from(@NonNull T obj,
+                         @NonNull Map<String, Object> properties,
+                         boolean ignore) throws Exception {
+        Field[] fields = ReflectionHelper.getAllFields(obj.getClass());
+        if (fields != null) {
+            for (Field field : fields) {
+                if (!field.isAnnotationPresent(Config.class)) continue;
+                Config cfg = field.getAnnotation(Config.class);
+                Object value = properties.get(cfg.name());
+                if (value != null) {
+                    BeanUtils.setValue(obj, field.getName(), value);
+                }
+                if (!ignore) {
+                    if (cfg.required()) {
+                        value = BeanUtils.getValue(obj, field.getName());
+                        if (value == null) {
+                            throw new ConfigurationException(String.format("[type=%s] Missing field value: field=%s]",
+                                    obj.getClass().getCanonicalName(), field.getName()));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public static final String CONFIG_KEY_CLASS = "class";

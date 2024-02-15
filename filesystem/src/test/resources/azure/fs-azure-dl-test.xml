@@ -65,6 +65,7 @@
                     <compressed>true</compressed>
                     <hierarchical>true</hierarchical>
                     <client>
+                        <name>test-azure-dl-fs</name>
                         <endpointUrl>https://cdcdlstore.blob.core.windows.net/</endpointUrl>
                         <authClass>io.zyient.base.core.connections.azure.auth.SharedKeyAuth</authClass>
                         <account>cdcdlstore</account>

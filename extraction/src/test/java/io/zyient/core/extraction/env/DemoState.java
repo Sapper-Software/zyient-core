@@ -14,22 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.core.extraction.env;
 
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.base.common.AbstractState;
 
-@Getter
-@Setter
-public class Point {
-    private int offset = -1;
-    private double X;
-    private double Y;
-
-    public Point() {}
-
-    public Point(double X, double Y) {
-        this.X = X;
-        this.Y = Y;
+public class DemoState extends AbstractState<EDemoState> {
+    public DemoState() {
+        super(EDemoState.Error, EDemoState.Unknown);
     }
 }

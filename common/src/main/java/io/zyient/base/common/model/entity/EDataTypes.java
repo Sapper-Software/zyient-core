@@ -27,14 +27,18 @@ public enum EDataTypes {
     Float,
     Double,
     Date,
-    Bytes;
+    Bytes,
+    Json,
+    DateTime,
+    Timestamp,
+    Currency;
 
     public static Class<?> asJavaType(@NonNull EDataTypes dataType) throws Exception {
         switch (dataType) {
-            case Date -> {
+            case Date, DateTime -> {
                 return java.util.Date.class;
             }
-            case Long -> {
+            case Long, Timestamp -> {
                 return java.lang.Long.class;
             }
             case Bytes -> {

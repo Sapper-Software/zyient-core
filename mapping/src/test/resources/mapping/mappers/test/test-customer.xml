@@ -88,19 +88,14 @@
                 <nullable>false</nullable>
                 <type>Property</type>
             </map>
-            <map source="creditLimit">
-                <sequence>11</sequence>
-                <target>creditLimit</target>
-                <type>Field</type>
-            </map>
             <map source="context['source.URI']">
-                <sequence>12</sequence>
+                <sequence>11</sequence>
                 <target>source.URI</target>
                 <nullable>false</nullable>
                 <type>Property</type>
             </map>
             <map source="country">
-                <sequence>13</sequence>
+                <sequence>12</sequence>
                 <target>contact.address.country</target>
                 <nullable>false</nullable>
                 <type>Field</type>
@@ -110,6 +105,12 @@
                 <target>constValue</target>
                 <nullable>false</nullable>
                 <type>ConstField</type>
+            </map>
+            <map source="creditLimit">
+                <sequence>14</sequence>
+                <target>cache.creditLimit</target>
+                <type>Cached</type>
+                <dataType>Double</dataType>
             </map>
             <builder type="io.zyient.core.mapping.mapper.db.DbEvaluationTreeBuilder">
                 <condition>
@@ -189,12 +190,22 @@
                         <errorCode>1000001</errorCode>
                         <validationErrorCode>1500001</validationErrorCode>
                     </rule>
+                    <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>multiply-credit-limit</name>
+                        <expression>
+                           (${cached['cache.creditLimit']} * 1000.00)
+                        </expression>
+                        <field>creditLimit</field>
+                        <ruleType>Transformation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
                 </rules>
             </rule>
             <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
                 <name>address-append</name>
                 <expression>
-                    ${source['addressLine1']} + ", " + ${source['addressLine2']}
+                    ${cached['contact.address.line1']} + ", " + ${cached['contact.address.line2']}
                 </expression>
                 <field>contact.address.street</field>
                 <errorCode>1000001</errorCode>

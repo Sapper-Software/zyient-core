@@ -28,6 +28,7 @@ import io.zyient.core.persistence.model.BaseEntity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnTransformer;
 
 @Getter
 @Setter
@@ -44,7 +45,8 @@ public class CaseHistory extends BaseEntity<CaseHistoryId> {
     private String caseCode;
     @Column(name = "comment")
     private String comment;
-    @Column(name = "change_json")
+    @Column(name = "change_json", columnDefinition = "json")
+    @ColumnTransformer(write = "?::json")
     private String change;
     @Embedded
     @AttributeOverrides({

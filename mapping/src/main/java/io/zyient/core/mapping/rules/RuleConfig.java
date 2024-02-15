@@ -18,25 +18,87 @@ package io.zyient.core.mapping.rules;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.utils.ReflectionHelper;
+import io.zyient.base.common.utils.beans.BeanUtils;
+import io.zyient.core.mapping.model.RuleDef;
+import io.zyient.core.mapping.model.RuleId;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+
+import java.lang.reflect.Field;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
 public abstract class RuleConfig extends Settings {
-    @Config(name = "name")
+    public static final String CONFIG_NAMESPACE = "namespace";
+    public static final String CONFIG_NAME = "name";
+    public static final String CONFIG_TYPE = "ruleType";
+    public static final String CONFIG_ERROR_CODE = "errorCode";
+    public static final String CONFIG_VAL_ERROR_CODE = "validationErrorCode";
+
+    @Config(name = CONFIG_NAMESPACE, required = false)
+    private String namespace = "default";
+    @Config(name = CONFIG_NAME)
     private String name;
-    @Config(name = "ruleType", required = false, type = RuleType.class)
+    @Config(name = CONFIG_TYPE, required = false, type = RuleType.class)
     private RuleType type = RuleType.Transformation;
-    @Config(name = "errorCode", required = false, type = Integer.class)
+    @Config(name = CONFIG_ERROR_CODE, required = false, type = Integer.class)
     private Integer errorCode;
-    @Config(name = "validationErrorCode", required = false, type = Integer.class)
+    @Config(name = CONFIG_VAL_ERROR_CODE, required = false, type = Integer.class)
     private Integer validationErrorCode;
+
+    public RuleConfig from(@NonNull RuleDef def) throws ConfigurationException {
+        namespace = def.getId().getNamespace();
+        name = def.getId().getName();
+        type = def.getType();
+        errorCode = def.getErrorCode();
+        validationErrorCode = def.getValidationCode();
+        if (def.getProperties() != null) {
+            try {
+                ConfigReader.from(this, def.getProperties(), false);
+            } catch (Exception e) {
+                throw new ConfigurationException(e);
+            }
+        }
+        validate();
+        return this;
+    }
+
+    public RuleDef to() throws ConfigurationException {
+        validate();
+        RuleDef def = new RuleDef();
+        def.setId(new RuleId(namespace, name));
+        def.setType(type);
+        def.setClazz(getClass().getCanonicalName());
+        def.setErrorCode(errorCode);
+        def.setValidationCode(validationErrorCode);
+        try {
+            Field[] fields = ReflectionHelper.getAllFields(getClass());
+            if (fields != null) {
+                for (Field field : fields) {
+                    if (!field.isAnnotationPresent(Config.class)) continue;
+                    Config cfg = field.getAnnotation(Config.class);
+                    if (cfg.name().compareTo(CONFIG_NAMESPACE) == 0
+                            || cfg.name().compareTo(CONFIG_NAME) == 0
+                            || cfg.name().compareTo(CONFIG_TYPE) == 0
+                            || cfg.name().compareTo(CONFIG_ERROR_CODE) == 0
+                            || cfg.name().compareTo(CONFIG_VAL_ERROR_CODE) == 0) continue;
+                    Object value = BeanUtils.getValue(this, field.getName());
+                    if (value != null)
+                        def.setProperty(cfg.name(), value);
+                }
+            }
+            return def;
+        } catch (Exception ex) {
+            throw new ConfigurationException(ex);
+        }
+    }
 
     public void validate() throws ConfigurationException {
         if (getType() == RuleType.Validation) {

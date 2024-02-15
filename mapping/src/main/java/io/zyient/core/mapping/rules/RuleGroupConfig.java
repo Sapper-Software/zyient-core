@@ -34,6 +34,9 @@ public class RuleGroupConfig extends RuleConfig {
 
     @Override
     public void validate() throws ConfigurationException {
+        if (getType() != RuleType.Group) {
+            throw new ConfigurationException(String.format("Invalid rule type. [type=%s]", getType().name()));
+        }
     }
 
     @Override
