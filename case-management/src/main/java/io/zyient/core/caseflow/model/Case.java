@@ -39,6 +39,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +55,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
-    @Column(name = "case_name")
+    @Column(name = "case_name", length = 500)
     private String name;
     @Column(name = "description")
     private String description;
@@ -94,8 +95,9 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
     private CaseId parentId;
     @Transient
     private Set<CaseDocument<E, T>> artefacts;
-    @Column(name = "properties")
+    @Column(name = "properties", columnDefinition = "json")
     @Convert(converter = PropertiesConverter.class)
+    @ColumnTransformer(write = "?::json")
     private Map<String, Object> properties;
     @Transient
     private Set<CaseDocument<E, T>> deleted;

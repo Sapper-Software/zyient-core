@@ -37,6 +37,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.apache.solr.client.solrj.beans.Field;
+import org.hibernate.annotations.ColumnTransformer;
 
 import java.io.File;
 import java.security.Principal;
@@ -63,10 +64,10 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     @Column(name = "parent_doc_id")
     @Field(SolrConstants.FIELD_DOC_PARENT_ID)
     private String parentDocId;
-    @Column(name = "doc_name")
+    @Column(name = "doc_name", length = 500)
     @Field(SolrConstants.FIELD_SOLR_DOC_NAME)
     private String name;
-    @Column(name = "doc_source_path")
+    @Column(name = "doc_source_path", length = 1000)
     @Field(SolrConstants.FIELD_SOLR_DOC_SOURCE_PATH)
     private String sourcePath;
     @Embedded
@@ -75,7 +76,7 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     @Field(SolrConstants.FIELD_SOLR_MIME_TYPE)
     private String mimeType;
     @Field(SolrConstants.FIELD_SOLR_URI)
-    @Column(name = "URI")
+    @Column(name = "URI", length = 1000)
     private String uri;
     @Column(name = "created_by")
     @Field(SolrConstants.FIELD_SOLR_CREATED_BY)
@@ -98,7 +99,8 @@ public abstract class Document<E extends DocumentState<?>, K extends IKey, T ext
     private int documentCount = 0;
     @Convert(converter = PropertiesConverter.class)
     @Field(SolrConstants.FIELD_DOC_PROPERTIES)
-    @Column(name = "properties")
+    @Column(name = "properties", columnDefinition = "json")
+    @ColumnTransformer(write = "?::json")
     private Map<String, Object> properties;
 
     protected Document(@NonNull E docState) {
