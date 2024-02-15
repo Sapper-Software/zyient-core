@@ -24,6 +24,7 @@ import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -57,8 +58,15 @@ public class ExcelInputReader extends InputReader {
     }
 
     protected Workbook createWorkbook(FileInputStream stream) throws IOException {
-        return new XSSFWorkbook(stream);
+        ExcelReaderSettings excelReaderSettings = (ExcelReaderSettings) settings();
+        ExcelFormat format = excelReaderSettings.getExcelFormat();
+        if (format == ExcelFormat.XLS) {
+            return new HSSFWorkbook(stream);
+        } else {
+            return new XSSFWorkbook(stream);
+        }
     }
+
 
     @Override
     public List<SourceMap> fetchNextBatch() throws IOException {
