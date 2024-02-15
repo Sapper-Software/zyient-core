@@ -2,6 +2,7 @@ package io.zyient.core.mapping.rules.collection;
 
 import com.google.common.base.Preconditions;
 import io.zyient.base.core.errors.Errors;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.mapping.rules.spel.AbstractSpELRule;
 import lombok.Getter;
@@ -91,4 +92,5 @@ public class ListRule<T> extends AbstractSpELRule<T> {
     public Rule<T> withContentDir(@NonNull File contentDir) {
         return this;
     }
+
 }

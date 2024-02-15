@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.core.extraction.azure;
 
+import io.zyient.base.common.config.Config;
+import io.zyient.base.common.config.Settings;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class Point {
-    private int offset = -1;
-    private double X;
-    private double Y;
-
-    public Point() {}
-
-    public Point(double X, double Y) {
-        this.X = X;
-        this.Y = Y;
-    }
+public class DocISettings extends Settings {
+    @Config(name = "endpoint")
+    private String endpoint;
+    @Config(name = "key")
+    private String key;
+    @Config(name = "model", required = false)
+    private String modelId = "prebuilt-layout";
 }

@@ -18,6 +18,7 @@ package io.zyient.core.mapping.rules;
 
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RuleDef;
 import lombok.NonNull;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 
@@ -38,6 +39,9 @@ public interface Rule<T> {
     Rule<T> withTerminateOnValidationError(boolean terminate);
 
     Rule<T> configure(@NonNull RuleConfig config,
+                      @NonNull BaseEnv<?> env) throws ConfigurationException;
+
+    Rule<T> configure(@NonNull RuleDef def,
                       @NonNull BaseEnv<?> env) throws ConfigurationException;
 
     EvaluationStatus evaluate(@NonNull T data) throws RuleValidationError, RuleEvaluationError;

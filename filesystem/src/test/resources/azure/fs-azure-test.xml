@@ -64,6 +64,7 @@
                     </tmp>
                     <compressed>true</compressed>
                     <client>
+                        <name>test-azure-fs</name>
                         <endpointUrl>https://cdcdevblob01.blob.core.windows.net/</endpointUrl>
                         <authClass>io.zyient.base.core.connections.azure.auth.SharedKeyAuth</authClass>
                         <account>cdcdevblob01</account>

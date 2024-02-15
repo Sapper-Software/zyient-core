@@ -24,8 +24,10 @@ import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.entity.EDataTypes;
 import io.zyient.base.common.model.entity.PropertyBag;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
 import io.zyient.base.core.BaseEnv;
@@ -348,6 +350,32 @@ public abstract class Mapping<T> {
         if (type == null) {
             type = String.class;
         }
+        if (element.getDataType() != null) {
+            DeSerializer<?> deSerializer = null;
+            if (element.getDataType() == EDataTypes.Currency) {
+                deSerializer = getDeSerializer(CurrencyValue.class, element);
+            } else if (element.getDataType() == EDataTypes.Json) {
+                if (element.getTargetType() == null) {
+                    throw new Exception(String.format("Target type required. [element=%s]", element.getTargetPath()));
+                }
+                if (ReflectionHelper.isSuperType(element.getTargetType(), value.getClass())) {
+                    return value;
+                } else if (value instanceof String) {
+                    return JSONUtils.read((String) value, element.getTargetType());
+                } else {
+                    throw new Exception(String.format("Failed to de-serialize from type. [type=%s]",
+                            value.getClass().getCanonicalName()));
+                }
+            } else {
+                deSerializer = getDeSerializer(EDataTypes.asJavaType(element.getDataType()),
+                        element);
+            }
+            if (deSerializer == null) {
+                throw new Exception(String.format("Failed to get de-serializer. [type=%s]",
+                        element.getDataType().name()));
+            }
+            return deSerializer.transform(value);
+        }
         if (element.getClass().equals(MappedElement.class)) {
             if (type.equals(String.class)) {
                 return stringTransformer.serialize(value);
@@ -357,6 +385,7 @@ public abstract class Mapping<T> {
                 return value;
             }
         }
+
         return mapTransformer.transform(element, value);
     }
 

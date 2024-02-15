@@ -51,14 +51,7 @@ public class AzureFsClient implements Connection {
     private AzureFsClientSettings settings;
     private AzureStorageAuth auth;
 
-    @SuppressWarnings("unchecked")
     private void setup(KeyStore keyStore) throws Exception {
-        Class<? extends AzureStorageAuth> ac = (Class<? extends AzureStorageAuth>) Class.forName(settings.getAuthClass());
-        auth = ac.getDeclaredConstructor()
-                .newInstance()
-                .withAccount(settings.getAuthAccount())
-                .init(settings.getAuthSettings(), keyStore);
-
         String endpoint = String.format(Locale.ROOT, settings.getEndpointUrl(), settings.getAuthAccount());
         BlobServiceClientBuilder builder = new BlobServiceClientBuilder()
                 .endpoint(endpoint);
@@ -78,6 +71,7 @@ public class AzureFsClient implements Connection {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Connection init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                            @NonNull BaseEnv<?> env) throws ConnectionError {
         try {
@@ -86,9 +80,14 @@ public class AzureFsClient implements Connection {
                     AzureFsClientSettings.class);
             config.read();
             settings = (AzureFsClientSettings) config.settings();
-
-            setup(env.keyStore());
+            Class<? extends AzureStorageAuth> ac
+                    = (Class<? extends AzureStorageAuth>) Class.forName(settings.getAuthClass());
+            auth = ac.getDeclaredConstructor()
+                    .newInstance()
+                    .withAccount(settings.getAuthAccount())
+                    .init(config.config(), env.keyStore());
             settings.setAuthSettings(auth.settings());
+            setup(env.keyStore());
 
             state.setState(EConnectionState.Connected);
             return this;
@@ -113,7 +112,7 @@ public class AzureFsClient implements Connection {
                         String.format("WebService Connection settings not found. [path=%s]", zkPath));
             }
             settings = (AzureFsClientSettings) reader.settings();
-            setup(env.keyStore());
+            setup(settings, env);
             state.setState(EConnectionState.Connected);
             return this;
         } catch (Exception ex) {
@@ -124,11 +123,19 @@ public class AzureFsClient implements Connection {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public Connection setup(@NonNull ConnectionSettings settings,
                             @NonNull BaseEnv<?> env) throws ConnectionError {
         Preconditions.checkArgument(settings instanceof AzureFsClientSettings);
         try {
             this.settings = (AzureFsClientSettings) settings;
+            Class<? extends AzureStorageAuth> ac
+                    = (Class<? extends AzureStorageAuth>) Class.forName(this.settings.getAuthClass());
+            auth = ac.getDeclaredConstructor()
+                    .newInstance()
+                    .withAccount(this.settings.getAuthAccount())
+                    .init(this.settings.getAuthSettings(), env.keyStore());
+
             setup(env.keyStore());
             return this;
         } catch (Exception ex) {

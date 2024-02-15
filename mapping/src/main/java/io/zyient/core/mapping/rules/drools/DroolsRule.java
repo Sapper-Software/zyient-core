@@ -20,6 +20,7 @@ import com.google.common.base.Preconditions;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.mapping.model.EvaluationStatus;
+import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.model.StatusCode;
 import io.zyient.core.mapping.rules.*;
 import lombok.Getter;
@@ -82,6 +83,15 @@ public class DroolsRule<T> implements Rule<T> {
         errorCode = config.getErrorCode();
         createContainer();
         return this;
+    }
+
+    @Override
+    public Rule<T> configure(@NonNull RuleDef def,
+                             @NonNull BaseEnv<?> env) throws ConfigurationException {
+        DroolsConfig config = (DroolsConfig) new DroolsConfig()
+                .from(def);
+
+        return configure(config, env);
     }
 
     private KieFileSystem getKieFileSystem() {

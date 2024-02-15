@@ -151,6 +151,16 @@ public class AzureFileSystem extends RemoteFileSystem {
         AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
         if (deleteInode(path, recursive)) {
             AzurePathInfo pi = (AzurePathInfo) path;
+            if (pi.directory()) {
+                if (!settings.isUseHierarchical()) return true;
+                else {
+                    return AzureFsHelper.delete(client.client(),
+                            pi.container(),
+                            true,
+                            pi.fsPath(),
+                            recursive);
+                }
+            }
             String name = getBlobName(pi);
             return AzureFsHelper.delete(client.client(),
                     pi.container(),
@@ -173,12 +183,19 @@ public class AzureFileSystem extends RemoteFileSystem {
     @Override
     public boolean exists(@NonNull PathInfo path) throws IOException {
         if (path instanceof AzurePathInfo pi) {
+            AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
             Inode node = getInode(path);
             if (node == null) {
                 return false;
             }
             if (path.directory()) {
-                return true;
+                if (settings.isUseHierarchical())
+                    return true;
+                else {
+                    return AzureFsHelper.exists(client.client(),
+                            pi.container(),
+                            pi.fsPath());
+                }
             }
             return AzureFsHelper.exists(client.client(),
                     pi.container(),
@@ -324,7 +341,7 @@ public class AzureFileSystem extends RemoteFileSystem {
             AzureFileSystemSettings settings = (AzureFileSystemSettings) this.settings;
             AzureFileUploader task = new AzureFileUploader(this, client, inode, source,
                     this, clearLock,
-                    settings.getUploadTimeout().normalized(), settings.isUseHierarchical());
+                    settings.getUploadTimeout().normalized());
             uploader.submit(task);
             return inode;
         } catch (Exception ex) {
@@ -379,7 +396,6 @@ public class AzureFileSystem extends RemoteFileSystem {
     public static class AzureFileUploader extends FileUploader {
         private final AzureFsClient client;
         private final long uploadTimeout;
-        private final boolean useHierarchical;
         private final File source;
 
         protected AzureFileUploader(@NonNull RemoteFileSystem fs,
@@ -388,13 +404,11 @@ public class AzureFileSystem extends RemoteFileSystem {
                                     @NonNull File source,
                                     @NonNull FileUploadCallback callback,
                                     boolean clearLock,
-                                    long uploadTimeout,
-                                    boolean useHierarchical) {
+                                    long uploadTimeout) {
             super(fs, inode, callback, clearLock);
             this.client = client;
             this.source = source;
             this.uploadTimeout = uploadTimeout;
-            this.useHierarchical = useHierarchical;
         }
 
         @Override
