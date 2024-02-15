@@ -111,6 +111,12 @@
                 <nullable>false</nullable>
                 <type>ConstField</type>
             </map>
+            <map source="creditLimit">
+                <sequence>14</sequence>
+                <target>cache.creditLimit</target>
+                <type>Cached</type>
+                <dataType>Double</dataType>
+            </map>
             <builder type="io.zyient.core.mapping.mapper.db.DbEvaluationTreeBuilder">
                 <condition>
                     <class>io.zyient.core.mapping.model.DemoConditionDef</class>
@@ -185,6 +191,16 @@
                             ${property['contact.name.first']}.substring(0,5) + '@test.com')
                         </expression>
                         <field>contact.emailId</field>
+                        <ruleType>Transformation</ruleType>
+                        <errorCode>1000001</errorCode>
+                        <validationErrorCode>1500001</validationErrorCode>
+                    </rule>
+                    <rule settings="io.zyient.core.mapping.rules.spel.SpELRuleConfig">
+                        <name>multiply-credit-limit</name>
+                        <expression>
+                           (${cached['cache.creditLimit']} * 1000.00)
+                        </expression>
+                        <field>creditLimit</field>
                         <ruleType>Transformation</ruleType>
                         <errorCode>1000001</errorCode>
                         <validationErrorCode>1500001</validationErrorCode>

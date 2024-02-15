@@ -25,4 +25,11 @@ public class Point {
     private int offset = -1;
     private double X;
     private double Y;
+
+    public Point() {}
+
+    public Point(double X, double Y) {
+        this.X = X;
+        this.Y = Y;
+    }
 }

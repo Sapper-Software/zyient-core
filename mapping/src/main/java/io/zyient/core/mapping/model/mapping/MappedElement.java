@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.model.mapping;
 
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.model.entity.EDataTypes;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -33,6 +34,10 @@ public class MappedElement extends Mapped {
     private Class<?> type;
     @Config(name = "type", required = false, type = MappingType.class)
     private MappingType mappingType = MappingType.Field;
+    @Config(name = "dataType", required = false, type = EDataTypes.class)
+    private EDataTypes dataType = null;
+    @Config(name = "targetType", required = false, type = Class.class)
+    private Class<?> targetType = null;
 
     public MappedElement() {
 
@@ -57,5 +62,7 @@ public class MappedElement extends Mapped {
         nullable = source.nullable;
         type = source.type;
         mappingType = source.mappingType;
+        dataType = source.dataType;
+        targetType = source.targetType;
     }
 }
