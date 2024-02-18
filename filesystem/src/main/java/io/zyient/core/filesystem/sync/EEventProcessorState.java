@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.sync.s3.process;
+package io.zyient.core.filesystem.sync;
 
-public enum ES3EventProcessorState {
+public enum EEventProcessorState {
     Unknown,
     Initialized,
     Running,

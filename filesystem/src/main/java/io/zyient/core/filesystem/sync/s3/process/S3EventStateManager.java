@@ -24,11 +24,14 @@ import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.state.BaseStateManager;
 import io.zyient.base.core.state.BaseStateManagerSettings;
 import io.zyient.base.core.state.StateManagerError;
+import io.zyient.core.filesystem.sync.EEventProcessorState;
+import io.zyient.core.filesystem.sync.s3.model.S3EventOffset;
+import io.zyient.core.filesystem.sync.s3.model.S3EventProcessingState;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-public class S3EventStateManager extends ProcessStateManager<ES3EventProcessorState, S3EventOffset> {
+public class S3EventStateManager extends ProcessStateManager<EEventProcessorState, S3EventOffset> {
     public S3EventStateManager() {
         super(S3EventProcessingState.class);
     }
@@ -48,8 +51,8 @@ public class S3EventStateManager extends ProcessStateManager<ES3EventProcessorSt
     @Override
     public Heartbeat heartbeat(@NonNull String instance) throws StateManagerError {
         try {
-            ProcessingState<ES3EventProcessorState, S3EventOffset> state = null;
-            for (ProcessingState<ES3EventProcessorState, S3EventOffset> ps : processingStates().values()) {
+            ProcessingState<EEventProcessorState, S3EventOffset> state = null;
+            for (ProcessingState<EEventProcessorState, S3EventOffset> ps : processingStates().values()) {
                 if (state == null) {
                     state = ps;
                 } else if (ps.hasError()) {
