@@ -44,7 +44,7 @@ public class ExcelReaderSettings extends ReaderSettings {
     private boolean skipHeader = true;
     @Config(name = "cell.missing", required = false, type = CellMissing.class)
     private CellMissing cellMissing = CellMissing.Both;
-    @Config(name = "excelFormat", required = false,type = ExcelFormat.class)
+    @Config(name = "excelFormat", required = false, type = ExcelFormat.class)
     private ExcelFormat excelFormat = ExcelFormat.XLSX;
 
 }
