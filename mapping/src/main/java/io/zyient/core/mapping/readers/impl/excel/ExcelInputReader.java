@@ -101,7 +101,7 @@ public class ExcelInputReader extends InputReader {
         }
     }
 
-    private void checkSheet() throws Exception {
+    protected void checkSheet() throws Exception {
         ExcelSheet sheet = ((ExcelReaderSettings) settings()).getSheets().get(sheetIndex);
         if (!Strings.isNullOrEmpty(sheet.getName())) {
             current = workbook.getSheet(sheet.getName());
@@ -118,7 +118,7 @@ public class ExcelInputReader extends InputReader {
         }
     }
 
-    private List<SourceMap> readFromSheet(int count, ExcelReaderSettings settings) throws Exception {
+    protected List<SourceMap> readFromSheet(int count, ExcelReaderSettings settings) throws Exception {
         List<SourceMap> data = new ArrayList<>();
         while (count > 0) {
             Row row = current.getRow(rowIndex);
@@ -183,7 +183,7 @@ public class ExcelInputReader extends InputReader {
                 case BOOLEAN -> o = cell.getBooleanCellValue();
                 case NUMERIC -> {
                     if (cell.getCellStyle().getDataFormatString() != null &&
-                            isDateValid(cell.getCellStyle().getDataFormatString())) {
+                            ExcelDateUtil.isDateValid(cell.getCellStyle().getDataFormatString())) {
                         return cell.toString();
                     }
                     o = cell.getNumericCellValue();
@@ -198,18 +198,7 @@ public class ExcelInputReader extends InputReader {
         return o;
     }
 
-    private boolean isDateValid(String dateStr) {
-        dateStr = dateStr.replace("\\", "");
-        String[] dateFormats = {
-                "yyyy-MM-dd", "MM/dd/yyyy", "dd-MM-yyyy", "yyyy/MM/dd", "M/dd/yy", "MM/dd/yy", "MM/d/yy", "M/d/yy", "M/d/yyyy"
-        };
-        for (String format : dateFormats) {
-            if (format.equalsIgnoreCase(dateStr)) {
-                return true;
-            }
-        }
-        return false;
-    }
+
 
     private boolean checkHeaderRow(Map<String, Object> record, ExcelReaderSettings settings) {
         for (String key : record.keySet()) {
