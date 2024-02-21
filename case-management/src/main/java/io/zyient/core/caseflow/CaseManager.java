@@ -362,7 +362,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 assigner,
                 diff,
                 context);
-        dataStore.commit();
         return caseObject;
     }
 
