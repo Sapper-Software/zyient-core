@@ -111,7 +111,16 @@ public class ExcelBInputReader extends InputReader {
     }
 
     protected List<SourceMap> readFromSheet(int count, ExcelReaderSettings settings) throws Exception {
-        return current.getSheetData();
+
+        List<SourceMap> sourceMaps = current.getSheetData();
+        List<SourceMap> sourceMapSubList = new ArrayList<>();
+
+        while (count > 0 && rowIndex < sourceMaps.size()) {
+            sourceMapSubList.add(sourceMaps.get(rowIndex));
+            count--;
+            rowIndex++;
+        }
+        return sourceMapSubList;
     }
 
     @Override
