@@ -21,10 +21,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.JSONUtils;
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -38,8 +35,7 @@ public class CaseCommentId implements IKey {
     @Column(name = "case_id")
     private String caseId;
     @Column(name = "comment_id")
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Integer commentId;
+    private String commentId;
 
     /**
      * Get the String representation of the key.
@@ -69,7 +65,7 @@ public class CaseCommentId implements IKey {
         if (key instanceof CaseCommentId) {
             int ret = caseId.compareTo(((CaseCommentId) key).caseId);
             if (ret == 0) {
-                ret = commentId - ((CaseCommentId) key).commentId;
+                ret = commentId.compareTo(((CaseCommentId) key).commentId);
             }
             return ret;
         }
