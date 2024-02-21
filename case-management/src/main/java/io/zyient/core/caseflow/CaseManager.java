@@ -330,7 +330,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                        @NonNull UserOrRole assigner,
                                        Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -706,7 +706,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                    @NonNull UserOrRole commentBy,
                                    Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -758,7 +758,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                    @NonNull UserOrRole commentBy,
                                    Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
