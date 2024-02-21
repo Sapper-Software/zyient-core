@@ -41,10 +41,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnTransformer;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 @Setter
@@ -206,6 +203,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         a.setTimestamp(System.currentTimeMillis());
         CaseCommentId id = new CaseCommentId();
         id.setCaseId(this.id.getId());
+        id.setCommentId(UUID.randomUUID().toString());
         CaseComment c = new CaseComment();
         c.setId(id);
         c.setCommentedBy(a);
@@ -230,7 +228,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
     private CaseComment findParent(long parentId) {
         if (comments != null) {
             for (CaseComment comment : comments) {
-                if (comment.getId().getCommentId() == parentId) {
+                if (comment.getId().getCommentId().equals(parentId)) {
                     return comment;
                 }
             }
