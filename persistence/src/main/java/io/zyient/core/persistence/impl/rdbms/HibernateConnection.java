@@ -30,6 +30,7 @@ import io.zyient.base.core.utils.SpringUtils;
 import io.zyient.core.persistence.AbstractConnection;
 import io.zyient.core.persistence.impl.settings.rdbms.HibernateConnectionSettings;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FlushModeType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -126,6 +127,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
                     threadCache.put(elem);
                 }
                 Session session = sessionFactory.openSession();
+                session.setFlushMode(FlushModeType.COMMIT);
                 elem.timeOpened = System.currentTimeMillis();
                 elem.timeLastUsed = System.currentTimeMillis();
                 elem.session = session;
