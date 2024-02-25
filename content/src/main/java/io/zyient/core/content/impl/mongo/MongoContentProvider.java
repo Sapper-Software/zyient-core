@@ -95,7 +95,7 @@ public class MongoContentProvider extends ManagedContentProvider<MorphiaSession>
                                                                                                                                          DocumentContext context) throws DataStoreException {
         MongoDbDataStore dataStore = (MongoDbDataStore) dataStore();
         MongoDbCursor<DocumentId, Document<E, K, D>> cursor = (MongoDbCursor<DocumentId, Document<E, K, D>>) dataStore
-                .doSearch(query,
+                .search(query,
                         currentPage,
                         batchSize,
                         DocumentId.class,

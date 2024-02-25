@@ -18,7 +18,6 @@ package io.zyient.core.filesystem.sync.azure.process;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
 import io.zyient.base.common.config.units.TimeUnitValue;
 import io.zyient.base.common.config.units.TimeValueParser;
 import io.zyient.base.core.processing.ProcessorSettings;

@@ -35,7 +35,7 @@ import org.hibernate.query.Query;
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     public void flush() throws DataStoreException {
         checkState();
-        Session session = sessionManager().session();
+        Session session = sessionManager().session(false);
         if (session != null) {
             session.flush();
         }
@@ -49,7 +49,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(false);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -82,7 +82,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(false);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -105,8 +105,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
-        E entity = findEntity(key, type, context);
+        Session session = sessionManager.session(false);
+        E entity = findEntity(key, type, false, context);
         if (entity != null) {
             session.remove(entity);
             return true;
@@ -117,11 +117,12 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                @NonNull Class<? extends E> type,
+                                               boolean readOnly,
                                                Context context) throws
             DataStoreException {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(readOnly);
         E entity = session.find(type, key);
         if (doRefresh(context)) {
             session.evict(entity);
@@ -140,11 +141,12 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
+                                                                        boolean readOnly,
                                                                         Context context)
             throws DataStoreException {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(readOnly);
         try {
             SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
             parser.parse(query);

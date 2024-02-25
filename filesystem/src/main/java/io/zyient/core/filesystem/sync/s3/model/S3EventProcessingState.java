@@ -18,7 +18,6 @@ package io.zyient.core.filesystem.sync.s3.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.core.filesystem.sync.EEventProcessorState;
-import io.zyient.core.filesystem.sync.s3.model.S3EventOffset;
 import io.zyient.core.messaging.aws.AwsSQSOffset;
 import io.zyient.core.messaging.processing.MessageProcessorState;
 import lombok.NonNull;
