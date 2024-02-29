@@ -197,8 +197,17 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     }
 
     private List<E> fetch(T data) throws Exception {
-        AbstractDataStore.Q q = new AbstractDataStore.Q()
-                .where(query);
+        DBRuleConfig dbRuleConfig = (DBRuleConfig) config();
+
+        AbstractDataStore.Q q;
+        if (dbRuleConfig.getNativeQuery()) {
+            q = new AbstractDataStore.Q()
+                    .generatedQuery(query).nativeQuery(dbRuleConfig.getNativeQuery());
+        } else {
+            q = new AbstractDataStore.Q()
+                    .where(query).nativeQuery(dbRuleConfig.getNativeQuery());
+        }
+
         if (whereFields != null && !whereFields.isEmpty()) {
             Map<String, Object> params = new HashMap<>();
             for (String key : whereFields.keySet()) {
@@ -241,7 +250,8 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
     }
 
     private String key(AbstractDataStore.Q query) throws Exception {
-        StringBuilder str = new StringBuilder(query.where());
+
+        StringBuilder str = new StringBuilder(query.nativeQuery() ? query.generatedQuery() : query.where());
         if (query.parameters() != null && !query.parameters().isEmpty()) {
             String json = JSONUtils.asString(query.parameters());
             str.append(":").append(json);

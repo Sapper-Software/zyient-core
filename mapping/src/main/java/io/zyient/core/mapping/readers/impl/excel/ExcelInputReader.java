@@ -24,6 +24,7 @@ import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -131,9 +132,12 @@ public class ExcelInputReader extends InputReader {
                     Cell cell = row.getCell(column.getCellIndex(), getMissingCellPolicy(settings));
                     Object value = getCellValue(cell);
                     if (value != null) {
-                        record.put(column.getName(), value);
+                        String columnName = column.getName();
+                        if (!StringUtils.isNotBlank(columnName)) {
+                            columnName = String.format("%s%d", settings.getColumnPrefix(), ii);
+                        }
+                        record.put(columnName, value);
                     }
-
                 }
             } else {
                 int ii = 0;
@@ -148,10 +152,9 @@ public class ExcelInputReader extends InputReader {
             }
             if (!record.isEmpty()) {
                 boolean add = true;
-                if (rowIndex == 0 &&
-                        settings.getHeaders() != null &&
+                if (settings.getHeaders() != null &&
                         settings.isSkipHeader()) {
-                    if (checkHeaderRow(record, settings)) {
+                    if (rowIndex == 0 || checkHeaderRow(record, settings)) {
                         add = false;
                     }
                 }
@@ -197,7 +200,6 @@ public class ExcelInputReader extends InputReader {
 
         return o;
     }
-
 
 
     private boolean checkHeaderRow(Map<String, Object> record, ExcelReaderSettings settings) {

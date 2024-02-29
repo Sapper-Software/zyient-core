@@ -148,9 +148,15 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         try {
-            SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
-            parser.parse(query);
-            Query qq = session.createQuery(query.generatedQuery(), type);
+
+            Query qq;
+            if (query.nativeQuery()) {
+                qq = session.createNativeQuery(query.generatedQuery(), type);
+            } else {
+                SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
+                parser.parse(query);
+                qq = session.createQuery(query.generatedQuery(), type);
+            }
             if (query.hasParameters()) {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));

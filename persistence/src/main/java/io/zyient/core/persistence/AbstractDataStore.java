@@ -41,6 +41,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
     @Setter
     @Accessors(fluent = true)
     public static class Q {
+        private boolean nativeQuery;
         private String where;
         private Map<String, Boolean> sort;
         private String generatedQuery;
