@@ -24,7 +24,7 @@ repositories {
 }
 
 group 'io.zyient.framework'
-var versionName = '3.0.37-SNAPSHOT'
+var versionName = '3.0.38-SNAPSHOT'
 version = versionName
 configurations.all {
     exclude module: "logback-classic"

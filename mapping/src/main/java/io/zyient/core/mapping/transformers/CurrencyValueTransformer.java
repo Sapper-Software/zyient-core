@@ -134,6 +134,7 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                         return new CurrencyValue(currency, number.doubleValue());
                     }
                 }
+                value = removeSpaces(value);
                 if(NumberUtils.isParsable(value) || CommonUtils.isScientificNotation(value)){
                     double d = Double.parseDouble(value);
                     return new CurrencyValue(currency, d);
@@ -152,5 +153,8 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
     @Override
     public String serialize(@NonNull CurrencyValue value) throws DataException {
         return String.format("%s %f", currency.getCurrencyCode(), value.getValue());
+    }
+    private String removeSpaces(String value){
+        return value.replaceAll("\\s+", "");
     }
 }
