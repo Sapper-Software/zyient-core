@@ -87,6 +87,7 @@ public class S3EventListener extends BaseSQSMessageProcessor<EEventProcessorStat
 
     @Override
     protected void initState(@NonNull ProcessingState<EEventProcessorState, S3EventOffset> processingState) throws Exception {
+        Preconditions.checkArgument(processingState instanceof S3EventProcessingState);
         S3EventStateManager stateManager = (S3EventStateManager) stateManager();
         if (processingState.getOffset() == null) {
             processingState.setOffset(new S3EventOffset());
@@ -98,6 +99,7 @@ public class S3EventListener extends BaseSQSMessageProcessor<EEventProcessorStat
 
     @Override
     protected ProcessingState<EEventProcessorState, S3EventOffset> finished(@NonNull ProcessingState<EEventProcessorState, S3EventOffset> processingState) {
+        Preconditions.checkArgument(processingState instanceof S3EventProcessingState);
         processingState.setState(EEventProcessorState.Stopped);
         return processingState;
     }

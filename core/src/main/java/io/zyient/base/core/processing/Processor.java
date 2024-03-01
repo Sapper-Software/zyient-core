@@ -108,8 +108,8 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
             __lock.lock();
             try {
                 doRun(false);
-                processingState = stateManager.update(name, processingState);
                 processingState = finished(processingState);
+                processingState = stateManager.update(name, processingState);
             } finally {
                 __lock.unlock();
             }

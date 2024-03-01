@@ -16,5 +16,28 @@
 
 package io.zyient.core.filesystem.sync.azure.model;
 
+import com.azure.storage.blob.changefeed.models.BlobChangefeedEventType;
+import lombok.NonNull;
+
 public enum AzureFSEventType {
+    BlobCreated,
+    BlobDeleted,
+    BlobPropertiesUpdated,
+    BlobSnapshotCreated,
+    BlobTierChanged,
+    BlobAsyncOperationInitiated,
+    Ignore;
+
+    public static AzureFSEventType parse(@NonNull String value) {
+        return AzureFSEventType.valueOf(value);
+    }
+
+    public static AzureFSEventType from(@NonNull BlobChangefeedEventType type) {
+        if (type.equals(BlobChangefeedEventType.BLOB_CREATED)) {
+            return BlobCreated;
+        } else if (type.equals(BlobChangefeedEventType.BLOB_DELETED)) {
+            return BlobDeleted;
+        }
+        return Ignore;
+    }
 }
