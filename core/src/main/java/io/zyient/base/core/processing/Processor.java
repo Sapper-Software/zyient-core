@@ -105,14 +105,9 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         Preconditions.checkState(state.isAvailable());
         Preconditions.checkNotNull(env);
         try {
-            __lock.lock();
-            try {
-                doRun(false);
-                processingState = finished(processingState);
-                processingState = stateManager.update(name, processingState);
-            } finally {
-                __lock.unlock();
-            }
+            doRun(false);
+            processingState = finished(processingState);
+            processingState = stateManager.update(name, processingState);
             close();
         } catch (Throwable t) {
             DefaultLogger.error(LOG, "Message Processor terminated with error", t);

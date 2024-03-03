@@ -24,6 +24,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.azure.AzureFsClient;
 import io.zyient.base.core.processing.ProcessingState;
@@ -42,6 +43,7 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Getter
@@ -117,37 +119,58 @@ public class AzureFSEventListener extends Processor<EEventProcessorState, AzureF
     protected void doRun(boolean runOnce) throws Throwable {
         Preconditions.checkArgument(!runOnce);
         while (state.isRunning()) {
+            boolean sleep = true;
             __lock().lock();
             try {
-                AzureFSProcessingState state = (AzureFSProcessingState) processingState();
-                Iterable<BlobChangefeedPagedResponse> pages = null;
-                if (Strings.isNullOrEmpty(state.getOffset().getToken())) {
-                    pages = listener.getEvents().iterableByPage();
-                } else {
-                    pages = listener.getEvents(state.getOffset().getToken()).iterableByPage();
-                }
-                int count = 0;
-                if (pages != null) {
-                    for (BlobChangefeedPagedResponse page : pages) {
-                        List<BlobChangefeedEvent> events = page.getValue();
-                        if (events != null && !events.isEmpty()) {
-                            for (BlobChangefeedEvent event : events) {
-                                AzureFSEvent e = AzureFSEvent.parse(event);
-                                handler.handle(e);
+                if (!state.isPaused()) {
+                    AzureFSProcessingState state = (AzureFSProcessingState) processingState();
+                    Iterable<BlobChangefeedPagedResponse> pages = null;
+                    if (Strings.isNullOrEmpty(state.getOffset().getToken())) {
+                        pages = listener.getEvents().iterableByPage();
+                    } else {
+                        pages = listener.getEvents(state.getOffset().getToken()).iterableByPage();
+                    }
+                    int count = 0;
+                    if (pages != null) {
+                        for (BlobChangefeedPagedResponse page : pages) {
+                            List<BlobChangefeedEvent> events = page.getValue();
+                            if (events != null && !events.isEmpty()) {
+                                for (BlobChangefeedEvent event : events) {
+                                    AzureFSEvent e = AzureFSEvent.parse(event);
+                                    if (regex != null) {
+                                        if (!Strings.isNullOrEmpty(e.getPath())) {
+                                            Matcher m = regex.matcher(e.getPath());
+                                            if (!m.matches()) {
+                                                DefaultLogger.debug(String.format("Ignored file: [container=%s][path=%s]",
+                                                        e.getContainer(), e.getPath()));
+                                                continue;
+                                            }
+                                        }
+                                    }
+                                    DefaultLogger.debug(String.format("Handling file: [container=%s][path=%s]",
+                                            e.getContainer(), e.getPath()));
+                                    handler.handle(e);
+                                }
                             }
+                            state.getOffset().setToken(page.getContinuationToken());
                         }
-                        state.getOffset().setToken(page.getContinuationToken());
+                        updateState();
+                        sleep = false;
                     }
                 }
             } finally {
                 __lock().unlock();
+            }
+            if (sleep) {
+                RunUtils.sleep(settings.getPollingInterval().normalized());
             }
         }
     }
 
     @Override
     public void close() throws IOException {
-        processingState().setState(EEventProcessorState.Stopped);
+        if (!processingState().hasError())
+            processingState().setState(EEventProcessorState.Stopped);
         if (listener != null) {
             listener = null;
         }
