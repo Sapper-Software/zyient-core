@@ -26,6 +26,17 @@
             <registry>/test/filesystem/azure/registry</registry>
             <root>/test/filesystem/azure</root>
         </paths>
+        <managers>
+            <state>
+                <stateManagerClass>io.zyient.core.filesystem.sync.azure.process.AzureFSEventStateManager</stateManagerClass>
+                <basePath>sync-azure</basePath>
+                <connection>test-zk</connection>
+            </state>
+        </managers>
+        <locks>
+            <connection>test-zk</connection>
+            <path>/test/filesystem/registry</path>
+        </locks>
         <filesystem>
             <processor>
                 <name>test-fs-events</name>

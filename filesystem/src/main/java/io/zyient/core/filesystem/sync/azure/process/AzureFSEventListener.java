@@ -30,6 +30,7 @@ import io.zyient.base.core.connections.azure.AzureFsClient;
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.Processor;
 import io.zyient.base.core.processing.ProcessorSettings;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.filesystem.sync.EEventProcessorState;
 import io.zyient.core.filesystem.sync.azure.model.AzureFSEvent;
 import io.zyient.core.filesystem.sync.azure.model.AzureFSEventOffset;
@@ -89,6 +90,7 @@ public class AzureFSEventListener extends Processor<EEventProcessorState, AzureF
             if (!Strings.isNullOrEmpty(settings.getPathFilter())) {
                 regex = Pattern.compile(settings.getPathFilter());
             }
+            state.setState(ProcessorState.EProcessorState.Initialized);
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);

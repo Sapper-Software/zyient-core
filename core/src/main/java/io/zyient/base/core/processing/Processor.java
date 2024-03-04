@@ -54,7 +54,6 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     private ProcessorSettings settings;
     private ProcessingState<E, O> processingState;
 
-    @SuppressWarnings("unchecked")
     protected Processor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
         this.stateType = stateType;
         this.LOG = LoggerFactory.getLogger(getClass());

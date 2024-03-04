@@ -25,6 +25,7 @@ import io.zyient.base.core.executor.FatalError;
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.filesystem.sync.EEventProcessorState;
+import io.zyient.core.filesystem.sync.SyncEventStateManager;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
 import io.zyient.core.filesystem.sync.s3.model.S3EventOffset;
 import io.zyient.core.filesystem.sync.s3.model.S3EventProcessingState;
@@ -88,7 +89,7 @@ public class S3EventListener extends BaseSQSMessageProcessor<EEventProcessorStat
     @Override
     protected void initState(@NonNull ProcessingState<EEventProcessorState, S3EventOffset> processingState) throws Exception {
         Preconditions.checkArgument(processingState instanceof S3EventProcessingState);
-        S3EventStateManager stateManager = (S3EventStateManager) stateManager();
+        SyncEventStateManager stateManager = (SyncEventStateManager) stateManager();
         if (processingState.getOffset() == null) {
             processingState.setOffset(new S3EventOffset());
         }
