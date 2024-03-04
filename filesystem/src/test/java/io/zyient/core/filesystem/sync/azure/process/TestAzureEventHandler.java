@@ -20,12 +20,23 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.filesystem.sync.azure.model.AzureFSEvent;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.util.HashMap;
+import java.util.Map;
+
+@Getter
+@Setter
+@Accessors(fluent = true)
 public class TestAzureEventHandler implements AzureFSEventHandler {
+    private final Map<String, Boolean> records = new HashMap<>();
+
     @Override
     public AzureFSEventHandler init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                     @NonNull BaseEnv<?> env) throws ConfigurationException {
@@ -34,6 +45,7 @@ public class TestAzureEventHandler implements AzureFSEventHandler {
 
     @Override
     public void handle(@NonNull AzureFSEvent event) throws Exception {
+        records.put(event.getPath(), true);
         String json = JSONUtils.asString(event);
         DefaultLogger.info(String.format("Received event: [%s]", json));
     }

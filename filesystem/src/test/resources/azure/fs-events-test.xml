@@ -40,7 +40,8 @@
         <filesystem>
             <processor>
                 <name>test-fs-events</name>
-                <connection>test-azure-fs</connection>
+                <connection>sync-azure-fs</connection>
+                <container>test</container>
                 <handler>
                     <class>io.zyient.core.filesystem.sync.azure.process.TestAzureEventHandler</class>
                 </handler>
@@ -95,8 +96,9 @@
                 <connection>
                     <class>io.zyient.base.core.connections.azure.AzureFsClient</class>
                     <client>
-                        <name>test-azure-fs</name>
-                        <endpointUrl>https://cdcdevblob01.blob.core.windows.net/</endpointUrl>
+                        <name>sync-azure-fs</name>
+                        <!-- DefaultEndpointsProtocol=https;AccountName=dltestevents;AccountKey=Yoyfs4TPRgxlc4x0bN9RFXm+ePpgVs+Ds9qisKO5eDYok7ni+6tF0ZuJp+Udac9edwm2zW99V4HI+ASthwiUAg==;EndpointSuffix=core.windows.net -->
+                        <endpointUrl>https://dltestevents.blob.core.windows.net/</endpointUrl>
                         <authClass>io.zyient.base.core.connections.azure.auth.SharedKeyAuth</authClass>
                         <account>dltestevents</account>
                         <auth>

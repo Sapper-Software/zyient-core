@@ -139,6 +139,7 @@ public class AzureFSEventListener extends Processor<EEventProcessorState, AzureF
                             if (events != null && !events.isEmpty()) {
                                 for (BlobChangefeedEvent event : events) {
                                     AzureFSEvent e = AzureFSEvent.parse(event);
+                                    if (settings.getContainer().compareTo(e.getContainer()) != 0) continue;
                                     if (regex != null) {
                                         if (!Strings.isNullOrEmpty(e.getPath())) {
                                             Matcher m = regex.matcher(e.getPath());

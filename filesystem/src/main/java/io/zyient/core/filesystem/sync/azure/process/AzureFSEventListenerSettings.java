@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
 public class AzureFSEventListenerSettings extends ProcessorSettings {
     @Config(name = "connection")
     private String connection;
+    @Config(name = "container")
+    private String container;
     @Config(name = "handler.class", required = false, type = Class.class)
     private Class<? extends AzureFSEventHandler> handler;
     @Config(name = "filter", required = false)
