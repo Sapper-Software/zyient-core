@@ -36,6 +36,7 @@ public class CaseEntity<E extends Enum<E>> {
     private String description;
     private E caseState;
     private Actor createdBy;
+    private Actor updatedBy;
     private Actor assignedTo;
     private Actor closedBy;
     private Set<Content> documents;

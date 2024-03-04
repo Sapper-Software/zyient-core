@@ -253,6 +253,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         caseObject.setName(name);
         caseObject.setDescription(description);
         caseObject.setCreatedBy(new Actor(creator));
+        caseObject.setUpdatedBy(new Actor(creator));
         if (context instanceof CaseContext ctx) {
             if (((CaseContext) context).customFields() != null) {
                 Map<String, Object> values = ctx.customFields();
@@ -355,6 +356,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
         validateAssignment(current, caseObject);
         caseObject.getState().setState(EEntityState.Updated);
+        caseObject.setUpdatedBy(new Actor(assigner));
         caseObject = saveUpdate(caseObject,
                 EStandardAction.AssignTo.action(),
                 EStandardCode.ActionAssignTo.code(),
@@ -825,6 +827,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         authorization.authorize(caseObject, EStandardAction.UpdateState.action(), modifier, context);
         P current = caseObject.getCaseState().getState();
         caseObject.getCaseState().setState(state);
+        caseObject.setUpdatedBy(new Actor(modifier));
         if (context instanceof CaseContext ctx) {
             if (((CaseContext) context).customFields() != null) {
                 authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
@@ -884,6 +887,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         checkState();
         try {
             authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
+           caseObject.setUpdatedBy(new Actor(modifier));
             caseObject = saveUpdate(caseObject,
                     action,
                     code,
@@ -908,6 +912,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                         Object diff,
                                         Context context) throws Exception {
         // context = AbstractDataStore.withRefresh(context);
+        caseObject.setUpdatedBy(new Actor(modifier));
         caseObject = save(caseObject, modifier, context);
         addCaseHistory(caseObject.getId(),
                 action,
@@ -1108,6 +1113,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         contentProvider.update(doc, docCtx);
                     }
                 }
+                caseObject.setUpdatedBy(new Actor(user));
                 caseObject = dataStore.update(caseObject, caseObject.getClass(), context);
             }
             return caseObject;

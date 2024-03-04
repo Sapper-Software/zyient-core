@@ -67,6 +67,13 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
     private Actor createdBy;
     @Embedded
     @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "updated_by")),
+            @AttributeOverride(name = "type", column = @Column(name = "updated_by_type")),
+            @AttributeOverride(name = "timestamp", column = @Column(name = "updated_timestamp"))
+    })
+    private Actor updatedBy;
+    @Embedded
+    @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "assigned_to")),
             @AttributeOverride(name = "type", column = @Column(name = "assigned_to_type")),
             @AttributeOverride(name = "timestamp", column = @Column(name = "assigned_timestamp"))
@@ -356,6 +363,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         }
         caseEntity.setAssignedTo(assignedTo);
         caseEntity.setCreatedBy(createdBy);
+        caseEntity.setUpdatedBy(updatedBy);
         caseEntity.setProperties(properties);
         caseEntity.setClosedBy(closedBy);
         caseEntity.setExternalReferenceId(externalReferenceId);
