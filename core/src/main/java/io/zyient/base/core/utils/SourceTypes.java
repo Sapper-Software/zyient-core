@@ -29,7 +29,7 @@ public enum SourceTypes {
     EXCEL_CSV("excel/csv", null),
     XML(FileUtils.MIME_TYPE_XML, new String[]{"xml"}),
     JSON(FileUtils.MIME_TYPE_JSON, new String[]{"json"}),
-    POSITIONAL("text/pos", new String[]{"pos"}),
+    POSITIONAL("text/pos", new String[]{"pos","x380"}),
     EXCEL("application/ms-excel", new String[]{"xls", "xlsx","xlsb"}),
     HTML(FileUtils.MIME_TYPE_HTML, new String[]{"html", "dhtml"}),
     PDF(FileUtils.MIME_TYPE_PDF, new String[]{"pdf"}),
