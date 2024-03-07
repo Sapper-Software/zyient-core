@@ -27,7 +27,8 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@MappedSuperclass
+@Entity
+@Table(name = "m_mapping_defs")
 public class DBMappingDef extends DBMapping {
     @EmbeddedId
     private DBMappingId id;
