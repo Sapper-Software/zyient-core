@@ -26,10 +26,7 @@ import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileInputStream;
@@ -181,6 +178,7 @@ public class ExcelInputReader extends InputReader {
     private Object getCellValue(Cell cell) {
         Object o = null;
         if (null != cell) {
+
             switch (cell.getCellType()) {
                 case STRING -> o = cell.getStringCellValue().trim();
                 case BOOLEAN -> o = cell.getBooleanCellValue();
@@ -191,14 +189,30 @@ public class ExcelInputReader extends InputReader {
                     }
                     o = cell.getNumericCellValue();
                 }
+                case FORMULA -> o = getValueFromFormula(cell);
             }
         }
         if (o == null) {
             o = "";
         }
-
-
         return o;
+    }
+
+    private Object getValueFromFormula(Cell cell) {
+        FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+        CellValue cellValue = evaluator.evaluate(cell);
+        switch (cellValue.getCellType()) {
+            case STRING -> {
+                return cellValue.getStringValue().trim();
+            }
+            case BOOLEAN -> {
+                return cellValue.getBooleanValue();
+            }
+            case NUMERIC -> {
+                return cellValue.getNumberValue();
+            }
+        }
+        return null;
     }
 
 
