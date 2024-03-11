@@ -39,7 +39,7 @@ public abstract class Cell<T> {
     private BoundingBox boundingBox;
     private T data;
     private Map<String, Tag> tags;
-    private double confidence;
+    private float confidence;
     private Scalar background;
     private Scalar textColor;
     private FontInfo fontInfo;
