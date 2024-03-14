@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.sync.s3.process;
+package io.zyient.core.filesystem.sync.azure.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.core.messaging.aws.AwsSQSOffset;
-import io.zyient.core.messaging.processing.MessageProcessorState;
+import io.zyient.base.core.processing.ProcessingState;
+import io.zyient.core.filesystem.sync.EEventProcessorState;
 import lombok.NonNull;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class S3EventProcessingState extends MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> {
-    public S3EventProcessingState() {
-        super(ES3EventProcessorState.Error, ES3EventProcessorState.Unknown, "s3-events");
+public class AzureFSProcessingState extends ProcessingState<EEventProcessorState, AzureFSEventOffset> {
+    public AzureFSProcessingState() {
+        super(EEventProcessorState.Error, EEventProcessorState.Unknown, "azure-fs-events");
     }
 
-    public S3EventProcessingState(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> state) {
+    public AzureFSProcessingState(@NonNull ProcessingState<EEventProcessorState, AzureFSEventOffset> state) {
         super(state);
     }
 }

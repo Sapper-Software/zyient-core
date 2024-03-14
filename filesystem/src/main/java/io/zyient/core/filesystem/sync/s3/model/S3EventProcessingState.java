@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.view;
+package io.zyient.core.filesystem.sync.s3.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.model.entity.IEntity;
-import io.zyient.base.common.model.entity.IKey;
-import lombok.Getter;
-import lombok.Setter;
+import io.zyient.core.filesystem.sync.EEventProcessorState;
+import io.zyient.core.messaging.aws.AwsSQSOffset;
+import io.zyient.core.messaging.processing.MessageProcessorState;
+import lombok.NonNull;
 
-@Getter
-@Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class ExtractionView<K extends IKey, T extends IEntity<K>> {
-    private String sourceReferenceId;
-    private K entityKey;
-    private Class<? extends K> ketType;
-    private Class<? extends T> entityType;
+public class S3EventProcessingState extends MessageProcessorState<EEventProcessorState, S3EventOffset, AwsSQSOffset> {
+    public S3EventProcessingState() {
+        super(EEventProcessorState.Error, EEventProcessorState.Unknown, "s3-events");
+    }
 
-    @JsonIgnore
-    private T entity;
-
+    public S3EventProcessingState(@NonNull MessageProcessorState<EEventProcessorState, S3EventOffset, AwsSQSOffset> state) {
+        super(state);
+    }
 }

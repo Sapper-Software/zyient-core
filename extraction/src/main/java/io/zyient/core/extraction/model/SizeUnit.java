@@ -14,13 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.sync.s3.process;
+package io.zyient.core.extraction.model;
 
-public enum ES3EventProcessorState {
-    Unknown,
-    Initialized,
-    Running,
-    Stopped,
-    Paused,
-    Error;
+public enum SizeUnit {
+    Centimeters, Millimeters, Inches, Pixel
 }

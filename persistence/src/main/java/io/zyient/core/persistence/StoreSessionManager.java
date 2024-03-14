@@ -32,14 +32,16 @@ public abstract class StoreSessionManager<C, T> {
     public static class StoreSession<C, T> {
         private C session;
         private T transaction;
+        private boolean readOnly = false;
         private long timeLastUsed = System.currentTimeMillis();
 
         public boolean hasTransaction() {
-            return (transaction != null);
+            return (!readOnly && transaction != null);
         }
     }
 
-    private final Map<Long, StoreSession<C, T>> sessions = new HashMap<>();
+    private final Map<Long, StoreSession<C, T>> readSessions = new HashMap<>();
+    private final Map<Long, StoreSession<C, T>> writeSessions = new HashMap<>();
     private final long sessionTimeout;
 
     public StoreSessionManager(long sessionTimeout) {
@@ -47,52 +49,70 @@ public abstract class StoreSessionManager<C, T> {
         this.sessionTimeout = sessionTimeout;
     }
 
-    public C session() throws DataStoreException {
-        synchronized (sessions) {
-            long tid = Thread.currentThread().getId();
-            if (sessions.containsKey(tid)) {
-                StoreSession<C, T> session = sessions.get(tid);
-                if (session.session != null && isAvailable(session.session)) {
-                    long delta = System.currentTimeMillis() - session.timeLastUsed;
-                    if (delta < sessionTimeout) {
-                        session.timeLastUsed = System.currentTimeMillis();
-                        return session.session();
-                    } else {
-                        close(session.session);
-                    }
-                }
+    public C session(boolean readOnly) throws DataStoreException {
+        synchronized (this) {
+            if (readOnly) {
+                return session(readSessions, true);
+            } else {
+                return session(writeSessions, false);
             }
-            C session = create();
-            StoreSession<C, T> ss = new StoreSession<>();
-            ss.session = session;
-            sessions.put(tid, ss);
-            return session;
         }
     }
 
-    public C openedSession() {
-        synchronized (sessions) {
-            long tid = Thread.currentThread().getId();
-            if (sessions.containsKey(tid)) {
-                StoreSession<C, T> session = sessions.get(tid);
-                return session.session;
+    private C session(final Map<Long, StoreSession<C, T>> sessions, boolean readOnly) throws DataStoreException {
+        long tid = Thread.currentThread().getId();
+        if (sessions.containsKey(tid)) {
+            StoreSession<C, T> session = sessions.get(tid);
+            if (session.session != null && isAvailable(session.session)) {
+                long delta = System.currentTimeMillis() - session.timeLastUsed;
+                if (delta < sessionTimeout) {
+                    session.timeLastUsed = System.currentTimeMillis();
+                    return session.session();
+                } else {
+                    close(session.session);
+                }
             }
-            return null;
         }
+        C session = create(readOnly);
+        StoreSession<C, T> ss = new StoreSession<>();
+        ss.session = session;
+        sessions.put(tid, ss);
+        return session;
+    }
+
+    public C openedSession(boolean readOnly) {
+        Map<Long, StoreSession<C, T>> sessions = writeSessions;
+        if (readOnly) {
+            sessions = readSessions;
+        }
+        long tid = Thread.currentThread().getId();
+        if (sessions.containsKey(tid)) {
+            StoreSession<C, T> session = sessions.get(tid);
+            return session.session;
+        }
+        return null;
     }
 
     public void endSession() throws DataStoreException {
-        C session = openedSession();
+        C session = openedSession(false);
+        if (session != null) {
+            close(session);
+        }
+        session = openedSession(true);
         if (session != null) {
             close(session);
         }
     }
 
     public boolean remove() throws DataStoreException {
-        synchronized (sessions) {
+        synchronized (this) {
             long tid = Thread.currentThread().getId();
-            if (sessions.containsKey(tid)) {
-                sessions.remove(tid);
+            if (writeSessions.containsKey(tid)) {
+                writeSessions.remove(tid);
+                return true;
+            }
+            if (readSessions.containsKey(tid)) {
+                readSessions.remove(tid);
                 return true;
             }
         }
@@ -101,8 +121,8 @@ public abstract class StoreSessionManager<C, T> {
 
     public void beingTransaction() throws DataStoreException {
         long tid = Thread.currentThread().getId();
-        if (sessions.containsKey(tid)) {
-            StoreSession<C, T> session = sessions.get(tid);
+        if (writeSessions.containsKey(tid)) {
+            StoreSession<C, T> session = writeSessions.get(tid);
             if (session.hasTransaction()) {
                 if (!isActive(session.transaction)) {
                     throw new DataStoreException(String.format("[%d] Invalid transaction handle in cache.", tid));
@@ -118,8 +138,8 @@ public abstract class StoreSessionManager<C, T> {
 
     public void commit() throws DataStoreException {
         long tid = Thread.currentThread().getId();
-        if (sessions.containsKey(tid)) {
-            StoreSession<C, T> session = sessions.get(tid);
+        if (writeSessions.containsKey(tid)) {
+            StoreSession<C, T> session = writeSessions.get(tid);
             if (session.hasTransaction()) {
                 if (!isActive(session.transaction)) {
                     throw new DataStoreException(String.format("[%d] Invalid transaction handle in cache.", tid));
@@ -135,8 +155,8 @@ public abstract class StoreSessionManager<C, T> {
 
     public void rollback() throws DataStoreException {
         long tid = Thread.currentThread().getId();
-        if (sessions.containsKey(tid)) {
-            StoreSession<C, T> session = sessions.get(tid);
+        if (writeSessions.containsKey(tid)) {
+            StoreSession<C, T> session = writeSessions.get(tid);
             if (session.hasTransaction()) {
                 if (!isActive(session.transaction)) {
                     throw new DataStoreException(String.format("[%d] Invalid transaction handle in cache.", tid));
@@ -151,10 +171,14 @@ public abstract class StoreSessionManager<C, T> {
     }
 
     public void close() throws DataStoreException {
-        synchronized (sessions) {
+        synchronized (this) {
             long tid = Thread.currentThread().getId();
-            if (sessions.containsKey(tid)) {
-                StoreSession<C, T> session = sessions.remove(tid);
+            if (writeSessions.containsKey(tid)) {
+                StoreSession<C, T> session = writeSessions.remove(tid);
+                close(session.session);
+            }
+            if (readSessions.containsKey(tid)) {
+                StoreSession<C, T> session = readSessions.remove(tid);
                 close(session.session);
             }
         }
@@ -162,8 +186,8 @@ public abstract class StoreSessionManager<C, T> {
 
     public T transaction() {
         long tid = Thread.currentThread().getId();
-        if (sessions.containsKey(tid)) {
-            StoreSession<C, T> session = sessions.get(tid);
+        if (writeSessions.containsKey(tid)) {
+            StoreSession<C, T> session = writeSessions.get(tid);
             if (session.hasTransaction()) {
                 return session.transaction;
             }
@@ -173,8 +197,8 @@ public abstract class StoreSessionManager<C, T> {
 
     public boolean isInTransaction() {
         long tid = Thread.currentThread().getId();
-        if (sessions.containsKey(tid)) {
-            StoreSession<C, T> session = sessions.get(tid);
+        if (writeSessions.containsKey(tid)) {
+            StoreSession<C, T> session = writeSessions.get(tid);
             if (session.hasTransaction()) {
                 return isActive(session.transaction);
             }
@@ -186,7 +210,7 @@ public abstract class StoreSessionManager<C, T> {
 
     protected abstract boolean isAvailable(@NonNull C session);
 
-    protected abstract C create() throws DataStoreException;
+    protected abstract C create(boolean readOnly) throws DataStoreException;
 
     protected abstract void close(@NonNull C session) throws DataStoreException;
 

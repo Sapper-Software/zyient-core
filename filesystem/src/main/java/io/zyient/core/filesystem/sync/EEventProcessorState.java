@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.view;
+package io.zyient.core.filesystem.sync;
 
-import java.lang.annotation.*;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface ViewAttribute {
-    String value() default "";
-    ViewType type() default ViewType.TEXT;
-    int sequence();
+public enum EEventProcessorState {
+    Unknown,
+    Initialized,
+    Running,
+    Stopped,
+    Paused,
+    Error;
 }

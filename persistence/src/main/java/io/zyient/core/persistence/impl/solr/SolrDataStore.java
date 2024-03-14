@@ -235,7 +235,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 Set<? extends Document<?, ?, ?>> children = ((Document<?, ?, ?>) entity).getDocuments();
                 if (children != null && !children.isEmpty()) {
                     if (current == null) {
-                        current = findEntity(entity.entityKey(), type, context);
+                        current = findEntity(entity.entityKey(), type, false, context);
                         if (current == null) {
                             throw new DataStoreException(String.format("Existing instance not found. [id=%s]",
                                     entity.entityKey().stringKey()));
@@ -259,7 +259,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
 
     @SuppressWarnings("unchecked")
     private <E extends IEntity<?>> E checkEntity(E entity, SolrClient client) throws Exception {
-        E current = (E) findEntity(entity.entityKey(), entity.getClass(), null);
+        E current = (E) findEntity(entity.entityKey(), entity.getClass(), false, null);
         if (current == null) {
             throw new DataStoreException(String.format("Entity not found. [type=%s][key=%s]",
                     entity.getClass().getCanonicalName(), entity.entityKey().stringKey()));
@@ -291,7 +291,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                 throw new DataStoreException(String.format("Key type not supported. [type=%s]",
                         key.getClass().getCanonicalName()));
             }
-            E current = (E) findEntity(key, type, null);
+            E current = (E) findEntity(key, type, false, null);
             if (current == null) {
                 throw new DataStoreException(String.format("Entity not found. [type=%s][key=%s]",
                         type.getCanonicalName(), k));
@@ -485,6 +485,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
     @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                @NonNull Class<? extends E> type,
+                                               boolean readOnly,
                                                Context context) throws DataStoreException {
         checkState();
         try {
@@ -652,6 +653,7 @@ public class SolrDataStore extends AbstractDataStore<SolrClient> {
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
+                                                                        boolean readOnly,
                                                                         Context context) throws DataStoreException {
         if (!(query instanceof EntityQueryBuilder.LuceneQuery)) {
             throw new DataStoreException(String.format("Invalid Query type. [type=%s]",

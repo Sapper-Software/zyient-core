@@ -231,10 +231,11 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                          Context context) throws
             DataStoreException {
         state.check(DataStoreState.EDataStoreState.Available);
+        boolean readOnly = isReadOnly(context);
         try {
             metrics.readCounter().increment();
             try (Timer t = new Timer(metrics.readTimer())) {
-                return findEntity(key, type, context);
+                return findEntity(key, type, readOnly, context);
             }
         } catch (Throwable t) {
             metrics.readCounterError().increment();
@@ -244,6 +245,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
 
     public abstract <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                         @NonNull Class<? extends E> type,
+                                                        boolean readOnly,
                                                         Context context) throws
             DataStoreException;
 
@@ -271,9 +273,10 @@ public abstract class AbstractDataStore<T> implements Closeable {
             if (currentPage < 0) {
                 currentPage = 0;
             }
+            boolean readOnly = isReadOnly(context);
             metrics.searchCounter().increment();
             try (Timer t = new Timer(metrics.searchTimer())) {
-                return doSearch(query, currentPage, maxResults, keyType, type, context);
+                return doSearch(query, currentPage, maxResults, keyType, type, readOnly, context);
             }
         } catch (Throwable t) {
             metrics.searchCounterError().increment();
@@ -287,6 +290,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
                                                                                  int maxResults,
                                                                                  @NonNull Class<? extends K> keyType,
                                                                                  @NonNull Class<? extends E> type,
+                                                                                 boolean readOnly,
                                                                                  Context context) throws
             DataStoreException;
 
@@ -332,6 +336,7 @@ public abstract class AbstractDataStore<T> implements Closeable {
     }
 
     public static final String CONTEXT_KEY_REFRESH = "entity.cache.ignore";
+    public static final String CONTEXT_KEY_READ_ONLY = "db.mode.readOnly";
 
     protected boolean doRefresh(Context context) {
         if (context != null) {
@@ -342,11 +347,28 @@ public abstract class AbstractDataStore<T> implements Closeable {
         return false;
     }
 
+    protected boolean isReadOnly(Context context) {
+        if (context != null) {
+            if (context.containsKey(CONTEXT_KEY_READ_ONLY)) {
+                return (boolean) context.get(CONTEXT_KEY_READ_ONLY);
+            }
+        }
+        return false;
+    }
+
     public static Context withRefresh(Context context) {
         if (context == null) {
             context = new Context();
         }
         context.put(CONTEXT_KEY_REFRESH, true);
+        return context;
+    }
+
+    public static Context withReadOnly(Context context, boolean readOnly) {
+        if (context == null) {
+            context = new Context();
+        }
+        context.put(CONTEXT_KEY_READ_ONLY, readOnly);
         return context;
     }
 }

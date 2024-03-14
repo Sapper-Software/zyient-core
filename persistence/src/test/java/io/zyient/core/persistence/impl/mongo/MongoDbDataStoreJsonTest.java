@@ -128,7 +128,7 @@ class MongoDbDataStoreJsonTest {
                     throw ex;
                 }
                 for (StringKey key : counts.keySet()) {
-                    MongoTestEntity te = dataStore.findEntity(key, MongoTestEntity.class, null);
+                    MongoTestEntity te = dataStore.findEntity(key, MongoTestEntity.class, true, null);
                     assertNotNull(te);
                     assertTrue(te.getNested() == null || te.getNested().isEmpty());
                 }
