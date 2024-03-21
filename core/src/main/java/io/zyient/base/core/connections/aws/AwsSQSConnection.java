@@ -36,10 +36,14 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.curator.framework.CuratorFramework;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.core.retry.conditions.RetryCondition;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Getter
 @Accessors(fluent = true)
@@ -153,13 +157,30 @@ public abstract class AwsSQSConnection extends MessageConnection {
         return this;
     }
 
-    private void reconnect() {
-        Region region = Region.of(((AwsSQSConnectionSettings) settings).getRegion());
-        client = SqsClient.builder()
-                .region(region)
-                .build();
-    }
+    private void reconnect() throws ConnectionError {
+        AwsSQSConnectionSettings sqsConnectionSettings = (AwsSQSConnectionSettings) settings;
+        try {
+            long apiTimeout = sqsConnectionSettings.getRetryCount() * sqsConnectionSettings.getHttpTimeout().normalized();
+            long apiAttemptTimeout = sqsConnectionSettings.getHttpTimeout().normalized();
+            RetryPolicy retryPolicy = RetryPolicy.builder()
+                    .numRetries(sqsConnectionSettings.getRetryCount())
+                    .retryCondition(RetryCondition.defaultRetryCondition())
+                    .build();
 
+            ClientOverrideConfiguration overrideConfiguration = ClientOverrideConfiguration.builder()
+                    .apiCallAttemptTimeout(Duration.ofMillis(apiAttemptTimeout))
+                    .apiCallTimeout(Duration.ofMillis(apiTimeout))
+                    .retryPolicy(retryPolicy).build();
+
+            Region region = Region.of(sqsConnectionSettings.getRegion());
+            client = SqsClient.builder().region(region).overrideConfiguration(overrideConfiguration).build();
+        } catch (Exception e) {
+            DefaultLogger.stacktrace(e);
+            throw new ConnectionError(e.getMessage());
+        }
+
+
+    }
     @Override
     public Throwable error() {
         return state.getError();

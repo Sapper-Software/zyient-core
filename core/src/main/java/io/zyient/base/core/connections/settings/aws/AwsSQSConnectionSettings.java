@@ -37,6 +37,10 @@ public class AwsSQSConnectionSettings extends MessageConnectionSettings {
     private String region;
     @Config(name = "timeout.reset", required = false, parser = TimeValueParser.class)
     private TimeUnitValue resetTimeout = new TimeUnitValue(30, TimeUnit.MINUTES);
+    @Config(name = "http.timeout", required = false, parser = TimeValueParser.class)
+    private TimeUnitValue httpTimeout = new TimeUnitValue(20, TimeUnit.SECONDS);
+    @Config(name = "http.retryCount", required = false, type = Integer.class)
+    private Integer retryCount = 2;
 
     public AwsSQSConnectionSettings() {
         super(EConnectionType.sqs);
