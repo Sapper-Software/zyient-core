@@ -18,7 +18,9 @@ package io.zyient.core.extraction.azure;
 
 import com.azure.ai.formrecognizer.documentanalysis.DocumentAnalysisClient;
 import com.azure.ai.formrecognizer.documentanalysis.DocumentAnalysisClientBuilder;
+import com.azure.ai.formrecognizer.documentanalysis.models.AnalyzeDocumentOptions;
 import com.azure.ai.formrecognizer.documentanalysis.models.AnalyzeResult;
+import com.azure.ai.formrecognizer.documentanalysis.models.DocumentAnalysisFeature;
 import com.azure.ai.formrecognizer.documentanalysis.models.OperationResult;
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.BinaryData;
@@ -40,6 +42,8 @@ import org.apache.commons.configuration2.tree.ImmutableNode;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Accessors(fluent = true)
@@ -47,6 +51,7 @@ public class DocIExtractor implements Extractor<AnalyzeResult> {
     private final ProcessorState state = new ProcessorState();
     private DocISettings settings;
     private DocumentAnalysisClient client;
+    private List<DocumentAnalysisFeature> features;
 
     @Override
     public Extractor<AnalyzeResult> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
@@ -63,6 +68,14 @@ public class DocIExtractor implements Extractor<AnalyzeResult> {
                     .credential(new AzureKeyCredential(key))
                     .endpoint(settings().getEndpoint())
                     .buildClient();
+            features = new ArrayList<>();
+            features.add(DocumentAnalysisFeature.LANGUAGES);
+            if (settings.getFeatures() != null) {
+                for (String feature : settings.getFeatures()) {
+                    DocumentAnalysisFeature f = DocumentAnalysisFeature.fromString(feature);
+                    features.add(f);
+                }
+            }
             state.setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
@@ -80,8 +93,14 @@ public class DocIExtractor implements Extractor<AnalyzeResult> {
         }
         try (FileInputStream fis = new FileInputStream(source)) {
             BinaryData data = BinaryData.fromStream(fis, source.length());
+            AnalyzeDocumentOptions options = new AnalyzeDocumentOptions();
+
+            options.setDocumentAnalysisFeatures(features);
             SyncPoller<OperationResult, AnalyzeResult> poller =
-                    client.beginAnalyzeDocument(settings().getModelId(), data);
+                    client.beginAnalyzeDocument(settings().getModelId(),
+                            data,
+                            options,
+                            com.azure.core.util.Context.NONE);
 
             AnalyzeResult result = poller.getFinalResult();
             if (DefaultLogger.isTraceEnabled()) {

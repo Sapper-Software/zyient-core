@@ -41,15 +41,12 @@ public abstract class Cell<T> {
     private Map<String, Tag> tags;
     private float confidence;
     private Scalar background;
-    private Scalar textColor;
-    private FontInfo fontInfo;
 
     public Cell() {
     }
 
     public Cell(@NonNull String parentId, int index) {
-        id = String.format("%s%s%s", parentId, SEPARATOR, parseId(index));
-        this.index = index;
+        resetId(parentId, index);
     }
 
     public Tag addTag(@NonNull String label, double confidence) {
@@ -72,6 +69,12 @@ public abstract class Cell<T> {
     }
 
     protected abstract Cell<?> find(String parentId, @NonNull String[] paths, int index);
+
+    protected void resetId(@NonNull String parentId, int index) {
+        this.parentId = parentId;
+        id = String.format("%s%s%s", parentId, SEPARATOR, parseId(index));
+        this.index = index;
+    }
 
     protected abstract String parseId(int index);
 }

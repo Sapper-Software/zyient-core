@@ -116,6 +116,6 @@ public class CellDetector {
             }
         }
         cell.setBackground(bg.key());
-        cell.setTextColor(tc.key());
+        // cell.setTextColor(tc.key());
     }
 }

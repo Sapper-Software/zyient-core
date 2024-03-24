@@ -21,31 +21,47 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class TextCell extends Cell<String> {
-    public static final String __PREFIX = "TC.";
-    private String textColor;
-    private String backgroundColor;
-    private FontInfo fontInfo;
-    private CellSpan span;
-    private String locale;
+public class TextLine extends Cell<String> {
+    public static final String __PREFIX = "LN.";
 
-    public TextCell() {
+    private List<TextCell> words;
+
+    public TextLine() {
         super();
     }
 
-    public TextCell(@NonNull String parentId, int index) {
+    public TextLine(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    public TextLine add(@NonNull TextCell cell) {
+        if (words == null) {
+            words = new ArrayList<>();
+        }
+        cell.resetId(getId(), words.size());
+        words.add(cell);
+        return this;
     }
 
     @Override
     protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
-        if (index == paths.length - 1) {
-            if (checkId(parentId, paths, index)) {
+        if (checkId(parentId, paths, index)) {
+            if (index == paths.length - 1) {
                 return this;
+            } else {
+                if (words != null) {
+                    for (TextCell cell : words) {
+                        Cell<?> ret = cell.find(getId(), paths, index + 1);
+                        if (ret != null) return ret;
+                    }
+                }
             }
         }
         return null;
@@ -54,10 +70,5 @@ public class TextCell extends Cell<String> {
     @Override
     protected String parseId(int index) {
         return String.format("%s%d", __PREFIX, index);
-    }
-
-    public TextCell move(@NonNull String parentId, int index) {
-        resetId(parentId, index);
-        return this;
     }
 }
