@@ -9,8 +9,6 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 public class JsonPathTest {
