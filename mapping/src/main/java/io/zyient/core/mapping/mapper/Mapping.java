@@ -43,6 +43,7 @@ import io.zyient.core.mapping.rules.*;
 import io.zyient.core.mapping.transformers.*;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
@@ -61,22 +62,22 @@ public abstract class Mapping<T> {
     public static final String __CONFIG_PATH_MAPPINGS = "mappings";
     public static final String __CONFIG_PATH_SERDE = "serdes";
 
-    private final Class<? extends T> entityType;
-    private final Class<? extends MappedResponse<T>> responseType;
+    protected final Class<? extends T> entityType;
+    protected final Class<? extends MappedResponse<T>> responseType;
     private File contentDir;
-    private final Map<Integer, Mapped> sourceIndex = new HashMap<>();
+    protected final Map<Integer, Mapped> sourceIndex = new HashMap<>();
     private MappingSettings settings;
     private final Map<String, DeSerializer<?>> deSerializers = new HashMap<>();
     private RulesExecutor<MappedResponse<T>> rulesExecutor;
     private MappingContextProvider contextProvider;
     private RulesCache<MappedResponse<T>> rulesCache;
-    private MapTransformer<T> mapTransformer;
+    private IMapTransformer<T> mapTransformer;
     private FilterChain<SourceMap> filterChain;
     private ObjectMapper mapper;
     private boolean terminateOnValidationError = false;
     private StringTransformer stringTransformer;
     private EvaluationTree<Map<String, Object>, ConditionalMappedElement> evaluationTree;
-    private BaseEnv<?> env;
+    protected BaseEnv<?> env;
 
     protected Mapping(@NonNull Class<? extends T> entityType, @NonNull Class<? extends MappedResponse<T>> responseType) {
         this.entityType = entityType;
@@ -101,6 +102,11 @@ public abstract class Mapping<T> {
 
     public Mapping<T> withTerminateOnValidationError(boolean terminateOnValidationError) {
         this.terminateOnValidationError = terminateOnValidationError;
+        return this;
+    }
+
+    public Mapping<T> withTransformer(IMapTransformer<T> transformer) {
+        this.mapTransformer = transformer;
         return this;
     }
 
@@ -194,8 +200,21 @@ public abstract class Mapping<T> {
         ConfigPath cp = Mapped.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
-        mapTransformer = new MapTransformer<>(entityType, settings);
-        List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
+        mapTransformer = buildTransformer(mNode, cp.path());
+        if (ConfigReader.checkIfNodeExists(mNode, EvaluationTreeBuilder.__CONFIG_PATH)) {
+            HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
+            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type = (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
+            if (type == null) {
+                throw new Exception("Evaluation Tree builder type not specified...");
+            }
+            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder = type.getDeclaredConstructor().newInstance().configure(bNode, env);
+            evaluationTree = builder.build();
+        }
+    }
+
+    public IMapTransformer<T> buildTransformer(HierarchicalConfiguration<ImmutableNode> mNode, String configPath) throws Exception {
+        IMapTransformer<T> mapTransformer = new MapTransformer<>(entityType, settings);
+        List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(configPath);
         if (maps != null && !maps.isEmpty()) {
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
                 Class<? extends MappedElement> type = (Class<? extends MappedElement>) ConfigReader.readType(node);
@@ -211,15 +230,7 @@ public abstract class Mapping<T> {
                 }
             }
         }
-        if (ConfigReader.checkIfNodeExists(mNode, EvaluationTreeBuilder.__CONFIG_PATH)) {
-            HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
-            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type = (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
-            if (type == null) {
-                throw new Exception("Evaluation Tree builder type not specified...");
-            }
-            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder = type.getDeclaredConstructor().newInstance().configure(bNode, env);
-            evaluationTree = builder.build();
-        }
+        return mapTransformer;
     }
 
     public MappedResponse<T> read(@NonNull SourceMap source, Context context) throws Exception {
