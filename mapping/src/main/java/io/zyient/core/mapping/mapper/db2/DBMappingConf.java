@@ -27,7 +27,7 @@ public abstract class DBMappingConf implements IEntity<StringKey> {
     private DbMappingConfType confType;
     @Column(name = "filter_id")
     private String filterId;
-    @Column(name = "child_id")
+    @Column(name = "parent_id")
     private String parentId;
 
     @Override

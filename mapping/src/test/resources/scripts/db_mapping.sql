@@ -2,7 +2,7 @@
 CREATE TABLE IF NOT EXISTS test.demo_mapping_conf
 (
     id character varying(255) COLLATE pg_catalog."default" NOT NULL,
-    child_id character varying(255) COLLATE pg_catalog."default",
+    parent_id character varying(255) COLLATE pg_catalog."default",
     conf_type character varying(255) COLLATE pg_catalog."default",
     filter_id character varying(255) COLLATE pg_catalog."default",
     source_path character varying(255) COLLATE pg_catalog."default",
