@@ -11,7 +11,3 @@ CREATE TABLE IF NOT EXISTS test.demo_mapping_conf
     CONSTRAINT demo_mapping_conf_pkey PRIMARY KEY (id),
     CONSTRAINT demo_mapping_conf_conf_type_check CHECK (conf_type::text = ANY (ARRAY['ALL'::character varying, 'PER_CASE'::character varying]::text[]))
 )
-
-INSERT INTO test.demo_mapping_conf(
-	id, child_id, conf_type, filter_id, source_path, target_path, name)
-	VALUES (?, ?, ?, ?, ?, ?, ?);
