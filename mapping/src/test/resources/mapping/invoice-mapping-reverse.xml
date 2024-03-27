@@ -25,7 +25,7 @@
             <factory>
                 <contentDir>src/test/resources/mapping/mappers</contentDir>
                 <mappings>
-                    <test-customer>test/test-invoice.xml</test-customer>
+                    <test-customer>test/test-invoice-reverse.xml</test-customer>
                 </mappings>
             </factory>
         </mappers>
@@ -58,12 +58,12 @@
                 </defaults>
             </factory>
             -->
-            <reader type="io.zyient.core.mapping.readers.impl.json.JsonReaderConfig">
+            <reader type="io.zyient.core.mapping.readers.impl.context.ContextReaderConfig">
                 <name>json-reader</name>
                 <assumeFileType>JSON</assumeFileType>
                 <readBatchSize>1024</readBatchSize>
                 <type>DEFAULT</type>
-                <isArray>false</isArray>
+                <contextKey></contextKey>
             </reader>
         </readers>
     </executor>

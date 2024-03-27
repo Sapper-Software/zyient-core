@@ -22,6 +22,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.utils.FileTypeDetector;
 import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.mapping.model.InputContentInfo;
+import io.zyient.core.mapping.model.SourceInputContentInfo;
 import io.zyient.core.mapping.readers.settings.ReaderFactorySettings;
 import lombok.Getter;
 import lombok.NonNull;
@@ -93,7 +94,7 @@ public class InputReaderFactory {
     }
 
     public InputReader getReader(@NonNull InputContentInfo inputContentInfo) throws Exception {
-        if (inputContentInfo.contentType() != SourceTypes.DB &&  inputContentInfo.path() == null)
+        if (inputContentInfo.contentType() != SourceTypes.DB && !(inputContentInfo instanceof SourceInputContentInfo) && inputContentInfo.path() == null)
             throw new IOException("Content path not specified...");
         if (inputContentInfo.contentType() == SourceTypes.UNKNOWN) {
             FileTypeDetector detector = new FileTypeDetector(inputContentInfo.path());
