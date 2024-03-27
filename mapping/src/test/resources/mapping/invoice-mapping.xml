@@ -58,12 +58,12 @@
                 </defaults>
             </factory>
             -->
-            <reader type="io.zyient.core.mapping.readers.impl.json.JsonReaderConfig">
+            <reader type="io.zyient.core.mapping.readers.impl.context.ContextReaderConfig">
                 <name>json-reader</name>
                 <assumeFileType>JSON</assumeFileType>
                 <readBatchSize>1024</readBatchSize>
                 <type>DEFAULT</type>
-                <isArray>false</isArray>
+                <contextKey>udp_json</contextKey>
             </reader>
         </readers>
     </executor>

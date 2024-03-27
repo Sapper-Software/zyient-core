@@ -9,7 +9,6 @@ import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.mapping.env.DemoDataStoreEnv;
 import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.SourceInputContentInfo;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.ReadCompleteCallback;
 import io.zyient.core.mapping.readers.ReadCursor;
@@ -47,7 +46,7 @@ public class MergeMappingExecutorTest {
         env.connectionManager().save();
 
         XMLConfiguration mConfig = ConfigReader.readFromFile(__CONFIG_FILE_MAPPING);
-        StatelessMappingExecutor.create(mConfig, env);
+        MappingExecutor.create(mConfig, env);
     }
 
     @AfterAll
@@ -61,10 +60,10 @@ public class MergeMappingExecutorTest {
             Callback callback = new Callback();
             File input = new File(__INPUT_UDP);
             File input2 = new File(__INPUT_INVOICE);
-            SourceInputContentInfo udpInfo = getUDPJson(input2, callback);
-            SourceInputContentInfo invoiceInfo = getUDPJson(input, callback);
-            udpInfo.targetData(invoiceInfo.sourceMaps().get(0));
-            StatelessMappingExecutor.defaultInstance().read(udpInfo);
+            InputContentInfo udpInfo = getUDPJson(input2, callback);
+            InputContentInfo invoiceInfo = getUDPJson(input, callback);
+            udpInfo.targetData(((List<SourceMap>)invoiceInfo.get("udp_json")).get(0));
+            MappingExecutor.defaultInstance().read(udpInfo);
             while (!callback.finished) {
                 RunUtils.sleep(1000);
             }
@@ -78,7 +77,7 @@ public class MergeMappingExecutorTest {
         }
     }
 
-    private SourceInputContentInfo getUDPJson(File input, Callback callback) throws IOException {
+    private InputContentInfo getUDPJson(File input, Callback callback) throws IOException {
 
         InputContentInfo ci = new InputContentInfo();
         ci.path(input)
@@ -100,11 +99,12 @@ public class MergeMappingExecutorTest {
             if (s == null) break;
             sourceMaps.addAll(s);
         }
-        SourceInputContentInfo info = new SourceInputContentInfo(sourceMaps);
+        InputContentInfo info = new InputContentInfo();
         info.put("mappingName", "demo");
         info.put("filterId", "1");
         info.callback(callback);
-        info.contentType(SourceTypes.JSON);
+        info.put("udp_json",sourceMaps);
+        info.contentType(SourceTypes.CONTEXT);
         return info;
     }
 

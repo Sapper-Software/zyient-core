@@ -14,7 +14,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.mapping.mapper.db2.DBMapper;
 import io.zyient.core.mapping.mapper.db2.MappedElementWithConf;
-import io.zyient.core.mapping.model.SourceInputContentInfo;
+import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.mapping.MappedElement;
 import io.zyient.core.mapping.model.mapping.MappingType;
 import lombok.NonNull;
@@ -96,8 +96,8 @@ public class JPathMapTransformer<T> implements IMapTransformer<T> {
     public Map<String, Object> transform(@NonNull Map<String, Object> source, @NonNull Class<? extends T> entityType, @NonNull Context context) throws Exception {
 
         Map<String, Object> data;
-        if (context instanceof SourceInputContentInfo && ((SourceInputContentInfo) context).targetData() != null) {
-            data = ((SourceInputContentInfo) context).targetData();
+        if (context instanceof InputContentInfo && ((InputContentInfo) context).targetData() != null) {
+            data = ((InputContentInfo) context).targetData();
         } else {
             Object o = JSONUtils.createBlankJson(entityType);
             data = new Gson().fromJson(new Gson().toJson(o), Map.class);

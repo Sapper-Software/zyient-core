@@ -12,7 +12,6 @@ import io.zyient.core.mapping.mapper.JPathMapping;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.RecordResponse;
-import io.zyient.core.mapping.model.SourceInputContentInfo;
 import io.zyient.core.mapping.model.mapping.MappedResponse;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.pipeline.settings.ExecutablePipelineSettings;
@@ -27,12 +26,10 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
-import java.util.List;
-
 @Getter
 @Setter
 @Accessors(fluent = true)
-public class StatelessPipeline<E> extends ExecutablePipeline<E> implements PipelineInMemory {
+public class StatelessPipeline<E> extends ExecutablePipeline<E> implements PipelineSource {
     @Override
     public String name() {
         Preconditions.checkNotNull(mapping());
@@ -86,48 +83,6 @@ public class StatelessPipeline<E> extends ExecutablePipeline<E> implements Pipel
                 } catch (ValidationException | ValidationExceptions ex) {
                     String msg = String.format("[file=%s][record=%d] Validation Failed: %s",
                             reader.input().getAbsolutePath(), response.getRecordCount(), ex.getLocalizedMessage());
-                    ValidationExceptions ve = ValidationExceptions.add(new ValidationException(msg), null);
-                    if (settings().isTerminateOnValidationError()) {
-                        DefaultLogger.stacktrace(ex);
-                        throw ve;
-                    } else {
-                        metrics.errorsCounter().increment();
-                        response.incrementCount();
-                        DefaultLogger.warn(msg);
-                        r = errorResponse(r, null, ex);
-                        response.add(r);
-                    }
-                } catch (Exception e) {
-                    DefaultLogger.stacktrace(e);
-                    DefaultLogger.error(e.getLocalizedMessage());
-                    throw e;
-                }
-            }
-        }
-        return response;
-    }
-
-    @Override
-    public ReadResponse read(@NonNull SourceInputContentInfo context) throws Exception {
-        List<SourceMap> datas = context.sourceMaps();
-        ReadResponse response = new ReadResponse();
-        if (datas == null) {
-            return response;
-        }
-        for (SourceMap data :datas) {
-            try (Timer t = new Timer(metrics.processTimer())) {
-                RecordResponse r = new RecordResponse();
-                try {
-                    metrics.recordsCounter().increment();
-                    r.setSource(data);
-                    response.incrementCount();
-                    r = process(data, context);
-                    response.add(r);
-                    response.incrementCommitCount();
-                    metrics.processedCounter().increment();
-                } catch (ValidationException | ValidationExceptions ex) {
-                    String msg = String.format("[record=%d] Validation Failed: %s",
-                            response.getRecordCount(), ex.getLocalizedMessage());
                     ValidationExceptions ve = ValidationExceptions.add(new ValidationException(msg), null);
                     if (settings().isTerminateOnValidationError()) {
                         DefaultLogger.stacktrace(ex);

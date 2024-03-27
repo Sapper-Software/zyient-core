@@ -1,7 +1,6 @@
 package io.zyient.core.mapping;
 
 import com.google.common.base.Preconditions;
-import com.google.gson.stream.JsonReader;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.services.EConfigFileType;
 import io.zyient.base.common.utils.DefaultLogger;
@@ -10,14 +9,12 @@ import io.zyient.base.common.utils.RunUtils;
 import io.zyient.base.core.utils.SourceTypes;
 import io.zyient.core.mapping.env.DemoDataStoreEnv;
 import io.zyient.core.mapping.model.InputContentInfo;
-import io.zyient.core.mapping.model.SourceInputContentInfo;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.ReadCompleteCallback;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.ReadResponse;
 import io.zyient.core.mapping.readers.impl.json.JsonInputReader;
 import io.zyient.core.mapping.readers.settings.JsonReaderSettings;
-import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.XMLConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -47,7 +44,7 @@ public class JPathMappingExecutorTest {
         env.connectionManager().save();
 
         XMLConfiguration mConfig = ConfigReader.readFromFile(__CONFIG_FILE_MAPPING);
-        StatelessMappingExecutor.create(mConfig, env);
+        MappingExecutor.create(mConfig, env);
     }
 
     @AfterAll
@@ -80,13 +77,14 @@ public class JPathMappingExecutorTest {
                 if (s == null) break;
                 sourceMaps.addAll(s);
             }
-            SourceInputContentInfo info = new SourceInputContentInfo(sourceMaps);
+            InputContentInfo info = new InputContentInfo();
             info.put("country", "India");
             info.put("mappingName", "demo");
             info.put("filterId", "1");
+            info.put("udp_json",sourceMaps);
             info.callback(callback);
-            info.contentType(SourceTypes.JSON);
-            StatelessMappingExecutor.defaultInstance().read(info);
+            info.contentType(SourceTypes.CONTEXT);
+            MappingExecutor.defaultInstance().read(info);
             while (!callback.finished) {
                 RunUtils.sleep(1000);
             }

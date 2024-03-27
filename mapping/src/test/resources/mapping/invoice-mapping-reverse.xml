@@ -63,7 +63,7 @@
                 <assumeFileType>JSON</assumeFileType>
                 <readBatchSize>1024</readBatchSize>
                 <type>DEFAULT</type>
-                <contextKey></contextKey>
+                <contextKey>udp_json</contextKey>
             </reader>
         </readers>
     </executor>
