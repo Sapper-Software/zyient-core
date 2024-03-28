@@ -93,10 +93,10 @@ public class FlattenedInputReader extends SeparatedInputReader {
     private void fetch() throws IOException {
         FlattenedInputReaderSettings settings = (FlattenedInputReaderSettings) settings();
         while (true) {
-            List<SourceMap> batch = super.nextBatch();
+            List<SourceMap> batch = super.fetchNextBatch();
             if (batch == null || batch.isEmpty()) {
                 EOF = true;
-                return;
+                break;
             }
             for (SourceMap record : batch) {
                 if (record == null || record.isEmpty()) continue;
@@ -104,13 +104,13 @@ public class FlattenedInputReader extends SeparatedInputReader {
                     KeyValuePair<String, String> kv = get(record);
                     Preconditions.checkNotNull(kv);
                     String value = kv.value().trim();
-                    if (Strings.isNullOrEmpty(value)) continue;
                     if (settings.getSectionSeparator().compareTo(value) == 0) {
                         parsingState = ParsingState.SectionStart;
                         sectionHeader = null;
                         recordHeader = null;
                         continue;
                     }
+                    if (Strings.isNullOrEmpty(value)) continue;
                     if (parsingState == ParsingState.SectionStart
                             || parsingState == ParsingState.InHeader) {
                         if (parsingState == ParsingState.SectionStart) {
