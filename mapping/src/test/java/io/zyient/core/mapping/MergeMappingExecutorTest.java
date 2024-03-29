@@ -60,8 +60,8 @@ public class MergeMappingExecutorTest {
             Callback callback = new Callback();
             File input = new File(__INPUT_UDP);
             File input2 = new File(__INPUT_INVOICE);
-            InputContentInfo udpInfo = getUDPJson(input2, callback);
-            InputContentInfo invoiceInfo = getUDPJson(input, callback);
+            InputContentInfo udpInfo = getJson(input2, callback);
+            InputContentInfo invoiceInfo = getJson(input, callback);
             udpInfo.targetData(((List<SourceMap>)invoiceInfo.get("udp_json")).get(0));
             MappingExecutor.defaultInstance().read(udpInfo);
             while (!callback.finished) {
@@ -77,7 +77,7 @@ public class MergeMappingExecutorTest {
         }
     }
 
-    private InputContentInfo getUDPJson(File input, Callback callback) throws IOException {
+    private InputContentInfo getJson(File input, Callback callback) throws IOException {
 
         InputContentInfo ci = new InputContentInfo();
         ci.path(input)
