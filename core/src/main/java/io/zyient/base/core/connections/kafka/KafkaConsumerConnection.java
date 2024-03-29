@@ -17,6 +17,7 @@
 package io.zyient.base.core.connections.kafka;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.connections.Connection;
 import io.zyient.base.core.connections.ConnectionError;
@@ -136,6 +137,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
                 state.setState(EConnectionState.Connected);
             } catch (Throwable t) {
                 state.error(t);
+                DefaultLogger.stacktrace(t);
                 throw new ConnectionError("Error opening HDFS connection.", t);
             }
         }

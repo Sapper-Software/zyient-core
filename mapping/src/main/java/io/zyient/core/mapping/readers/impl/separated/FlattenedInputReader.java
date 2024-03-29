@@ -117,7 +117,7 @@ public class FlattenedInputReader extends SeparatedInputReader {
                             parsingState = ParsingState.InHeader;
                         }
                         if (sectionHeader == null) {
-                            sectionHeader = new HashMap<>();
+                            sectionHeader = new LinkedHashMap<>();
                         }
                         String[] parts = value.split(settings.getFieldSeparator());
                         if (parts.length != 2) {
@@ -156,7 +156,7 @@ public class FlattenedInputReader extends SeparatedInputReader {
                         records.add(record);
                     } else if (parsingState == ParsingState.InHeader) {
                         validateSectionHeader();
-                        recordHeader = new HashMap<>();
+                        recordHeader = new LinkedHashMap<>();
                         for (String key : record.keySet()) {
                             String column = (String) record.get(key);
                             recordHeader.put(key, column);
