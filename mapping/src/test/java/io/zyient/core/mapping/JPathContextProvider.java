@@ -15,23 +15,23 @@ public class JPathContextProvider extends DemoContextProvider{
     public InputContentInfo inputContext(@NonNull ContentInfo contentInfo) throws Exception {
         Preconditions.checkArgument(contentInfo instanceof InputContentInfo);
         InputContentInfo info = (InputContentInfo) contentInfo;
-        File file = info.path();
-        if (file == null) {
-            throw new Exception("Input file not specified...");
-        }
-        if (!file.exists()) {
-            throw new IOException(String.format("Input file not found. [path=%s]", file.getAbsolutePath()));
-        }
-        SourceTypes st = info.contentType();
-        if (st == null) {
-            FileTypeDetector detector = new FileTypeDetector(file);
-            detector.detect();
-            st = detector.type();
-            if (st == null) {
-                throw new Exception(String.format("Failed to detect content type. [file=%s]", file.getAbsolutePath()));
-            }
-            info.contentType(st);
-        }
+//        File file = info.path();
+//        if (file == null) {
+//            throw new Exception("Input file not specified...");
+//        }
+//        if (!file.exists()) {
+//            throw new IOException(String.format("Input file not found. [path=%s]", file.getAbsolutePath()));
+//        }
+//        SourceTypes st = info.contentType();
+//        if (st == null) {
+//            FileTypeDetector detector = new FileTypeDetector(file);
+//            detector.detect();
+//            st = detector.type();
+//            if (st == null) {
+//                throw new Exception(String.format("Failed to detect content type. [file=%s]", file.getAbsolutePath()));
+//            }
+//            info.contentType(st);
+//        }
         info.mapping("test-customer");
         return info;
     }

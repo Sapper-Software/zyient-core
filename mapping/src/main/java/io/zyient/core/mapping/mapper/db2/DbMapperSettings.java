@@ -30,7 +30,7 @@ public class DbMapperSettings extends Settings {
     private String condition;
     @Config(name = "filter.builder", type = Class.class)
     private Class<? extends QueryBuilder> builder;
-    @Config(name = "direction", required = false, type = Boolean.class)
+    @Config(name = "sourceAsSource", required = false, type = Boolean.class)
     private Boolean sourceAsSource = true;
 
 }

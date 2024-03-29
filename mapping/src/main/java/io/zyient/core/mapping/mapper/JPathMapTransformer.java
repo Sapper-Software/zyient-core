@@ -4,26 +4,21 @@ import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
-import com.jayway.jsonpath.internal.path.PathCompiler;
 import com.jayway.jsonpath.spi.json.GsonJsonProvider;
-import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.mapper.GsonMappingProvider;
-import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.core.mapping.mapper.db2.DBMapper;
-import io.zyient.core.mapping.mapper.db2.DBMappingConf;
 import io.zyient.core.mapping.mapper.db2.MappedElementWithConf;
+import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.mapping.MappedElement;
 import io.zyient.core.mapping.model.mapping.MappingType;
 import lombok.NonNull;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -99,9 +94,15 @@ public class JPathMapTransformer<T> implements IMapTransformer<T> {
 
     @Override
     public Map<String, Object> transform(@NonNull Map<String, Object> source, @NonNull Class<? extends T> entityType, @NonNull Context context) throws Exception {
-        Object o = JSONUtils.createBlankJson(entityType);
 
-        Map<String, Object> data = new Gson().fromJson(new Gson().toJson(o), Map.class);
+        Map<String, Object> data;
+        if (context instanceof InputContentInfo && ((InputContentInfo) context).targetData() != null) {
+            data = ((InputContentInfo) context).targetData();
+        } else {
+            Object o = JSONUtils.createBlankJson(entityType);
+            data = new Gson().fromJson(new Gson().toJson(o), Map.class);
+        }
+
         JSONUtils.checkAndAddType(data, entityType);
 
         for (String key : mapper.keySet()) {
@@ -126,18 +127,18 @@ public class JPathMapTransformer<T> implements IMapTransformer<T> {
             } else {
                 targetChildEl = targetEl.getAsJsonObject();
             }
-            List<Map> childRows =  new ArrayList<>();
+            List<Map> childRows = new ArrayList<>();
             if (element.isJsonArray()) {
                 element.getAsJsonArray().forEach(c -> {
                     DocumentContext childDocContext = JsonPath.parse(c.toString(), configuration);
                     DocumentContext childTargetContext = JsonPath.parse(targetChildEl.toString(), configuration);
-                    Map childData =  new Gson().fromJson(targetChildEl.toString(),Map.class);
+                    Map childData = new Gson().fromJson(targetChildEl.toString(), Map.class);
                     node.nodes.forEach((n, v) -> {
                         transformNode(v, childDocContext, childTargetContext, childData);
                     });
                     childRows.add(childData);
                 });
-                setValue(node.targetPath,childRows,targetContext);
+                setValue(node.targetPath, childRows, targetContext);
                 Map map = new Gson().fromJson(targetContext.jsonString(), Map.class);
                 data.putAll(map);
             }
@@ -153,6 +154,8 @@ public class JPathMapTransformer<T> implements IMapTransformer<T> {
         if (jsonElement.isJsonArray()) {
             JsonArray jsonArray = (JsonArray) jsonElement;
             iterateArrayAndTransform(jsonArray, node, targetContext);
+        } else {
+            transformElement(jsonElement, node, targetContext);
         }
         Map map = new Gson().fromJson(targetContext.jsonString(), Map.class);
         data.putAll(map);
@@ -185,8 +188,12 @@ public class JPathMapTransformer<T> implements IMapTransformer<T> {
     private void setValue(String targetPath, Object v, DocumentContext targetContext) {
         DocumentContext pc = JsonPath.parse(targetContext.jsonString(), configurationPath);
         JsonElement jsonElement = pc.read(targetPath);
-        if (jsonElement.isJsonArray() && !jsonElement.getAsJsonArray().isEmpty()) {
-            targetPath = jsonElement.getAsJsonArray().get(0).getAsString();
+        if (jsonElement.isJsonArray()) {
+            if (!jsonElement.getAsJsonArray().isEmpty()) {
+                targetPath = jsonElement.getAsJsonArray().get(0).getAsString();
+            } else {
+                return;
+            }
         } else {
             targetPath = jsonElement.getAsJsonObject().getAsString();
         }
@@ -200,9 +207,14 @@ public class JPathMapTransformer<T> implements IMapTransformer<T> {
             paths.add(m.group(1));
         }
         List<String> subPaths = new ArrayList<>();
-        for (String path : paths) {
+        for (int i = 0; i < paths.size(); i++) {
+            String path = paths.get(i);
             String abPath = String.format("[%s]", path);
-            subPaths.add(String.join("", subPaths.toArray(new String[0])) + abPath);
+            String previousPath = "";
+            if (i > 0) {
+                previousPath = subPaths.get(i - 1);
+            }
+            subPaths.add(String.join("", previousPath + abPath));
         }
         String leafPath = "";
         for (int i = 0; i < subPaths.size(); i++) {

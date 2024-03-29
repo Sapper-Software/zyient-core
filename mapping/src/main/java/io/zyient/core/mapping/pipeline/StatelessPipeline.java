@@ -35,6 +35,7 @@ public class StatelessPipeline<E> extends ExecutablePipeline<E> implements Pipel
         Preconditions.checkNotNull(mapping());
         return mapping().name();
     }
+
     @Override
     public StatelessPipeline<E> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                           @NonNull MapperFactory mapperFactory,
@@ -63,7 +64,6 @@ public class StatelessPipeline<E> extends ExecutablePipeline<E> implements Pipel
         return response;
     }
 
-    @Override
     public ReadResponse read(@NonNull InputReader reader, @NonNull InputContentInfo context) throws Exception {
         ReadResponse response = new ReadResponse();
         ReadCursor cursor = reader.open(env());
@@ -103,4 +103,5 @@ public class StatelessPipeline<E> extends ExecutablePipeline<E> implements Pipel
         }
         return response;
     }
+
 }

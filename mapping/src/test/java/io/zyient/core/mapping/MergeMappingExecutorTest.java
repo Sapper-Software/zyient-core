@@ -22,16 +22,18 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class JPathMappingExecutorTest {
+public class MergeMappingExecutorTest {
     private static final String __CONFIG_FILE = "src/test/resources/mapping/test-mapping-env.xml";
-    private static final String __CONFIG_FILE_MAPPING = "src/test/resources/mapping/invoice-mapping.xml";
-    private static final String __INPUT_CUSTOMER_CSV = "src/test/resources/data/invoice_udp.json";
+    private static final String __CONFIG_FILE_MAPPING = "src/test/resources/mapping/invoice-mapping-reverse.xml";
+    private static final String __INPUT_UDP = "src/test/resources/data/invoice_udp.json";
+    private static final String __INPUT_INVOICE = "src/test/resources/data/invoice.json";
 
     private static XMLConfiguration xmlConfiguration = null;
     private static DemoDataStoreEnv env = new DemoDataStoreEnv();
@@ -55,47 +57,55 @@ public class JPathMappingExecutorTest {
     @Test
     void read() {
         try {
-            File input = new File(__INPUT_CUSTOMER_CSV);
-            InputContentInfo ci = new InputContentInfo();
             Callback callback = new Callback();
-            ci.path(input)
-                    .sourceURI(input.toURI())
-                    .documentId(UUID.randomUUID().toString());
-
-            JsonInputReader reader = new JsonInputReader();
-            reader.contentInfo(ci);
-            JsonReaderSettings jsonReaderSettings = new JsonReaderSettings();
-            jsonReaderSettings.setArray(false);
-            jsonReaderSettings.setAssumeType(SourceTypes.JSON);
-            jsonReaderSettings.setName("json-reader");
-            jsonReaderSettings.setReadBatchSize(100);
-            reader.settings(jsonReaderSettings);
-            ReadCursor readCursor = reader.doOpen();
-            List<SourceMap> sourceMaps = new ArrayList<>();
-            while (true) {
-                List<SourceMap> s = readCursor.reader().fetchNextBatch();
-                if (s == null) break;
-                sourceMaps.addAll(s);
-            }
-            InputContentInfo info = new InputContentInfo();
-            info.put("country", "India");
-            info.put("mappingName", "demo");
-            info.put("filterId", "1");
-            info.put("udp_json",sourceMaps);
-            info.callback(callback);
-            info.contentType(SourceTypes.CONTEXT);
-            MappingExecutor.defaultInstance().read(info);
+            File input = new File(__INPUT_UDP);
+            File input2 = new File(__INPUT_INVOICE);
+            InputContentInfo udpInfo = getJson(input2, callback);
+            InputContentInfo invoiceInfo = getJson(input, callback);
+            udpInfo.targetData(((List<SourceMap>)invoiceInfo.get("udp_json")).get(0));
+            MappingExecutor.defaultInstance().read(udpInfo);
             while (!callback.finished) {
                 RunUtils.sleep(1000);
             }
             if (callback.error != null) {
                 fail(callback.error);
             }
-            RunUtils.sleep(1000);
+            RunUtils.sleep(3000);
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             fail(ex);
         }
+    }
+
+    private InputContentInfo getJson(File input, Callback callback) throws IOException {
+
+        InputContentInfo ci = new InputContentInfo();
+        ci.path(input)
+                .sourceURI(input.toURI())
+                .documentId(UUID.randomUUID().toString());
+
+        JsonInputReader reader = new JsonInputReader();
+        reader.contentInfo(ci);
+        JsonReaderSettings jsonReaderSettings = new JsonReaderSettings();
+        jsonReaderSettings.setArray(false);
+        jsonReaderSettings.setAssumeType(SourceTypes.JSON);
+        jsonReaderSettings.setName("json-reader");
+        jsonReaderSettings.setReadBatchSize(100);
+        reader.settings(jsonReaderSettings);
+        ReadCursor readCursor = reader.doOpen();
+        List<SourceMap> sourceMaps = new ArrayList<>();
+        while (true) {
+            List<SourceMap> s = readCursor.reader().fetchNextBatch();
+            if (s == null) break;
+            sourceMaps.addAll(s);
+        }
+        InputContentInfo info = new InputContentInfo();
+        info.put("mappingName", "demo");
+        info.put("filterId", "1");
+        info.callback(callback);
+        info.put("udp_json",sourceMaps);
+        info.contentType(SourceTypes.CONTEXT);
+        return info;
     }
 
     public static class Callback implements ReadCompleteCallback {

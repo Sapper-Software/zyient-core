@@ -25,7 +25,7 @@
             <factory>
                 <contentDir>src/test/resources/mapping/mappers</contentDir>
                 <mappings>
-                    <test-customer>test/test-invoice.xml</test-customer>
+                    <test-customer>test/test-invoice-reverse.xml</test-customer>
                 </mappings>
             </factory>
         </mappers>
