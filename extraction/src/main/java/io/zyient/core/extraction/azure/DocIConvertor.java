@@ -18,12 +18,10 @@ package io.zyient.core.extraction.azure;
 
 import com.azure.ai.formrecognizer.documentanalysis.models.*;
 import com.google.common.base.Strings;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.core.extraction.ExtractionConvertor;
-import io.zyient.core.extraction.model.DocumentSection;
-import io.zyient.core.extraction.model.FontInfo;
-import io.zyient.core.extraction.model.SizeUnit;
-import io.zyient.core.extraction.model.Source;
+import io.zyient.core.extraction.model.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -174,15 +172,68 @@ public class DocIConvertor implements ExtractionConvertor<AnalyzeResult> {
         DocumentSection doc = output.create(0);
         StyleIndex styleIndex = createStyleIndex(source);
         LanguageIndex languageIndex = createLanguageIndex(source);
-        for (int ii = 0; ii < source.getPages().size(); ii++) {
-            DocumentPage docPage = source.getPages().get(ii);
-            try (DocIPageParser parser = new DocIPageParser(source,
-                    doc, docPage, styleIndex, languageIndex,
-                    ii + 1)) {
-                parser.parse();
+        Map<Integer, DocIPageParser> parsers = new HashMap<>();
+        try {
+            int count = 0;
+            if (source.getPages() != null) {
+                for (int ii = 0; ii < source.getPages().size(); ii++) {
+                    DocumentPage docPage = source.getPages().get(ii);
+                    DocIPageParser parser = new DocIPageParser(source,
+                            doc, docPage, styleIndex, languageIndex,
+                            ii + 1);
+                    parsers.put(ii + 1, parser);
+                    parser.parse();
+                    count++;
+                }
+            }
+            if (source.getTables() != null) {
+                for (DocumentTable table : source.getTables()) {
+                    processTable(table, parsers, doc, count);
+                    count++;
+                }
+            }
+        } finally {
+            for (DocIPageParser parser : parsers.values()) {
+                parser.close();
             }
         }
         return output;
+    }
+
+    private void processTable(DocumentTable table,
+                              Map<Integer, DocIPageParser> parsers,
+                              DocumentSection section,
+                              int index) throws Exception {
+        Table tab = section.add(Table.class, index);
+        Map<Integer, Section> sections = new HashMap<>();
+        for (BoundingRegion region : table.getBoundingRegions()) {
+            if (sections.containsKey(region.getPageNumber())) continue;
+            Section s = tab.newSection(region.getPageNumber());
+            if (region.getBoundingPolygon() == null || region.getBoundingPolygon().isEmpty()) {
+                Page page = section.findPage(region.getPageNumber());
+                if (page == null) {
+                    throw new Exception(String.format("Page not found. [index=%s]", region.getPageNumber()));
+                }
+                s.setBoundingBox(page.getBoundingBox());
+            } else {
+                BoundingBox bb = DocIPageParser.createBoundingBox(region.getBoundingPolygon());
+                s.setBoundingBox(bb);
+            }
+            sections.put(region.getPageNumber(), s);
+        }
+        List<DocumentTableCell> cells = table.getCells();
+        if (cells != null && !cells.isEmpty()) {
+            for (DocumentTableCell cell : cells) {
+                if (cell.getKind().equals(DocumentTableCellKind.COLUMN_HEADER)) {
+                    Column column = tab.addHeader(cell.getContent(), cell.getColumnIndex());
+                    DefaultLogger.debug(String.format("[table=%s] Added column: [name=%s][index=%d]",
+                            tab.getId(), column.getData(), column.getIndex()));
+                }
+                if (cell.getBoundingRegions().size() > 1) {
+
+                }
+            }
+        }
     }
 
     private LanguageIndex createLanguageIndex(AnalyzeResult source) throws Exception {

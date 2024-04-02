@@ -14,14 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.azure;
+package io.zyient.core.mapping.model.mapping;
 
-public enum CellType {
-    content,
-    columnHeader,
-    address,
-    string,
-    currency,
-    date,
-    array
+import io.zyient.base.common.config.Config;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class OneToMany extends MappedElement {
+    @Config(name = "target.collection", required = false, type = CollectionType.class)
+    private CollectionType collectionType = CollectionType.List;
+    @Config(name = "mapping.name")
+    private String mapping;
+    @Config(name = "mapping.file")
+    private String mappingDef;
 }

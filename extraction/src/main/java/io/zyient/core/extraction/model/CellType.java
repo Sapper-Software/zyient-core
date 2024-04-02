@@ -14,8 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.mapping.model.mapping;
+package io.zyient.core.extraction.model;
 
-public enum MappingType {
-    Field, Property, Cached, ConstProperty, ConstField, Collection
+public enum CellType {
+    address,
+    string,
+    currency,
+    date,
+    array
 }

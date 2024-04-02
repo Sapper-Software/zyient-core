@@ -105,6 +105,8 @@ public class DocIPageParser implements Closeable {
         if (docPage.getWidth() != null) {
             page.setWidth(docPage.getWidth());
         }
+        page.setAngle(docPage.getAngle());
+
         List<DocumentWord> words = docPage.getWords();
         if (words != null && !words.isEmpty()) {
             wordMap = PhTreeF.create(2);
@@ -123,27 +125,71 @@ public class DocIPageParser implements Closeable {
                 count++;
             }
         }
-        if (source.getTables() != null && !source.getTables().isEmpty()) {
-            for (DocumentTable table : source.getTables()) {
-                List<BoundingRegion> brs = table.getBoundingRegions();
-                int count = 0;
-                for (BoundingRegion br : brs) {
-                    if (br.getPageNumber() == index) {
-                        processTable(page, table, count);
-                        count++;
-                    }
+        for (String index : wordIndex.keySet()) {
+            WordNode node = wordIndex.get(index);
+            for (MarkedNode<TextCell> n : node.nodes) {
+                if (!n.used) {
+                    page.add(n.node, -1);
                 }
             }
         }
         return page;
     }
 
-    private void processTable(Page page, DocumentTable table, int index) {
-        Table tab = new Table(page.getParentId(), index);
+    public List<TextCell> findWordCells(@NonNull BoundingBox box) {
+        PhTreeF.PhQueryF<double[]> results = wordMap.query(new double[]{box.getStart().getX(), box.getStart().getY()},
+                new double[]{box.getEnd().getX(), box.getEnd().getY()});
+        if (results != null) {
+            List<TextCell> cells = new ArrayList<>();
+            while (results.hasNext()) {
+                double[] rec = results.next();
+                String id = parseId(rec[0], rec[1]);
+                if (wordIndex.containsKey(id)) {
+                    WordNode node = wordIndex.get(id);
+                    for (MarkedNode<TextCell> tc : node.nodes) {
+                        TextCell c = tc.node;
+                        if (c.getBoundingBox().getEnd().getX() <= box.getEnd().getX() &&
+                                c.getBoundingBox().getEnd().getY() <= box.getEnd().getY()) {
+                            cells.add(c);
+                        }
+                    }
+                }
+            }
+            if (!cells.isEmpty()) {
+                return cells;
+            }
+        }
+        return null;
+    }
+
+    public List<TextLine> findLineCells(@NonNull BoundingBox box) {
+        PhTreeF.PhQueryF<double[]> results = lineMap.query(new double[]{box.getStart().getX(), box.getStart().getY()},
+                new double[]{box.getEnd().getX(), box.getEnd().getY()});
+        if (results != null) {
+            List<TextLine> lines = new ArrayList<>();
+            while (results.hasNext()) {
+                double[] rec = results.next();
+                String id = parseId(rec[0], rec[1]);
+                if (lineIndex.containsKey(id)) {
+                    LineNode node = lineIndex.get(id);
+                    for (MarkedNode<TextLine> lc : node.nodes) {
+                        TextLine l = lc.node;
+                        if (l.getBoundingBox().getEnd().getX() <= box.getEnd().getX() &&
+                                l.getBoundingBox().getEnd().getY() <= box.getEnd().getY()) {
+                            lines.add(l);
+                        }
+                    }
+                }
+            }
+            if (!lines.isEmpty()) {
+                return lines;
+            }
+        }
+        return null;
     }
 
     private void processLine(Page page, DocumentLine line, int index) throws Exception {
-        TextLine cell = new TextLine(page.getParentId(), index);
+        TextLine cell = page.add(TextLine.class, index);
         BoundingBox bb = createBoundingBox(line.getBoundingPolygon());
         cell.setBoundingBox(bb);
         cell.setData(line.getContent());
@@ -182,6 +228,8 @@ public class DocIPageParser implements Closeable {
         BoundingBox bb = createBoundingBox(word.getBoundingPolygon());
         cell.setBoundingBox(bb);
         cell.setData(word.getContent());
+        cell.setConfidence(word.getConfidence());
+
         DocumentSpan span = word.getSpan();
         int spanEnd = span.getOffset() + span.getLength();
         cell.setSpan(new CellSpan(span.getOffset(), span.getLength()));
@@ -220,7 +268,7 @@ public class DocIPageParser implements Closeable {
         node.nodes.add(new MarkedNode<>(cell));
     }
 
-    private BoundingBox createBoundingBox(List<com.azure.ai.formrecognizer.documentanalysis.models.Point> points) {
+    public static BoundingBox createBoundingBox(List<com.azure.ai.formrecognizer.documentanalysis.models.Point> points) {
         BoundingBox bb = new BoundingBox();
         for (com.azure.ai.formrecognizer.documentanalysis.models.Point point : points) {
             bb.add(point.getX(), point.getY());
@@ -233,6 +281,10 @@ public class DocIPageParser implements Closeable {
         if (wordMap != null) {
             wordMap.clear();
             wordMap = null;
+        }
+        if (lineMap != null) {
+            lineMap.clear();
+            lineMap = null;
         }
     }
 }

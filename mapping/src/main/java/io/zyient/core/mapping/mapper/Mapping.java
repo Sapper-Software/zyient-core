@@ -77,8 +77,10 @@ public abstract class Mapping<T> {
     private StringTransformer stringTransformer;
     private EvaluationTree<Map<String, Object>, ConditionalMappedElement> evaluationTree;
     private BaseEnv<?> env;
+    private MapperFactory factory;
 
-    protected Mapping(@NonNull Class<? extends T> entityType, @NonNull Class<? extends MappedResponse<T>> responseType) {
+    protected Mapping(@NonNull Class<? extends T> entityType,
+                      @NonNull Class<? extends MappedResponse<T>> responseType) {
         this.entityType = entityType;
         this.responseType = responseType;
     }
@@ -109,9 +111,12 @@ public abstract class Mapping<T> {
         return settings.getName();
     }
 
-    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig, @NonNull BaseEnv<?> env) throws ConfigurationException {
+    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                @NonNull BaseEnv<?> env,
+                                @NonNull MapperFactory factory) throws ConfigurationException {
         Preconditions.checkNotNull(entityType);
         this.env = env;
+        this.factory = factory;
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -194,7 +199,7 @@ public abstract class Mapping<T> {
         ConfigPath cp = Mapped.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
-        mapTransformer = new MapTransformer<>(entityType, settings);
+        mapTransformer = new MapTransformer<>(entityType, settings, factory);
         List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(cp.path());
         if (maps != null && !maps.isEmpty()) {
             for (HierarchicalConfiguration<ImmutableNode> node : maps) {
@@ -205,19 +210,29 @@ public abstract class Mapping<T> {
                 Mapped m = Mapped.read(node, type, env);
                 sourceIndex.put(m.getSequence(), m);
                 if (m instanceof MappedElement me) {
-                    if (me.getMappingType() == MappingType.Field || me.getMappingType() == MappingType.ConstField) {
+                    if (me instanceof OneToMany o2m) {
+                        factory.readMappingConfig(o2m.getMappingDef());
+                        Mapping<?> mapping = factory.getMapping(o2m.getMapping());
+                        if (mapping == null) {
+                            throw new Exception(String.format("Mapping not found. [name=%s]",
+                                    o2m.getMapping()));
+                        }
+                    } else if (me.getMappingType() == MappingType.Field || me.getMappingType() == MappingType.ConstField) {
                         mapTransformer.add(me);
                     }
                 }
             }
         }
+
         if (ConfigReader.checkIfNodeExists(mNode, EvaluationTreeBuilder.__CONFIG_PATH)) {
             HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
-            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type = (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
+            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type
+                    = (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
             if (type == null) {
                 throw new Exception("Evaluation Tree builder type not specified...");
             }
-            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder = type.getDeclaredConstructor().newInstance().configure(bNode, env);
+            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder
+                    = type.getDeclaredConstructor().newInstance().configure(bNode, env);
             evaluationTree = builder.build();
         }
     }
@@ -242,11 +257,13 @@ public abstract class Mapping<T> {
         response.setEntity(entity);
 
         for (Integer index : sourceIndex.keySet()) {
-
             Mapped m = sourceIndex.get(index);
             if (m instanceof MappedElement me) {
                 if (me.getMappingType() == MappingType.Field || me.getMappingType() == MappingType.ConstField) continue;
-                executeMapping(me, response, source, context);
+                if (m instanceof OneToMany) {
+                    executeOne2Many((OneToMany) m, response, source, context);
+                } else
+                    executeMapping(me, response, source, context);
             }
         }
         if (evaluationTree != null) {
@@ -268,7 +285,30 @@ public abstract class Mapping<T> {
         return response;
     }
 
-    private void executeMapping(MappedElement me, MappedResponse<T> response, SourceMap source, Context context) throws Exception {
+    @SuppressWarnings("unchecked")
+    private void executeOne2Many(OneToMany me,
+                                 MappedResponse<T> response,
+                                 SourceMap source,
+                                 Context context) throws Exception {
+        Mapping<?> mapping = factory.getMapping(me.getMapping());
+        if (mapping == null) {
+            throw new Exception(String.format("Mapping not found. [name=%s]", me.getMapping()));
+        }
+        String path = me.getSourcePath();
+        String[] parts = path.split("\\.");
+        Object value = findSourceValue(source, parts, 0);
+        if (value != null) {
+            if (value instanceof Map<?, ?>) {
+                SourceMap r = new SourceMap(((Map<? extends String, ?>) value));
+                MappedResponse<?> resp = mapping.read(r, context);
+            }
+        }
+    }
+
+    private void executeMapping(MappedElement me,
+                                MappedResponse<T> response,
+                                SourceMap source,
+                                Context context) throws Exception {
         Object value = null;
         String path = me.getSourcePath();
         if (me instanceof WildcardMappedElement wme && ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {

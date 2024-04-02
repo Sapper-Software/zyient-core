@@ -21,17 +21,13 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class TextLine extends Cell<String> {
-    public static final String __PREFIX = "LN.";
-
-    private List<TextCell> words;
+public class TextLine extends Section {
+    public static final String __PREFIX = "TL.";
 
     public TextLine() {
         super();
@@ -41,12 +37,8 @@ public class TextLine extends Cell<String> {
         super(parentId, index);
     }
 
-    public TextLine add(@NonNull TextCell cell) {
-        if (words == null) {
-            words = new ArrayList<>();
-        }
-        cell.resetId(getId(), words.size());
-        words.add(cell);
+    public TextLine add(@NonNull TextCell cell) throws Exception {
+        super.add(cell, -1);
         return this;
     }
 
@@ -56,8 +48,8 @@ public class TextLine extends Cell<String> {
             if (index == paths.length - 1) {
                 return this;
             } else {
-                if (words != null) {
-                    for (TextCell cell : words) {
+                if (getBlocks() != null) {
+                    for (Cell<?> cell : getBlocks()) {
                         Cell<?> ret = cell.find(getId(), paths, index + 1);
                         if (ret != null) return ret;
                     }

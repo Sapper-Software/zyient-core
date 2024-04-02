@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.opencv.core.Scalar;
 
 import java.util.Map;
 
@@ -40,7 +39,7 @@ public abstract class Cell<T> {
     private T data;
     private Map<String, Tag> tags;
     private float confidence;
-    private Scalar background;
+    private float angle;
 
     public Cell() {
     }
@@ -67,6 +66,7 @@ public abstract class Cell<T> {
         }
         return id.compareTo(key) == 0;
     }
+
 
     protected abstract Cell<?> find(String parentId, @NonNull String[] paths, int index);
 

@@ -32,6 +32,7 @@ public class TextCell extends Cell<String> {
     private FontInfo fontInfo;
     private CellSpan span;
     private String locale;
+    private CellType type = CellType.string;
 
     public TextCell() {
         super();

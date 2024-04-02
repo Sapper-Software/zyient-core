@@ -45,6 +45,7 @@ class DocIExtractorTest {
     private static final String __CONFIG_FILE = "src/test/resources/azure/test-doci-env.xml";
     private static final String __INPUT_FILE_1 = "src/test/resources/input/sec-filing-sample-01.pdf";
     private static final String __INPUT_FILE_2 = "src/test/resources/input/1699822049.pdf";
+    private static final String __INPUT_FILE_3 = "src/test/resources/input/excel-pivot.png";
 
 
     private static XMLConfiguration xmlConfiguration = null;
@@ -70,7 +71,7 @@ class DocIExtractorTest {
     @Test
     void extract() {
         try {
-            File input = new File(__INPUT_FILE_2);
+            File input = new File(__INPUT_FILE_3);
             AnalyzeResult result = extractor.extract(input, null);
             assertNotNull(result);
             String name = FilenameUtils.getName(input.getAbsolutePath());

@@ -80,7 +80,7 @@
                 <extractor type="io.zyient.core.extraction.azure.DocIExtractor">
                     <endpoint>https://zyient-doc-extract.cognitiveservices.azure.com/</endpoint>
                     <key>AzureDocIKey</key>
-                    <model>prebuilt-invoice</model>
+                    <model>prebuilt-layout</model>
                     <features>formulas,styleFont,styleFont</features>
                 </extractor>
             </extraction>
