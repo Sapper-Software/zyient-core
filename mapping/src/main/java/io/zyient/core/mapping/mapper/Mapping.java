@@ -301,6 +301,7 @@ public abstract class Mapping<T> {
             if (value instanceof Map<?, ?>) {
                 SourceMap r = new SourceMap(((Map<? extends String, ?>) value));
                 MappedResponse<?> resp = mapping.read(r, context);
+
             }
         }
     }
