@@ -14,33 +14,19 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.model;
+package io.zyient.core.mapping.model.mapping;
 
+import io.zyient.base.common.config.Config;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FontInfo {
-    private String name;
-    private double size;
-    private boolean bold = false;
-    private boolean underlined = false;
-    private boolean italics = false;
-
-    public FontInfo() {
-
-    }
-
-    public FontInfo(String name, double size, boolean bold, boolean underlined, boolean italics) {
-        this.name = name;
-        this.size = size;
-        this.bold = bold;
-        this.underlined = underlined;
-        this.italics = italics;
-    }
-
-    public static final String FONT_NAME_HANDWRITTEN = "Hand Writing";
-
-    public static final FontInfo HANDWRITTEN = new FontInfo(FONT_NAME_HANDWRITTEN, 0, false, false, false);
+public class OneToMany extends MappedElement {
+    @Config(name = "target.collection", required = false, type = CollectionType.class)
+    private CollectionType collectionType = CollectionType.List;
+    @Config(name = "mapping.name")
+    private String mapping;
+    @Config(name = "mapping.file")
+    private String mappingDef;
 }
