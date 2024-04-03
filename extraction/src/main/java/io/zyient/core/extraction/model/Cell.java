@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-import org.opencv.core.Scalar;
 
 import java.util.Map;
 
@@ -40,16 +39,13 @@ public abstract class Cell<T> {
     private T data;
     private Map<String, Tag> tags;
     private float confidence;
-    private Scalar background;
-    private Scalar textColor;
-    private FontInfo fontInfo;
+    private float angle;
 
     public Cell() {
     }
 
     public Cell(@NonNull String parentId, int index) {
-        id = String.format("%s%s%s", parentId, SEPARATOR, parseId(index));
-        this.index = index;
+        resetId(parentId, index);
     }
 
     public Tag addTag(@NonNull String label, double confidence) {
@@ -71,7 +67,14 @@ public abstract class Cell<T> {
         return id.compareTo(key) == 0;
     }
 
+
     protected abstract Cell<?> find(String parentId, @NonNull String[] paths, int index);
+
+    protected void resetId(@NonNull String parentId, int index) {
+        this.parentId = parentId;
+        id = String.format("%s%s%s", parentId, SEPARATOR, parseId(index));
+        this.index = index;
+    }
 
     protected abstract String parseId(int index);
 }

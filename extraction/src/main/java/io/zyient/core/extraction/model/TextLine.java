@@ -17,28 +17,29 @@
 package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Section extends Cell<String> {
-    public static final String __PREFIX = "SC.";
-    private List<Cell<?>> blocks;
+public class TextLine extends Section {
+    public static final String __PREFIX = "TL.";
 
-    public Section() {
+    public TextLine() {
         super();
     }
 
-    public Section(@NonNull String parentId, int index) {
+    public TextLine(@NonNull String parentId, int index) {
         super(parentId, index);
+    }
+
+    public TextLine add(@NonNull TextCell cell) throws Exception {
+        super.add(cell, -1);
+        return this;
     }
 
     @Override
@@ -46,11 +47,11 @@ public class Section extends Cell<String> {
         if (checkId(parentId, paths, index)) {
             if (index == paths.length - 1) {
                 return this;
-            } else if (blocks != null) {
-                for (Cell<?> block : blocks) {
-                    Cell<?> ret = block.find(getId(), paths, index + 1);
-                    if (ret != null) {
-                        return ret;
+            } else {
+                if (getBlocks() != null) {
+                    for (Cell<?> cell : getBlocks()) {
+                        Cell<?> ret = cell.find(getId(), paths, index + 1);
+                        if (ret != null) return ret;
                     }
                 }
             }
@@ -61,28 +62,5 @@ public class Section extends Cell<String> {
     @Override
     protected String parseId(int index) {
         return String.format("%s%d", __PREFIX, index);
-    }
-
-    public <T extends Cell<?>> T add(@NonNull Class<? extends T> type,
-                                     int index) throws Exception {
-        if (blocks == null) {
-            blocks = new ArrayList<>();
-        }
-        T cell = type.getDeclaredConstructor(String.class, int.class)
-                .newInstance(getId(), index);
-        CollectionUtils.setAtIndex(blocks, index, cell);
-        return cell;
-    }
-
-    public  <T extends Cell<?>> T add(@NonNull T cell, int index) throws Exception {
-        if (blocks == null) {
-            blocks = new ArrayList<>();
-        }
-        if (index < 0) {
-            index = blocks.size();
-        }
-        cell.resetId(getId(), index);
-        CollectionUtils.setAtIndex(blocks, index, cell);
-        return cell;
     }
 }

@@ -17,5 +17,5 @@
 package io.zyient.core.mapping.model.mapping;
 
 public enum CollectionType {
-    Array, Linked, Set
+    Array, Linked, Set, List
 }

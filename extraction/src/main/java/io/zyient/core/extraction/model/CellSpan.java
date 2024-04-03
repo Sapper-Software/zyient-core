@@ -16,31 +16,23 @@
 
 package io.zyient.core.extraction.model;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FontInfo {
-    private String name;
-    private double size;
-    private boolean bold = false;
-    private boolean underlined = false;
-    private boolean italics = false;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class CellSpan {
+    private int offset;
+    private int length;
 
-    public FontInfo() {
-
+    public CellSpan() {
     }
 
-    public FontInfo(String name, double size, boolean bold, boolean underlined, boolean italics) {
-        this.name = name;
-        this.size = size;
-        this.bold = bold;
-        this.underlined = underlined;
-        this.italics = italics;
+    public CellSpan(int offset, int length) {
+        this.offset = offset;
+        this.length = length;
     }
-
-    public static final String FONT_NAME_HANDWRITTEN = "Hand Writing";
-
-    public static final FontInfo HANDWRITTEN = new FontInfo(FONT_NAME_HANDWRITTEN, 0, false, false, false);
 }
