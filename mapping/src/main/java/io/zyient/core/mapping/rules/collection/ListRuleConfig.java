@@ -17,6 +17,8 @@ public class ListRuleConfig extends CollectionRuleConfig {
 
     @Config(name = "isPresent")
     private String present;
+    @Config(name = "caseSensitive", required = false, type = Boolean.class)
+    private boolean caseSensitive = true;
     @Config(name = "items", required = false, custom = ListRuleReader.class)
     private List<String> items;
 

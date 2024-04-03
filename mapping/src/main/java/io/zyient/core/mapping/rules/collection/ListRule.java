@@ -32,8 +32,9 @@ public class ListRule<T> extends AbstractSpELRule<T> {
             Object value = super.doEvaluate(data);
             boolean isPresent = Boolean.parseBoolean(listRuleConfig.getPresent());
             if (value instanceof String s) {
+                boolean isContains = contains(listRuleConfig.getItems(), s, listRuleConfig.isCaseSensitive());
                 if (isPresent) {
-                    if (listRuleConfig.getItems().contains(s)) {
+                    if (isContains) {
                         return true;
                     } else {
                         throw new RuleValidationError(name(),
@@ -44,7 +45,7 @@ public class ListRule<T> extends AbstractSpELRule<T> {
                         );
                     }
                 } else {
-                    if (!listRuleConfig.getItems().contains(s)) {
+                    if (!isContains) {
                         return true;
                     } else {
                         throw new RuleValidationError(name(),
@@ -66,8 +67,15 @@ public class ListRule<T> extends AbstractSpELRule<T> {
                     Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     t);
         }
-
         return null;
+    }
+
+    private boolean contains(List<String> items, String value, boolean caseSensitive) {
+        if (caseSensitive) {
+            return items.contains(value);
+        } else {
+            return items.stream().map(String::toLowerCase).toList().contains(value.toLowerCase());
+        }
     }
 
 
