@@ -52,7 +52,15 @@ publishing {
                     password = System.getenv("GIT_TOKEN")
                 }
             }
+            maven {
+                url = uri("https://maven.pkg.github.com/Sapper-Software/unified-framework")
+                credentials {
+                    username = "unified-framework"
+                    password = System.getenv("GIT_TOKEN")
+                }
+            }
         }
+       
     }
     publications {
         gpr(MavenPublication) {
