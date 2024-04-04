@@ -190,7 +190,11 @@ public abstract class Mapping<T> {
 
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         if (ConfigReader.checkIfNodeExists(xmlConfig, RuleConfigReader.__CONFIG_PATH)) {
-            rulesExecutor = new RulesExecutor<MappedResponse<T>>(responseType).terminateOnValidationError(terminateOnValidationError).cache(rulesCache).contentDir(contentDir).configure(xmlConfig, env);
+            rulesExecutor = new RulesExecutor<MappedResponse<T>>(responseType)
+                    .terminateOnValidationError(terminateOnValidationError)
+                    .cache(rulesCache)
+                    .contentDir(contentDir)
+                    .configure(xmlConfig, env);
         }
     }
 
@@ -203,16 +207,22 @@ public abstract class Mapping<T> {
         mapTransformer = buildTransformer(mNode, cp.path());
         if (ConfigReader.checkIfNodeExists(mNode, EvaluationTreeBuilder.__CONFIG_PATH)) {
             HierarchicalConfiguration<ImmutableNode> bNode = mNode.configurationAt(EvaluationTreeBuilder.__CONFIG_PATH);
-            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type = (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
+            Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>> type
+                    = (Class<? extends EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement>>) ConfigReader.readType(bNode);
             if (type == null) {
                 throw new Exception("Evaluation Tree builder type not specified...");
             }
-            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder = type.getDeclaredConstructor().newInstance().configure(bNode, env);
+            EvaluationTreeBuilder<Map<String, Object>, ConditionalMappedElement> builder
+                    = type.getDeclaredConstructor()
+                    .newInstance()
+                    .configure(bNode, env);
             evaluationTree = builder.build();
         }
     }
 
-    public IMapTransformer<T> buildTransformer(HierarchicalConfiguration<ImmutableNode> mNode, String configPath) throws Exception {
+    @SuppressWarnings("unchecked")
+    public IMapTransformer<T> buildTransformer(HierarchicalConfiguration<ImmutableNode> mNode,
+                                               String configPath) throws Exception {
         IMapTransformer<T> mapTransformer = new MapTransformer<>(entityType, settings);
         List<HierarchicalConfiguration<ImmutableNode>> maps = mNode.configurationsAt(configPath);
         if (maps != null && !maps.isEmpty()) {
@@ -279,7 +289,10 @@ public abstract class Mapping<T> {
         return response;
     }
 
-    private void executeMapping(MappedElement me, MappedResponse<T> response, SourceMap source, Context context) throws Exception {
+    private void executeMapping(MappedElement me,
+                                MappedResponse<T> response,
+                                SourceMap source,
+                                Context context) throws Exception {
         Object value = null;
         String path = me.getSourcePath();
         if (me instanceof WildcardMappedElement wme && ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
@@ -299,7 +312,8 @@ public abstract class Mapping<T> {
         }
         if (value == null) {
             if (!me.isNullable()) {
-                throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]", me.getSourcePath(), me.getTargetPath()));
+                throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                        me.getSourcePath(), me.getTargetPath()));
             }
             return;
         }
@@ -313,12 +327,14 @@ public abstract class Mapping<T> {
         T data = response.getEntity();
         if (element.getMappingType() == MappingType.Property) {
             if (!(data instanceof PropertyBag)) {
-                throw new Exception(String.format("Custom mapping not supported for type. [type=%s]", data.getClass().getCanonicalName()));
+                throw new Exception(String.format("Custom mapping not supported for type. [type=%s]",
+                        data.getClass().getCanonicalName()));
             }
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (!element.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]", element.getSourcePath(), element.getTargetPath()));
+                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                            element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
                 ((PropertyBag) data).setProperty(element.getTargetPath(), tv);
@@ -327,7 +343,8 @@ public abstract class Mapping<T> {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (!element.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]", element.getSourcePath(), element.getTargetPath()));
+                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                            element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
                 response.add(element.getTargetPath(), tv);
@@ -336,12 +353,14 @@ public abstract class Mapping<T> {
             Object tv = transform(value, element, element.getType());
             if (tv == null) {
                 if (!element.isNullable()) {
-                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]", element.getSourcePath(), element.getTargetPath()));
+                    throw new DataException(String.format("Required field value is missing. [source=%s][field=%s]",
+                            element.getSourcePath(), element.getTargetPath()));
                 }
             } else {
                 PropertyDef def = ReflectionHelper.findProperty(entityType, element.getTargetPath());
                 if (def == null) {
-                    throw new Exception(String.format("Property not found. [entity=%s][property=%s]", entityType.getCanonicalName(), element.getTargetPath()));
+                    throw new Exception(String.format("Property not found. [entity=%s][property=%s]",
+                            entityType.getCanonicalName(), element.getTargetPath()));
                 }
                 MappingReflectionHelper.setProperty(element.getTargetPath(), def, data, tv);
             }
@@ -405,7 +424,9 @@ public abstract class Mapping<T> {
                 return deSerializers.get(type.getSimpleName());
             }
             if (element instanceof EnumMappedElement) {
-                deSerializer = new EnumTransformer(type).enumValues(((EnumMappedElement) element).getEnumMappings()).configure(settings);
+                deSerializer = new EnumTransformer(type).enumValues(((EnumMappedElement) element)
+                        .getEnumMappings())
+                        .configure(settings);
             } else {
                 deSerializer = new EnumTransformer(type).configure(settings);
             }
@@ -415,7 +436,10 @@ public abstract class Mapping<T> {
             if (deSerializers.containsKey(Date.class.getCanonicalName())) {
                 return deSerializers.get(Date.class.getCanonicalName());
             }
-            deSerializer = new DateTransformer().locale(settings.getLocale()).format(settings.getDateFormat()).configure(settings);
+            deSerializer = new DateTransformer()
+                    .locale(settings.getLocale())
+                    .format(settings.getDateFormat())
+                    .configure(settings);
         }
         if (deSerializer != null) {
             deSerializers.put(deSerializer.name(), deSerializer);
