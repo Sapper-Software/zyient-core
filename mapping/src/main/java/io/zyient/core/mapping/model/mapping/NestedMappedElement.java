@@ -22,11 +22,13 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class OneToMany extends MappedElement {
+public class NestedMappedElement extends MappedElement {
     @Config(name = "target.collection", required = false, type = CollectionType.class)
     private CollectionType collectionType = CollectionType.List;
     @Config(name = "mapping.name")
     private String mapping;
     @Config(name = "mapping.file")
     private String mappingDef;
+    @Config(name = "terminateOnValidationErrors", required = false, type = Boolean.class)
+    private boolean terminateOnValidationErrors = false;
 }

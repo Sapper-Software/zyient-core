@@ -18,10 +18,12 @@ package io.zyient.base.common.model;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import io.zyient.base.common.utils.DefaultLogger;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.apache.commons.lang3.NotImplementedException;
+import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -178,6 +180,18 @@ public class ValidationExceptions extends Exception
         }
     }
 
+    public void log() {
+        log(DefaultLogger.getDefaultLogger());
+    }
+
+    public void log(@NonNull Logger logger) {
+        for (ValidationException e : errors) {
+            DefaultLogger.error(logger, "Validation Error:", e);
+            if (logger.isDebugEnabled()) {
+                DefaultLogger.stacktrace(logger, e);
+            }
+        }
+    }
 
     /**
      * Copy all the validation errors from the source to the target.
