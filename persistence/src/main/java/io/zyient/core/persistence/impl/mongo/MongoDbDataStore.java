@@ -93,7 +93,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         checkState();
         Preconditions.checkState(isInTransaction());
         try {
-            MorphiaSession session = sessionManager().session();
+            MorphiaSession session = sessionManager().session(false);
             entity.validate();
             if (entity instanceof MongoEntity<?>) {
                 ((MongoEntity<?>) entity).preSave();
@@ -206,7 +206,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
         checkState();
         Preconditions.checkState(isInTransaction());
         try {
-            MorphiaSession session = sessionManager().session();
+            MorphiaSession session = sessionManager().session(false);
             entity.validate();
             if (entity instanceof MongoEntity<?>) {
                 ((MongoEntity<?>) entity).preSave();
@@ -285,7 +285,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
             } else {
                 k = ((IKey) key).stringKey();
             }
-            MorphiaSession session = sessionManager().session();
+            MorphiaSession session = sessionManager().session(false);
             if (ReflectionHelper.isSuperType(MongoEntity.class, type)) {
                 Query<E> query = (Query<E>) session.find(type)
                         .filter(Filters.eq(JsonFieldConstants.FIELD_DOC_ID, k));
@@ -319,11 +319,12 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
     @SuppressWarnings("unchecked")
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                @NonNull Class<? extends E> type,
+                                               boolean readOnly,
                                                Context context) throws DataStoreException {
         checkState();
         Preconditions.checkArgument(key instanceof String || key instanceof IKey);
         try {
-            MorphiaSession session = sessionManager().session();
+            MorphiaSession session = sessionManager().session(false);
             String k = null;
             if (key instanceof String) {
                 k = (String) key;
@@ -381,6 +382,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
+                                                                        boolean readOnly,
                                                                         Context context) throws DataStoreException {
         checkState();
         try {
@@ -403,7 +405,7 @@ public class MongoDbDataStore extends TransactionDataStore<MorphiaSession, Mongo
                                                                         Context context) throws DataStoreException {
         checkState();
         try {
-            MorphiaSession session = sessionManager().session();
+            MorphiaSession session = sessionManager().session(false);
             String cname = getCollection(type);
             QueryConverter queryConverter = new QueryConverter.Builder().sqlString(query).build();
             MongoDBQueryHolder mongoDBQueryHolder = queryConverter.getMongoQuery();

@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.view;
+package io.zyient.core.filesystem.sync;
 
-import io.zyient.base.common.config.Config;
-import io.zyient.base.common.config.Settings;
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
-public class ViewManagerSettings extends Settings {
-    public static final String __CONFIG_PATH = "view";
-
-    @Config(name = "resource")
-    private String bundleName;
-    @Config(name = "override.locale", required = false)
-    private String overrideLocale;
+public enum EEventProcessorState {
+    Unknown,
+    Initialized,
+    Running,
+    Stopped,
+    Paused,
+    Error;
 }

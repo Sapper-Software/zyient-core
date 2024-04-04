@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.view;
+package io.zyient.core.extraction.model;
 
-public enum ViewType {
-    TEXT,
-    LABEL,
-    SELECT,
-    DROPDOWN,
-    FORM,
-    TABLE,
-    BLOCK
+public enum CellType {
+    address,
+    string,
+    currency,
+    date,
+    array
 }

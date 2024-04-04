@@ -14,15 +14,8 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.view;
+package io.zyient.core.extraction.model;
 
-import java.lang.annotation.*;
-
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.FIELD)
-@Inherited
-public @interface ViewAttribute {
-    String value() default "";
-    ViewType type() default ViewType.TEXT;
-    int sequence();
+public enum SizeUnit {
+    Centimeters, Millimeters, Inches, Pixel
 }

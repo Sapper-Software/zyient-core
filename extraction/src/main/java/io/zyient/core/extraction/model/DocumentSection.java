@@ -19,22 +19,17 @@ package io.zyient.core.extraction.model;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.Context;
-import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class DocumentSection extends Cell<String> {
+public class DocumentSection extends Section {
     public static final String __PREFIX = "DS.";
 
-    private List<Page> pages;
     private Context metadata;
 
     public DocumentSection() {
@@ -46,9 +41,9 @@ public class DocumentSection extends Cell<String> {
         if (checkId(parentId, paths, index)) {
             if (index == paths.length - 1) {
                 return this;
-            } else if (pages != null) {
-                for (Page page : pages) {
-                    Cell<?> ret = page.find(getId(), paths, index + 1);
+            } else if (getBlocks() != null) {
+                for (Cell<?> cell : getBlocks()) {
+                    Cell<?> ret = cell.find(getId(), paths, index + 1);
                     if (ret != null) {
                         return ret;
                     }
@@ -69,13 +64,15 @@ public class DocumentSection extends Cell<String> {
         setId(String.valueOf(index));
     }
 
-    public Page add(int index) {
-        if (pages == null) {
-            pages = new ArrayList<>();
+    public Page add(int index) throws Exception {
+        return super.add(Page.class, index);
+    }
+
+    public Page findPage(int index) {
+        if (getBlocks() != null && index < getBlocks().size()) {
+            return (Page) getBlocks().get(index);
         }
-        Page page = new Page(getId(), index);
-        CollectionUtils.setAtIndex(pages, index, page);
-        return page;
+        return null;
     }
 
     public Context addMetadata(@NonNull String name,

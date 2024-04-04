@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.model;
 
 import io.zyient.base.core.utils.SourceTypes;
+import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.ReadCompleteCallback;
 import lombok.Getter;
 import lombok.NonNull;
@@ -36,6 +37,7 @@ public class InputContentInfo extends ContentInfo {
     public static final String KEY_SOURCE_LOCAL_PATH = "source.path";
     public static final String KEY_FILE_TYPE = "reader.content.type";
     public static final String KEY_READER_NAME = "reader.name";
+    public static final String KEY_PRE_DATA = "target.data";
 
     private ReadCompleteCallback callback;
 
@@ -119,5 +121,14 @@ public class InputContentInfo extends ContentInfo {
 
     public String documentId() {
         return (String) get(KEY_SOURCE_DOC_ID);
+    }
+
+    public InputContentInfo targetData(@NonNull SourceMap sourceMap) {
+        put(KEY_PRE_DATA, sourceMap);
+        return this;
+    }
+
+    public SourceMap targetData() {
+        return (SourceMap) get(KEY_PRE_DATA);
     }
 }

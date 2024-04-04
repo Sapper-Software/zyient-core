@@ -89,7 +89,7 @@ public class AzureFsClient implements Connection {
             settings.setAuthSettings(auth.settings());
             setup(env.keyStore());
 
-            state.setState(EConnectionState.Connected);
+            state.setState(EConnectionState.Initialized);
             return this;
         } catch (Exception ex) {
             throw new ConnectionError(ex);
@@ -113,7 +113,7 @@ public class AzureFsClient implements Connection {
             }
             settings = (AzureFsClientSettings) reader.settings();
             setup(settings, env);
-            state.setState(EConnectionState.Connected);
+            state.setState(EConnectionState.Initialized);
             return this;
         } catch (Exception ex) {
             state.error(ex);
@@ -145,6 +145,7 @@ public class AzureFsClient implements Connection {
 
     @Override
     public Connection connect() throws ConnectionError {
+        state.setState(EConnectionState.Connected);
         return this;
     }
 

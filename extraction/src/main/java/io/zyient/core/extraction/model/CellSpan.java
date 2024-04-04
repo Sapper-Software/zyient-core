@@ -14,23 +14,25 @@
  * limitations under the License.
  */
 
-package io.zyient.core.extraction.view;
+package io.zyient.core.extraction.model;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import io.zyient.base.common.json.ClassNameDeSerializer;
-import io.zyient.base.common.json.ClassNameSerializer;
-import io.zyient.core.extraction.model.Cell;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class CellPointer {
-    private String id;
-    @JsonSerialize(keyUsing = ClassNameSerializer.class)
-    @JsonDeserialize(using = ClassNameDeSerializer.class)
-    private Class<? extends Cell<?>> cellType;
-    private String value;
-    private String editedValue;
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
+        property = "@class")
+public class CellSpan {
+    private int offset;
+    private int length;
+
+    public CellSpan() {
+    }
+
+    public CellSpan(int offset, int length) {
+        this.offset = offset;
+        this.length = length;
+    }
 }

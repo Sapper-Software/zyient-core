@@ -148,8 +148,8 @@ public class TesseractOCR implements ExtractionConvertor<String>, Closeable {
         int bytespl = (int) Math.ceil(image.getWidth() * bpp / 8.0);
         page.setPixelSize(bpp);
         page.setBoundingBox(new BoundingBox()
-                .start(0, 0)
-                .end(image.getWidth(), image.getHeight()));
+                .add(0, 0)
+                .add(image.getWidth(), image.getHeight()));
         TessAPI1.TessBaseAPIInit3(handle, dataPath.getAbsolutePath(), language);
         TessAPI1.TessBaseAPISetPageSegMode(handle, ITessAPI.TessPageSegMode.PSM_AUTO);
         TessAPI1.TessBaseAPISetImage(handle, buf, image.getWidth(), image.getHeight(), bytespp, bytespl);
@@ -179,8 +179,8 @@ public class TesseractOCR implements ExtractionConvertor<String>, Closeable {
             int bottom = bottomB.get();
             DefaultLogger.debug(String.format("%s %d %d %d %d %f", word, left, top, right, bottom, confidence));
             BoundingBox box = new BoundingBox();
-            box.start(left, top)
-                    .end(right, bottom)
+            box.add(left, top)
+                    .add(right, bottom)
                     .setPage(page.getNumber());
             IntBuffer boldB = IntBuffer.allocate(1);
             IntBuffer italicB = IntBuffer.allocate(1);
@@ -203,7 +203,6 @@ public class TesseractOCR implements ExtractionConvertor<String>, Closeable {
 
             FontInfo fi = new FontInfo();
             fi.setName(fontName);
-            fi.setFontId(fontId);
             fi.setSize(pointSize);
             fi.setBold(bold);
             fi.setItalics(italic);

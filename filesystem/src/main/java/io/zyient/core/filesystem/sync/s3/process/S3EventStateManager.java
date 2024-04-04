@@ -16,53 +16,12 @@
 
 package io.zyient.core.filesystem.sync.s3.process;
 
-import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.core.BaseEnv;
-import io.zyient.base.core.model.Heartbeat;
-import io.zyient.base.core.processing.ProcessStateManager;
-import io.zyient.base.core.processing.ProcessingState;
-import io.zyient.base.core.state.BaseStateManager;
-import io.zyient.base.core.state.BaseStateManagerSettings;
-import io.zyient.base.core.state.StateManagerError;
-import lombok.NonNull;
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.tree.ImmutableNode;
+import io.zyient.core.filesystem.sync.SyncEventStateManager;
+import io.zyient.core.filesystem.sync.s3.model.S3EventOffset;
+import io.zyient.core.filesystem.sync.s3.model.S3EventProcessingState;
 
-public class S3EventStateManager extends ProcessStateManager<ES3EventProcessorState, S3EventOffset> {
+public class S3EventStateManager extends SyncEventStateManager<S3EventOffset> {
     public S3EventStateManager() {
         super(S3EventProcessingState.class);
-    }
-
-    @Override
-    public BaseStateManager init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
-                                 @NonNull BaseEnv<?> env) throws StateManagerError {
-        try {
-            super.init(xmlConfig, BaseStateManagerSettings.__CONFIG_PATH, env, BaseStateManagerSettings.class);
-            return this;
-        } catch (Exception ex) {
-            DefaultLogger.stacktrace(ex);
-            throw new StateManagerError(ex);
-        }
-    }
-
-    @Override
-    public Heartbeat heartbeat(@NonNull String instance) throws StateManagerError {
-        try {
-            ProcessingState<ES3EventProcessorState, S3EventOffset> state = null;
-            for (ProcessingState<ES3EventProcessorState, S3EventOffset> ps : processingStates().values()) {
-                if (state == null) {
-                    state = ps;
-                } else if (ps.hasError()) {
-                    state = ps;
-                    break;
-                }
-            }
-            if (state == null) {
-                throw new Exception("No valid states found...");
-            }
-            return heartbeat(instance, getClass(), state);
-        } catch (Exception ex) {
-            throw new StateManagerError(ex);
-        }
     }
 }

@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.sync.s3.process;
+package io.zyient.core.filesystem.sync.azure.process;
 
-public enum ES3EventProcessorState {
-    Unknown,
-    Initialized,
-    Running,
-    Stopped,
-    Paused,
-    Error;
+import io.zyient.core.filesystem.sync.SyncEventStateManager;
+import io.zyient.core.filesystem.sync.azure.model.AzureFSEventOffset;
+import io.zyient.core.filesystem.sync.azure.model.AzureFSProcessingState;
+
+public class AzureFSEventStateManager extends SyncEventStateManager<AzureFSEventOffset> {
+    public AzureFSEventStateManager() {
+        super(AzureFSProcessingState.class);
+    }
 }

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!--
+  ~ Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+    <mapping entity="io.zyient.core.mapping.mapper.InvoiceMappedResponse"
+             type="io.zyient.core.mapping.mapper.InvoiceEntityMapping">
+        <settings>
+            <name>test-customer</name>
+            <!--
+            <currency>[ISO Currency Symbol]</currency>
+            <format>
+                <date>[Date Format String]</date>
+            </format>
+            <locale>[{Country Code}, {Language Code}]</locale>
+            -->
+        </settings>
+        <mappings>
+            <dbMapper type="io.zyient.core.mapping.mapper.db2.DbMapperBuilder">
+                <condition>
+                    <class>io.zyient.core.mapping.model.DemoDBMappingConf</class>
+                </condition>
+                <dataStore>
+                    <name>test-hibernate</name>
+                    <type>io.zyient.core.persistence.impl.rdbms.RdbmsDataStore</type>
+                </dataStore>
+                <filter>
+                    <mappingQuery>name = :mappingName</mappingQuery>
+                    <filterQuery>name = :mappingName and filterId = :filterId</filterQuery>
+                    <builder>io.zyient.core.mapping.readers.impl.db.HQLQueryBuilder</builder>
+                    <condition>{"mappingName":":mappingName", "filterId":":filterId"}</condition>
+                </filter>
+                <sourceAsSource>true</sourceAsSource>
+            </dbMapper>
+        </mappings>
+    </mapping>
+</configuration>

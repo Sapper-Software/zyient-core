@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package io.zyient.core.filesystem.sync.s3.process;
+package io.zyient.core.filesystem.sync.azure.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.utils.DefaultLogger;
+import com.google.common.base.Strings;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.core.state.Offset;
-import io.zyient.core.filesystem.sync.s3.model.S3EventType;
+import io.zyient.core.filesystem.sync.EEventProcessorState;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -30,48 +30,46 @@ import lombok.Setter;
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.CLASS
 )
-public class S3EventOffset extends Offset {
-    private String messageId;
-    private String bucket;
-    private String key;
-    private S3EventType eventType;
-
-    public S3EventOffset() {
-    }
-
-    public S3EventOffset(@NonNull S3EventOffset source) {
-        super(source);
-        messageId = source.messageId;
-        bucket = source.bucket;
-        key = source.key;
-        eventType = source.eventType;
-    }
+public class AzureFSEventOffset extends Offset {
+    private String name;
+    private EEventProcessorState state;
+    private long createTime;
+    private long updateTime;
+    private String token;
 
     @Override
     public String asString() {
         try {
             return JSONUtils.asString(this);
         } catch (Exception ex) {
-            DefaultLogger.error(ex.getLocalizedMessage());
+            throw new RuntimeException(ex);
         }
-        return null;
     }
 
     @Override
     public Offset fromString(@NonNull String source) throws Exception {
-        S3EventOffset offset = JSONUtils.read(source, getClass());
-        setTimeUpdated(offset.getTimeUpdated());
-        messageId = offset.messageId;
-        bucket = offset.bucket;
-        key = offset.key;
-        eventType = offset.eventType;
+        AzureFSEventOffset offset = JSONUtils.read(source, getClass());
+        name = offset.name;
+        state = offset.state;
+        createTime = offset.createTime;
+        updateTime = offset.updateTime;
+        token = offset.token;
         return this;
     }
 
     @Override
     public int compareTo(@NonNull Offset offset) {
-        if (offset instanceof S3EventOffset) {
-            return messageId.compareTo(((S3EventOffset) offset).messageId);
+        if (offset instanceof AzureFSEventOffset) {
+            int ret = name.compareTo(((AzureFSEventOffset) offset).name);
+            if (ret == 0) {
+                if (Strings.isNullOrEmpty(token)) {
+                    if (!Strings.isNullOrEmpty(((AzureFSEventOffset) offset).token)) {
+                        ret = Short.MAX_VALUE;
+                    }
+                } else
+                    ret = token.compareTo(((AzureFSEventOffset) offset).token);
+            }
+            return ret;
         }
         throw new RuntimeException(String.format("Invalid offset type. [type=%s]",
                 offset.getClass().getCanonicalName()));

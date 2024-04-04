@@ -115,16 +115,24 @@ public class MapperFactory {
                 throw new ConfigurationException(String.format("Mapping configuration file not found. [path=%s]",
                         cf.getAbsolutePath()));
             }
-            XMLConfiguration xmlConfig = ConfigReader.readFromFile(cf.getAbsolutePath());
-            HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
-            Class<?> entityType = ConfigReader.readType(mConfig, "entity");
-            RulesCache<?> cache = rulesCaches.get(entityType);
-            Mapping<?> mapping = createInstance(mConfig)
-                    .withRulesCache(cache)
-                    .withContentDir(contentDir)
-                    .configure(mConfig, env);
-            mappings.put(mapping.name(), mapping);
+            readMappingConfig(cf.getAbsolutePath());
         }
+    }
+
+    public void readMappingConfig(@NonNull String config) throws Exception {
+        File source = new File(config);
+        if (!source.exists()) {
+            throw new IOException(String.format("Mapping file not found. [path=%s]", source.getAbsolutePath()));
+        }
+        XMLConfiguration xmlConfig = ConfigReader.readFromFile(source.getAbsolutePath());
+        HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
+        Class<?> entityType = ConfigReader.readType(mConfig, "entity");
+        RulesCache<?> cache = rulesCaches.get(entityType);
+        Mapping<?> mapping = createInstance(mConfig)
+                .withRulesCache(cache)
+                .withContentDir(contentDir)
+                .configure(mConfig, env, this);
+        mappings.put(mapping.name(), mapping);
     }
 
     @SuppressWarnings("unchecked")

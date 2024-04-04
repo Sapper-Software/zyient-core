@@ -36,7 +36,9 @@ public enum SourceTypes {
     WORD("application/ms-word", new String[]{"doc", "docx"}),
     PPT("application/ms-powerpoint", new String[]{"ppt"}),
     COMPRESSED(FileUtils.MIME_TYPE_ZIP, new String[]{"zip", "bzip", "bzip2", "tar", "gz", "7z", "rar"}),
-    DB("application/data", new String[]{});
+    DB("application/data", new String[]{}),
+    CONTEXT("application/data",new String[]{});
+
 
     private final String mimeType;
     private final String[] extensions;

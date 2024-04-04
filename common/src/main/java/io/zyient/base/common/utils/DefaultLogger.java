@@ -28,6 +28,10 @@ public class DefaultLogger {
         LOGGER = logger;
     }
 
+    public static Logger getDefaultLogger() {
+        return LOGGER;
+    }
+
     public static boolean isDebugEnabled() {
         return LOGGER.isDebugEnabled();
     }

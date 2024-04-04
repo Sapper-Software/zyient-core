@@ -33,5 +33,11 @@ services:
   zoonavigator:
     container_name: zoonavigator
     image: elkozmon/zoonavigator
+    restart: unless-stopped
     ports:
       - 9900:9000
+    environment:
+      ########## Server ##########
+
+      # Tells the HTTP server which port to bind to. To disable HTTP set this variable to disabled.
+      HTTP_PORT: 9000
