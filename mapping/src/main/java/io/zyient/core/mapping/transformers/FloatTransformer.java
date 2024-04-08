@@ -42,4 +42,9 @@ public class FloatTransformer extends NumericTransformer<Float> {
         }
         throw new DataException(String.format("Cannot transform to Float. [source=%s]", source.getClass()));
     }
+
+    @Override
+    public Class<Float> getPrimitiveType() {
+        return float.class;
+    }
 }

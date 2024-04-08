@@ -18,6 +18,7 @@ package io.zyient.core.mapping.transformers;
 
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.CommonUtils;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.mapper.MappingSettings;
@@ -33,6 +34,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -135,12 +137,17 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                     }
                 }
                 value = removeSpaces(value);
-                if(NumberUtils.isParsable(value) || CommonUtils.isScientificNotation(value)){
+                if (NumberUtils.isParsable(value) || CommonUtils.isScientificNotation(value)) {
                     double d = Double.parseDouble(value);
                     return new CurrencyValue(currency, d);
                 }
-
-                NumberFormat numberFormat = NumberFormat.getCurrencyInstance(locale);
+                try {
+                    return parseCurrency(value);
+                } catch (ParseException e) {
+                    DefaultLogger.warn("Error parsing currency value", e);
+                    DefaultLogger.info("Trying to parse currency as number");
+                }
+                NumberFormat numberFormat = NumberFormat.getInstance(locale);
                 Number number = numberFormat.parse(value);
                 return new CurrencyValue(currency, number.doubleValue());
             } catch (Exception ex) {
@@ -150,11 +157,18 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
         throw new DataException(String.format("Cannot transform to Currency. [source=%s]", source.getClass()));
     }
 
+    private CurrencyValue parseCurrency(String value) throws ParseException {
+        NumberFormat numberFormat = NumberFormat.getCurrencyInstance(locale);
+        Number number = numberFormat.parse(value);
+        return new CurrencyValue(currency, number.doubleValue());
+    }
+
     @Override
     public String serialize(@NonNull CurrencyValue value) throws DataException {
         return String.format("%s %f", currency.getCurrencyCode(), value.getValue());
     }
-    private String removeSpaces(String value){
+
+    private String removeSpaces(String value) {
         return value.replaceAll("\\s+", "");
     }
 }

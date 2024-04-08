@@ -135,7 +135,6 @@ public abstract class Mapping<T> {
             if (!deSerializers.isEmpty()) {
                 SimpleModule module = new SimpleModule();
                 for (String name : deSerializers.keySet()) {
-                    DeSerializer<?> deSerializer = deSerializers.get(name);
                     addDeSerializer(module, name);
                 }
                 mapper.registerModule(module);
@@ -188,6 +187,9 @@ public abstract class Mapping<T> {
     private <S> void addDeSerializer(SimpleModule module, String name) {
         DeSerializer<S> deSerializer = (DeSerializer<S>) deSerializers.get(name);
         module.addDeserializer(deSerializer.type(), deSerializer);
+        if (ReflectionHelper.implementsInterface(PrimitiveTransformer.class, deSerializer.getClass())) {
+            module.addDeserializer(((PrimitiveTransformer<S>) deSerializer).getPrimitiveType(), deSerializer);
+        }
     }
 
     private void checkAndLoadRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
