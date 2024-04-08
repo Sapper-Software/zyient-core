@@ -24,8 +24,11 @@ import io.zyient.base.common.GlobalConstants;
 import io.zyient.base.common.config.ConfigPath;
 import io.zyient.base.common.config.ConfigReader;
 import io.zyient.base.common.model.Context;
+import io.zyient.base.common.model.ValidationException;
+import io.zyient.base.common.model.ValidationExceptions;
 import io.zyient.base.common.model.entity.EDataTypes;
 import io.zyient.base.common.model.entity.PropertyBag;
+import io.zyient.base.common.utils.CollectionUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
@@ -50,10 +53,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Accessors(fluent = true)
@@ -78,6 +78,7 @@ public abstract class Mapping<T> {
     private StringTransformer stringTransformer;
     private EvaluationTree<Map<String, Object>, ConditionalMappedElement> evaluationTree;
     protected BaseEnv<?> env;
+    private MapperFactory factory;
 
     protected Mapping(@NonNull Class<? extends T> entityType, @NonNull Class<? extends MappedResponse<T>> responseType) {
         this.entityType = entityType;
@@ -115,9 +116,12 @@ public abstract class Mapping<T> {
         return settings.getName();
     }
 
-    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig, @NonNull BaseEnv<?> env) throws ConfigurationException {
+    public Mapping<T> configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                @NonNull BaseEnv<?> env,
+                                @NonNull MapperFactory factory) throws ConfigurationException {
         Preconditions.checkNotNull(entityType);
         this.env = env;
+        this.factory = factory;
         try {
             HierarchicalConfiguration<ImmutableNode> config = xmlConfig;
             if (config.getRootElementName().compareTo(__CONFIG_PATH) != 0) {
@@ -178,7 +182,9 @@ public abstract class Mapping<T> {
         deSerializers.put(deSerializer.name(), deSerializer);
         deSerializer = new DoubleTransformer().locale(settings.getLocale()).configure(settings);
         deSerializers.put(deSerializer.name(), deSerializer);
-        deSerializer = new DateTransformer().locale(settings.getLocale()).format(settings.getDateFormat()).configure(settings);
+        deSerializer = new DateTransformer().locale(settings.getLocale())
+                .format(settings.getDateFormat())
+                .configure(settings);
         deSerializers.put(deSerializer.name(), deSerializer);
     }
 
@@ -234,13 +240,28 @@ public abstract class Mapping<T> {
                 Mapped m = Mapped.read(node, type, env);
                 sourceIndex.put(m.getSequence(), m);
                 if (m instanceof MappedElement me) {
-                    if (me.getMappingType() == MappingType.Field || me.getMappingType() == MappingType.ConstField) {
+                    if (me instanceof NestedMappedElement) {
+                        readNestedMapping((NestedMappedElement) m);
+                    } else if (me.getMappingType() == MappingType.Field ||
+                            me.getMappingType() == MappingType.ConstField) {
                         mapTransformer.add(me);
                     }
                 }
             }
         }
         return mapTransformer;
+    }
+
+    private void readNestedMapping(NestedMappedElement me) throws Exception {
+        Mapping<?> mapping = factory.getMapping(me.getMapping());
+        if (mapping == null) {
+            factory.readMappingConfig(me.getMappingDef());
+        }
+        mapping = factory.getMapping(me.getMapping());
+        if (mapping == null) {
+            throw new Exception(String.format("Mapping [%s] not found. [config=%s]",
+                    me.getMapping(), me.getMappingDef()));
+        }
     }
 
     public MappedResponse<T> read(@NonNull SourceMap source, Context context) throws Exception {
@@ -263,10 +284,12 @@ public abstract class Mapping<T> {
         response.setEntity(entity);
 
         for (Integer index : sourceIndex.keySet()) {
-
             Mapped m = sourceIndex.get(index);
-            if (m instanceof MappedElement me) {
-                if (me.getMappingType() == MappingType.Field || me.getMappingType() == MappingType.ConstField) continue;
+            if (m instanceof NestedMappedElement me) {
+                executeNestedMapping(me, response, source, context);
+            } else if (m instanceof MappedElement me) {
+                if (me.getMappingType() == MappingType.Field ||
+                        me.getMappingType() == MappingType.ConstField) continue;
                 executeMapping(me, response, source, context);
             }
         }
@@ -287,6 +310,95 @@ public abstract class Mapping<T> {
         }
         response.setStatus(status);
         return response;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void executeNestedMapping(NestedMappedElement me,
+                                      MappedResponse<T> response,
+                                      SourceMap source,
+                                      Context context) throws Exception {
+        Class<?> ct = me.parseCollectionType();
+        PropertyDef pd = MappingReflectionHelper.findField(me.getTargetPath(), ct);
+        if (pd == null) {
+            throw new Exception(String.format("Target field not found. [field=%s][type=%s]",
+                    me.getTargetPath(), ct.getCanonicalName()));
+        }
+        String[] parts = me.getSourcePath().split("\\.");
+        Object value = findSourceValue(source, parts, 0);
+        if (value != null) {
+            if (value instanceof Map<?, ?> map) {
+                executeMapping(me,
+                        (Map<String, Object>) map,
+                        response.getEntity(),
+                        pd,
+                        context);
+            } else if (value instanceof Collection<?> array) {
+                for (Object item : array) {
+                    if (item instanceof Map<?, ?> map) {
+                        executeMapping(me,
+                                (Map<String, Object>) map,
+                                response.getEntity(),
+                                pd,
+                                context);
+                    } else {
+                        throw new Exception(String.format("Invalid item type. [type=%s]",
+                                item.getClass().getCanonicalName()));
+                    }
+                }
+            } else {
+                throw new Exception(String.format("Invalid item type. [type=%s]",
+                        value.getClass().getCanonicalName()));
+            }
+        }
+    }
+
+    private void executeMapping(NestedMappedElement me,
+                                Map<String, Object> value,
+                                T entity,
+                                PropertyDef def,
+                                Context context) throws Exception {
+        Mapping<?> mapping = factory.getMapping(me.getMapping());
+        if (mapping == null) {
+            throw new Exception(String.format("Mapping not found. [mapping=%s]", me.getMapping()));
+        }
+        SourceMap map = new SourceMap(value);
+        MappedResponse<?> r = mapping.read(map, context);
+        if (r.getStatus().getStatus() != StatusCode.IgnoreRecord) {
+            ValidationExceptions errors = r.getStatus().getErrors();
+            if (errors != null) {
+                if (me.isTerminateOnValidationErrors()) {
+                    throw errors;
+                }
+            }
+        }
+        if (r.getStatus().getStatus() == StatusCode.Success) {
+            Object target = MappingReflectionHelper.getProperty(me.getTargetPath(),
+                    def,
+                    entity);
+            if (target == null) {
+                target = me.createCollectionType();
+                MappingReflectionHelper.setProperty(me.getTargetPath(),
+                        def,
+                        entity,
+                        target);
+            }
+            if (target instanceof Set<?>) {
+                CollectionUtils.addToSet(target, r.getEntity());
+            } else {
+                CollectionUtils.addToList(target, r.getEntity());
+            }
+        } else if (r.getStatus().getStatus() == StatusCode.IgnoreRecord) {
+            if (DefaultLogger.isTraceEnabled()) {
+                DefaultLogger.trace("IGNORED RECORD", map);
+            }
+        } else if (r.getStatus().getStatus() == StatusCode.Failed) {
+            if (!me.isTerminateOnValidationErrors()) {
+                if (DefaultLogger.isTraceEnabled()) {
+                    DefaultLogger.trace("IGNORED RECORD", map);
+                }
+                throw new Exception(String.format("Mapping failed. [mapping=%s]", me.getMapping()));
+            }
+        }
     }
 
     private void executeMapping(MappedElement me,
@@ -425,7 +537,7 @@ public abstract class Mapping<T> {
             }
             if (element instanceof EnumMappedElement) {
                 deSerializer = new EnumTransformer(type).enumValues(((EnumMappedElement) element)
-                        .getEnumMappings())
+                                .getEnumMappings())
                         .configure(settings);
             } else {
                 deSerializer = new EnumTransformer(type).configure(settings);

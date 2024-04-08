@@ -17,8 +17,13 @@
 package io.zyient.core.mapping.model.mapping;
 
 import io.zyient.base.common.config.Config;
+import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 @Getter
 @Setter
@@ -31,4 +36,34 @@ public class NestedMappedElement extends MappedElement {
     private String mappingDef;
     @Config(name = "terminateOnValidationErrors", required = false, type = Boolean.class)
     private boolean terminateOnValidationErrors = false;
+
+    public Class<?> parseCollectionType() throws Exception {
+        switch (collectionType) {
+            case Set -> {
+                return Set.class;
+            }
+            case List -> {
+                return List.class;
+            }
+            case Linked -> {
+                return LinkedList.class;
+            }
+        }
+        throw new Exception(String.format("Collection type [%s] not supported", collectionType.name()));
+    }
+
+    public Object createCollectionType() throws Exception {
+        switch (collectionType) {
+            case Set -> {
+                return CollectionUtils.createSet(getTargetType());
+            }
+            case List -> {
+                return CollectionUtils.createList(getTargetType());
+            }
+            case Linked -> {
+                return CollectionUtils.createLinkedList(getTargetType());
+            }
+        }
+        throw new Exception(String.format("Collection type [%s] not supported", collectionType.name()));
+    }
 }
