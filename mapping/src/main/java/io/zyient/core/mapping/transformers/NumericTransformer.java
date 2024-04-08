@@ -36,12 +36,13 @@ import java.util.Locale;
 @Getter
 @Setter
 @Accessors(fluent = true)
-public abstract class NumericTransformer<T> extends DeSerializer<T> {
+public abstract class NumericTransformer<T> extends DeSerializer<T> implements PrimitiveTransformer<T> {
     public static final String LOCALE_OVERRIDE = "formatter.numeric.locale";
 
     private final Class<T> type;
     private Locale locale;
     protected NumberFormat format;
+
 
     protected NumericTransformer(@NonNull Class<T> type) {
         super(type);
@@ -102,4 +103,5 @@ public abstract class NumericTransformer<T> extends DeSerializer<T> {
     public String serialize(@NonNull T value) throws DataException {
         return String.valueOf(value);
     }
+
 }

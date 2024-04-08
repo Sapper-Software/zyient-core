@@ -42,4 +42,9 @@ public class DoubleTransformer extends NumericTransformer<Double> {
         }
         throw new DataException(String.format("Cannot transform to Double. [source=%s]", source.getClass()));
     }
+
+    @Override
+    public Class<Double> getPrimitiveType() {
+        return double.class;
+    }
 }
