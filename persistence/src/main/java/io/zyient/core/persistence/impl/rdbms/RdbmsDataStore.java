@@ -187,7 +187,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         try {
             if (type == EGeneratedType.DB_SEQUENCE) {
                 RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-                Session session = sessionManager.session();
+                Session session = sessionManager.session(false);
                 String sequenceQuery = String.format("SELECT nextval('%s')", name);
                 NativeQuery<Long> seq = session.createNativeQuery(sequenceQuery, Long.class);
                 return seq.getSingleResult();

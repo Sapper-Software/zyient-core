@@ -131,7 +131,7 @@ public class MapperFactory {
         Mapping<?> mapping = createInstance(mConfig)
                 .withRulesCache(cache)
                 .withContentDir(contentDir)
-                .configure(mConfig, env, this);
+                .configure(mConfig, env);
         mappings.put(mapping.name(), mapping);
     }
 
