@@ -93,6 +93,9 @@ public abstract class NumericTransformer<T> extends DeSerializer<T> implements P
 
     protected Number parse(@NonNull String value) throws DataException {
         try {
+            if (value.startsWith("+")) {
+                value = value.substring(1);
+            }
             return format.parse(value);
         } catch (Exception ex) {
             throw new DataException(ex);
