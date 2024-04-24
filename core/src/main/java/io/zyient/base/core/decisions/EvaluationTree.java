@@ -59,7 +59,7 @@ public class EvaluationTree<T, R> {
                     }
                 }
             } else {
-                result = this.result;
+                result = null;
             }
             return result;
         }
