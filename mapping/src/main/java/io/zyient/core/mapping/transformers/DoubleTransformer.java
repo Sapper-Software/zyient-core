@@ -30,6 +30,13 @@ public class DoubleTransformer extends NumericTransformer<Double> {
     @Override
     public Double transform(@NonNull Object source) throws DataException {
         if (ReflectionHelper.isNumericType(source.getClass())) {
+            if (ReflectionHelper.isInt(source.getClass())) {
+                return ((Integer) source).doubleValue();
+            } else if (ReflectionHelper.isLong(source.getClass())) {
+                return ((Long) source).doubleValue();
+            } else if (ReflectionHelper.isFloat(source.getClass())) {
+                return ((Float) source).doubleValue();
+            }
             return (double) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {

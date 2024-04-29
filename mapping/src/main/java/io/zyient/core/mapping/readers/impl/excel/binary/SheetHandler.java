@@ -41,10 +41,20 @@ public class SheetHandler implements XSSFSheetXMLHandler.SheetContentsHandler {
         this.rowNumber = rowNum;
         if (rowNum == 0) {
             if (!settings.isSkipHeader()) {
+                this.validate();
                 this.sheetData.add(this.rowMap);
             }
         } else {
+            this.validate();
             this.sheetData.add(this.rowMap);
+        }
+    }
+
+    private void validate() {
+        if (this.rowMap.size() < this.headers.size()) {
+            this.headers.forEach(header -> {
+                this.rowMap.putIfAbsent(header, "");
+            });
         }
     }
 
@@ -66,7 +76,7 @@ public class SheetHandler implements XSSFSheetXMLHandler.SheetContentsHandler {
         if (settings.getHeaders() != null) {
             if (rowNumber == 0) {
                 headers.add(formattedValue);
-            }else{
+            } else {
                 rowMap.put(headers.get(columnNumber - 1), formattedValue);
             }
         } else {
