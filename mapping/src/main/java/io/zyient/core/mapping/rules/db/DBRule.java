@@ -178,8 +178,10 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             }
             return process(data, entities);
         } catch (RuleValidationError | RuleEvaluationError e) {
+            DefaultLogger.error("DBRule doEvaluate", e);
             throw e;
         } catch (RuntimeException re) {
+            DefaultLogger.error("DBRule doEvaluate RuntimeException", re);
             throw new RuleEvaluationError(name(),
                     entityType(),
                     expression(),
@@ -187,6 +189,7 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
                     Errors.getDefault().get(__ERROR_TYPE_RULES, errorCode()).getMessage(),
                     re);
         } catch (Throwable t) {
+            DefaultLogger.error("DBRule doEvaluate Throwable", t);
             throw new RuleEvaluationError(name(),
                     entityType(),
                     expression(),
