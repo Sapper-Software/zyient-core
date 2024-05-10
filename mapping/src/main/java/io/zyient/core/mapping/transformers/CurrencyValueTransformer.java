@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
 public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
     public static final String LOCALE_OVERRIDE = "formatter.currency.locale";
     public static final String CURRENCY_OVERRIDE = "formatter.currency.code";
-    public static final String CURRENCY_PARSE_REGEX = "\\\\%s\\s*(.*)";
+    public static final String CURRENCY_PARSE_REGEX = "\\\\%s\\\\s*(.*)";
     private static Pattern CURRENCY_PARSE_CODE;
     private static Pattern CURRENCY_PARSE_SYMBOL;
 
@@ -187,12 +187,13 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                 new NegativeFormat("-%s", ""), new NegativeFormat("%s(", ")"),
                 new NegativeFormat("(%s", ")")};
 
-        DecimalFormat decimalFormat = (DecimalFormat) DecimalFormat.getInstance(locale);
+
+        DecimalFormat decimalFormat = (DecimalFormat) DecimalFormat.getCurrencyInstance(locale);
         for (NegativeFormat negativeFormat : negativeFormats) {
             String[] symbols = new String[]{currency.getSymbol(), currency.getCurrencyCode()};
             for (String symbol : symbols) {
                 decimalFormat.setNegativePrefix(String.format(negativeFormat.prefix, symbol));
-                decimalFormat.setPositiveSuffix(negativeFormat.suffix);
+                decimalFormat.setNegativeSuffix(negativeFormat.suffix);
                 try {
                     return new CurrencyValue(currency, parseCurrencyDouble(value, decimalFormat));
                 } catch (ParseException e) {
