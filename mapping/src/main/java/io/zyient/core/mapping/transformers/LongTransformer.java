@@ -33,7 +33,7 @@ public class LongTransformer extends NumericTransformer<Long> {
             return (long) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0L : null;
             }
             Number number = parse(value);
             if (number != null) {

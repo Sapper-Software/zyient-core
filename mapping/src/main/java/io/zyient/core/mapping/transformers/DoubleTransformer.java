@@ -39,8 +39,9 @@ public class DoubleTransformer extends NumericTransformer<Double> {
             }
             return (double) source;
         } else if (source instanceof String value) {
+
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0.0 : null;
             }
             Number number = parse(value);
             if (number != null) {

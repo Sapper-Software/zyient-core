@@ -33,7 +33,7 @@ public class FloatTransformer extends NumericTransformer<Float> {
             return (float) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0.0f : null;
             }
             Number number = parse(value);
             if (number != null) {

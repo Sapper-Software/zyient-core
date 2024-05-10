@@ -39,7 +39,7 @@ public class IntegerTransformer extends NumericTransformer<Integer> {
             return (int) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0 : null;
             }
             Number number = parse(value);
             if (number != null) {
