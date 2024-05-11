@@ -48,4 +48,9 @@ public class LongTransformer extends NumericTransformer<Long> {
     public Class<Long> getPrimitiveType() {
         return long.class;
     }
+
+    @Override
+    public Long getDefaultPrimitiveValue() {
+        return 0L;
+    }
 }

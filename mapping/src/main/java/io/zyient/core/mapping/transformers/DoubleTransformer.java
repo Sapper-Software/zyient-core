@@ -55,4 +55,9 @@ public class DoubleTransformer extends NumericTransformer<Double> {
     public Class<Double> getPrimitiveType() {
         return double.class;
     }
+
+    @Override
+    public Double getDefaultPrimitiveValue() {
+        return 0.0d;
+    }
 }

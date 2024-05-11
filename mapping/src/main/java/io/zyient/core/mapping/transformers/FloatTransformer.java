@@ -47,4 +47,9 @@ public class FloatTransformer extends NumericTransformer<Float> {
     public Class<Float> getPrimitiveType() {
         return float.class;
     }
+
+    @Override
+    public Float getDefaultPrimitiveValue() {
+        return 0.0f;
+    }
 }
