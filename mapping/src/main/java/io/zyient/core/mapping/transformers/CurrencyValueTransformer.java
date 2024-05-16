@@ -16,6 +16,10 @@
 
 package io.zyient.core.mapping.transformers;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonTokenId;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.CommonUtils;
 import io.zyient.base.common.utils.DefaultLogger;
@@ -33,9 +37,8 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.lang3.math.NumberUtils;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
@@ -187,7 +190,6 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                 new NegativeFormat("-%s", ""), new NegativeFormat("%s(", ")"),
                 new NegativeFormat("(%s", ")")};
 
-
         DecimalFormat decimalFormat = (DecimalFormat) DecimalFormat.getCurrencyInstance(locale);
         for (NegativeFormat negativeFormat : negativeFormats) {
             String[] symbols = new String[]{currency.getSymbol(), currency.getCurrencyCode()};
@@ -217,5 +219,15 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
 
     private String removeSpaces(String value) {
         return value.replaceAll("\\s+", "");
+    }
+
+    @Override
+    public CurrencyValue deserialize(JsonParser jp,
+                                     DeserializationContext ctxt) throws IOException {
+        if (jp.currentTokenId() == JsonTokenId.ID_START_OBJECT) {
+            JsonNode jsonNode = jp.getCodec().readTree(jp);
+            return CurrencyValue.getFromNode(jsonNode);
+        }
+        return super.deserialize(jp, ctxt);
     }
 }

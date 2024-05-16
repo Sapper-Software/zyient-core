@@ -48,6 +48,7 @@ public class MapperFactory {
     private final Map<Class<?>, RulesCache<?>> rulesCaches = new HashMap<>();
     private File contentDir;
     private BaseEnv<?> env;
+    private File mappingFile;
 
     public MapperFactory init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                               @NonNull BaseEnv<?> env) throws ConfigurationException {
@@ -65,12 +66,22 @@ public class MapperFactory {
                         contentDir.getAbsolutePath()));
             }
             readGlobalRules(xmlConfig);
-            readMappingConfigs(config);
+            if (mappingFile != null) {
+                readMappingConfigsFromFile(mappingFile);
+            } else {
+                readMappingConfigs(config);
+            }
+
             return this;
         } catch (Exception ex) {
             DefaultLogger.stacktrace(ex);
             throw new ConfigurationException(ex);
         }
+    }
+
+    public MapperFactory withMappingFile(File file) {
+        this.mappingFile = file;
+        return this;
     }
 
     private void readGlobalRules(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
@@ -104,6 +115,18 @@ public class MapperFactory {
         return new RulesCache<E>();
     }
 
+    public void readMappingConfigsFromFile(File cf) throws Exception {
+        XMLConfiguration xmlConfig = ConfigReader.readFromFile(cf.getAbsolutePath());
+        HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
+        Class<?> entityType = ConfigReader.readType(mConfig, "entity");
+        RulesCache<?> cache = rulesCaches.get(entityType);
+        Mapping<?> mapping = createInstance(mConfig)
+                .withRulesCache(cache)
+                .withContentDir(contentDir)
+                .configure(mConfig, env);
+        mappings.put(mapping.name(), mapping);
+    }
+
     private void readMappingConfigs(HierarchicalConfiguration<ImmutableNode> config) throws Exception {
         for (String name : settings.getMappingConfigs().keySet()) {
             String cfg = settings.getMappingConfigs().get(name);
@@ -115,15 +138,7 @@ public class MapperFactory {
                 throw new ConfigurationException(String.format("Mapping configuration file not found. [path=%s]",
                         cf.getAbsolutePath()));
             }
-            XMLConfiguration xmlConfig = ConfigReader.readFromFile(cf.getAbsolutePath());
-            HierarchicalConfiguration<ImmutableNode> mConfig = xmlConfig.configurationAt(Mapping.__CONFIG_PATH);
-            Class<?> entityType = ConfigReader.readType(mConfig, "entity");
-            RulesCache<?> cache = rulesCaches.get(entityType);
-            Mapping<?> mapping = createInstance(mConfig)
-                    .withRulesCache(cache)
-                    .withContentDir(contentDir)
-                    .configure(mConfig, env);
-            mappings.put(mapping.name(), mapping);
+            readMappingConfigsFromFile(cf);
         }
     }
 

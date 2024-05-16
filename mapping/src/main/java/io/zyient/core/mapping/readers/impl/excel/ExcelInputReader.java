@@ -19,11 +19,13 @@ package io.zyient.core.mapping.readers.impl.excel;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.core.mapping.model.ECellType;
 import io.zyient.core.mapping.model.ExcelColumn;
 import io.zyient.core.mapping.model.mapping.SourceMap;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.ReadCursor;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
+import io.zyient.core.mapping.transformers.DoubleTransformer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.*;
@@ -31,6 +33,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +136,7 @@ public class ExcelInputReader extends InputReader {
                         if (!StringUtils.isNotBlank(columnName)) {
                             columnName = String.format("%s%d", settings.getColumnPrefix(), ii);
                         }
+                        value = transformCell(column.getCellType(), value);
                         record.put(columnName, value);
                     }
                 }
@@ -163,6 +167,28 @@ public class ExcelInputReader extends InputReader {
             rowIndex++;
         }
         return data;
+    }
+
+    private Object transformCell(ECellType eCellType, Object value) {
+        Object target = value;
+        switch (eCellType) {
+            case Double:
+                if (value instanceof String) {
+                    target = Double.parseDouble((String) value);
+                }
+                break;
+            case Integer:
+                if (value instanceof String) {
+                    target = Integer.parseInt((String) value);
+                }
+                break;
+            case String:
+                if (value instanceof Double d) {
+                    return (new BigDecimal(Double.toString(d))).toPlainString();
+                }
+                return value.toString();
+        }
+        return target;
     }
 
     private Row.MissingCellPolicy getMissingCellPolicy(ExcelReaderSettings settings) {

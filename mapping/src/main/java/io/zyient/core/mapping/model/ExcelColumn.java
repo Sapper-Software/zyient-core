@@ -25,4 +25,6 @@ import lombok.Setter;
 public class ExcelColumn extends Column {
     @Config(name = "cellIndex", type = Integer.class)
     private int cellIndex;
+    @Config(name = "cellType", required = false)
+    private ECellType cellType = ECellType.None;
 }

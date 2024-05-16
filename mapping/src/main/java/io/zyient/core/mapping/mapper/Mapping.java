@@ -195,6 +195,7 @@ public abstract class Mapping<T> {
     @SuppressWarnings("unchecked")
     private void readMappings(HierarchicalConfiguration<ImmutableNode> xmlConfig) throws Exception {
         HierarchicalConfiguration<ImmutableNode> mNode = xmlConfig.configurationAt(__CONFIG_PATH_MAPPINGS);
+
         ConfigPath cp = Mapped.class.getAnnotation(ConfigPath.class);
         Preconditions.checkNotNull(cp);
         Preconditions.checkState(!Strings.isNullOrEmpty(cp.path()));
@@ -242,11 +243,11 @@ public abstract class Mapping<T> {
             }
         }
         Map<String, Object> converted = mapTransformer.transform(source, entityType, context);
+        converted = removeNested(converted);
         T entity = mapper.convertValue(converted, entityType);
         response.setEntity(entity);
 
         for (Integer index : sourceIndex.keySet()) {
-
             Mapped m = sourceIndex.get(index);
             if (m instanceof MappedElement me) {
                 if (me.getMappingType() == MappingType.Field || me.getMappingType() == MappingType.ConstField) continue;
@@ -272,15 +273,36 @@ public abstract class Mapping<T> {
         return response;
     }
 
+    private Map<String, Object> removeNested(Map<String, Object> map) {
+        Map<String, Object> newMap = new HashMap<>();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            if (entry.getValue() != null) {
+                if (entry.getValue() instanceof Map<?, ?>) {
+                    Map<String, Object> subMap = removeNested((Map<String, Object>) entry.getValue());
+                    newMap.put(entry.getKey(), subMap);
+                } else {
+                    newMap.put(entry.getKey(), entry.getValue());
+                }
+                newMap.put(entry.getKey(), entry.getValue());
+            }
+        }
+        return newMap;
+    }
+
+
     private void executeMapping(MappedElement me, MappedResponse<T> response, SourceMap source, Context context) throws Exception {
         Object value = null;
         String path = me.getSourcePath();
-        if (me instanceof WildcardMappedElement wme && ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
-            T data = response.getEntity();
-            int valCount = 1;
-            for (String key : source.keySet()) {
-                ((PropertyBag) data).setProperty(String.format("%s%d", wme.getPrefix(), valCount), source.get(key));
-                valCount++;
+        if (me instanceof WildcardMappedElement wme) {
+            if (wme.getMappingType() == MappingType.Property) {
+                if (ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
+                    T data = response.getEntity();
+                    int valCount = 1;
+                    for (String key : source.keySet()) {
+                        ((PropertyBag) data).setProperty(String.format("%s%d", wme.getPrefix(), valCount), source.get(key));
+                        valCount++;
+                    }
+                }
             }
         } else if (MappingReflectionHelper.isContextPrefixed(path)) {
             value = findContextValue(context, path);
