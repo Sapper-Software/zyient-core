@@ -254,10 +254,11 @@ public abstract class BaseSQSConsumer<M> extends MessageReceiver<String, M> {
                     }
                 }
             }
-            return null;
         } catch (Exception ex) {
-            throw new MessagingError(ex);
+            DefaultLogger.getStacktrace(ex);
+            //throw new MessagingError(ex);
         }
+        return null;
     }
 
     private SQSMessage<M> parse(Message message) throws Exception {
