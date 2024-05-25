@@ -145,49 +145,53 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
         Preconditions.checkArgument(!runOnce);
         MessagingProcessorSettings settings = (MessagingProcessorSettings) receiverConfig.settings();
         while (state.isAvailable()) {
-            boolean sleep = false;
-            if (!state.isPaused()) {
-                __lock().lock();
-                try {
-                    MessageProcessorState<E, O, MO> processorState
-                            = (MessageProcessorState<E, O, MO>) stateManager().processingState(name());
-                    MO pOffset = processorState.getMessageOffset();
-                    OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
-                    MO rOffset = offsetState.getOffset();
-                    if (pOffset != null && rOffset != null && pOffset.compareTo(rOffset) != 0) {
-                        receiver.seek(pOffset, null);
-                    }
-                    List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout().normalized());
-                    if (batch != null && !batch.isEmpty()) {
-                        metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_READ).increment(batch.size());
-                        try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_BATCH_TIME))) {
-                            LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
-                            offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
-                            batchStart(processorState);
-                            processorState = (MessageProcessorState<E, O, MO>) updateState();
-
-                            handleBatch(batch, processorState);
-                            processorState.setMessageOffset(offsetState.getOffset());
-
-                            batchEnd(processorState);
-                            updateState();
+            try {
+                boolean sleep = false;
+                if (!state.isPaused()) {
+                    __lock().lock();
+                    try {
+                        MessageProcessorState<E, O, MO> processorState
+                                = (MessageProcessorState<E, O, MO>) stateManager().processingState(name());
+                        MO pOffset = processorState.getMessageOffset();
+                        OffsetState<?, MO> offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
+                        MO rOffset = offsetState.getOffset();
+                        if (pOffset != null && rOffset != null && pOffset.compareTo(rOffset) != 0) {
+                            receiver.seek(pOffset, null);
                         }
-                    } else {
-                        sleep = true;
+                        List<MessageObject<K, M>> batch = receiver.nextBatch(settings.getReceiveBatchTimeout().normalized());
+                        if (batch != null && !batch.isEmpty()) {
+                            metrics.getCounter(EventProcessorMetrics.METRIC_EVENTS_READ).increment(batch.size());
+                            try (Timer t = new Timer(metrics.getTimer(EventProcessorMetrics.METRIC_BATCH_TIME))) {
+                                LOG.debug(String.format("Received messages. [count=%d]", batch.size()));
+                                offsetState = (OffsetState<?, MO>) receiver.currentOffset(null);
+                                batchStart(processorState);
+                                processorState = (MessageProcessorState<E, O, MO>) updateState();
+
+                                handleBatch(batch, processorState);
+                                processorState.setMessageOffset(offsetState.getOffset());
+
+                                batchEnd(processorState);
+                                updateState();
+                            }
+                        } else {
+                            sleep = true;
+                        }
+                    } finally {
+                        __lock().unlock();
                     }
-                } finally {
-                    __lock().unlock();
+                } else {
+                    sleep = true;
                 }
-            } else {
-                sleep = true;
-            }
-            if (sleep) {
-                try {
-                    RunUtils.sleep(settings.getReceiveBatchTimeout().normalized());
-                } catch (InterruptedException e) {
-                    LOG.info(String.format("[%s] Thread interrupted. [%s]",
-                            name(), e.getLocalizedMessage()));
+                if (sleep) {
+                    try {
+                        RunUtils.sleep(settings.getReceiveBatchTimeout().normalized());
+                    } catch (InterruptedException e) {
+                        LOG.info(String.format("[%s] Thread interrupted. [%s]",
+                                name(), e.getLocalizedMessage()));
+                    }
                 }
+            } catch (Exception e) {
+                DefaultLogger.getStacktrace(e);
             }
         }
     }
