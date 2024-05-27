@@ -78,8 +78,10 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
         try {
             return validateResponse(spELRule.getValue(ctx), data);
         } catch (RuleValidationError | RuleEvaluationError e) {
+            DefaultLogger.error("Abstract SpEl rule doEvaluate RuntimeException", e);
             throw e;
         } catch (Throwable t) {
+            DefaultLogger.error("Abstract SpEl rule doEvaluate RuntimeException", t);
             throw new RuleEvaluationError(name(),
                     entityType(),
                     expression(),

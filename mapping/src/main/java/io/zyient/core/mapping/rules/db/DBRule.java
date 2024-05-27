@@ -31,6 +31,7 @@ import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.*;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.Cursor;
+import io.zyient.core.persistence.TransactionDataStore;
 import io.zyient.core.persistence.env.DataStoreEnv;
 import io.zyient.core.persistence.impl.rdbms.RdbmsDataStore;
 import lombok.Getter;
@@ -249,6 +250,10 @@ public abstract class DBRule<T, K extends IKey, E extends IEntity<K>> extends Ex
             record.timestamp = System.currentTimeMillis();
             cache.put(key, record);
             return entities;
+        }finally {
+            if (dataStore != null) {
+                dataStore.endSession();;
+            }
         }
     }
 
