@@ -1,6 +1,7 @@
 package io.zyient.core.mapping.rules.collection;
 
 import com.google.common.base.Preconditions;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.model.RuleDef;
 import io.zyient.core.mapping.rules.*;
@@ -60,6 +61,7 @@ public class ListRule<T> extends AbstractSpELRule<T> {
         } catch (RuleValidationError | RuleEvaluationError e) {
             throw e;
         } catch (Throwable t) {
+            DefaultLogger.error("Listrule doEvaluate runtime exception", t);
             throw new RuleEvaluationError(name(),
                     entityType(),
                     expression(),

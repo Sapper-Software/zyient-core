@@ -80,6 +80,7 @@ public abstract class AbstractSpELRule<T> extends BaseRule<T> {
         } catch (RuleValidationError | RuleEvaluationError e) {
             throw e;
         } catch (Throwable t) {
+            DefaultLogger.error("Abstract SpEl rule doEvaluate RuntimeException", t);
             throw new RuleEvaluationError(name(),
                     entityType(),
                     expression(),
