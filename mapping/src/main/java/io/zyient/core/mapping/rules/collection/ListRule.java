@@ -59,7 +59,6 @@ public class ListRule<T> extends AbstractSpELRule<T> {
                 }
             }
         } catch (RuleValidationError | RuleEvaluationError e) {
-            DefaultLogger.error("Listrule doEvaluate RuleValidationError|RuleEvaluationError", e);
             throw e;
         } catch (Throwable t) {
             DefaultLogger.error("Listrule doEvaluate runtime exception", t);
