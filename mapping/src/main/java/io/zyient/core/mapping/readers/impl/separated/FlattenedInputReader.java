@@ -130,7 +130,9 @@ public class FlattenedInputReader extends SeparatedInputReader {
                                     .format("Invalid section header: Key and/or Value missing. [record=%s]",
                                             value));
                         }
-                        sectionHeader.put(key, v);
+                        if(sectionHeaderDef.containsKey(key)){
+                            sectionHeader.put(key, v);
+                        }
                         continue;
                     }
                     throw new IOException(String.format("Invalid parsing state: [state=%s][record=%s]",
