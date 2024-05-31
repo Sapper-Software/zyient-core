@@ -40,6 +40,8 @@ public class SeparatedReaderSettings extends ReaderSettings {
     private SeparatedReaderTypes type = SeparatedReaderTypes.DEFAULT;
     @Config(name = "header.present", required = false, type = Boolean.class)
     private Boolean hasHeader = null;
+    @Config(name = "header.allowMissing", required = false, type = Boolean.class)
+    private Boolean allowMissingHeader = null;
     private Map<Integer, Column> headers = null;
     @Config(name = "override.delimiter", required = false)
     private String delimiter = null;
@@ -103,6 +105,9 @@ public class SeparatedReaderSettings extends ReaderSettings {
         }
         if (checkNotNull(duplicateHeaders)) {
             builder.setDuplicateHeaderMode(duplicateHeaders);
+        }
+        if (checkNotNull(allowMissingHeader)) {
+            builder.setAllowMissingColumnNames(allowMissingHeader);
         }
         return builder.build();
     }
