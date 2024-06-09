@@ -43,6 +43,7 @@ public class DoubleTransformer extends NumericTransformer<Double> {
             if (Strings.isNullOrEmpty(value)) {
                 return source.getClass().isPrimitive() ? 0.0 : null;
             }
+            value = value.trim();
             Number number = parse(value);
             if (number != null) {
                 return number.doubleValue();
