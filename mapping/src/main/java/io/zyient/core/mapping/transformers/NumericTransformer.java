@@ -32,6 +32,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -102,6 +103,10 @@ public abstract class NumericTransformer<T> extends DeSerializer<T> implements P
         try {
             if (value.startsWith("+")) {
                 value = value.substring(1);
+            }
+            value = value.replaceAll("\\+", "");
+            if (StringUtils.isBlank(value)) {
+                return null;
             }
             return format.parse(value);
         } catch (Exception ex) {

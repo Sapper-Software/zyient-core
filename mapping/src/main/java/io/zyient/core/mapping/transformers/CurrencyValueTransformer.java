@@ -35,6 +35,7 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.IOException;
@@ -167,6 +168,9 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
 
     private CurrencyValue parseNumber(String value) throws DataException {
         value = removeSpaces(value);
+        if (StringUtils.isBlank(value)) {
+            return null;
+        }
         if (NumberUtils.isParsable(value) || CommonUtils.isScientificNotation(value)) {
             double d = Double.parseDouble(value);
             return new CurrencyValue(currency, d);

@@ -119,12 +119,12 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
                 entityType,
                 null)) {
             while (true) {
+                if (cache == null) {
+                    cache = new LinkedBlockingQueue<>();
+                }
                 List<E> data = cursor.nextPage();
                 if (data == null || data.isEmpty()) {
                     break;
-                }
-                if (cache == null) {
-                    cache = new LinkedBlockingQueue<>();
                 }
                 cache.addAll(data);
             }
