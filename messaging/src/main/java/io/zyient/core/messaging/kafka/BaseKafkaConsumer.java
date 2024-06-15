@@ -166,11 +166,6 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
                     consumer.name(), topic));
         }
-        if (partitions.size() > 1) {
-            throw new MessagingError(String.format("Multiple assigned partitions found. [name=%s][topic=%s]",
-                    consumer.name(), topic));
-        }
-
         for (TopicPartition partition : partitions) {
             state = stateManager.get(topic, partition.partition());
             if (state == null) {
