@@ -27,6 +27,7 @@ import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.mapper.MappingSettings;
 import io.zyient.core.mapping.model.CurrencyValue;
+import io.zyient.core.mapping.utils.NumberUtils;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
@@ -36,7 +37,6 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -64,13 +64,6 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
         super(CurrencyValue.class);
     }
 
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    static class NegativeFormat {
-        private String prefix;
-        private String suffix;
-    }
 
     @Override
     public DeSerializer<CurrencyValue> configure(@NonNull MappingSettings settings) throws ConfigurationException {
@@ -150,13 +143,14 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                     }
                 }
 
-                CurrencyValue currencyValue = parseCurrency(value);
+                CurrencyValue currencyValue = NumberUtils.parseCurrency(currency, value,
+                        locale);
                 if (currencyValue != null) {
                     return currencyValue;
                 }
-                currencyValue = parseNumber(value);
-                if (currencyValue != null) {
-                    return currencyValue;
+                Double d = NumberUtils.parseNumber(value, locale);
+                if (d != null) {
+                    return new CurrencyValue(currency, d);
                 }
 
             } catch (Exception ex) {
@@ -166,64 +160,12 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
         throw new DataException(String.format("Cannot transform to Currency. [source=%s]", source.getClass()));
     }
 
-    private CurrencyValue parseNumber(String value) throws DataException {
-        value = removeSpaces(value);
-        if (StringUtils.isBlank(value)) {
-            return null;
-        }
-        if (NumberUtils.isParsable(value) || CommonUtils.isScientificNotation(value)) {
-            double d = Double.parseDouble(value);
-            return new CurrencyValue(currency, d);
-        }
-        if (value.startsWith("(") || value.endsWith(")")) {
-            value = value.substring(1, value.length() - 1);
-            return parseNumber(value);
-        }
-        DecimalFormat decimalFormat = (DecimalFormat) DecimalFormat.getInstance(locale);
-        try {
-            Number number = decimalFormat.parse(value);
-            return new CurrencyValue(currency, number.doubleValue());
-        } catch (ParseException e) {
-            DefaultLogger.debug("unable to parse number: " + value, e);
-        }
-        return null;
-    }
-
-    private CurrencyValue parseCurrency(String value) throws ParseException {
-        NegativeFormat[] negativeFormats = new NegativeFormat[]{new NegativeFormat("%s-", ""),
-                new NegativeFormat("-%s", ""), new NegativeFormat("%s(", ")"),
-                new NegativeFormat("(%s", ")")};
-
-        DecimalFormat decimalFormat = (DecimalFormat) DecimalFormat.getCurrencyInstance(locale);
-        for (NegativeFormat negativeFormat : negativeFormats) {
-            String[] symbols = new String[]{currency.getSymbol(), currency.getCurrencyCode()};
-            for (String symbol : symbols) {
-                decimalFormat.setNegativePrefix(String.format(negativeFormat.prefix, symbol));
-                decimalFormat.setNegativeSuffix(negativeFormat.suffix);
-                try {
-                    return new CurrencyValue(currency, parseCurrencyDouble(value, decimalFormat));
-                } catch (ParseException e) {
-                    DefaultLogger.debug("Currency format parsing failed");
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private double parseCurrencyDouble(String value, DecimalFormat decimalFormat) throws ParseException {
-        Number number = decimalFormat.parse(value);
-        return number.doubleValue();
-    }
 
     @Override
     public String serialize(@NonNull CurrencyValue value) throws DataException {
         return String.format("%s %f", currency.getCurrencyCode(), value.getValue());
     }
 
-    private String removeSpaces(String value) {
-        return value.replaceAll("\\s+", "");
-    }
 
     @Override
     public CurrencyValue deserialize(JsonParser jp,
