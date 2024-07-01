@@ -52,11 +52,12 @@ public class NumberUtils {
 
         NegativeFormat[] negativeFormats = new NegativeFormat[]{new NegativeFormat("%s-", ""),
                 new NegativeFormat("-%s", ""), new NegativeFormat("%s(", ")"),
+                new NegativeFormat("%s", "-"),
                 new NegativeFormat("(%s", ")")};
 
         DecimalFormat decimalFormat = (DecimalFormat) DecimalFormat.getCurrencyInstance(locale);
         for (NegativeFormat negativeFormat : negativeFormats) {
-            String[] symbols = new String[]{currency.getSymbol(), currency.getCurrencyCode()};
+            String[] symbols = new String[]{currency.getSymbol(), currency.getCurrencyCode(), ""};
             for (String symbol : symbols) {
                 decimalFormat.setNegativePrefix(String.format(negativeFormat.prefix, symbol));
                 decimalFormat.setNegativeSuffix(negativeFormat.suffix);
