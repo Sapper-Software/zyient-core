@@ -125,7 +125,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
         Session session = sessionManager.session();
         E entity = session.find(type, key);
-        if (doRefresh(context)) {
+        if (doRefresh(context)&& entity!=null) {
             session.evict(entity);
         }
         entity = session.find(type, key);
