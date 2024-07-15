@@ -44,7 +44,7 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
     private Class<? extends E> entityType;
     private QueryBuilder builder;
     private Map<String, Object> predicates;
-    private Queue<E> cache;
+    protected Queue<E> cache;
 
     public DbInputReader<K, E> withPredicates(@NonNull Map<String, Object> predicates) {
         this.predicates = predicates;
@@ -112,6 +112,10 @@ public class DbInputReader<K extends IKey, E extends IEntity<K>> extends InputRe
             }
         }
         AbstractDataStore.Q queryDataStore = builder.build(settings.getQuery(), conditions);
+        if (settings.getNativeQuery()) {
+            queryDataStore.nativeQuery(settings.getNativeQuery());
+            queryDataStore.generatedQuery(settings.getQuery());
+        }
         try (Cursor<K, E> cursor = dataStore.search(queryDataStore,
                 0,
                 settings.getReadBatchSize(),
