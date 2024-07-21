@@ -139,7 +139,10 @@ public abstract class BaseRule<T> implements Rule<T> {
 
             }
             status.setStatus(StatusCode.Success);
-            if (visitor != null) {
+            if (visitor != null && response == null) {
+                visitor.onError(new Throwable("response is null"), data);
+            }
+            if (visitor != null && response != null) {
                 visitor.onSuccess(data, status);
             }
             if (evaluator != null) {
