@@ -297,6 +297,9 @@ public abstract class Mapping<T> {
             if (wme.getMappingType() == MappingType.Property) {
                 if (ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
                     T data = response.getEntity();
+                    if (!"*".equals(path)) {
+                        source = (SourceMap) source.get(path);
+                    }
                     int valCount = 1;
                     for (String key : source.keySet()) {
                         ((PropertyBag) data).setProperty(String.format("%s%d", wme.getPrefix(), valCount), source.get(key));
