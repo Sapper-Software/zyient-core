@@ -36,4 +36,12 @@ dependencies {
     implementation 'org.apache.tika:tika-langdetect:2.9.1'
     implementation 'org.apache.tika:tika-parsers-standard-package:2.9.1'
 
+
+    implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
+    implementation 'jakarta.activation:jakarta.activation-api:2.1.2'
+    implementation 'org.eclipse.angus:angus-mail:2.0.2'
+    implementation 'org.eclipse.angus:gimap:2.0.2'
+    implementation 'org.eclipse.angus:dsn:2.0.2'
+    implementation 'com.codekutter:ews-java-api:2.0-SNAPSHOT'
+
 }

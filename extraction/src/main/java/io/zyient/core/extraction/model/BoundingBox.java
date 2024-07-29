@@ -25,7 +25,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class BoundingBox {
+public class BoundingBox implements ElementOrArray<BoundingBox> {
     private int page;
     private Point start;
     private Point end;
@@ -62,5 +62,10 @@ public class BoundingBox {
             }
         }
         return this;
+    }
+
+    @Override
+    public boolean isArray() {
+        return false;
     }
 }

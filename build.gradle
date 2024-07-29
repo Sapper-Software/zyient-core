@@ -60,7 +60,7 @@ publishing {
                 }
             }
         }
-       
+
     }
     publications {
         gpr(MavenPublication) {
@@ -91,45 +91,45 @@ subprojects {
     repositories {
         mavenCentral()
         gradlePluginPortal()
-//         maven {
-//             url layout.buildDirectory.dir(repoDirSnapshot)
-//             mavenContent {
-//                 snapshotsOnly()
-//             }
-//         }
-//         maven {
-//             url 'https://oss.sonatype.org/content/repositories/snapshots'
-//             mavenContent {
-//                 snapshotsOnly()
-//             }
-//         }
+        maven {
+            url layout.buildDirectory.dir(repoDirSnapshot)
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots'
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
     }
 
     publishing {
-         publications {
-             "$project.name"(MavenPublication) {
-                 groupId = project.group
-                 artifactId = project.name
-                 version = project.version
-                 from components.java
-             }
-         }
-         repositories {
+        publications {
+            "$project.name"(MavenPublication) {
+                groupId = project.group
+                artifactId = project.name
+                version = project.version
+                from components.java
+            }
+        }
+        repositories {
 //             maven {
 //                 def releasesRepoUrl = layout.buildDirectory.dir(repoDirRelease)
 //                 def snapshotsRepoUrl = layout.buildDirectory.dir(repoDirSnapshot)
 //                 url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 //             }
-             if (System.getenv("GIT_TOKEN")) {
-                 maven {
-                     url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
-                     credentials {
-                         username = "zyient-core"
-                         password = System.getenv("GIT_TOKEN")
-                     }
-                 }
-             }
-         }
+            if (System.getenv("GIT_TOKEN")) {
+                maven {
+                    url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
+                    credentials {
+                        username = "zyient-core"
+                        password = System.getenv("GIT_TOKEN")
+                    }
+                }
+            }
+        }
 
         publications {
             gpr(MavenPublication) {

@@ -35,7 +35,7 @@ public abstract class Cell<T> {
     private String id;
     private String parentId;
     private int index;
-    private BoundingBox boundingBox;
+    private ElementOrArray<BoundingBox> boundingBox;
     private T data;
     private Map<String, Tag> tags;
     private float confidence;
