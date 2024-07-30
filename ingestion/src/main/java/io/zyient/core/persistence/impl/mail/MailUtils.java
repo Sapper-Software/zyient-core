@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,20 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.io.ByteStreams;
 import io.zyient.base.common.GlobalConstants;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.*;
 import io.zyient.base.core.utils.FileUtils;
+import io.zyient.core.content.ContentProvider;
 import io.zyient.core.filesystem.FileSystem;
 import io.zyient.core.filesystem.model.FileInode;
 import io.zyient.core.filesystem.model.PathInfo;
+import io.zyient.core.persistence.DataStoreException;
 import io.zyient.core.persistence.impl.mail.model.AbstractMailMessage;
 import io.zyient.core.persistence.impl.mail.model.EFileRecordType;
 import io.zyient.core.persistence.impl.mail.model.EmailMessageWrapper;
 import io.zyient.core.persistence.impl.mail.model.MessageWrapper;
+import io.zyient.core.persistence.model.Document;
+import io.zyient.core.persistence.model.DocumentState;
 import jakarta.mail.*;
 import jakarta.mail.internet.*;
 import lombok.Getter;
@@ -342,13 +347,13 @@ public class MailUtils {
         }
     }
 
-    public static void extractAttachments(@NonNull FileInode parent,
-                                          @NonNull EmailMessageWrapper message,
-                                          @NonNull String destdir,
-                                          @NonNull Session mailSession,
-                                          @NonNull String username,
-                                          @NonNull FileSystem fs,
-                                          boolean extractText)
+    public static <E extends DocumentState<?>, K extends IKey, T extends Document<E, K, T>> void extractAttachments(@NonNull  Document<E, K, T>  parent,
+                                                                                                                    @NonNull EmailMessageWrapper message,
+                                                                                                                    @NonNull String destdir,
+                                                                                                                    @NonNull Session mailSession,
+                                                                                                                    @NonNull String username,
+                                                                                                                    @NonNull ContentProvider contentProvider,
+                                                                                                                    boolean extractText)
             throws MailProcessingException {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(destdir));
         String DETACHED_SIGNATURE_MIME_TYPE = "application/pkcs7-signature";
