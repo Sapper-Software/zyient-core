@@ -364,4 +364,8 @@ public class ConnectionManager implements Closeable {
         }
         return null;
     }
+
+    public Map<String,Connection> getConnection(){
+        return this.connections;
+    }
 }
