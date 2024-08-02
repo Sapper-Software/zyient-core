@@ -18,13 +18,17 @@ package io.zyient.core.persistence.impl.mail;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.vdurmont.emoji.EmojiParser;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
+import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
-import io.zyient.base.common.utils.IOUtils;
+import io.zyient.base.common.utils.PathUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.core.model.StringKey;
+import io.zyient.core.persistence.Cursor;
 import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.QueryParser;
 import io.zyient.core.persistence.impl.mail.model.AbstractMailMessage;
 import io.zyient.core.persistence.impl.mail.model.EmailMessageWrapper;
 import io.zyient.core.persistence.impl.mail.model.MessageWrapper;
@@ -183,8 +187,8 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
             MailUtils.MimeContent content = MailUtils.extractInlineContent(data);
             if (content != null) {
                 String fname = MailUtils.getFileNameWithExtension(content.getMimeType(), "InlineAttachment_" + index);
-                String dir = IOUtils.getTempDirectory();
-                String path = String.format("%s/%s", dir, fname);
+                File dir = PathUtils.getTempDir();
+                String path = String.format("%s/%s", dir.getAbsolutePath(), fname);
                 File fi = new File(path);
                 if (fi.exists()) {
                     fi.delete();
@@ -750,6 +754,11 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
     }
 
     @Override
+    protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType, @NonNull Class<? extends K> keyTpe) throws Exception {
+        return null;
+    }
+
+    @Override
     public void configure() throws ConfigurationException {
         Preconditions.checkArgument(settings instanceof ExchangeDataSourceSettings);
         ExchangeDataSourceSettings settings = (ExchangeDataSourceSettings) settings();
@@ -832,11 +841,16 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
     }
 
     @Override
+    public <E extends IEntity<?>> E upsertEntity(@NonNull E entity, @NonNull Class<? extends E> type, Context context) throws DataStoreException {
+        return null;
+    }
+
+    @Override
     public <E extends IEntity<?>> boolean deleteEntity(@Nonnull Object key,
                                                        @Nonnull Class<? extends E> entityType,
                                                        Context context) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
-        EmailMessageWrapper email = (EmailMessageWrapper) findEntity(key, entityType, context);
+        EmailMessageWrapper email = (EmailMessageWrapper) findEntity(key, entityType, true, context);
         try {
             if (email != null) {
                 email.getMessage().delete(DeleteMode.MoveToDeletedItems);
@@ -851,6 +865,7 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
     @Override
     public <E extends IEntity<?>> E findEntity(@Nonnull Object key,
                                                @Nonnull Class<? extends E> entityType,
+                                               boolean readOnly,
                                                Context context) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
         Preconditions.checkArgument(key instanceof String || key instanceof StringKey);
@@ -893,6 +908,12 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
             throw new DataStoreException(ex);
         }
     }
+
+    @Override
+    public <K extends IKey, E extends IEntity<K>> Cursor<K, E> doSearch(@NonNull Q query, int currentPage, int maxResults, @NonNull Class<? extends K> keyType, @NonNull Class<? extends E> type, boolean readOnly, Context context) throws DataStoreException {
+        return null;
+    }
+
 
     @Override
     public <E extends IEntity<?>> BaseSearchResult<E> doSearch(@Nonnull String queryStr,

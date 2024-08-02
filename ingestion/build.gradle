@@ -27,7 +27,7 @@ dependencies {
 
     implementation 'org.apache.lucene:lucene-core:9.7.0'
     implementation 'org.apache.lucene:lucene-analysis-common:9.7.0'
-    implementation 'org.apache.solr:solr-solrj:9.4.0'
+    implementation 'org.apache.solr:solr-solrj:9.6.1'
 
     implementation 'dev.morphia.morphia:morphia-core:2.4.11'
     implementation 'com.github.vincentrussell:sql-to-mongo-db-query-converter:1.21'
@@ -36,7 +36,7 @@ dependencies {
 
     implementation 'org.apache.tika:tika-core:2.9.1'
     implementation 'org.apache.tika:tika-langdetect:2.9.1'
-    implementation 'org.apache.tika:tika-parsers-standard-package:2.9.1'
+    implementation 'org.apache.tika:tika-parsers-standard-package:2.9.2'
 
 
     implementation 'jakarta.mail:jakarta.mail-api:2.1.2'
@@ -46,5 +46,6 @@ dependencies {
     implementation 'org.eclipse.angus:dsn:2.0.2'
     implementation 'com.codekutter:ews-java-api:2.0-SNAPSHOT'
 
-    implementation 'cz.jirutka.rsql:rsql-parser:2.1.0'
+    implementation 'io.github.nstdio:rsql-parser:2.3.2'
+    implementation 'com.vdurmont:emoji-java:5.1.1'
 }
