@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,14 @@
 
 package io.zyient.core.persistence.impl.mail;
 
-import io.zyient.base.core.stores.AbstractDataStore;
-import io.zyient.base.core.stores.DataStoreException;
 import io.zyient.core.persistence.AbstractDataStore;
 import io.zyient.core.persistence.DataStoreException;
-import io.zyient.intake.model.AbstractMailMessage;
-import io.zyient.intake.model.EmailMessage;
+import io.zyient.core.persistence.impl.mail.model.AbstractMailMessage;
+import io.zyient.core.persistence.impl.mail.model.EmailMessage;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import microsoft.exchange.webservices.data.core.service.item.EmailMessage;
 
 import java.util.Collection;
 import java.util.List;

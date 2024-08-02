@@ -46,4 +46,5 @@ dependencies {
     implementation 'org.eclipse.angus:dsn:2.0.2'
     implementation 'com.codekutter:ews-java-api:2.0-SNAPSHOT'
 
+    implementation 'cz.jirutka.rsql:rsql-parser:2.1.0'
 }

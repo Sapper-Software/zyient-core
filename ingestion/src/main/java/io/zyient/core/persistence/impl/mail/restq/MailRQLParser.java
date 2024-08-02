@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import cz.jirutka.rsql.parser.RSQLParser;
 import cz.jirutka.rsql.parser.ast.Node;
-import io.zyient.base.core.sources.email.MailQueryParser;
-import io.zyient.intake.utils.MailUtils;
+import io.zyient.core.persistence.impl.mail.MailQueryParser;
+import io.zyient.core.persistence.impl.mail.MailUtils;
 import jakarta.mail.internet.ParseException;
 import jakarta.mail.search.SearchTerm;
 

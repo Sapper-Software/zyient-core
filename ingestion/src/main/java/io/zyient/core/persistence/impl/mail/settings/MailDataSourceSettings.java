@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,8 +18,7 @@ package io.zyient.core.persistence.impl.mail.settings;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.zyient.base.common.config.Config;
-import io.zyient.base.core.stores.AbstractDataStoreSettings;
-import io.zyient.intake.model.EIntakeChannel;
+import io.zyient.core.persistence.AbstractDataStoreSettings;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -30,8 +29,6 @@ import lombok.Setter;
 public class MailDataSourceSettings extends AbstractDataStoreSettings {
     @Config(name = "name")
     private String name;
-    @Config(name = "channel", type = EIntakeChannel.class)
-    private EIntakeChannel channel;
     @Config(name = "partition", type = Short.class)
     private short partition;
     @Config(name = "mailbox", required = false)

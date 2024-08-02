@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package io.zyient.core.persistence.impl.mail.restq;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import cz.jirutka.rsql.parser.ast.*;
-import io.zyient.base.core.sources.email.MailDataStore;
-import io.zyient.intake.utils.DateUtils;
-import io.zyient.intake.utils.MailUtils;
+import io.zyient.core.persistence.impl.mail.DateUtils;
+import io.zyient.core.persistence.impl.mail.MailDataStore;
+import io.zyient.core.persistence.impl.mail.MailUtils;
 import jakarta.mail.Flags;
 import jakarta.mail.Message;
 import jakarta.mail.internet.InternetAddress;

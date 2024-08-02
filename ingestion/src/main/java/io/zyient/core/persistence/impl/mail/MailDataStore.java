@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,19 +23,13 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.CollectionUtils;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.connections.mail.IMAPConnection;
-import io.zyient.base.core.connections.mail.SMTPConnection;
 import io.zyient.base.core.model.StringKey;
-import io.zyient.base.core.sources.email.restq.MailRQLParser;
-import io.zyient.base.core.sources.email.settings.MailDataSourceSettings;
-import io.zyient.base.core.stores.BaseSearchResult;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.EntitySearchResult;
-import io.zyient.core.persistence.impl.DataStoreAuditContext;
-import io.zyient.intake.model.AbstractMailMessage;
-import io.zyient.intake.model.EmailMessage;
-import io.zyient.intake.model.MessageWrapper;
-import io.zyient.intake.utils.MailUtils;
+import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.impl.mail.model.AbstractMailMessage;
+import io.zyient.core.persistence.impl.mail.model.EmailMessage;
+import io.zyient.core.persistence.impl.mail.model.MessageWrapper;
+import io.zyient.core.persistence.impl.mail.restq.MailRQLParser;
+import io.zyient.core.persistence.impl.mail.settings.MailDataSourceSettings;
 import jakarta.activation.DataHandler;
 import jakarta.activation.DataSource;
 import jakarta.activation.FileDataSource;
@@ -264,7 +258,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     public <E extends IEntity<?>> boolean deleteEntity(@NonNull Object key,
                                                        @NonNull Class<? extends E> entityClass,
                                                        Context context) throws DataStoreException {
-        MessageWrapper m = (MessageWrapper) findEntity(key, entityClass, context);
+        MessageWrapper m = (MessageWrapper) findEntity(key, entityClass, true, context);
         if (m != null) {
             try {
                 Message mail = m.getMessage();
@@ -283,6 +277,7 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
     @SuppressWarnings({"unchecked"})
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                @NonNull Class<? extends E> entityClass,
+                                               boolean readOnly,
                                                Context context) throws DataStoreException {
         Preconditions.checkArgument(key instanceof String || key instanceof StringKey);
         Preconditions.checkArgument(ReflectionHelper.isSuperType(MessageWrapper.class, entityClass));
@@ -376,19 +371,6 @@ public class MailDataStore extends AbstractMailDataStore<Store, Message, Folder>
         } catch (Exception ex) {
             throw new DataStoreException(ex);
         }
-    }
-
-    @Override
-    public DataStoreAuditContext context() {
-        MailStoreAuditContext ctx = new MailStoreAuditContext();
-        ctx.setType(getClass().getCanonicalName());
-        ctx.setName(name());
-        ctx.setConnectionType(connection().getClass().getCanonicalName());
-        ctx.setConnectionName(connection().name());
-        ctx.setMailbox(((IMAPConnection) connection()).getUsername());
-        ctx.setFolder(mailbox);
-
-        return ctx;
     }
 
     @Override

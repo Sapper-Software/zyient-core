@@ -1,5 +1,5 @@
 /*
- * Copyright(C) (2023) Sapper Inc. (open.source at zyient dot io)
+ * Copyright(C) (2024) Zyient Inc. (open.source at zyient dot io)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,24 +18,17 @@ package io.zyient.core.persistence.impl.mail;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.vdurmont.emoji.EmojiParser;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.IOUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
-import io.zyient.base.core.connections.mail.ExchangeConnection;
 import io.zyient.base.core.model.StringKey;
-import io.zyient.base.core.sources.email.settings.ExchangeDataSourceSettings;
-import io.zyient.base.core.stores.BaseSearchResult;
-import io.zyient.base.core.stores.DataStoreException;
-import io.zyient.base.core.stores.EntitySearchResult;
-import io.zyient.core.persistence.impl.DataStoreAuditContext;
-import io.zyient.intake.model.AbstractMailMessage;
-import io.zyient.intake.model.EmailMessageWrapper;
-import io.zyient.intake.model.MessageWrapper;
-import io.zyient.intake.utils.DateUtils;
-import io.zyient.intake.utils.MailUtils;
+import io.zyient.core.persistence.DataStoreException;
+import io.zyient.core.persistence.impl.mail.model.AbstractMailMessage;
+import io.zyient.core.persistence.impl.mail.model.EmailMessageWrapper;
+import io.zyient.core.persistence.impl.mail.model.MessageWrapper;
+import io.zyient.core.persistence.impl.mail.settings.ExchangeDataSourceSettings;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
 import jakarta.mail.internet.MimeMessage;
@@ -108,7 +101,7 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
 
     @Override
     public EmailMessage createMessage(@NonNull String mailId,
-                                      @NonNull io.zyient.intake.model.EmailMessage email,
+                                      @NonNull io.zyient.core.persistence.impl.mail.model.EmailMessage email,
                                       @NonNull String sender) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
         try {
@@ -209,7 +202,7 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
 
     @Override
     public AbstractMailMessage<EmailMessage> createWrappedMessage(@Nonnull String mailId,
-                                                                  @Nonnull io.zyient.intake.model.EmailMessage email,
+                                                                  @Nonnull io.zyient.core.persistence.impl.mail.model.EmailMessage email,
                                                                   @Nonnull String sender) throws DataStoreException {
         Preconditions.checkState(exchangeConnection != null);
         EmailMessage message = createMessage(mailId, email, sender);
@@ -1004,20 +997,6 @@ public class ExchangeDataStore extends AbstractMailDataStore<ExchangeService, Em
         ps.add(ItemSchema.Body);
 
         return ps;
-    }
-
-    @Override
-    public DataStoreAuditContext context() {
-        Preconditions.checkState(exchangeConnection != null);
-        MailStoreAuditContext ctx = new MailStoreAuditContext();
-        ctx.setType(getClass().getCanonicalName());
-        ctx.setName(name());
-        ctx.setConnectionType(connection().getClass().getCanonicalName());
-        ctx.setConnectionName(connection().name());
-        ctx.setMailbox(exchangeConnection.getUsername());
-        ctx.setFolder(mailbox);
-
-        return ctx;
     }
 
     public static String getMailBox(@Nonnull String query) throws ParseException {
