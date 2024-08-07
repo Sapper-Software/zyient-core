@@ -26,5 +26,5 @@ public class CollectionMappedElement extends MappedElement{
     @Config(name = "separator", required = false)
     private String separator = ",";
     @Config(name = "collectionType", required = false, type = CollectionType.class)
-    private CollectionType collectionType = CollectionType.Array;
+    private CollectionType collectionType = CollectionType.List;
 }

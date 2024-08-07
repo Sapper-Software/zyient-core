@@ -93,7 +93,6 @@ public abstract class CompositePipeline extends Pipeline {
 
 
     @Override
-    @SuppressWarnings("unchecked")
     public RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
         CompositePipelineSettings settings = (CompositePipelineSettings) settings();
         if (settings.isNested()) {

@@ -128,7 +128,6 @@ public abstract class MessageProcessor<K, M, E extends Enum<?>, O extends Offset
             DefaultLogger.stacktrace(t);
             try {
                 updateError(t);
-                BaseEnv.remove(env.name());
             } catch (Exception ex) {
                 DefaultLogger.error(LOG, "Message Processor terminated with error", t);
                 DefaultLogger.stacktrace(t);

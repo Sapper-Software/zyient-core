@@ -116,7 +116,7 @@ public abstract class AwsSQSConnection extends MessageConnection {
             ZkConfigReader reader = new ZkConfigReader(client, AwsSQSConnectionSettings.class);
             if (!reader.read(zkPath)) {
                 throw new ConnectionError(
-                        String.format("Chronicle Connection settings not found. [path=%s]", zkPath));
+                        String.format("SQS Connection settings not found. [path=%s]", zkPath));
             }
             settings = (AwsSQSConnectionSettings) reader.settings();
             settings.validate();
@@ -181,6 +181,7 @@ public abstract class AwsSQSConnection extends MessageConnection {
 
 
     }
+
     @Override
     public Throwable error() {
         return state.getError();

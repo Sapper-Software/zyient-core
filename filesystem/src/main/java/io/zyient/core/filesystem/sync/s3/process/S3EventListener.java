@@ -24,7 +24,11 @@ import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.executor.FatalError;
 import io.zyient.base.core.processing.ProcessingState;
 import io.zyient.base.core.processing.ProcessorState;
+import io.zyient.core.filesystem.sync.EEventProcessorState;
+import io.zyient.core.filesystem.sync.SyncEventStateManager;
 import io.zyient.core.filesystem.sync.s3.model.S3Event;
+import io.zyient.core.filesystem.sync.s3.model.S3EventOffset;
+import io.zyient.core.filesystem.sync.s3.model.S3EventProcessingState;
 import io.zyient.core.messaging.InvalidMessageError;
 import io.zyient.core.messaging.MessageObject;
 import io.zyient.core.messaging.MessageProcessingError;
@@ -46,11 +50,10 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorState, S3EventOffset, String> {
+public class S3EventListener extends BaseSQSMessageProcessor<EEventProcessorState, S3EventOffset, String> {
 
     private S3EventHandler handler = null;
     private S3EventListenerSettings settings;
-    private BaseEnv<?> env;
     private S3EventConsumer consumer;
 
     public S3EventListener() {
@@ -64,7 +67,6 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
 
     public S3EventListener init(@NonNull HierarchicalConfiguration<ImmutableNode> config,
                                 @NonNull BaseEnv<?> env) throws ConfigurationException {
-        this.env = env;
         try {
             super.init(env, config);
             settings = (S3EventListenerSettings) receiverConfig.settings();
@@ -85,26 +87,28 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
     }
 
     @Override
-    protected void initState(@NonNull ProcessingState<ES3EventProcessorState, S3EventOffset> processingState) throws Exception {
-        S3EventStateManager stateManager = (S3EventStateManager) stateManager();
+    protected void initState(@NonNull ProcessingState<EEventProcessorState, S3EventOffset> processingState) throws Exception {
+        Preconditions.checkArgument(processingState instanceof S3EventProcessingState);
+        SyncEventStateManager stateManager = (SyncEventStateManager) stateManager();
         if (processingState.getOffset() == null) {
             processingState.setOffset(new S3EventOffset());
         }
 
-        processingState.setState(ES3EventProcessorState.Running);
+        processingState.setState(EEventProcessorState.Running);
         processingState = stateManager.update(name(), processingState);
     }
 
     @Override
-    protected ProcessingState<ES3EventProcessorState, S3EventOffset> finished(@NonNull ProcessingState<ES3EventProcessorState, S3EventOffset> processingState) {
-        processingState.setState(ES3EventProcessorState.Stopped);
+    protected ProcessingState<EEventProcessorState, S3EventOffset> finished(@NonNull ProcessingState<EEventProcessorState, S3EventOffset> processingState) {
+        Preconditions.checkArgument(processingState instanceof S3EventProcessingState);
+        processingState.setState(EEventProcessorState.Stopped);
         return processingState;
     }
 
     @Override
     @SuppressWarnings("unchecked")
     protected void process(@NonNull MessageObject<String, String> message,
-                           @NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
+                           @NonNull MessageProcessorState<EEventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
         Preconditions.checkArgument(message instanceof SQSMessage<String>);
         try {
             String body = message.value();
@@ -141,18 +145,18 @@ public class S3EventListener extends BaseSQSMessageProcessor<ES3EventProcessorSt
     }
 
     @Override
-    protected void batchStart(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
+    protected void batchStart(@NonNull MessageProcessorState<EEventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
 
     }
 
     @Override
-    protected void batchEnd(@NonNull MessageProcessorState<ES3EventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
+    protected void batchEnd(@NonNull MessageProcessorState<EEventProcessorState, S3EventOffset, AwsSQSOffset> processorState) throws Exception {
 
     }
 
     @Override
     public void close() throws IOException {
-        processingState().setState(ES3EventProcessorState.Stopped);
+        processingState().setState(EEventProcessorState.Stopped);
         super.close();
     }
 }

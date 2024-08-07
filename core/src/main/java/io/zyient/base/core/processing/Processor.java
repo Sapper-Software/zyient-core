@@ -54,7 +54,6 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
     private ProcessorSettings settings;
     private ProcessingState<E, O> processingState;
 
-    @SuppressWarnings("unchecked")
     protected Processor(@NonNull Class<? extends ProcessingState<E, O>> stateType) {
         this.stateType = stateType;
         this.LOG = LoggerFactory.getLogger(getClass());
@@ -105,14 +104,9 @@ public abstract class Processor<E extends Enum<?>, O extends Offset> implements 
         Preconditions.checkState(state.isAvailable());
         Preconditions.checkNotNull(env);
         try {
-            __lock.lock();
-            try {
-                doRun(false);
-                processingState = stateManager.update(name, processingState);
-                processingState = finished(processingState);
-            } finally {
-                __lock.unlock();
-            }
+            doRun(false);
+            processingState = finished(processingState);
+            processingState = stateManager.update(name, processingState);
             close();
         } catch (Throwable t) {
             DefaultLogger.error(LOG, "Message Processor terminated with error", t);

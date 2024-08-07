@@ -36,19 +36,8 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class MapTransformer<T> {
-    @Getter
-    @Setter
-    @Accessors(fluent = true)
-    public static class MapNode {
-        private String name;
-        private Class<?> type;
-        private String targetPath;
-        private Map<String, MapNode> nodes;
-        private Transformer<?> transformer;
-        private boolean nullable;
-        private MappingType mappingType;
-    }
+public class MapTransformer<T> implements IMapTransformer<T> {
+
 
     private final Class<? extends T> type;
     private final MappingSettings settings;
@@ -61,7 +50,6 @@ public class MapTransformer<T> {
         this.type = type;
         this.settings = settings;
     }
-
 
     public MapTransformer<T> add(@NonNull MappedElement element) throws Exception {
 
@@ -79,7 +67,6 @@ public class MapTransformer<T> {
                 node.transformer = findTransformer(element, true);
             }
         }
-
         return this;
     }
 
@@ -113,6 +100,7 @@ public class MapTransformer<T> {
         return null;
     }
 
+    @Override
     public Object transform(@NonNull MappedElement element, @NonNull Object source) throws Exception {
         if (element instanceof CustomMappedElement) {
             Transformer<?> transformer = findTransformer(element, true);
@@ -132,6 +120,8 @@ public class MapTransformer<T> {
         return source;
     }
 
+
+    @Override
     public Map<String, Object> transform(@NonNull Map<String, Object> source,
                                          @NonNull Class<? extends T> entityType, @NonNull Context context) throws Exception {
 

@@ -17,28 +17,55 @@
 package io.zyient.core.extraction.model;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
-public class BoundingBox {
+public class BoundingBox implements ElementOrArray<BoundingBox> {
     private int page;
     private Point start;
     private Point end;
+    private List<Point> points;
 
-    public BoundingBox start(double x, double y) {
-        start = new Point();
-        start.setX(x);
-        start.setY(y);
+    public BoundingBox add(@NonNull Point point) {
+        return add(point.getX(), point.getY());
+    }
 
+    public BoundingBox add(double x, double y) {
+        Point point = new Point(x, y);
+        if (points == null) {
+            points = new ArrayList<>();
+        }
+        points.add(point);
+        if (start == null) {
+            start = point;
+        } else {
+            if (start.getX() > point.getX()) {
+                start.setX(point.getX());
+            }
+            if (start.getY() > point.getY()) {
+                start.setY(point.getY());
+            }
+            if (end == null) {
+                end = point;
+            } else {
+                if (end.getX() < point.getX()) {
+                    end.setX(point.getX());
+                }
+                if (end.getY() < point.getY()) {
+                    end.setY(point.getY());
+                }
+            }
+        }
         return this;
     }
 
-    public BoundingBox end(double x, double y) {
-        end = new Point();
-        end.setX(x);
-        end.setY(y);
-
-        return this;
+    @Override
+    public boolean isArray() {
+        return false;
     }
 }

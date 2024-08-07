@@ -76,7 +76,7 @@ public class DbWriter implements IAuditWriter<JsonAuditRecord> {
         record.validate();
         checkCommit();
         if (currentSession == null) {
-            currentSession = connection.getConnection();
+            currentSession = connection.getConnection(false);
             currentTx = currentSession.beginTransaction();
         }
         currentSession.persist(record);

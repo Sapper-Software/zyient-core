@@ -81,6 +81,7 @@
                     <endpoint>https://zyient-doc-extract.cognitiveservices.azure.com/</endpoint>
                     <key>AzureDocIKey</key>
                     <model>prebuilt-layout</model>
+                    <features>formulas,styleFont,styleFont</features>
                 </extractor>
             </extraction>
         </azure>

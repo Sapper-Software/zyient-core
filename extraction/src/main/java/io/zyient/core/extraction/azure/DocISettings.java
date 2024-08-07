@@ -18,8 +18,11 @@ package io.zyient.core.extraction.azure;
 
 import io.zyient.base.common.config.Config;
 import io.zyient.base.common.config.Settings;
+import io.zyient.base.common.config.lists.StringListParser;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -30,4 +33,6 @@ public class DocISettings extends Settings {
     private String key;
     @Config(name = "model", required = false)
     private String modelId = "prebuilt-layout";
+    @Config(name = "features", required = false, parser = StringListParser.class)
+    private List<String> features;
 }

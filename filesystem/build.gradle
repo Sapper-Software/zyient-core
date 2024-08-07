@@ -20,7 +20,7 @@ dependencies {
     implementation project(':messaging')
     implementation project(':core-sdk')
 
-    implementation 'org.xerial.snappy:snappy-java:1.1.9.1'
+    implementation 'org.xerial.snappy:snappy-java:1.1.10.5'
     implementation 'org.apache.pdfbox:pdfbox:3.0.0'
     implementation 'net.lingala.zip4j:zip4j:2.11.5'
 
@@ -32,6 +32,7 @@ dependencies {
 
     implementation 'com.azure:azure-identity:1.11.2'
     implementation 'com.azure:azure-storage-blob:12.21.1'
+    implementation 'com.azure:azure-storage-blob-changefeed:12.0.0-beta.19'
 
     implementation 'net.openhft:chronicle-bytes:2.24ea15'
 

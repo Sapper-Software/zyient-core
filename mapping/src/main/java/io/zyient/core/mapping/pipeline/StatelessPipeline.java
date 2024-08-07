@@ -8,6 +8,7 @@ import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.BaseEnv;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.utils.Timer;
+import io.zyient.core.mapping.mapper.JPathMapping;
 import io.zyient.core.mapping.mapper.MapperFactory;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.model.RecordResponse;
@@ -53,7 +54,9 @@ public class StatelessPipeline<E> extends ExecutablePipeline<E> implements Pipel
 
     @Override
     protected RecordResponse execute(@NonNull SourceMap data, Context context) throws Exception {
-
+        JPathMapping<?> jPathMapping = (JPathMapping<?>) mapping();
+        jPathMapping.withContext(context);
+        jPathMapping.initializeIfRequired();
         RecordResponse response = new RecordResponse();
         MappedResponse<E> r = mapping().read(data, context);
         response.setStatus(r.getStatus());

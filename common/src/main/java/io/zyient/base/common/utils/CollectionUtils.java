@@ -29,6 +29,23 @@ import java.util.*;
 
 public class CollectionUtils {
 
+    public static <T> Set<T> createSet(@NonNull Class<T> type) {
+        return new HashSet<>();
+    }
+
+    public static <T> List<T> createList(@NonNull Class<T> type) {
+        return new ArrayList<>();
+    }
+
+    public static <T> List<T> createLinkedList(@NonNull Class<T> type) {
+        return new LinkedList<>();
+    }
+
+    public static <K, T> Map<K, T> createMap(@NonNull Class<K> keyType,
+                                             @NonNull Class<T> valueType) {
+        return new HashMap<>();
+    }
+
     public static <T> void setAtIndex(@NonNull List<T> array,
                                       int index,
                                       @NonNull T value) {
@@ -41,6 +58,16 @@ public class CollectionUtils {
             }
             array.set(index, value);
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> int addToList(@NonNull Object array,
+                                    @NonNull T value) {
+        Preconditions.checkArgument(array instanceof List<?>);
+        List<T> list = (List<T>) array;
+        list.add(value);
+
+        return list.size();
     }
 
     /**
@@ -65,9 +92,9 @@ public class CollectionUtils {
      * @param values - List of string values to convert from.
      * @throws Exception
      */
-    public static final void setListValues(@NonNull Object source,
-                                           @NonNull Field field,
-                                           @NonNull List<String> values)
+    public static void setListValues(@NonNull Object source,
+                                     @NonNull Field field,
+                                     @NonNull List<String> values)
             throws Exception {
 
         Class<?> type = field.getType();
@@ -200,6 +227,15 @@ public class CollectionUtils {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> int addToSet(@NonNull Object array,
+                            @NonNull T value) {
+        Preconditions.checkArgument(array instanceof Set<?>);
+        Set<T> set = (Set<T>) array;
+        set.add(value);
+        return set.size();
+    }
+
     /**
      * Set the value of the specified field to a Set of elements converted from the
      * List of input strings.
@@ -222,9 +258,9 @@ public class CollectionUtils {
      * @param values - List of string values to convert from.
      * @throws Exception
      */
-    public static final void setSetValues(@NonNull Object source,
-                                          @NonNull Field field,
-                                          @NonNull List<String> values)
+    public static void setSetValues(@NonNull Object source,
+                                    @NonNull Field field,
+                                    @NonNull List<String> values)
             throws Exception {
         Preconditions.checkArgument(source != null);
         Preconditions.checkArgument(field != null);

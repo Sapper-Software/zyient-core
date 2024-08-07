@@ -93,7 +93,10 @@ public class S3EventConsumer {
                     .waitTimeSeconds(t)
                     .maxNumberOfMessages(batchSize())
                     .build();
-            List<Message> records = connection.client().receiveMessage(receiveRequest).messages();
+            List<Message> records = connection
+                    .client()
+                    .receiveMessage(receiveRequest)
+                    .messages();
             if (records != null && !records.isEmpty()) {
                 List<S3Event> events = new ArrayList<>(records.size());
                 synchronized (messages) {
