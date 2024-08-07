@@ -1,0 +1,9 @@
+1,,ALL,,$.documents[0].pages[0].blocks[0].subSections[0].fields[?(@.name.value == 'Invoice_Number')].value.value,$.header.invoiceNo,demo
+2,,ALL,,$.documents[0].pages[0].blocks[0].subSections[0].fields[?(@.name.value == 'PO_Number')].value.value,$.header.poNo,demo
+3,,ALL,,$.documents[0].pages[0].blocks[0].subSections[0].fields[?(@.name.value == 'Region')].value.value,$.header.region,demo
+4,,ALL,,$.documents[0].pages[0].blocks[1].subSections[0].rows,$.items,demo
+5,4,ALL,,$.columns[?(@.textTypeValue=='Order_Line')].value,$.orderLine,demo
+6,4,ALL,,$.columns[?(@.textTypeValue=='Quantity_Shipped')].value,$.quantityShipped,demo
+7,4,ALL,,$.columns[?(@.textTypeValue=='Quantity_Ordered')].value,$.quantityOrdered,demo
+8,4,ALL,,$.columns[?(@.textTypeValue=='Line_Total_Amount')].value,$.total,demo
+9,4,ALL,,$.columns[?(@.textTypeValue=='Unit_Price')].value,$.unitPrice,demo

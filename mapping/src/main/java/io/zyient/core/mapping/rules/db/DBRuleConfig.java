@@ -52,6 +52,8 @@ public class DBRuleConfig extends BaseRuleConfig {
     private int cacheSize = 128;
     @Config(name = "cache.timeout", required = false, parser = TimeValueParser.class)
     private TimeUnitValue cacheTimeout = new TimeUnitValue(60, TimeUnit.MINUTES);
+    @Config(name = "nativeQuery", required = false, type = Boolean.class)
+    private Boolean nativeQuery = false;
 
     @Override
     public <E> Rule<E> createInstance(@NonNull Class<? extends E> type) throws Exception {

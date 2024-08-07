@@ -19,6 +19,7 @@ package io.zyient.core.mapping.rules.db;
 import com.google.common.base.Preconditions;
 import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.beans.BeanUtils;
 import io.zyient.base.core.errors.Errors;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
@@ -54,6 +55,7 @@ public class DBReferenceRule<T, K extends IKey, E extends IEntity<K>> extends DB
             }
             return null;
         } catch (Throwable t) {
+            DefaultLogger.error("DBReferenceRule process Throwable", t);
             throw new RuleEvaluationError(name(),
                     entityType(),
                     expression(),

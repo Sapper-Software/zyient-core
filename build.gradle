@@ -24,7 +24,7 @@ repositories {
 }
 
 group 'io.zyient.framework'
-var versionName = '3.0.7-SNAPSHOT'
+var versionName = '3.0.85-SNAPSHOT'
 version = versionName
 configurations.all {
     exclude module: "logback-classic"
@@ -52,7 +52,15 @@ publishing {
                     password = System.getenv("GIT_TOKEN")
                 }
             }
+            maven {
+                url = uri("https://maven.pkg.github.com/Sapper-Software/unified-framework")
+                credentials {
+                    username = "unified-framework"
+                    password = System.getenv("GIT_TOKEN")
+                }
+            }
         }
+
     }
     publications {
         gpr(MavenPublication) {
@@ -83,45 +91,45 @@ subprojects {
     repositories {
         mavenCentral()
         gradlePluginPortal()
-//         maven {
-//             url layout.buildDirectory.dir(repoDirSnapshot)
-//             mavenContent {
-//                 snapshotsOnly()
-//             }
-//         }
-//         maven {
-//             url 'https://oss.sonatype.org/content/repositories/snapshots'
-//             mavenContent {
-//                 snapshotsOnly()
-//             }
-//         }
+        maven {
+            url layout.buildDirectory.dir(repoDirSnapshot)
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
+        maven {
+            url 'https://oss.sonatype.org/content/repositories/snapshots'
+            mavenContent {
+                snapshotsOnly()
+            }
+        }
     }
 
     publishing {
-         publications {
-             "$project.name"(MavenPublication) {
-                 groupId = project.group
-                 artifactId = project.name
-                 version = project.version
-                 from components.java
-             }
-         }
-         repositories {
+        publications {
+            "$project.name"(MavenPublication) {
+                groupId = project.group
+                artifactId = project.name
+                version = project.version
+                from components.java
+            }
+        }
+        repositories {
 //             maven {
 //                 def releasesRepoUrl = layout.buildDirectory.dir(repoDirRelease)
 //                 def snapshotsRepoUrl = layout.buildDirectory.dir(repoDirSnapshot)
 //                 url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
 //             }
-             if (System.getenv("GIT_TOKEN")) {
-                 maven {
-                     url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
-                     credentials {
-                         username = "zyient-core"
-                         password = System.getenv("GIT_TOKEN")
-                     }
-                 }
-             }
-         }
+            if (System.getenv("GIT_TOKEN")) {
+                maven {
+                    url = uri("https://maven.pkg.github.com/Sapper-Software/zyient-core")
+                    credentials {
+                        username = "zyient-core"
+                        password = System.getenv("GIT_TOKEN")
+                    }
+                }
+            }
+        }
 
         publications {
             gpr(MavenPublication) {
@@ -186,6 +194,7 @@ subprojects {
         implementation 'com.fasterxml.jackson.core:jackson-annotations:2.15.3'
         implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.15.3'
         implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.3'
+        implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.3'
 
         // https://mvnrepository.com/artifact/com.google.protobuf/protobuf-java
         implementation 'com.google.protobuf:protobuf-java:3.21.5'

@@ -47,12 +47,12 @@ public class AWSKeyStore extends KeyStore {
 
     private static class Key {
         private final String name;
-        private String value;
+        private Object value;
         private KeyState state;
 
-        public Key(String name, String value) {
+        public Key(String name, Object value) {
             this.name = name;
-            setValue(value);
+            setValue(String.valueOf(value));
         }
 
         public void setValue(String value) {
@@ -60,10 +60,11 @@ public class AWSKeyStore extends KeyStore {
         }
 
         public String getValue() {
-            byte[] v = Base64.getDecoder().decode(value);
+            byte[] v = Base64.getDecoder().decode(String.valueOf(value));
             return new String(v, StandardCharsets.UTF_8);
         }
     }
+
 
 
     private String passwdHash;
@@ -121,7 +122,7 @@ public class AWSKeyStore extends KeyStore {
                 throw new Exception(String.format("Invalid Secrets: Default key not found. [name=%s]", bucket));
             }
             for (String name : keys.keySet()) {
-                String value = keys.get(name);
+                Object value = keys.get(name);
                 Key key = new Key(name, value);
                 key.state = KeyState.Synced;
                 this.keys.put(name, key);

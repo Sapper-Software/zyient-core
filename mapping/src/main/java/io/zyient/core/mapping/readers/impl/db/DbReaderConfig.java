@@ -22,6 +22,7 @@ import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderConfig;
 import io.zyient.core.mapping.readers.settings.DbReaderSettings;
+import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.NonNull;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
@@ -30,7 +31,11 @@ public class DbReaderConfig extends InputReaderConfig {
     private Class<? extends DbInputReader<?, ?>> readerType;
 
     public DbReaderConfig() {
-        super(new SourceTypes[]{SourceTypes.DB}, DbReaderSettings.class);
+        this(DbReaderSettings.class);
+    }
+
+    public DbReaderConfig( @NonNull Class<? extends ReaderSettings> settingsType) {
+        super(new SourceTypes[]{SourceTypes.DB}, settingsType);
     }
 
     @Override

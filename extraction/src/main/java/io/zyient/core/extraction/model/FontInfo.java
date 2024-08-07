@@ -23,9 +23,24 @@ import lombok.Setter;
 @Setter
 public class FontInfo {
     private String name;
-    private int fontId;
     private double size;
-    private boolean bold;
-    private boolean underlined;
-    private boolean italics;
+    private boolean bold = false;
+    private boolean underlined = false;
+    private boolean italics = false;
+
+    public FontInfo() {
+
+    }
+
+    public FontInfo(String name, double size, boolean bold, boolean underlined, boolean italics) {
+        this.name = name;
+        this.size = size;
+        this.bold = bold;
+        this.underlined = underlined;
+        this.italics = italics;
+    }
+
+    public static final String FONT_NAME_HANDWRITTEN = "Hand Writing";
+
+    public static final FontInfo HANDWRITTEN = new FontInfo(FONT_NAME_HANDWRITTEN, 0, false, false, false);
 }

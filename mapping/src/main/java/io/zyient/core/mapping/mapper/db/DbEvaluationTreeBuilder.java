@@ -101,7 +101,7 @@ public class DbEvaluationTreeBuilder implements EvaluationTreeBuilder<Map<String
             int size = records.size();
             int count = 0;
             while (!records.isEmpty()) {
-                if (count > 2 * size) {
+                if (count > 3 * size) {
                     throw new Exception("Stuck in loop: condition graph might be incorrect...");
                 }
                 List<DBConditionDef> delete = new ArrayList<>();

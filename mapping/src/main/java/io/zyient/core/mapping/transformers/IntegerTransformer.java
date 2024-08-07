@@ -30,10 +30,16 @@ public class IntegerTransformer extends NumericTransformer<Integer> {
     @Override
     public Integer transform(@NonNull Object source) throws DataException {
         if (ReflectionHelper.isNumericType(source.getClass())) {
+            if (ReflectionHelper.isDouble(source.getClass())) {
+                return ((Double) source).intValue();
+            }
+            if (ReflectionHelper.isFloat(source.getClass())) {
+                return ((Float) source).intValue();
+            }
             return (int) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0 : null;
             }
             Number number = parse(value);
             if (number != null) {
@@ -41,5 +47,17 @@ public class IntegerTransformer extends NumericTransformer<Integer> {
             }
         }
         throw new DataException(String.format("Cannot transform to Integer. [source=%s]", source.getClass()));
+    }
+
+
+    @Override
+    public Class<Integer> getPrimitiveType() {
+        return int.class;
+    }
+
+
+    @Override
+    public Integer getDefaultPrimitiveValue() {
+        return 0;
     }
 }

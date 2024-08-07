@@ -27,6 +27,12 @@ import lombok.Setter;
         property = "@class")
 public class TextCell extends Cell<String> {
     public static final String __PREFIX = "TC.";
+    private String textColor;
+    private String backgroundColor;
+    private FontInfo fontInfo;
+    private CellSpan span;
+    private String locale;
+    private CellType type = CellType.string;
 
     public TextCell() {
         super();
@@ -49,5 +55,10 @@ public class TextCell extends Cell<String> {
     @Override
     protected String parseId(int index) {
         return String.format("%s%d", __PREFIX, index);
+    }
+
+    public TextCell move(@NonNull String parentId, int index) {
+        resetId(parentId, index);
+        return this;
     }
 }

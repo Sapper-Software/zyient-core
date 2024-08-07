@@ -24,6 +24,7 @@ import io.zyient.core.mapping.model.ExcelColumn;
 import io.zyient.core.mapping.model.InputContentInfo;
 import io.zyient.core.mapping.readers.InputReader;
 import io.zyient.core.mapping.readers.InputReaderConfig;
+import io.zyient.core.mapping.readers.impl.excel.binary.ExcelBInputReader;
 import io.zyient.core.mapping.readers.settings.ExcelReaderSettings;
 import io.zyient.core.mapping.readers.settings.ReaderSettings;
 import lombok.NonNull;
@@ -66,6 +67,11 @@ public class ExcelReaderConfig extends InputReaderConfig {
 
     @Override
     public InputReader createInstance(@NonNull InputContentInfo contentInfo) throws Exception {
+        if (this.settings() instanceof ExcelReaderSettings ers) {
+            if (ers.getExcelFormat() == ExcelFormat.XLSB) {
+                return new ExcelBInputReader().contentInfo(contentInfo).settings(this.settings());
+            }
+        }
         return (new ExcelInputReader()).contentInfo(contentInfo).settings(this.settings());
     }
 }

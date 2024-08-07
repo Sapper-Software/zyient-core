@@ -37,6 +37,7 @@ import java.util.List;
 @Accessors(fluent = true)
 public class RuleConfigReader<T> {
     public static final String __CONFIG_PATH = "rules";
+    public static final String __CONFIG_PATH_REF = "ref";
     public static final String __CONFIG_PATH_RULE = "rule";
     public static final String __CONFIG_ATTR_TYPE = "settings";
 
@@ -44,6 +45,26 @@ public class RuleConfigReader<T> {
     private RulesCache<T> cache;
     private File contentDir;
     private BaseEnv<?> env;
+    private boolean terminateOnValidationError;
+
+    private HierarchicalConfiguration<ImmutableNode> readRoot(HierarchicalConfiguration<ImmutableNode> xmlConfig)
+            throws ConfigurationException {
+        if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH)) {
+            HierarchicalConfiguration<ImmutableNode> root = xmlConfig.configurationAt(__CONFIG_PATH);
+            if (ConfigReader.checkIfNodeExists(root, __CONFIG_PATH_REF)) {
+                String ref = root.getString(__CONFIG_PATH_REF);
+                File file = new File(ref);
+                if (!file.exists()) {
+                    throw new ConfigurationException(String.format("Reference configuration not found. [path=%s]",
+                            file.getAbsolutePath()));
+                }
+                xmlConfig = ConfigReader.readFromFile(ref);
+                root = xmlConfig.configurationAt(__CONFIG_PATH);
+            }
+            return root;
+        }
+        return null;
+    }
 
     @SuppressWarnings("unchecked")
     public List<Rule<T>> read(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig) throws ConfigurationException {
@@ -52,8 +73,8 @@ public class RuleConfigReader<T> {
             if (Errors.getDefault() == null) {
                 throw new ConfigurationException("Errors cache not initialized...");
             }
-            if (ConfigReader.checkIfNodeExists(xmlConfig, __CONFIG_PATH)) {
-                HierarchicalConfiguration<ImmutableNode> root = xmlConfig.configurationAt(__CONFIG_PATH);
+            HierarchicalConfiguration<ImmutableNode> root = readRoot(xmlConfig);
+            if (root != null) {
                 List<HierarchicalConfiguration<ImmutableNode>> nodes = root.configurationsAt(__CONFIG_PATH_RULE);
                 List<Rule<T>> rules = new ArrayList<>(nodes.size());
                 for (HierarchicalConfiguration<ImmutableNode> node : nodes) {
@@ -77,12 +98,14 @@ public class RuleConfigReader<T> {
                             throw new Exception(String.format("Referenced rule not found in cache. [name=%s]",
                                     config.getName()));
                         }
-                        rules.add(rule);
+
+                        rules.add(rule.withTerminateOnValidationError(terminateOnValidationError));
                     } else {
                         Rule<T> rule = config.createInstance(entityType);
                         rule.withEntityType(entityType)
                                 .withContentDir(contentDir)
-                                .configure(config, env);
+                                .configure(config, env)
+                                .withTerminateOnValidationError(terminateOnValidationError);
                         if (ConfigReader.checkIfNodeExists(node, __CONFIG_PATH)) {
                             if (rule.getRuleType() != RuleType.Group
                                     && rule.getRuleType() != RuleType.Condition) {

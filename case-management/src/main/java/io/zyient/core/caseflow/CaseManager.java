@@ -65,7 +65,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     private ActionAuthorization<P, S> authorization;
     private DataStoreEnv<?> env;
     private Map<String, StateTransitionHandler<P, S, E, T>> handlers;
-    private Map<P, Map<P, StateTransitionHandler<P, S, E, T>>> transitions;
+    private Map<P, Map<P, List<StateTransitionHandler<P, S, E, T>>>> transitions;
     private Class<? extends CaseDocument<E, T>> documentType;
 
     public CaseManager(@NonNull Class<? extends CaseManagerSettings> settingsType,
@@ -160,8 +160,9 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         throw new Exception(String.format("Specified transition handler not found. [name=%s]",
                                 settings.getHandler()));
                     }
-                    Map<P, StateTransitionHandler<P, S, E, T>> map = transitions.computeIfAbsent(from, k -> new HashMap<>());
-                    map.put(to, handler);
+                    Map<P, List<StateTransitionHandler<P, S, E, T>>> map = transitions.computeIfAbsent(from, k -> new HashMap<>());
+                    map.computeIfAbsent(to, k -> new ArrayList<>());
+                    map.get(to).add(handler);
                 }
             }
         }
@@ -252,6 +253,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         caseObject.setName(name);
         caseObject.setDescription(description);
         caseObject.setCreatedBy(new Actor(creator));
+        caseObject.setUpdatedBy(new Actor(creator));
         if (context instanceof CaseContext ctx) {
             if (((CaseContext) context).customFields() != null) {
                 Map<String, Object> values = ctx.customFields();
@@ -275,6 +277,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 document.setId(new DocumentId(settings.getContentCollection()));
                 document.setName(f.name());
                 document.setPath(f.file());
+                document.setSourcePath(f.sourceUrl());
                 document.getState().setState(EEntityState.New);
                 if (!Strings.isNullOrEmpty(f.mimeType())) {
                     document.setMimeType(f.mimeType());
@@ -328,7 +331,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                        @NonNull UserOrRole assigner,
                                        Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -353,6 +356,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
         validateAssignment(current, caseObject);
         caseObject.getState().setState(EEntityState.Updated);
+        caseObject.setUpdatedBy(new Actor(assigner));
         caseObject = saveUpdate(caseObject,
                 EStandardAction.AssignTo.action(),
                 EStandardCode.ActionAssignTo.code(),
@@ -360,7 +364,6 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                 assigner,
                 diff,
                 context);
-        dataStore.commit();
         return caseObject;
     }
 
@@ -655,7 +658,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                  @NonNull UserOrRole commentBy,
                                  Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -704,7 +707,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                    @NonNull UserOrRole commentBy,
                                    Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -756,7 +759,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                    @NonNull UserOrRole commentBy,
                                    Context context) throws Exception {
         CaseId id = new CaseId(caseId);
-        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(caseId, settings.getCaseType(), context);
+        Case<P, S, E, T> caseObject = (Case<P, S, E, T>) dataStore.find(new CaseId(caseId), settings.getCaseType(), context);
         if (caseObject == null) {
             throw new Exception(String.format("Case not found. [id=%s][type=%s]",
                     caseId, settings.getCaseType().getCanonicalName()));
@@ -824,6 +827,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         authorization.authorize(caseObject, EStandardAction.UpdateState.action(), modifier, context);
         P current = caseObject.getCaseState().getState();
         caseObject.getCaseState().setState(state);
+        caseObject.setUpdatedBy(new Actor(modifier));
         if (context instanceof CaseContext ctx) {
             if (((CaseContext) context).customFields() != null) {
                 authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
@@ -836,6 +840,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         }
         Map<String, Object> diff = new HashMap<>();
         diff.put("state", state);
+        diff.put("fromState",current);
         if (context instanceof CaseContext) {
             diff.put("updates", context);
         }
@@ -853,11 +858,14 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
     private void transition(P fromState, P toState, Case<P, S, E, T> caseObject) throws CaseActionException {
         if (transitions != null) {
             if (transitions.containsKey(fromState)) {
-                Map<P, StateTransitionHandler<P, S, E, T>> map = transitions.get(fromState);
+                Map<P, List<StateTransitionHandler<P, S, E, T>>> map = transitions.get(fromState);
                 if (map.containsKey(toState)) {
-                    StateTransitionHandler<P, S, E, T> handler = map.get(toState);
+                    List<StateTransitionHandler<P, S, E, T>> handlers = map.get(toState);
+
                     try {
-                        handler.handleStateTransition(fromState, caseObject);
+                        for (StateTransitionHandler<P, S, E, T> handler : handlers) {
+                            handler.handleStateTransition(fromState, caseObject);
+                        }
                     } catch (CaseActionException | CaseFatalError ae) {
                         throw ae;
                     } catch (Throwable t) {
@@ -879,6 +887,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
         checkState();
         try {
             authorization.authorize(caseObject, EStandardAction.Update.action(), modifier, context);
+           caseObject.setUpdatedBy(new Actor(modifier));
             caseObject = saveUpdate(caseObject,
                     action,
                     code,
@@ -903,6 +912,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                                         Object diff,
                                         Context context) throws Exception {
         // context = AbstractDataStore.withRefresh(context);
+        caseObject.setUpdatedBy(new Actor(modifier));
         caseObject = save(caseObject, modifier, context);
         addCaseHistory(caseObject.getId(),
                 action,
@@ -1103,6 +1113,7 @@ public abstract class CaseManager<P extends Enum<P>, S extends CaseState<P>, E e
                         contentProvider.update(doc, docCtx);
                     }
                 }
+                caseObject.setUpdatedBy(new Actor(user));
                 caseObject = dataStore.update(caseObject, caseObject.getClass(), context);
             }
             return caseObject;

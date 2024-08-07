@@ -23,6 +23,7 @@ import io.zyient.base.common.model.entity.IEntity;
 import io.zyient.base.common.model.entity.IKey;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.core.persistence.*;
+import io.zyient.core.persistence.annotations.EGeneratedType;
 import io.zyient.core.persistence.impl.settings.rdbms.RdbmsStoreSettings;
 import io.zyient.core.persistence.model.BaseEntity;
 import lombok.NonNull;
@@ -30,12 +31,13 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
+import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
 
 public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     public void flush() throws DataStoreException {
         checkState();
-        Session session = sessionManager().session();
+        Session session = sessionManager().session(false);
         if (session != null) {
             session.flush();
         }
@@ -49,7 +51,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(false);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -82,7 +84,7 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(false);
         if (entity instanceof BaseEntity) {
             ((BaseEntity<?>) entity).getState().setState(EEntityState.Synced);
         }
@@ -105,8 +107,8 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
         checkState();
         Preconditions.checkState(isInTransaction());
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
-        E entity = findEntity(key, type, context);
+        Session session = sessionManager.session(false);
+        E entity = findEntity(key, type, false, context);
         if (entity != null) {
             session.remove(entity);
             return true;
@@ -117,13 +119,14 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     @Override
     public <E extends IEntity<?>> E findEntity(@NonNull Object key,
                                                @NonNull Class<? extends E> type,
+                                               boolean readOnly,
                                                Context context) throws
             DataStoreException {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(readOnly);
         E entity = session.find(type, key);
-        if (doRefresh(context)) {
+        if (doRefresh(context)&& entity!=null) {
             session.evict(entity);
         }
         entity = session.find(type, key);
@@ -140,15 +143,22 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
                                                                         int maxResults,
                                                                         @NonNull Class<? extends K> keyType,
                                                                         @NonNull Class<? extends E> type,
+                                                                        boolean readOnly,
                                                                         Context context)
             throws DataStoreException {
         checkState();
         RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
-        Session session = sessionManager.session();
+        Session session = sessionManager.session(readOnly);
         try {
-            SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
-            parser.parse(query);
-            Query qq = session.createQuery(query.generatedQuery(), type);
+
+            Query qq;
+            if (query.nativeQuery()) {
+                qq = session.createNativeQuery(query.generatedQuery(), type);
+            } else {
+                SqlQueryParser<K, E> parser = (SqlQueryParser<K, E>) getParser(type, keyType);
+                parser.parse(query);
+                qq = session.createQuery(query.generatedQuery(), type);
+            }
             if (query.hasParameters()) {
                 for (String key : query.parameters().keySet())
                     qq.setParameter(key, query.parameters().get(key));
@@ -171,6 +181,23 @@ public class RdbmsDataStore extends TransactionDataStore<Session, Transaction> {
     protected <K extends IKey, E extends IEntity<K>> QueryParser<K, E> createParser(@NonNull Class<? extends E> entityType,
                                                                                     @NonNull Class<? extends K> keyTpe) throws Exception {
         return new SqlQueryParser<>(keyTpe, entityType);
+    }
+
+    public Long nextSequence(@NonNull EGeneratedType type, @NonNull String name) throws Exception {
+        try {
+            if (type == EGeneratedType.DB_SEQUENCE) {
+                RdbmsSessionManager sessionManager = (RdbmsSessionManager) sessionManager();
+                Session session = sessionManager.session();
+                String sequenceQuery = String.format("SELECT nextval('%s')", name);
+                NativeQuery<Long> seq = session.createNativeQuery(sequenceQuery, Long.class);
+                return seq.getSingleResult();
+            } else {
+                return nextSequence(name);
+            }
+        } catch (Exception ex) {
+            DefaultLogger.stacktrace(ex);
+            throw new DataStoreException(ex);
+        }
     }
 
 }

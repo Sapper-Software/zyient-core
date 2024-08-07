@@ -16,12 +16,19 @@
 
 package io.zyient.core.mapping.transformers;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonTokenId;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import io.zyient.base.common.utils.CommonUtils;
+import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.core.mapping.DataException;
 import io.zyient.core.mapping.mapper.MappingSettings;
 import io.zyient.core.mapping.model.CurrencyValue;
+import io.zyient.core.mapping.utils.NumberUtils;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -29,8 +36,11 @@ import lombok.experimental.Accessors;
 import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.text.DecimalFormat;
+import java.text.ParseException;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -42,7 +52,7 @@ import java.util.regex.Pattern;
 public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
     public static final String LOCALE_OVERRIDE = "formatter.currency.locale";
     public static final String CURRENCY_OVERRIDE = "formatter.currency.code";
-    public static final String CURRENCY_PARSE_REGEX = "%s\\s*(.*)";
+    public static final String CURRENCY_PARSE_REGEX = "\\\\%s\\\\s*(.*)";
     private static Pattern CURRENCY_PARSE_CODE;
     private static Pattern CURRENCY_PARSE_SYMBOL;
 
@@ -132,8 +142,17 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                         return new CurrencyValue(currency, number.doubleValue());
                     }
                 }
-                Number number = format.parse(value);
-                return new CurrencyValue(currency, number.doubleValue());
+
+                CurrencyValue currencyValue = NumberUtils.parseCurrency(currency, value,
+                        locale);
+                if (currencyValue != null) {
+                    return currencyValue;
+                }
+                Double d = NumberUtils.parseNumber(value, locale);
+                if (d != null) {
+                    return new CurrencyValue(currency, d);
+                }
+
             } catch (Exception ex) {
                 throw new DataException(ex);
             }
@@ -141,8 +160,20 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
         throw new DataException(String.format("Cannot transform to Currency. [source=%s]", source.getClass()));
     }
 
+
     @Override
     public String serialize(@NonNull CurrencyValue value) throws DataException {
         return String.format("%s %f", currency.getCurrencyCode(), value.getValue());
+    }
+
+
+    @Override
+    public CurrencyValue deserialize(JsonParser jp,
+                                     DeserializationContext ctxt) throws IOException {
+        if (jp.currentTokenId() == JsonTokenId.ID_START_OBJECT) {
+            JsonNode jsonNode = jp.getCodec().readTree(jp);
+            return CurrencyValue.getFromNode(jsonNode);
+        }
+        return super.deserialize(jp, ctxt);
     }
 }

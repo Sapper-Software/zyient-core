@@ -17,6 +17,7 @@
 package io.zyient.core.mapping.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.base.Strings;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
@@ -30,8 +31,6 @@ import java.util.Locale;
 
 @Getter
 @Setter
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
-        property = "@class")
 @Embeddable
 public class CurrencyValue {
     @Column(name = "currency")
@@ -84,5 +83,21 @@ public class CurrencyValue {
             return String.format("%s%s", currency.getSymbol(), dv);
         }
         return null;
+    }
+
+    public static CurrencyValue getFromNode(JsonNode jsonNode) {
+        if (jsonNode == null)
+            return null;
+        JsonNode ccNode = jsonNode.get("currencyCode");
+        CurrencyValue currencyValue = new CurrencyValue();
+
+        if (ccNode != null) {
+            currencyValue.setCurrencyCode(ccNode.textValue());
+        }
+        JsonNode valueNode = jsonNode.get("value");
+        if (valueNode != null) {
+            currencyValue.setValue(valueNode.asDouble());
+        }
+        return currencyValue;
     }
 }

@@ -93,10 +93,10 @@ public class FlattenedInputReader extends SeparatedInputReader {
     private void fetch() throws IOException {
         FlattenedInputReaderSettings settings = (FlattenedInputReaderSettings) settings();
         while (true) {
-            List<SourceMap> batch = super.nextBatch();
+            List<SourceMap> batch = super.fetchNextBatch();
             if (batch == null || batch.isEmpty()) {
                 EOF = true;
-                return;
+                break;
             }
             for (SourceMap record : batch) {
                 if (record == null || record.isEmpty()) continue;
@@ -104,20 +104,20 @@ public class FlattenedInputReader extends SeparatedInputReader {
                     KeyValuePair<String, String> kv = get(record);
                     Preconditions.checkNotNull(kv);
                     String value = kv.value().trim();
-                    if (Strings.isNullOrEmpty(value)) continue;
                     if (settings.getSectionSeparator().compareTo(value) == 0) {
                         parsingState = ParsingState.SectionStart;
                         sectionHeader = null;
                         recordHeader = null;
                         continue;
                     }
+                    if (Strings.isNullOrEmpty(value)) continue;
                     if (parsingState == ParsingState.SectionStart
                             || parsingState == ParsingState.InHeader) {
                         if (parsingState == ParsingState.SectionStart) {
                             parsingState = ParsingState.InHeader;
                         }
                         if (sectionHeader == null) {
-                            sectionHeader = new HashMap<>();
+                            sectionHeader = new LinkedHashMap<>();
                         }
                         String[] parts = value.split(settings.getFieldSeparator());
                         if (parts.length != 2) {
@@ -130,7 +130,9 @@ public class FlattenedInputReader extends SeparatedInputReader {
                                     .format("Invalid section header: Key and/or Value missing. [record=%s]",
                                             value));
                         }
-                        sectionHeader.put(key, v);
+                        if(sectionHeaderDef.containsKey(key)){
+                            sectionHeader.put(key, v);
+                        }
                         continue;
                     }
                     throw new IOException(String.format("Invalid parsing state: [state=%s][record=%s]",
@@ -156,7 +158,7 @@ public class FlattenedInputReader extends SeparatedInputReader {
                         records.add(record);
                     } else if (parsingState == ParsingState.InHeader) {
                         validateSectionHeader();
-                        recordHeader = new HashMap<>();
+                        recordHeader = new LinkedHashMap<>();
                         for (String key : record.keySet()) {
                             String column = (String) record.get(key);
                             recordHeader.put(key, column);

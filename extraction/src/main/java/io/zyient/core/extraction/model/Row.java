@@ -17,37 +17,32 @@
 package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.utils.CollectionUtils;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Row extends Cell<Integer> {
+public class Row extends Section {
     public static final String __PREFIX = "RO.";
 
-    private List<Cell<?>> cells;
     private boolean header;
 
     public Row() {
         super();
     }
 
-    public Row(@NonNull String parentId, int index) {
-        super(parentId, index);
+    public Row(@NonNull Table parent, int index) {
+        super(parent.getId(), index);
     }
 
     @Override
     protected Cell<?> find(String parentId, @NonNull String[] paths, int index) {
         if (checkId(parentId, paths, index)) {
-            if (cells != null) {
-                for (Cell<?> cell : cells) {
+            if (getBlocks() != null) {
+                for (Cell<?> cell : getBlocks()) {
                     Cell<?> ret = cell.find(getId(), paths, index + 1);
                     if (ret != null) {
                         return ret;
@@ -61,15 +56,5 @@ public class Row extends Cell<Integer> {
     @Override
     protected String parseId(int index) {
         return String.format("%s%d", __PREFIX, index);
-    }
-
-    public <T> Cell<T> add(@NonNull Class<? extends Cell<T>> type, int index) throws Exception {
-        if (cells == null) {
-            cells = new ArrayList<>();
-        }
-        Cell<T> cell = type.getDeclaredConstructor(String.class, Integer.class)
-                .newInstance(getId(), index);
-        CollectionUtils.setAtIndex(cells, index, cell);
-        return cell;
     }
 }

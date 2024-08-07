@@ -115,7 +115,7 @@ public class CellDetector {
                 tc.value(count);
             }
         }
-        cell.setBackground(bg.key());
-        cell.setTextColor(tc.key());
+        //cell.setBackground(bg.key());
+        // cell.setTextColor(tc.key());
     }
 }

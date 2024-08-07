@@ -19,4 +19,5 @@ include 'filesystem'
 include 'messaging'
 include 'core-sdk'
 include 'extraction'
+include 'ingestion'
 

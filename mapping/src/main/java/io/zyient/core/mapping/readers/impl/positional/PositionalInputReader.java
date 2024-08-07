@@ -124,7 +124,13 @@ public class PositionalInputReader extends InputReader {
             } else {
                 end = column.getPosEnd();
             }
-            String value = line.substring(column.getPosStart(), end);
+            if (line.length() <= end) {
+                end = line.length() - 1;
+            }
+            String value = "";
+            if (column.getPosStart() < line.length()) {
+                value = line.substring(column.getPosStart(), end);
+            }
             map.put(column.getName(), value.trim());
         }
         return map;

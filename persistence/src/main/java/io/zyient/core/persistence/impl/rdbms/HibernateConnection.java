@@ -30,6 +30,7 @@ import io.zyient.base.core.utils.SpringUtils;
 import io.zyient.core.persistence.AbstractConnection;
 import io.zyient.core.persistence.impl.settings.rdbms.HibernateConnectionSettings;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FlushModeType;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
@@ -55,6 +56,7 @@ import java.util.Set;
 public class HibernateConnection extends AbstractConnection<Session> {
     public static class SessionCacheElement implements Closeable {
         private Session session;
+        private boolean readOnly;
         private long timeOpened = System.currentTimeMillis();
         private long timeLastUsed;
 
@@ -70,7 +72,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
     @Setter(AccessLevel.NONE)
     private SessionFactory sessionFactory = null;
     @Getter(AccessLevel.NONE)
-    private final ThreadCache<SessionCacheElement> threadCache = new ThreadCache<>();
+    private final ThreadCache<SessionCacheElement[]> threadCache = new ThreadCache<>();
     private BaseEnv<?> env;
 
     public HibernateConnection() {
@@ -96,12 +98,9 @@ public class HibernateConnection extends AbstractConnection<Session> {
                 DefaultLogger.warn("Connection already closed...");
             }
 
-            SessionCacheElement cs = threadCache.remove();
+            SessionCacheElement[] cs = threadCache.remove();
             if (cs == null) {
                 throw new ConnectionError("Connection not created via connection manager...");
-            }
-            if (!cs.session.equals(connection)) {
-                throw new ConnectionError("Connection handle passed doesn't match cached connection.");
             }
         } catch (Exception ex) {
             DefaultLogger.error(ex.getLocalizedMessage());
@@ -109,27 +108,44 @@ public class HibernateConnection extends AbstractConnection<Session> {
         }
     }
 
-    public Session getConnection() throws ConnectionError {
+    public Session getConnection(boolean readOnly) throws ConnectionError {
         state().check(EConnectionState.Connected);
         try {
             synchronized (threadCache) {
-                SessionCacheElement elem = null;
+                int index = (readOnly ? 0 : 1);
+                SessionCacheElement e = null;
+                SessionCacheElement[] arr = null;
                 if (threadCache.contains()) {
-                    elem = threadCache.get();
-                    if (elem.session.isOpen() && !checkTimeout(elem)) {
-                        elem.timeLastUsed = System.currentTimeMillis();
-                        return elem.session;
+                    arr = threadCache.get();
+                } else {
+                    arr = new SessionCacheElement[2];
+                    threadCache.put(arr);
+                }
+                e = arr[index];
+                if (e == null) {
+                    e = new SessionCacheElement();
+                    arr[index] = e;
+                } else {
+                    if (e.session != null) {
+                        if (e.session.isOpen() && !checkTimeout(e)) {
+                            e.timeLastUsed = System.currentTimeMillis();
+                            return e.session;
+                        }
                     }
                 }
-                if (elem == null) {
-                    elem = new SessionCacheElement();
-                    threadCache.put(elem);
-                }
+
                 Session session = sessionFactory.openSession();
-                elem.timeOpened = System.currentTimeMillis();
-                elem.timeLastUsed = System.currentTimeMillis();
-                elem.session = session;
-                return elem.session;
+
+                if (readOnly) {
+                    session.setDefaultReadOnly(true);
+                } else
+                    session.setFlushMode(FlushModeType.COMMIT);
+
+                e.timeOpened = System.currentTimeMillis();
+                e.timeLastUsed = System.currentTimeMillis();
+                e.session = session;
+                e.readOnly = readOnly;
+                return e.session;
             }
         } catch (Throwable t) {
             throw new ConnectionError(t);
@@ -274,7 +290,7 @@ public class HibernateConnection extends AbstractConnection<Session> {
     }
 
     public Transaction startTransaction() throws ConnectionError {
-        Session session = getConnection();
+        Session session = getConnection(false);
         Transaction tx = null;
         if (session.isJoinedToTransaction()) {
             tx = session.getTransaction();

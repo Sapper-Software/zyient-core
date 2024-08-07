@@ -30,16 +30,35 @@ public class DoubleTransformer extends NumericTransformer<Double> {
     @Override
     public Double transform(@NonNull Object source) throws DataException {
         if (ReflectionHelper.isNumericType(source.getClass())) {
+            if (ReflectionHelper.isInt(source.getClass())) {
+                return ((Integer) source).doubleValue();
+            } else if (ReflectionHelper.isLong(source.getClass())) {
+                return ((Long) source).doubleValue();
+            } else if (ReflectionHelper.isFloat(source.getClass())) {
+                return ((Float) source).doubleValue();
+            }
             return (double) source;
         } else if (source instanceof String value) {
+
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0.0 : null;
             }
+            value = value.trim();
             Number number = parse(value);
             if (number != null) {
                 return number.doubleValue();
             }
         }
         throw new DataException(String.format("Cannot transform to Double. [source=%s]", source.getClass()));
+    }
+
+    @Override
+    public Class<Double> getPrimitiveType() {
+        return double.class;
+    }
+
+    @Override
+    public Double getDefaultPrimitiveValue() {
+        return 0.0d;
     }
 }

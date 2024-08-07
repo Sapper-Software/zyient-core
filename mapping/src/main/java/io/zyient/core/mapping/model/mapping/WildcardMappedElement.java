@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class WildcardMappedElement extends  MappedElement{
-    @Config(name = "prefix")
-    private String prefix;
+public class WildcardMappedElement extends MappedElement {
+    @Config(name = "prefix", required = false)
+    private String prefix = "VAL";
 }

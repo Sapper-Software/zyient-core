@@ -79,7 +79,7 @@ public class RulesEvaluator<T> {
                         }
 
                         if (rule.getRuleType() == RuleType.Condition) {
-                            if (r.getStatus() == StatusCode.Failed) {
+                            if (r.getStatus() == StatusCode.Failed || r.getStatus() == StatusCode.ValidationFailed) {
                                 status.setStatus(StatusCode.Failed);
                                 metrics.ignoredCounter().increment();
                                 break;

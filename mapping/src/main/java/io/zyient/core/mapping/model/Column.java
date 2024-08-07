@@ -34,7 +34,7 @@ public class Column {
     public static final String __CONFIG_PATH = "columns";
     public static final String __CONFIG_PATH_COLUMN = "column";
 
-    @Config(name = "name")
+    @Config(name = "name", required = false)
     private String name;
     @Config(name = "index", type = Integer.class)
     private Integer index;

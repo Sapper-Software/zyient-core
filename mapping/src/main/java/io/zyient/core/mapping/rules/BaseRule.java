@@ -113,28 +113,36 @@ public abstract class BaseRule<T> implements Rule<T> {
             status.setResponse(response);
             RuleType rt = getRuleType();
             if (rt == RuleType.Filter || rt == RuleType.Condition) {
-                if (!(response instanceof Boolean)) {
+                if (response != null) {
+                    if (response instanceof Boolean) {
+                        boolean r = (boolean) response;
+                        if (rt == RuleType.Condition) {
+                            if (!r) {
+                                status.setStatus(StatusCode.Failed);
+                                return status;
+                            }
+                        } else {
+                            if (r) {
+                                status.setStatus(StatusCode.IgnoreRecord);
+                                return status;
+                            }
+                        }
+                    }
+                }
+                if (this.terminateOnValidationError) {
                     throw new RuleEvaluationError(name,
                             entityType,
                             getRuleType().name(),
                             errorCode,
                             "Invalid Filter/Condition Rule response.");
                 }
-                boolean r = (boolean) response;
-                if (rt == RuleType.Condition) {
-                    if (!r) {
-                        status.setStatus(StatusCode.Failed);
-                        return status;
-                    }
-                } else {
-                    if (r) {
-                        status.setStatus(StatusCode.IgnoreRecord);
-                        return status;
-                    }
-                }
+
             }
             status.setStatus(StatusCode.Success);
-            if (visitor != null) {
+            if (visitor != null && response == null) {
+                visitor.onError(new Throwable("response is null"), data);
+            }
+            if (visitor != null && response != null) {
                 visitor.onSuccess(data, status);
             }
             if (evaluator != null) {

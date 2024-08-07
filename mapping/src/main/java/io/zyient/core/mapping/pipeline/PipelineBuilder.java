@@ -30,6 +30,7 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,13 +43,21 @@ public class PipelineBuilder {
     private MappingContextProvider contextProvider;
     private MapperFactory mapperFactory;
     private InputReaderFactory readerFactory;
+    private File mappingFile;
+
+    public PipelineBuilder withMappingFile(File file) {
+        this.mappingFile = file;
+        return this;
+    }
 
     @SuppressWarnings("unchecked")
     public PipelineBuilder configure(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                      @NonNull BaseEnv<?> env) throws ConfigurationException {
         try {
             mapperFactory = new MapperFactory()
+                    .withMappingFile(this.mappingFile)
                     .init(xmlConfig, env);
+
             readerFactory = new InputReaderFactory()
                     .init(xmlConfig);
             HierarchicalConfiguration<ImmutableNode> cConfig =

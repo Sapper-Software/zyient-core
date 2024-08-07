@@ -174,29 +174,12 @@ public class S3Helper {
                                             @NonNull String bucket,
                                             @NonNull String path,
                                             @NonNull File source) throws IOException {
-        try {
             path = FSPathUtils.encode(path);
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(path)
                     .build();
-            PutObjectResponse response = client
-                    .putObject(request, RequestBody.fromFile(source));
-            S3Waiter waiter = client.waiter();
-            HeadObjectRequest requestWait = HeadObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
-                    .build();
-
-            WaiterResponse<HeadObjectResponse> waiterResponse = waiter.waitUntilObjectExists(requestWait);
-            if (waiterResponse.matched().response().isEmpty()) {
-                throw new Exception("Failed to get valid response...");
-            }
-            return waiterResponse.matched().response().get();
-        } catch (Throwable t) {
-            throw new IOException(String.format("Upload failed. [bucket=%s][path=%s]",
-                    bucket, path), t);
-        }
+        return upload(client, request, RequestBody.fromFile(source));
     }
 
     public static HeadObjectResponse upload(@NonNull S3Client client,
@@ -204,18 +187,35 @@ public class S3Helper {
                                             @NonNull String path,
                                             @NonNull String source,
                                             @NonNull String contentType) throws IOException {
-        try {
             PutObjectRequest request = PutObjectRequest.builder()
                     .bucket(bucket)
                     .key(path)
                     .contentType(contentType)
                     .build();
+            return upload(client, request, RequestBody.fromString(source));
+    }
+
+    public static HeadObjectResponse upload(@NonNull S3Client client,
+                                            @NonNull String bucket,
+                                            @NonNull String path,
+                                            @NonNull byte[] source,
+                                            @NonNull String contentType) throws IOException {
+        PutObjectRequest request = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(path)
+                .contentType(contentType)
+                .build();
+        return upload(client, request, RequestBody.fromBytes(source));
+    }
+
+    private static HeadObjectResponse upload(@NonNull S3Client client, @NonNull PutObjectRequest request, @NonNull RequestBody type) throws IOException {
+        try {
             PutObjectResponse response = client
-                    .putObject(request, RequestBody.fromString(source));
+                    .putObject(request, type);
             S3Waiter waiter = client.waiter();
             HeadObjectRequest requestWait = HeadObjectRequest.builder()
-                    .bucket(bucket)
-                    .key(path)
+                    .bucket(request.bucket())
+                    .key(request.key())
                     .build();
 
             WaiterResponse<HeadObjectResponse> waiterResponse = waiter.waitUntilObjectExists(requestWait);
@@ -225,7 +225,7 @@ public class S3Helper {
             return waiterResponse.matched().response().get();
         } catch (Throwable t) {
             throw new IOException(String.format("Download failed. [bucket=%s][path=%s]",
-                    bucket, path), t);
+                    request.bucket(), request.key()), t);
         }
     }
 }

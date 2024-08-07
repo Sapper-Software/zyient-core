@@ -49,4 +49,6 @@ public class DbReaderSettings extends ReaderSettings {
     private String condition;
     @Config(name = "filter.builder", type = Class.class)
     private Class<? extends QueryBuilder> builder;
+    @Config(name = "filter.nativeQuery", required = false, type = Boolean.class)
+    private Boolean nativeQuery = false;
 }

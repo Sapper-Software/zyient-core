@@ -67,14 +67,18 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
                     currentOffsets.put(od.partition(), od.offset());
                     if (commit) {
                         consumer.consumer().commitSync(currentOffsets);
+                        DefaultLogger.info(String.format("updating commit state offset %d", od.offset().offset()));
                         updateCommitState(new KafkaOffsetValue(od.offset().offset()));
                         offsetMap.remove(messageId);
+                    } else {
+                        DefaultLogger.info("skipping commit state ");
                     }
                 } else {
                     throw new MessagingError(String.format("No record offset found for key. [key=%s]", messageId));
                 }
             }
         } catch (Exception ex) {
+            DefaultLogger.error(ex.getMessage(), ex);
             throw new MessagingError(ex);
         }
     }
@@ -162,11 +166,6 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
                     consumer.name(), topic));
         }
-        if (partitions.size() > 1) {
-            throw new MessagingError(String.format("Multiple assigned partitions found. [name=%s][topic=%s]",
-                    consumer.name(), topic));
-        }
-
         for (TopicPartition partition : partitions) {
             state = stateManager.get(topic, partition.partition());
             if (state == null) {

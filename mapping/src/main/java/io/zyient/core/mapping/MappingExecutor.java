@@ -41,6 +41,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -60,6 +61,7 @@ public class MappingExecutor implements Closeable {
     private DataStoreManager dataStoreManager;
     private ConnectionManager connectionManager;
     private DataStoreEnv<?> env;
+    private File mappingFile;
 
     public MappingExecutor init(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                 @NonNull BaseEnv<?> env) throws ConfigurationException {
@@ -84,6 +86,7 @@ public class MappingExecutor implements Closeable {
             state.setState(ProcessorState.EProcessorState.Running);
 
             builder = new PipelineBuilder()
+                    .withMappingFile(mappingFile)
                     .configure(config, env);
 
             __instance = this;
@@ -150,8 +153,14 @@ public class MappingExecutor implements Closeable {
 
     public static MappingExecutor create(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
                                          @NonNull BaseEnv<?> env) throws Exception {
-        __instance = new MappingExecutor();
-        return __instance.init(xmlConfig, env);
+        return new MappingExecutor().init(xmlConfig, env);
+    }
+
+    public static MappingExecutor createWithFile(@NonNull HierarchicalConfiguration<ImmutableNode> xmlConfig,
+                                                 @NonNull BaseEnv<?> env, File file) throws Exception {
+        MappingExecutor executor = new MappingExecutor();
+        executor.mappingFile = file;
+        return executor.init(xmlConfig, env);
     }
 
     private record Reader(Pipeline pipeline,

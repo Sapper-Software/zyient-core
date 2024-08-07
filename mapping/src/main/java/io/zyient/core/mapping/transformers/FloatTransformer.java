@@ -33,7 +33,7 @@ public class FloatTransformer extends NumericTransformer<Float> {
             return (float) source;
         } else if (source instanceof String value) {
             if (Strings.isNullOrEmpty(value)) {
-                return null;
+                return source.getClass().isPrimitive() ? 0.0f : null;
             }
             Number number = parse(value);
             if (number != null) {
@@ -41,5 +41,15 @@ public class FloatTransformer extends NumericTransformer<Float> {
             }
         }
         throw new DataException(String.format("Cannot transform to Float. [source=%s]", source.getClass()));
+    }
+
+    @Override
+    public Class<Float> getPrimitiveType() {
+        return float.class;
+    }
+
+    @Override
+    public Float getDefaultPrimitiveValue() {
+        return 0.0f;
     }
 }

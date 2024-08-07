@@ -17,25 +17,22 @@
 package io.zyient.core.extraction.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import io.zyient.base.common.utils.CollectionUtils;
+import com.google.common.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Getter
 @Setter
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY,
         property = "@class")
-public class Table extends Cell<String> {
+public class Table extends Section {
     public static final String __PREFIX = "TB.";
 
     private Map<String, Column> header;
-    private List<Row> rows;
 
     public Table() {
         super();
@@ -62,9 +59,9 @@ public class Table extends Cell<String> {
                             }
                         }
                     }
-                } else if (name.startsWith(Row.__PREFIX)) {
-                    if (rows != null) {
-                        for (Row row : rows) {
+                } else {
+                    if (getBlocks() != null) {
+                        for (Cell<?> row : getBlocks()) {
                             Cell<?> ret = row.find(getId(), paths, index + 1);
                             if (ret != null) {
                                 return ret;
@@ -92,12 +89,50 @@ public class Table extends Cell<String> {
         return column;
     }
 
-    public Row addRow(int index) {
-        if (rows == null) {
-            rows = new ArrayList<>();
-        }
-        Row row = new Row(getId(), index);
-        CollectionUtils.setAtIndex(rows, index, row);
+    public Section newSection(int pageNo) throws Exception {
+        Preconditions.checkArgument(pageNo > 0);
+        return add(Section.class, pageNo);
+    }
+
+    public Row addRow(int section, int index) throws Exception {
+        Preconditions.checkArgument(section > 0);
+        Preconditions.checkArgument(index >= 0);
+        Section s = (Section) getBlocks().get(section);
+        Row row = new Row(this, index);
+        s.add(row, index);
         return row;
+    }
+
+    public void addCell(int section, int row,
+                        @NonNull String column,
+                        @NonNull Cell<?> cell) throws Exception {
+        Preconditions.checkArgument(section > 0);
+        Preconditions.checkArgument(row >= 0);
+        Section s = (Section) getBlocks().get(section);
+        if (s == null) {
+            throw new Exception(String.format("[table=%s] Section not found. [section=%d]",
+                    getId(), section));
+        }
+        Column c = header.get(column);
+        if (c == null) {
+            throw new Exception(String.format("[table=%s] Column not found. [name=%s]",
+                    getId(), column));
+        }
+        Row r = (Row) s.getBlocks().get(row);
+        r.add(cell, c.getIndex());
+    }
+
+    public void addCell(int section, int row, int column,
+                        @NonNull Cell<?> cell) throws Exception {
+        Preconditions.checkArgument(section > 0);
+        Preconditions.checkArgument(row >= 0);
+        Preconditions.checkArgument(column >= 0);
+        Section s = (Section) getBlocks().get(section);
+        if (s == null) {
+            throw new Exception(String.format("[table=%s] Section not found. [section=%d]",
+                    getId(), section));
+        }
+        Row r = (Row) s.getBlocks().get(row);
+        r.add(cell, column);
     }
 }

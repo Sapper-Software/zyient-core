@@ -28,7 +28,11 @@ import org.apache.curator.framework.CuratorFramework;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Map;
 
 public class JSONUtils {
@@ -156,5 +160,37 @@ public class JSONUtils {
             }
             map.put(key, type.getTypeName());
         }
+    }
+
+    public static Object createBlankJson(@NonNull Class<?> type) throws Exception {
+        Object o = ReflectionHelper.createInstance(type);
+        Field[] fields = ReflectionHelper.getAllFields(type);
+        for (Field field : fields) {
+            if (ReflectionHelper.isPrimitiveTypeOrString(field)) {
+                if (ReflectionHelper.isBoolean(field.getType())) {
+                    ReflectionHelper.setBooleanValue(o, field, false);
+                } else if (ReflectionHelper.isDouble(field.getType())) {
+                    ReflectionHelper.setDoubleValue(o, field, 0.0d);
+                } else if (ReflectionHelper.isLong(field.getType())) {
+                    ReflectionHelper.setLongValue(o, field, 0L);
+                } else if (ReflectionHelper.isInt(field.getType())) {
+                    ReflectionHelper.setIntValue(o, field, 0);
+                } else {
+                    ReflectionHelper.setStringValue(o, field, "");
+                }
+
+            } else if (ReflectionHelper.isCollection(field)) {
+                Object noList = ReflectionHelper.createInstance(ArrayList.class);
+                ReflectionHelper.setObjectValue(o, field, noList);
+                Object no = createBlankJson(ReflectionHelper.getGenericCollectionType(field));
+                Collection<Object> c = (Collection<Object>) noList;
+                c.add(no);
+                ReflectionHelper.setObjectValue(o, field, c);
+            } else {
+                Object no = createBlankJson(field.getType());
+                ReflectionHelper.setObjectValue(o, field, no);
+            }
+        }
+        return o;
     }
 }

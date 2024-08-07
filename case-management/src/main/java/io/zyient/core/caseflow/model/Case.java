@@ -39,11 +39,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnTransformer;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 @Setter
@@ -54,7 +52,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         extends BaseEntity<CaseId> implements PropertyBag {
     @EmbeddedId
     private CaseId id;
-    @Column(name = "case_name")
+    @Column(name = "case_name", length = 500)
     private String name;
     @Column(name = "description")
     private String description;
@@ -67,6 +65,13 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
             @AttributeOverride(name = "timestamp", column = @Column(name = "created_timestamp"))
     })
     private Actor createdBy;
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "name", column = @Column(name = "updated_by")),
+            @AttributeOverride(name = "type", column = @Column(name = "updated_by_type")),
+            @AttributeOverride(name = "timestamp", column = @Column(name = "updated_timestamp"))
+    })
+    private Actor updatedBy;
     @Embedded
     @AttributeOverrides({
             @AttributeOverride(name = "name", column = @Column(name = "assigned_to")),
@@ -94,8 +99,9 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
     private CaseId parentId;
     @Transient
     private Set<CaseDocument<E, T>> artefacts;
-    @Column(name = "properties")
+    @Column(name = "properties", columnDefinition = "json")
     @Convert(converter = PropertiesConverter.class)
+    @ColumnTransformer(write = "?::json")
     private Map<String, Object> properties;
     @Transient
     private Set<CaseDocument<E, T>> deleted;
@@ -204,6 +210,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         a.setTimestamp(System.currentTimeMillis());
         CaseCommentId id = new CaseCommentId();
         id.setCaseId(this.id.getId());
+        id.setCommentId(UUID.randomUUID().toString());
         CaseComment c = new CaseComment();
         c.setId(id);
         c.setCommentedBy(a);
@@ -228,7 +235,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
     private CaseComment findParent(long parentId) {
         if (comments != null) {
             for (CaseComment comment : comments) {
-                if (comment.getId().getCommentId() == parentId) {
+                if (comment.getId().getCommentId().equals(parentId)) {
                     return comment;
                 }
             }
@@ -356,6 +363,7 @@ public abstract class Case<P extends Enum<P>, S extends CaseState<P>, E extends 
         }
         caseEntity.setAssignedTo(assignedTo);
         caseEntity.setCreatedBy(createdBy);
+        caseEntity.setUpdatedBy(updatedBy);
         caseEntity.setProperties(properties);
         caseEntity.setClosedBy(closedBy);
         caseEntity.setExternalReferenceId(externalReferenceId);

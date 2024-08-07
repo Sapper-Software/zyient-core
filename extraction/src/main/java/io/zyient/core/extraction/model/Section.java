@@ -63,13 +63,25 @@ public class Section extends Cell<String> {
         return String.format("%s%d", __PREFIX, index);
     }
 
-    public <T> Cell<T> add(@NonNull Class<? extends Cell<T>> type,
-                           int index) throws Exception {
+    public <T extends Cell<?>> T add(@NonNull Class<? extends T> type,
+                                     int index) throws Exception {
         if (blocks == null) {
             blocks = new ArrayList<>();
         }
-        Cell<T> cell = type.getDeclaredConstructor(String.class, int.class)
+        T cell = type.getDeclaredConstructor(String.class, int.class)
                 .newInstance(getId(), index);
+        CollectionUtils.setAtIndex(blocks, index, cell);
+        return cell;
+    }
+
+    public  <T extends Cell<?>> T add(@NonNull T cell, int index) throws Exception {
+        if (blocks == null) {
+            blocks = new ArrayList<>();
+        }
+        if (index < 0) {
+            index = blocks.size();
+        }
+        cell.resetId(getId(), index);
         CollectionUtils.setAtIndex(blocks, index, cell);
         return cell;
     }

@@ -22,10 +22,7 @@ import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.JSONUtils;
 import io.zyient.base.common.utils.ReflectionHelper;
 import io.zyient.base.common.utils.beans.PropertyDef;
-import io.zyient.core.mapping.model.mapping.CustomMappedElement;
-import io.zyient.core.mapping.model.mapping.MappedElement;
-import io.zyient.core.mapping.model.mapping.MappingType;
-import io.zyient.core.mapping.model.mapping.RegexMappedElement;
+import io.zyient.core.mapping.model.mapping.*;
 import io.zyient.core.mapping.rules.MappingReflectionHelper;
 import io.zyient.core.mapping.transformers.RegexTransformer;
 import io.zyient.core.mapping.transformers.Transformer;
@@ -39,25 +36,15 @@ import java.util.Map;
 
 @Getter
 @Accessors(fluent = true)
-public class MapTransformer<T> {
-    @Getter
-    @Setter
-    @Accessors(fluent = true)
-    public static class MapNode {
-        private String name;
-        private Class<?> type;
-        private String targetPath;
-        private Map<String, MapNode> nodes;
-        private Transformer<?> transformer;
-        private boolean nullable;
-        private MappingType mappingType;
-    }
+public class MapTransformer<T> implements IMapTransformer<T> {
+
 
     private final Class<? extends T> type;
     private final MappingSettings settings;
     private final Map<String, Map<Integer, MapNode>> mapper = new HashMap<>();
     private final Map<String, Transformer<?>> transformers = new HashMap<>();
 
+    private boolean wildCardMappingField = false;
 
     public MapTransformer(@NonNull Class<? extends T> type, @NonNull MappingSettings settings) {
         this.type = type;
@@ -65,18 +52,24 @@ public class MapTransformer<T> {
     }
 
     public MapTransformer<T> add(@NonNull MappedElement element) throws Exception {
-        PropertyDef pm = ReflectionHelper.findProperty(type, element.getTargetPath());
-        if (pm == null) {
-            throw new Exception(String.format("Target field not found. [class=%s][field=%s]",
-                    type.getCanonicalName(), element.getTargetPath()));
-        }
-        MapNode node = findNode(element, pm);
-        if (element instanceof CustomMappedElement
-                || element instanceof RegexMappedElement) {
-            node.transformer = findTransformer(element, true);
+
+        if (element instanceof WildcardMappedElement) {
+            wildCardMappingField = true;
+        } else {
+            PropertyDef pm = ReflectionHelper.findProperty(type, element.getTargetPath());
+            if (pm == null) {
+                throw new Exception(String.format("Target field not found. [class=%s][field=%s]",
+                        type.getCanonicalName(), element.getTargetPath()));
+            }
+            MapNode node = findNode(element, pm);
+            if (element instanceof CustomMappedElement
+                    || element instanceof RegexMappedElement) {
+                node.transformer = findTransformer(element, true);
+            }
         }
         return this;
     }
+
 
     private Transformer<?> findTransformer(MappedElement elem, boolean create) throws Exception {
         if (elem instanceof CustomMappedElement element) {
@@ -107,6 +100,7 @@ public class MapTransformer<T> {
         return null;
     }
 
+    @Override
     public Object transform(@NonNull MappedElement element, @NonNull Object source) throws Exception {
         if (element instanceof CustomMappedElement) {
             Transformer<?> transformer = findTransformer(element, true);
@@ -126,9 +120,12 @@ public class MapTransformer<T> {
         return source;
     }
 
+
+    @Override
     public Map<String, Object> transform(@NonNull Map<String, Object> source,
                                          @NonNull Class<? extends T> entityType, @NonNull Context context) throws Exception {
-        Preconditions.checkState(!mapper.isEmpty());
+
+
         Map<String, Object> data = new HashMap<>();
         JSONUtils.checkAndAddType(data, entityType);
         for (String key : mapper.keySet()) {
@@ -136,6 +133,10 @@ public class MapTransformer<T> {
             for (Integer seq : nodes.keySet()) {
                 transform(source, nodes.get(seq), data, context.params);
             }
+        }
+        if (wildCardMappingField) {
+            source.putAll(data);
+            data.putAll(source);
         }
         return data;
     }
@@ -294,7 +295,7 @@ public class MapTransformer<T> {
                         if (node.nodes != null && node.nodes.containsKey(name)) {
                             node = node.nodes.get(name);
                             if (node.type != null && property.field() != null) {
-                                if (node.type.equals(property.field().getType())) {
+                                if (!node.type.equals(property.field().getType())) {
                                     throw new Exception(String.format("Type mis-match: [current=%s][specified=%s]",
                                             node.type.getCanonicalName(),
                                             property.field().getType().getCanonicalName()));

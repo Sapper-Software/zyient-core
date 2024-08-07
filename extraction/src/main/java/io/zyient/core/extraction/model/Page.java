@@ -30,6 +30,9 @@ public class Page extends Section {
 
     private int number;
     private int pixelSize;
+    private SizeUnit sizeUnit;
+    private float height;
+    private float width;
 
     public Page() {
         super();

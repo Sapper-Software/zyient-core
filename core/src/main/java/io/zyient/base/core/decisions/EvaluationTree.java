@@ -52,12 +52,14 @@ public class EvaluationTree<T, R> {
         public R evaluate(@NonNull T data,
                           R result) throws Exception {
             if (condition.evaluate(data)) {
-                result = this.result;
+                result = result == null ? this.result : result;
                 if (children != null) {
                     for (Node<T, R> child : children) {
                         result = child.evaluate(data, result);
                     }
                 }
+            } else {
+                result = null;
             }
             return result;
         }
