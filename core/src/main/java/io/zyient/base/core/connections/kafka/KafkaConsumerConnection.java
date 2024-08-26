@@ -127,13 +127,18 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
         synchronized (state) {
             Preconditions.checkState(connectionState() == EConnectionState.Initialized);
             try {
-                consumer = new KafkaConsumer<K, V>(((KafkaSettings) settings).getProperties());
-                List<TopicPartition> parts = new ArrayList<>(((KafkaSettings) settings).getPartitions().size());
-                for (int part : ((KafkaSettings) settings).getPartitions()) {
-                    TopicPartition tp = new TopicPartition(settings.getQueue(), part);
-                    parts.add(tp);
+                KafkaSettings ks = (KafkaSettings) settings;
+                consumer = new KafkaConsumer<>(((KafkaSettings) settings).getProperties());
+                if (ks.getPartitions().size() == 1 && ks.getPartitions().get(0) < 0) {
+                    consumer.subscribe(List.of(settings.getQueue()));
+                } else {
+                    List<TopicPartition> parts = new ArrayList<>(ks.getPartitions().size());
+                    for (int part : ((KafkaSettings) settings).getPartitions()) {
+                        TopicPartition tp = new TopicPartition(settings.getQueue(), part);
+                        parts.add(tp);
+                    }
+                    consumer.assign(parts);
                 }
-                consumer.assign(parts);
                 state.setState(EConnectionState.Connected);
             } catch (Throwable t) {
                 state.error(t);
