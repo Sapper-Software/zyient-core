@@ -21,6 +21,7 @@ import io.zyient.base.common.messaging.MessagingError;
 import io.zyient.base.common.model.Context;
 import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.connections.kafka.BasicKafkaConsumerConnection;
+import io.zyient.base.core.connections.settings.kafka.KafkaSettings;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
@@ -161,6 +162,10 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
     }
 
     private void initializeStates() throws Exception {
+        KafkaSettings ks = (KafkaSettings) consumer.settings();
+        if(ks.getPartitions().size() == 1 && ks.getPartitions().get(0) < 0) {
+            consumer.consumer().poll(Duration.ofMillis(1000));
+        }
         Set<TopicPartition> partitions = consumer.consumer().assignment();
         if (partitions == null || partitions.isEmpty()) {
             throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
