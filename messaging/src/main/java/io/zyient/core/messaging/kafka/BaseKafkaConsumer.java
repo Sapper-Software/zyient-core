@@ -162,11 +162,15 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
     }
 
     private void initializeStates() throws Exception {
+        Set<TopicPartition> partitions = null;
         KafkaSettings ks = (KafkaSettings) consumer.settings();
         if(ks.getPartitions().size() == 1 && ks.getPartitions().get(0) < 0) {
-            consumer.consumer().poll(Duration.ofMillis(1000));
+            consumer.consumer().poll(Duration.ofMillis(5000));
+            partitions = consumer.consumer().assignment();
+        }else {
+            partitions = consumer.consumer().assignment();
         }
-        Set<TopicPartition> partitions = consumer.consumer().assignment();
+
         if (partitions == null || partitions.isEmpty()) {
             throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
                     consumer.name(), topic));
