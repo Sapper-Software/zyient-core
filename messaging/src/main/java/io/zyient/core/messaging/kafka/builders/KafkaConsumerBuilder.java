@@ -25,7 +25,7 @@ import io.zyient.base.core.state.OffsetStateManager;
 import io.zyient.base.core.state.OffsetStateManagerSettings;
 import io.zyient.core.messaging.builders.MessageReceiverBuilder;
 import io.zyient.core.messaging.builders.MessageReceiverSettings;
-import io.zyient.core.messaging.kafka.BaseKafkaConsumer;
+import io.zyient.core.messaging.kafka.AbstractBaseKafkaConsumer;
 import io.zyient.core.messaging.kafka.BaseKafkaProducer;
 import io.zyient.core.messaging.kafka.KafkaStateManager;
 import lombok.NonNull;
@@ -33,16 +33,16 @@ import org.apache.commons.configuration2.HierarchicalConfiguration;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
-    private final Class<? extends BaseKafkaConsumer<M>> type;
+    private final Class<? extends AbstractBaseKafkaConsumer<M>> type;
 
-    protected KafkaConsumerBuilder(@NonNull Class<? extends BaseKafkaConsumer<M>> type) {
+    protected KafkaConsumerBuilder(@NonNull Class<? extends AbstractBaseKafkaConsumer<M>> type) {
         super(KafkaReceiverSettings.class);
         this.type = type;
     }
 
     @SuppressWarnings("unchecked")
     @Override
-    public BaseKafkaConsumer<M> build(@NonNull MessageReceiverSettings settings) throws Exception {
+    public AbstractBaseKafkaConsumer<M> build(@NonNull MessageReceiverSettings settings) throws Exception {
         Preconditions.checkNotNull(env());
         Preconditions.checkArgument(settings.getType() == EConnectionType.kafka);
         BasicKafkaConsumerConnection connection = env().connectionManager()
@@ -54,7 +54,7 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
         if (!connection.isConnected()) {
             connection.connect();
         }
-        BaseKafkaConsumer<M> consumer = type.getDeclaredConstructor().newInstance();
+        AbstractBaseKafkaConsumer<M> consumer = type.getDeclaredConstructor().newInstance();
         consumer.withConnection(connection);
 
         if (!Strings.isNullOrEmpty(settings.getOffsetManager())) {
@@ -76,15 +76,15 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
                     = (Class<? extends BaseKafkaProducer<M>>) ConfigReader.readAsClass(ec);
             KafkaProducerBuilder<M> builder = new KafkaProducerBuilder<>(type);
             BaseKafkaProducer<M> producer = (BaseKafkaProducer<M>) builder.build(ec);
-            return (BaseKafkaConsumer<M>) consumer
+            return (AbstractBaseKafkaConsumer<M>) consumer
                     .withErrorQueue(producer)
                     .init();
         }
-        return (BaseKafkaConsumer<M>) consumer.init();
+        return (AbstractBaseKafkaConsumer<M>) consumer.init();
     }
 
     private void readOffsetManager(MessageReceiverSettings settings,
-                                   BaseKafkaConsumer<M> consumer) throws Exception {
+                                   AbstractBaseKafkaConsumer<M> consumer) throws Exception {
         if (ConfigReader.checkIfNodeExists(config, OffsetStateManagerSettings.__CONFIG_PATH)) {
             Class<? extends OffsetStateManager<?>> cls = OffsetStateManager.parseManagerType(config);
             OffsetStateManager<?> manager = cls

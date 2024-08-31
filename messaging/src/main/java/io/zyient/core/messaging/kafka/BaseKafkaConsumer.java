@@ -18,6 +18,7 @@ package io.zyient.core.messaging.kafka;
 
 import io.zyient.base.common.messaging.MessagingError;
 import io.zyient.base.common.utils.DefaultLogger;
+import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.messaging.MessageReceiver;
 import org.apache.kafka.common.TopicPartition;
 
@@ -29,39 +30,14 @@ public abstract class BaseKafkaConsumer<M> extends AbstractBaseKafkaConsumer<M> 
         return super.init();
     }
 
-    protected void initializeState() throws Exception {
-        if (stateful()) {
-            initializeStates();
-        }
-    }
-
-    private void initializeStates() throws Exception {
-
+    protected Set<TopicPartition> getAssignedTopicPartitions() throws MessagingError {
         Set<TopicPartition> partitions = consumer.consumer().assignment();
         if (partitions == null || partitions.isEmpty()) {
             throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
                     consumer.name(), topic));
         }
-        for (TopicPartition partition : partitions) {
-            state = stateManager.get(topic, partition.partition());
-            if (state == null) {
-                state = stateManager.create(topic, partition.partition());
-            }
-
-            KafkaOffset offset = state.getOffset();
-            if (offset.getOffsetCommitted().getValue() > 0) {
-                seek(partition, offset.getOffsetCommitted().getValue() + 1);
-            } else {
-                seek(partition, 0);
-            }
-            if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
-                DefaultLogger.warn(
-                        String.format("[topic=%s][partition=%d] Read offset ahead of committed, potential resends.",
-                                topic, partition.partition()));
-                offset.setOffsetRead(new KafkaOffsetValue(offset.getOffsetCommitted()));
-                stateManager.update(state);
-            }
-        }
+        state().setState(ProcessorState.EProcessorState.Running);
+        return partitions;
     }
 
 }

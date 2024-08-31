@@ -133,10 +133,10 @@ public abstract class AbstractBaseKafkaConsumer<M> extends MessageReceiver<Strin
             if (stateful()) {
                 Preconditions.checkArgument(offsetStateManager() instanceof KafkaStateManager);
                 stateManager = (KafkaStateManager) offsetStateManager();
-                initializeState();
+                Set<TopicPartition> partitions = getAssignedTopicPartitions();
+                initializeState(partitions);
             }
             offsetMap.clear();
-            state().setState(ProcessorState.EProcessorState.Running);
             return this;
         } catch (Exception ex) {
             state().error(ex);
@@ -144,8 +144,32 @@ public abstract class AbstractBaseKafkaConsumer<M> extends MessageReceiver<Strin
         }
     }
 
-    protected abstract void initializeState() throws Exception;
 
+    protected void initializeState(Set<TopicPartition> partitions) throws Exception {
+
+        for (TopicPartition partition : partitions) {
+            state = stateManager.get(topic, partition.partition());
+            if (state == null) {
+                state = stateManager.create(topic, partition.partition());
+            }
+
+            KafkaOffset offset = state.getOffset();
+            if (offset.getOffsetCommitted().getValue() > 0) {
+                seek(partition, offset.getOffsetCommitted().getValue() + 1);
+            } else {
+                seek(partition, 0);
+            }
+            if (offset.getOffsetCommitted().compareTo(offset.getOffsetRead()) != 0) {
+                DefaultLogger.warn(
+                        String.format("[topic=%s][partition=%d] Read offset ahead of committed, potential resends.",
+                                topic, partition.partition()));
+                offset.setOffsetRead(new KafkaOffsetValue(offset.getOffsetCommitted()));
+                stateManager.update(state);
+            }
+        }
+    }
+
+    protected abstract Set<TopicPartition> getAssignedTopicPartitions() throws MessagingError;
 
     private TopicPartition findPartition(int partition) throws MessagingError {
         Set<TopicPartition> partitions = consumer.consumer().assignment();
@@ -176,11 +200,16 @@ public abstract class AbstractBaseKafkaConsumer<M> extends MessageReceiver<Strin
         return null;
     }
 
+    protected void beforeNextBatch() throws Exception {
+
+    }
+
     @Override
     public List<MessageObject<String, M>> nextBatch(long timeout) throws MessagingError {
         Preconditions.checkState(state().isAvailable());
         try {
             ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(timeout));
+            beforeNextBatch();
             synchronized (offsetMap) {
                 if (records != null && records.count() > 0) {
                     List<MessageObject<String, M>> array = new ArrayList<>(records.count());
