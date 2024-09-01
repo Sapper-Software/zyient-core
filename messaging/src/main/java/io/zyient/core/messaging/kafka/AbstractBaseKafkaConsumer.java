@@ -206,10 +206,10 @@ public abstract class AbstractBaseKafkaConsumer<M> extends MessageReceiver<Strin
 
     @Override
     public List<MessageObject<String, M>> nextBatch(long timeout) throws MessagingError {
-        Preconditions.checkState(state().isAvailable());
         try {
             ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(timeout));
             beforeNextBatch();
+            Preconditions.checkState(state().isAvailable());
             synchronized (offsetMap) {
                 if (records != null && records.count() > 0) {
                     List<MessageObject<String, M>> array = new ArrayList<>(records.count());
