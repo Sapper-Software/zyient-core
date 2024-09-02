@@ -81,6 +81,7 @@ public class KafkaStateManager extends OffsetStateManager<KafkaOffset> {
         offset.setTopic(topic);
         offset.setPartition(partition);
         state.setOffset(offset);
+        state.setMachineName(KafkaConsumerState.HOSTNAME);
 
         return update(state);
     }

@@ -28,9 +28,11 @@ import lombok.Setter;
         property = "@class")
 public class KafkaConsumerState extends OffsetState<Connection.EConnectionState, KafkaOffset> {
     public static final String OFFSET_TYPE = "kafka/consumer";
+    public static final String HOSTNAME = "HOSTNAME";
 
     private String topic;
     private long partition = 0;
+    private String machineName;
 
     public KafkaConsumerState() {
         super(Connection.EConnectionState.Error, Connection.EConnectionState.Initialized, OFFSET_TYPE);
