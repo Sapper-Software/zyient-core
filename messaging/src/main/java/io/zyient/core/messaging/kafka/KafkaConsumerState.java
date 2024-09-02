@@ -32,7 +32,7 @@ public class KafkaConsumerState extends OffsetState<Connection.EConnectionState,
 
     private String topic;
     private long partition = 0;
-    private String machineName;
+    private String hostName;
 
     public KafkaConsumerState() {
         super(Connection.EConnectionState.Error, Connection.EConnectionState.Initialized, OFFSET_TYPE);
