@@ -147,13 +147,20 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
             if (!consumer.isConnected()) {
                 consumer.connect();
             }
+
             if (stateful()) {
                 Preconditions.checkArgument(offsetStateManager() instanceof KafkaStateManager);
                 stateManager = (KafkaStateManager) offsetStateManager();
-                initializeStates();
+                if(!consumer.isPartitionAutoAssigned()){
+                    initializeStates();
+                }
+
             }
             offsetMap.clear();
-            state().setState(ProcessorState.EProcessorState.Running);
+            if(!consumer.isPartitionAutoAssigned()){
+                state().setState(ProcessorState.EProcessorState.Running);
+            }
+
             return this;
         } catch (Exception ex) {
             state().error(ex);
@@ -162,15 +169,7 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
     }
 
     private void initializeStates() throws Exception {
-        Set<TopicPartition> partitions = null;
-        KafkaSettings ks = (KafkaSettings) consumer.settings();
-        if(ks.getPartitions().size() == 1 && ks.getPartitions().get(0) < 0) {
-            consumer.consumer().poll(Duration.ofMillis(5000));
-            partitions = consumer.consumer().assignment();
-        }else {
-            partitions = consumer.consumer().assignment();
-        }
-
+        Set<TopicPartition> partitions = consumer.consumer().assignment();
         if (partitions == null || partitions.isEmpty()) {
             throw new MessagingError(String.format("No assigned partitions found. [name=%s][topic=%s]",
                     consumer.name(), topic));
@@ -228,9 +227,16 @@ public abstract class BaseKafkaConsumer<M> extends MessageReceiver<String, M> {
 
     @Override
     public List<MessageObject<String, M>> nextBatch(long timeout) throws MessagingError {
-        Preconditions.checkState(state().isAvailable());
+
         try {
             ConsumerRecords<String, byte[]> records = consumer.consumer().poll(Duration.ofMillis(timeout));
+            if(consumer.isPartitionAutoAssigned() && !state().isRunning()){
+                Thread.sleep(5000);
+                initializeStates();
+                state().setState(ProcessorState.EProcessorState.Running);
+            }
+            Preconditions.checkState(state().isAvailable());
+
             synchronized (offsetMap) {
                 if (records != null && records.count() > 0) {
                     List<MessageObject<String, M>> array = new ArrayList<>(records.count());

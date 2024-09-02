@@ -45,6 +45,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
     private static final String CONFIG_MAX_POLL_RECORDS = "max.poll.records";
     private KafkaConsumer<K, V> consumer;
     private int batchSize = 32; // Default BatchSize is 32
+    public boolean isPartitionAutoAssigned;
 
     /**
      * @param xmlConfig
@@ -131,6 +132,7 @@ public class KafkaConsumerConnection<K, V> extends KafkaConnection {
                 consumer = new KafkaConsumer<>(((KafkaSettings) settings).getProperties());
                 if (ks.getPartitions().size() == 1 && ks.getPartitions().get(0) < 0) {
                     consumer.subscribe(List.of(settings.getQueue()));
+                    isPartitionAutoAssigned = true;
                 } else {
                     List<TopicPartition> parts = new ArrayList<>(ks.getPartitions().size());
                     for (int part : ((KafkaSettings) settings).getPartitions()) {
