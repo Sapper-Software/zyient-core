@@ -49,10 +49,7 @@ import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.configuration2.tree.ImmutableNode;
 
 import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Accessors(fluent = true)
@@ -298,7 +295,12 @@ public abstract class Mapping<T> {
                 if (ReflectionHelper.implementsInterface(PropertyBag.class, entityType)) {
                     T data = response.getEntity();
                     if (!"*".equals(path)) {
-                        source = (SourceMap) source.get(path);
+                        if(source.get(path) instanceof SourceMap){
+                            source = (SourceMap) source.get(path);
+                        }else  if(source.get(path) instanceof LinkedHashMap){
+                            source =  new SourceMap((LinkedHashMap)source.get(path));
+                        }
+
                     }
                     int valCount = 1;
                     for (String key : source.keySet()) {
