@@ -24,12 +24,13 @@ import io.zyient.core.messaging.builders.MessageSenderSettings;
 import io.zyient.core.messaging.kafka.BaseKafkaProducer;
 import io.zyient.core.messaging.kafka.KafkaPartitioner;
 import lombok.NonNull;
+import org.apache.commons.lang3.StringUtils;
 
 public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
     private final Class<? extends BaseKafkaProducer<M>> type;
 
     public KafkaProducerBuilder(@NonNull Class<? extends BaseKafkaProducer<M>> type,
-                                   @NonNull Class<? extends MessageSenderSettings> settingsType) {
+                                @NonNull Class<? extends MessageSenderSettings> settingsType) {
         super(settingsType);
         this.type = type;
     }
@@ -64,7 +65,10 @@ public class KafkaProducerBuilder<M> extends MessageSenderBuilder<String, M> {
             partitioner.init(config());
             producer.partitioner(partitioner);
         }
-
-        return (BaseKafkaProducer<M>) producer.init();
+        producer.init();
+        if (StringUtils.isNotBlank(settings.getQueue())) {
+            producer.withTopic(settings.getQueue());
+        }
+        return producer;
     }
 }

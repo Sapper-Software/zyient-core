@@ -57,7 +57,10 @@ public abstract class BaseKafkaProducer<M> extends MessageSender<String, M> {
         state().setState(ProcessorState.EProcessorState.Running);
         return this;
     }
-
+    public MessageSender<String, M> withTopic(String topic) {
+        this.topic = topic;
+        return this;
+    }
     @Override
     public MessageObject<String, M> send(@NonNull MessageObject<String, M> message) throws MessagingError {
         Preconditions.checkArgument(state().isAvailable());

@@ -35,4 +35,6 @@ public class MessageSenderSettings extends Settings {
     private EConnectionType type;
     @Config(name = "connection")
     private String connection;
+    @Config(name = "queue", required = false)
+    private String queue;
 }
