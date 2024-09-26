@@ -73,8 +73,9 @@ public class KafkaConsumerBuilder<M> extends MessageReceiverBuilder<String, M> {
             HierarchicalConfiguration<ImmutableNode> ec
                     = config.configurationAt(KafkaReceiverSettings.__CONFIG_PATH_ERRORS);
             Class<? extends BaseKafkaProducer<M>> type
-                    = (Class<? extends BaseKafkaProducer<M>>) ConfigReader.readAsClass(ec);
+                    = (Class<? extends BaseKafkaProducer<M>>) ConfigReader.readType(ec);
             KafkaProducerBuilder<M> builder = new KafkaProducerBuilder<>(type);
+            builder.withEnv(env());
             BaseKafkaProducer<M> producer = (BaseKafkaProducer<M>) builder.build(ec);
             return (AbstractBaseKafkaConsumer<M>) consumer
                     .withErrorQueue(producer)

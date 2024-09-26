@@ -17,7 +17,6 @@
 package io.zyient.core.messaging.kafka;
 
 import io.zyient.base.common.messaging.MessagingError;
-import io.zyient.base.common.utils.DefaultLogger;
 import io.zyient.base.core.processing.ProcessorState;
 import io.zyient.core.messaging.MessageReceiver;
 import org.apache.kafka.common.TopicPartition;

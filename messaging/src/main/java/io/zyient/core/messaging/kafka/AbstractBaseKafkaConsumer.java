@@ -10,6 +10,7 @@ import io.zyient.base.core.state.Offset;
 import io.zyient.base.core.state.OffsetState;
 import io.zyient.core.messaging.MessageObject;
 import io.zyient.core.messaging.MessageReceiver;
+import lombok.Getter;
 import lombok.NonNull;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -145,6 +146,15 @@ public abstract class AbstractBaseKafkaConsumer<M> extends MessageReceiver<Strin
     }
 
 
+    public void seekToCommitted() throws Exception{
+        TopicPartition topicPartition = new TopicPartition(topic,partition);
+        KafkaOffset offset = state.getOffset();
+        if (offset.getOffsetCommitted().getValue() > 0) {
+            seek(topicPartition, offset.getOffsetCommitted().getValue() + 1);
+        } else {
+            seek(topicPartition, 0);
+        }
+    }
     protected void initializeState(Set<TopicPartition> partitions) throws Exception {
 
         for (TopicPartition partition : partitions) {
@@ -168,7 +178,6 @@ public abstract class AbstractBaseKafkaConsumer<M> extends MessageReceiver<Strin
             }
         }
     }
-
     protected abstract Set<TopicPartition> getAssignedTopicPartitions() throws MessagingError;
 
     private TopicPartition findPartition(int partition) throws MessagingError {
