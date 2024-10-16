@@ -157,7 +157,8 @@ public class CurrencyValueTransformer extends DeSerializer<CurrencyValue> {
                 throw new DataException(ex);
             }
         }
-        throw new DataException(String.format("Cannot transform to Currency. [source=%s]", source.getClass()));
+        throw new DataException(String.format("Cannot transform to Currency. [source=%s] [value=%s]",
+                source.getClass(), source));
     }
 
 
